@@ -1,0 +1,43 @@
+Version 1.0.0
+=============
+
+version 1.0.0
+------------
+1) Python as main control language
+2) Introduction of generators rather than always creating new data for signals
+3) tweaks to the swap file system to handle long signals
+4) Raise - rase to a power asymetricallys (unlike Power) 
+5) Clean - remote higher requecies via decimation help with avoiding aliasing
+6) FFT processing (CrossMultiply, TimeSpace, FrequencySpace)
+7) PhaseModulatedSineWave generator
+8) Removal of all Spring
+9) RestrictedSineWave generator to create slides which are alias free
+10) ReadSignal And Write signal for disk based store/retrieve of draw Sonic Field signals
+11) Many other small enhancements and tweak
+
+
+version 0.2.1
+-------------
+1)  Wave limiting and wave maximizing
+2)  Automatic reading in a swapped out signals
+3)  Enhanced granular system with bounded random grain size
+4)  Performance enhancements in the Do engine
+5)  Performance enhancements in the parallelisation drier
+6)  More accurate line number reporting in errors
+7)  Many minor tweaks
+8)  Addition of youtube-voice.sfp single task sfp file
+9)  Performance counters are working again
+10) Work on granular compression in revoice patchs.sion (0.2) of Sonic Field has many enhancements including but not limited to:
+
+version 0.2
+-----------
+1)  Granular synthesis
+2)  RBJ IIR Filers (high,low,high-shelf,low-shelf,peaking)
+3)  Cleaner implementation of resonance synthesis
+4)  Better error handling - fix the line number bug
+5)  System hang on error in paralleliser bug fixed
+6)  Envelope follower.
+7)  Fix to numerous bugs in shaped filters
+8)  Addition of shaped butterworth and bessel bandpass filters
+9)  Improved FM signal modulation and addition of fm signal generator
+10) Addition of shaped power

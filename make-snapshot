@@ -1,0 +1,11 @@
+cp -r SonicField SonicField-snapshot
+cd SonicField-snapshot/
+rm -fr temp
+rm -fr bin
+rm -fr impulses
+rm -fr midi
+cd ..
+rm sonicField-snapshot/patches/performances/*.wav
+tar -cvzf SonicField-1.0.1.tgz SonicField-snapshot
+mv SonicField-*.tgz ~/Google\ Drive/SonicField-snapshots
+rm -fr SonicField-snapshot/

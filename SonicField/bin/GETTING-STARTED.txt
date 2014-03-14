@@ -1,0 +1,24 @@
+To try SFPL simple run the script sfpl in the root directory:
+=============================================================
+
+./sython a-patch.py
+
+You will need to create a patch. Please see sonic-field.blogspot.com
+for examples of running Sython.
+
+If your machine does not have java 7 on the path, or you do not
+have enough RAM to allocate 12Gig or you are on windows, check out
+the comments in the sython launch script file to change it appropriately.
+
+Running from Eclipse:
+=====================
+Simply set up the Eclipse build path based on that in the script file above
+then run com.nerdscentral.sfpl.Synthon  passing in jvm and syphon arguments.
+
+For documentation:
+==================
+    http://sonic-field.blogspot.com
+    
+For more information:
+=====================
+    http://nerds-central.blogspot.com

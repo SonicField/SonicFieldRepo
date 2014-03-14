@@ -1,0 +1,624 @@
+package com.nerdscentral.audio.io;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
+import java.lang.management.MemoryUsage;
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+
+import com.nerdscentral.audio.SFConstants;
+import com.nerdscentral.audio.SFData;
+import com.nerdscentral.sfpl.Messages;
+import com.nerdscentral.sfpl.SFPL_Context;
+import com.nerdscentral.sfpl.SFPL_Operator;
+import com.nerdscentral.sfpl.SFPL_RuntimeException;
+import com.nerdscentral.sfpl.tasks.LightWeightRunner;
+import com.nerdscentral.sfpl.tasks.Parallelizer;
+import com.nerdscentral.sfpl.tasks.SFPL_ClosedRunner;
+import com.nerdscentral.sfpl.tasks.SFPL_DoRunner;
+
+public abstract class SFMemoryManager
+{
+    private static final int                                                       COMPACT_FREQUENCY      = 1024;
+    private RandomAccessFile                                                       underlyingFile_;
+    private long                                                                   position               = -1;
+    private SFData                                                                 reference_;
+
+    private static final List<WeakReference<SFMemoryManager>>                      currentActive          = new LinkedList<>();
+    private static final int                                                       OVERHEAD               = 1024;
+    private static long                                                            swapLimit;
+    private static final String                                                    SONIC_FIELD_SWAP_LIMIT = "sonicFieldSwapLimit";    //$NON-NLS-1$
+    private static final Runtime                                                   runtime                = Runtime.getRuntime();
+    private static final ConcurrentHashMap<RandomAccessFile, List<PositionHolder>> availibleSlots         = new ConcurrentHashMap<>();
+    private SFMemoryManager                                                        linkedFile             = null;
+    private final long                                                             uniqueId;
+    private final static AtomicLong                                                liveRefs               = new AtomicLong();
+    private volatile static int                                                    biggest                = 0;
+    private final static AtomicInteger                                             compactCounter         = new AtomicInteger();
+
+    private SFData getReference()
+    {
+        return reference_;
+    }
+
+    private synchronized SFData setReference(SFData reference)
+    {
+        if (reference == null && position == -1) throw new RuntimeException(Messages.getString("SFMemoryManager.0")); //$NON-NLS-1$
+        return reference_ = reference;
+    }
+
+    protected static class PositionHolder
+    {
+        public PositionHolder(SFMemoryManager refIn)
+        {
+            reference = new WeakReference<>(refIn);
+        }
+
+        public volatile WeakReference<SFMemoryManager> reference;
+        public volatile long                           position;
+        public volatile long                           length;
+        public volatile RandomAccessFile               file;
+    }
+
+    static
+    {
+        String threads = System.getProperty(SONIC_FIELD_SWAP_LIMIT);
+        if (threads != null)
+        {
+            swapLimit = (long) (Double.parseDouble(threads) * SFConstants.ONE_GIG);
+        }
+        else
+        {
+            swapLimit = SFConstants.ONE_GIG;
+        }
+        // launchManager();
+    }
+
+    private synchronized RandomAccessFile getUnderlyingFile() throws IOException
+    {
+        if (underlyingFile_ == null)
+        {
+            underlyingFile_ = getFile();
+        }
+        return underlyingFile_;
+    }
+
+    public static void setSwapLimit(double limit)
+    {
+        swapLimit = (long) (limit * SFConstants.ONE_GIG);
+    }
+
+    private static final void trackDataObject(SFMemoryManager ref)
+    {
+        synchronized (currentActive)
+        {
+            currentActive.add(new WeakReference<>(ref));
+        }
+        checkSwap();
+    }
+
+    public static void checkSwap()
+    {
+        checkSwap(0, false);
+    }
+
+    public static void checkSwap(int bias)
+    {
+        checkSwap(bias, true);
+    }
+
+    private static void checkSwap(int bias, boolean doItNow)
+    {
+
+        int preLoad = bias + OVERHEAD;
+
+        // Naturally give a bit of a boost to any threads currently writing to disk
+        Thread.yield();
+        if (isAboveLimit(preLoad))
+        {
+            List<WeakReference<SFMemoryManager>> tempList;
+            synchronized (currentActive)
+            {
+                tempList = new ArrayList<>(currentActive.size());
+                for (WeakReference<SFMemoryManager> thisRef : currentActive)
+                {
+                    SFMemoryManager thisFile = thisRef.get();
+                    if (thisFile != null)
+                    {
+                        if (thisFile.getReference() != null)
+                        {
+                            tempList.add(new WeakReference<>(thisFile));
+                        }
+                    }
+                }
+                currentActive.clear();
+            }
+            Serializer ser = new Serializer(tempList);
+            if (doItNow)
+            {
+                // System.out.println("Entering hard swap " + bias);
+                try
+                {
+                    ser.Interpret(null, null);
+                }
+                catch (SFPL_RuntimeException e)
+                {
+                    throw new RuntimeException(e);
+                }
+            }
+            else
+            {
+                final SFPL_ClosedRunner runner = new SFPL_ClosedRunner(new LightWeightRunner(ser, null), null,
+                                Parallelizer.getTimer());
+                SFPL_DoRunner r = new SFPL_DoRunner(runner);
+                Parallelizer.getFactory().execute(r);
+            }
+        }
+    }
+
+    private static boolean isAboveLimit(int preLoad)
+    {
+
+        if (preLoad > biggest) biggest = preLoad;
+        return getFreeMemory() < swapLimit + preLoad;
+    }
+
+    private static long getFreeMemory()
+    {
+        return runtime.freeMemory() /*+ runtime.maxMemory() - runtime.totalMemory()*/;
+    }
+
+    private static class Serializer implements SFPL_Operator
+    {
+
+        private static final long            serialVersionUID = 1L;
+        List<WeakReference<SFMemoryManager>> fileList;
+        @SuppressWarnings("unused")
+        public volatile boolean              started          = false;
+
+        public Serializer(List<WeakReference<SFMemoryManager>> tempList)
+        {
+            fileList = tempList;
+        }
+
+        @Override
+        public String Word()
+        {
+            return "FileSwapInternal"; //$NON-NLS-1$
+        }
+
+        @SuppressWarnings("synthetic-access")
+        @Override
+        public Object Interpret(Object input, SFPL_Context context) throws SFPL_RuntimeException
+        {
+            started = true;
+            // seriaise minos first to clear memory as quickly
+            // as possible
+            for (int count = 0; count < fileList.size(); ++count)
+            {
+                int min = Integer.MAX_VALUE;
+                SFMemoryManager f;
+                SFMemoryManager toSerialize = null;
+                for (WeakReference<SFMemoryManager> thisRef : fileList)
+                {
+                    f = thisRef.get();
+                    if (f != null)
+                    {
+                        SFData fReference = f.getReference();
+                        if (fReference != null)
+                        {
+                            int fRLength = fReference.getLength();
+                            if (fRLength < min)
+                            {
+                                min = fRLength;
+                                toSerialize = f;
+                            }
+                        }
+                    }
+                }
+                if (toSerialize == null) break;
+                try
+                {
+                    toSerialize.serialise();
+                }
+                catch (Throwable t)
+                {
+                    throw new SFPL_RuntimeException(t);
+                }
+            }
+            return input;
+        }
+    }
+
+    abstract protected RandomAccessFile getFile() throws IOException;
+
+    public SFMemoryManager(SFData data)
+    {
+        setReference(data);
+        uniqueId = data.getUniqueId();
+        trackDataObject(this);
+        liveRefs.incrementAndGet();
+    }
+
+    private synchronized void serialise() throws IOException
+    {
+        // Already serialised and reserrected
+        if (getReference() == null) return;
+        if (position != -1)
+        {
+            setReference(null);
+            return;
+        }
+        // Do we still need to?
+        if (!isAboveLimit(biggest))
+        {
+            trackDataObject(this);
+        }
+
+        RandomAccessFile ra = getUnderlyingFile();
+        int dataLength = getReference().getLength() * 4;
+        position = scanForFreeSlot(dataLength + 12, ra);
+        if (linkedFile == null)
+        {
+            if (position == -1)
+            {
+                throw new RuntimeException(Messages.getString("SFMemoryManager.1")); //$NON-NLS-1$
+            }
+            synchronized (checkForList(ra))
+            {
+                if (position == Long.MAX_VALUE)
+                {
+                    // No reusable slot found - put one at end
+                    position = ra.length();
+                    addTrackedSlot(dataLength + 12, ra);
+                }
+                // Serialise
+                ra.seek(position);
+                ra.writeInt(dataLength);
+                ra.writeLong(uniqueId);
+                // ra.write(payload);
+                RandomAccessOutputStream out = new RandomAccessOutputStream(ra);
+                DataOutputStream outData = new DataOutputStream(new BufferedOutputStream(out, 65536));
+                float[] data = getReference().getDataInternalOnly();
+                dataLength /= 4;
+                for (int i = 0; i < dataLength; ++i)
+                {
+                    outData.writeFloat(data[i]);
+                }
+                outData.close();
+            }
+            setReference(null);
+        }
+    }
+
+    private synchronized long scanForFreeSlot(int length, RandomAccessFile ra) throws IOException
+    {
+        List<PositionHolder> listForFile = checkForList(ra);
+        if (compactCounter.incrementAndGet() == COMPACT_FREQUENCY)
+        {
+            System.out.println("Compacting Started");
+            slotCompact(ra, listForFile);
+            System.out.println("Compacting Finished");
+            compactCounter.set(0);
+        }
+        else
+        {
+            slotMerge(listForFile);
+        }
+        synchronized (listForFile)
+        {
+            ListIterator<PositionHolder> it = listForFile.listIterator();
+            while (it.hasNext())
+            {
+                PositionHolder ph = it.next();
+                // Turn off back filling to retain age order - serilise oldest first
+                // if (ph.reference.get() == null)
+                // {
+                // if (ph.length >= length)
+                // {
+                // ph.reference = new WeakReference<>(this);
+                // if (ph.length > length)
+                // {
+                // PositionHolder phNew = new PositionHolder(null);
+                // phNew.position = ph.position + length;
+                // phNew.length = ph.length - length;
+                // it.add(phNew);
+                // ph.length = length;
+                // // System.out.println("Split");
+                // }
+                // return ph.position;
+                // }
+                // }
+                // else
+                {
+                    SFMemoryManager q = ph.reference.get();
+                    if (q != null)
+                    {
+                        if (q.uniqueId == this.uniqueId)
+                        {
+                            // System.out.println("++++++ DUPLICATE: " + q.uniqueId + "=" + this.uniqueId);
+                            // We now have a hard reference to a linked file
+                            // use that instead of our own storage
+                            linkedFile = q;
+                            return -2;
+                        }
+                    }
+                }
+            }
+        }
+        return Long.MAX_VALUE;
+    }
+
+    /** Merges adjacent unused slots. */
+    private static void slotMerge(List<PositionHolder> listForFile)
+    {
+        synchronized (listForFile)
+        {
+            while (true)
+            {
+                boolean compacting = false;
+                List<PositionHolder> newList = new ArrayList<>(listForFile.size());
+                ListIterator<PositionHolder> it = listForFile.listIterator();
+                while (it.hasNext())
+                {
+                    PositionHolder ph = it.next();
+                    if (ph.reference.get() == null)
+                    {
+
+                        if (it.hasNext())
+                        {
+                            PositionHolder ph2 = it.next();
+                            if (ph2.position <= ph.position)
+                            {
+                                System.err.println(Messages.getString("SFMemoryManager.2")); //$NON-NLS-1$
+                                System.exit(1);
+                                throw new RuntimeException(Messages.getString("SFMemoryManager.3")); //$NON-NLS-1$
+                            }
+                            if (ph2.reference.get() == null)
+                            {
+                                // Compact by increasing ph
+                                // and skipping the next one by
+                                // not doing a previous
+                                ph.length += ph2.length;
+                                compacting = true;
+                            }
+                            else
+                            {
+                                it.previous();
+                            }
+                        }
+                    }
+                    newList.add(ph);
+                }
+                listForFile.clear();
+                listForFile.addAll(newList);
+                if (!compacting) break;
+            }
+        }
+    }
+
+    /**
+     * Compact compacts in place. This is done by starting at the begining and if the slot and the next are empty merge. If the
+     * slot is empty and the next is not, swap there places by copying down the next slot into the area covered by this slot and
+     * the next then.
+     * 
+     * This will result in a swap file with no gaps appart from a big one at the end.
+     * 
+     * @throws IOException
+     * @throws ClassNotFoundException
+     */
+    private static void slotCompact(RandomAccessFile ra, List<PositionHolder> listForFile) throws IOException
+    {
+        // System.out.println("Going for full compacting");
+        synchronized (listForFile)
+        {
+            ListIterator<PositionHolder> it = listForFile.listIterator();
+            while (it.hasNext())
+            {
+                PositionHolder ph = it.next();
+                if (ph.reference.get() == null)
+                {
+                    if (it.hasNext())
+                    {
+                        PositionHolder ph2 = it.next();
+                        if (ph2.position <= ph.position)
+                        {
+                            // System.out.println("" + ph.position + "," + ph2.position);
+                            System.err.println(Messages.getString("SFMemoryManager.2")); //$NON-NLS-1$
+                            System.exit(1);
+                            throw new RuntimeException(Messages.getString("SFMemoryManager.3")); //$NON-NLS-1$
+                        }
+                        SFMemoryManager nextSlot = ph2.reference.get();
+                        if (nextSlot != null)
+                        {
+                            // System.out.println("Swapping slots " + nextSlot.position + " <> " + ph.position);
+                            // Now we can move the next one down to this one
+                            // thus compacting the heap.
+                            // This uses a lot of extra memory for the copy buffer - but it is FAST
+                            // Also - only one thread per fiel can use that extra memory at once
+                            byte[] payload = new byte[checkInt(ph2.length)];
+                            ra.seek(ph2.position);
+                            if (ra.read(payload) != payload.length)
+                            {
+                                throw new IOException(Messages.getString("SFFileReference.0")); //$NON-NLS-1$
+                            }
+                            ra.seek(ph.position);
+                            ra.write(payload);
+                            nextSlot.position = ph.position;
+                            // Make the next slot empty
+                            ph.reference = ph2.reference;
+                            ph2.reference = new WeakReference<>(null);
+                            // ph.length (old slot) length is about to become ph2.length
+                            ph2.position = ph.position + ph2.length;
+                            long l = ph.length;
+                            ph.length = ph2.length;
+                            ph2.length = l;
+                            // System.out.println("New empty slot length: " + ph2.length + " position: " + ph2.position);
+                            it.previous();
+                        }
+                        else
+                        {
+                            // System.out.println("Merging slots " + ph2.position + " <> " + ph.position);
+                            // Merge the previous with the current
+                            // remove the current and step back onto the previous
+                            ph.length += ph2.length;
+                            // System.out.println("New empty slot length: " + ph2.length);
+                            it.remove();
+                            it.previous();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static int checkInt(long length) throws IOException
+    {
+        if (length > Integer.MAX_VALUE) throw new IOException("Slot area too large"); //$NON-NLS-1$
+        return (int) length;
+    }
+
+    private static List<PositionHolder> checkForList(RandomAccessFile ra)
+    {
+        List<PositionHolder> listForFile = availibleSlots.get(ra);
+        if (listForFile == null)
+        {
+            synchronized (availibleSlots)
+            {
+                listForFile = availibleSlots.get(ra);
+                if (listForFile == null)
+                {
+                    listForFile = new ArrayList<>();
+                    availibleSlots.put(ra, listForFile);
+                }
+            }
+        }
+        return listForFile;
+    }
+
+    // Do not call this unless you have the monitor for the position list
+    // for this file. The reason the synch is not in here is that it has
+    // to wrap around the synch for the file to avoid deadlock with the
+    // compactor
+    private synchronized void addTrackedSlot(int length, RandomAccessFile ra)
+    {
+        if (position == -1) throw new RuntimeException(Messages.getString("SFMemoryManager.4")); //$NON-NLS-1$
+        PositionHolder ph = new PositionHolder(this);
+        ph.position = position;
+        ph.length = length;
+        ph.file = ra;
+        List<PositionHolder> positionList = checkForList(ra);
+        positionList.add(ph);
+    }
+
+    public synchronized Object readInObject() throws IOException, ClassNotFoundException
+    {
+        if (getReference() != null) return getReference();
+        if (linkedFile != null)
+        {
+            // System.out.println("++++ READING IN DUPLICATE +++++");
+            return linkedFile.readInObject();
+        }
+
+        RandomAccessFile ra = getUnderlyingFile();
+        SFData ret;
+        synchronized (checkForList(ra))
+        {
+            if (position < 0)
+            {
+                throw new IOException(Messages.getString("SFMemoryManager.5") + position); //$NON-NLS-1$
+            }
+            ra.seek(position);
+            int payloadLen = ra.readInt();
+            long unid = ra.readLong();
+            if (unid != this.uniqueId) throw new IOException(
+                            Messages.getString("SFMemoryManager.6") + position + Messages.getString("SFMemoryManager.7") //$NON-NLS-1$ //$NON-NLS-2$
+                                            + uniqueId + Messages.getString("SFMemoryManager.8") + unid); //$NON-NLS-1$
+            RandomAccessInputStream in = new RandomAccessInputStream(ra);
+            @SuppressWarnings("resource")
+            DataInputStream dataIn = new DataInputStream(new BufferedInputStream(in, 65536));
+            ret = SFData.build(payloadLen / 4);
+            float[] data = ret.getDataInternalOnly();
+            payloadLen /= 4;
+            for (int i = 0; i < payloadLen; ++i)
+            {
+                data[i] = dataIn.readFloat();
+            }
+        }
+        setReference(ret);
+        trackDataObject(this);
+        return ret;
+    }
+
+    private static void launchManager()
+    {
+        Thread t;
+        (t = new Thread(new Runnable()
+        {
+
+            @Override
+            public void run()
+            {
+                while (true)
+                {
+                    try
+                    {
+                        Thread.sleep(10000);
+                    }
+                    catch (InterruptedException e)
+                    {
+                        // yum
+                    }
+                    MemoryMXBean tmx = ManagementFactory.getMemoryMXBean();
+                    MemoryUsage m = tmx.getHeapMemoryUsage();
+                    long max = m.getMax();
+                    long current = m.getUsed();
+                    if (max != -1 && current != -1)
+                    {
+                        System.out.println(Messages.getString("SFMemoryManager.9") + (max / (1024 * 1024)) + Messages.getString("SFMemoryManager.10") //$NON-NLS-1$ //$NON-NLS-2$
+                                        + (current / (1024 * 1024)));
+
+                    }
+                }
+            }
+
+        })).start();
+    }
+
+    public static float[] getFloat(int lengthIn)
+    {
+        float[] data;
+        // avoid race conditions in allocation
+        synchronized (runtime)
+        {
+            checkSwap(lengthIn * 8); // check for twice the required amount
+            int c = 0;
+            while (true)
+            {
+                try
+                {
+                    data = new float[lengthIn];
+                    break;
+                }
+                catch (OutOfMemoryError o)
+                {
+                    System.out.println("WARNING: Memory limit bounce number " + ++c); //$NON-NLS-1$
+                    SFMemoryManager.checkSwap(lengthIn * 16); // even bigger
+                }
+            }
+            return data;
+        }
+    }
+}
