@@ -1,6 +1,16 @@
 Version 1.0.0
 =============
 
+version 1.0.1
+-------------
+1) Hosted on git hub
+2) Uses memory mapped files for swap
+3) Uses reference counted resource management
+4) Addition of FixSignal to normalise magnitude but not remove dc
+5) Many other performance enhancements around generators and resource
+6) Removal of a lot of old/dead files
+7) Move python initialization class definitions to separate file
+
 version 1.0.0
 ------------
 1) Python as main control language
