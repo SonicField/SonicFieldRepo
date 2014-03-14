@@ -1,10 +1,9 @@
 
-.metadata/.lock
-
-SonicField/.metadata/.plugins/org.springframework.ide.eclipse.osgi.targetdefinition/3.0.0.201208090952-RELEASE/target/com.springsource.slf4j.api-1.5.6.jar
-
+.metadata*
 *.class
-
-SonicField/src_remote
-
+*.jar
 *.wav
+*.midi
+SonicField/bin/*
+SonicField/patches
+SonicField/impulses
