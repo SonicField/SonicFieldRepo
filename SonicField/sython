@@ -1,1 +1,29 @@
-/Users/alexanderturner/Google Drive/SonicField/sfpl
+#!/bin/bash
+# An Example shell script for launching Synthon from the command line.
+# This will work on Linux or OSX
+
+# Note that we give the JVM 12 gig of memory. This is enough for very complex
+# renders, you should be able to use a lot less, especially if less 
+# parallelism is used.
+# -XX:+UseCompressedOops \
+# -XX:+UseCompressedKlassPointers \
+# -XX:+PrintCompilation \
+
+sar 1 60 > sar.log &
+
+java \
+    --Xmx12G \
+    -Xms12G \
+    -DsonicFieldTemp=/Users/alexanderturner/temp \
+    -DsonicFieldThreads=8 \
+    -DsonicFieldSwapLimit=4.0  \
+    -XX:+UseConcMarkSweepGC \
+    -XX:+UseCompressedOops \
+    -XX:ParallelGCThreads=8 \
+    -XX:+CMSParallelRemarkEnabled \
+    -XX:CMSInitiatingOccupancyFraction=30 \
+    -XX:+UseCMSInitiatingOccupancyOnly \
+ -classpath bin;jython-standalone-2.5.3.jar com.nerdscentral.sfpl.Synthon $1
+
+# To run on Windows simply copy this file to a batch file and put all the class path on 
+# one line separated by ; rather than :
