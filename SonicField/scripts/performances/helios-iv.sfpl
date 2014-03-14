@@ -1,0 +1,322 @@
+{
+    ("Reflecting")Println
+    (?sample,1000,5)ButterworthLowPass   !sampleL
+    (?sample,3000,2)ButterworthLowPass   !sampleN
+    (?sample,1000,4)ButterworthHighPass  !sampleH
+    (>sampleH ,5000,2)ButterworthLowPass  !sampleH
+    (?sample,((?first ,?offset)+ Prime Silence,(?sample,-13)Volume)Concatenate)Mix    !wet
+    (
+        1,2,
+        {
+            !z
+            (>first,1.2)* Prime !first
+            (>wet ,(((?first,30)-,?offset)- Silence,(?sampleL ,(-10,?z)-)Volume)Concatenate)Mix    !wet
+            (>wet ,(((?first,30)+,?offset)- Silence,(?sampleN ,(-6, ?z)-)Volume)Concatenate)Mix    !wet
+            (>wet ,((?first      ,?offset)- Silence,(?sampleH ,(-10,?z)-)Volume)Concatenate)Mix    !wet
+        }
+    )Repeat
+    (?sampleL ,1000,1)ButterworthLowPass  !sampleL
+    (?sampleN ,1000,1)ButterworthLowPass  !sampleN
+    (?sampleH ,2000,1)ButterworthLowPass  !sampleH
+    (
+        (0,0),
+        ((?wet  Length,3)/,1),
+        (?wet   Length,0)
+    )NumericShape !env
+    (
+        3,20,
+        {
+            !z 
+            (?z,4)/ !z
+            (>first,1.1)* Prime !first
+            (>wet ,(((?first,30)-,?offset)- Silence,((?sampleL ,(-7,?z)-)Volume,?env)Multiply)Concatenate)Mix  !wet
+            (>wet ,(((?first,30)+,?offset)- Silence,((?sampleN ,(-4,?z)-)Volume,?env)Multiply)Concatenate)Mix  !wet
+            (>wet ,((?first      ,?offset)- Silence,((?sampleH ,(-7,?z)-)Volume,?env)Multiply)Concatenate)Mix  !wet
+        }
+    )Repeat
+    (
+        20,80,
+        {
+            !z 
+            (?z,6)/ !z
+            (>first,1.05)* Prime !first
+            (>wet ,(((?first,30)-,?offset)- Silence,(((?sampleL ,(-7,?z)-)Volume,?env)Multiply,500,2)ButterworthLowPass)Concatenate)Mix  !wet
+            (>wet ,(((?first,30)+,?offset)- Silence,(((?sampleN ,(-4,?z)-)Volume,?env)Multiply,500,2)ButterworthLowPass)Concatenate)Mix  !wet
+            (>wet ,((?first      ,?offset)- Silence,(((?sampleH ,(-7,?z)-)Volume,?env)Multiply,500,2)ButterworthLowPass)Concatenate)Mix  !wet
+        }
+    )Repeat
+    ("Reflected ")Println
+    >wet 
+} !reflector
+{
+    (>pitch,((0.1,Random)*,0.95)+)* !pitch
+    ?length WhiteNoise !noise
+    (?noise ,?pitch,0.5,36)RBJPeaking Normalise  !signal
+    [(?signal,?pitch,0.5,48)RBJPeaking Normalise  !signal]
+    (?signal,?pitch,0.5,48)RBJPeaking Normalise  !signal
+    (?signal,?pitch,1.5,48)RBJPeaking Normalise  !signal
+    [(>signal,(?length,?pitch)SinWave MakeSawTooth pcnt-35)Mix Normalise !signal]
+    
+    ("F1 ",?f1)Println
+    ("F2 ",?f2)Println
+    ("F3 ",?f3)Println
+    
+    (>f1,((0.2,Random)*,0.9)+)* !f1
+    (>f2,((0.2,Random)*,0.9)+)* !f2
+    (>f3,((0.2,Random)*,0.9)+)* !f3
+    (?signal,?f1,0.5,48)RBJPeaking  Normalise  !signal1
+    (?signal1,?f1,0.5,48)RBJPeaking Normalise  !signal1
+    (?signal1,?f1,0.2,48)RBJPeaking Normalise  !signal1
+    
+    (?signal,?f2,1.0,48)RBJPeaking  Normalise  !signal2
+    (?signal2,?f2,0.5,48)RBJPeaking Normalise  !signal2
+    (?signal2,?f2,0.5,48)RBJPeaking Normalise  !signal2
+    
+    (?signal,?f3,0.5,48)RBJPeaking  Normalise  !signal3
+    (?signal3,?f3,0.3,48)RBJPeaking Normalise  !signal3
+    (?signal3,?f3,0.1,48)RBJPeaking Normalise  !signal3
+    
+    (>signal1,>signal2 dbs-6 ,>signal3 dbs-12)Mix Normalise !signal
+    (?signal,?pitch,4,12)RBJPeaking Normalise  !signal
+
+}!make-sing
+
+{
+    ("Computing note at",?pitch)Println
+    (?make-sing,,,,,,,,,,,,,,,,)DoAll Mix Normalise !signal
+
+    (
+        ((0,0),(1000,1),(((?length,3)/,2000)Min,0.5),((?length,0.75)*,0.25),(?length,0))NumericShape,
+        >signal
+    )Multiply Normalise !signal
+    ("Computed node at",?pitch)Println
+    >signal
+}!mystic
+
+{
+    (>length,2)*                          !length
+    (?length,(?pitch,2)-)SinWave          !signal1 
+    (?length,(?pitch,2)+)SinWave          !signal2 
+    (?length,(?pitch,1.2)*)SinWave dbs+48 !fm1
+    (?length,(?pitch,1.3)*)SinWave dbs+12 !fm2
+    
+    (
+        (
+            ?signal1,
+            >fm1
+        )FrequencyModulate,
+        (
+            >signal2 dbs-24,
+            >fm2
+        )FrequencyModulate,
+    )Mix Normalise !signal
+    
+    (
+        >signal,
+        (
+            (100 WhiteNoise,?pitch,2)ButterworthLowPass,
+            (
+                (0,0),
+                (20,1),
+                (100,0)
+            )NumericShape
+        )Multiply
+    )Mix Normalise !signal
+    
+    (
+        (0,-99),
+        (50,0),
+        (?length,-99)
+    )SimpleShape !env
+    (
+        >signal,
+        >env
+    )Multiply !signal
+    
+    (>signal,(?pitch,2)*,2)ButterworthHighPass         !signal
+    (>signal,(?pitch,1)*,?dullness)ButterworthLowPass  Normalise !signal
+    (>signal,?dbs)Volume 
+}!play-bell
+
+{
+    ("Granulate")Println
+    Bunch !out
+    (
+        (>signal,2500,500)Granulate,
+        {
+            ^grain ^time
+            ?grain check
+            (?time,(Random,60)*)+       !time
+            ((Random,0.25)*,0.75)+      !vol
+            (>grain,>vol)NumericVolume  !grain
+            ((>grain,>time),>out)AddEnd !out
+        }
+    )InvokeAll
+    >out MixAt Normalise
+}!haas
+
+{
+    ("Filtering")Println
+    (>signal ,?lower, 2)BesselHighPass !signal
+    (>signal ,?upper, 2)BesselLowPass  !signal
+    ?haas Do
+}!band-widen
+
+{
+    >signal Normalise !signal
+    (
+        (
+            -0.03,0.2,0,-1,0.2,2,
+            ?signal
+        )WaveShaper pcnt+25,
+        >signal pcnt+75
+    )Mix Normalise !signal
+    
+    Bunch !sigs
+    (
+      1,14,
+      {
+        !band
+        (?band,2)**           !bandl 
+        ((>band,1)+,2)**      !bandh 
+        ((?bandl,100)*,75)-   !lower
+        ((?bandh,100)*,75)-   !upper
+        ?band-widen Do        !job
+        (>job,>sigs)AddEnd    !sigs
+      }
+    )Repeat
+
+    [ Final over all compress ]
+    >sigs Mix Normalise [ dbs+3 wavelimit ] !signal
+}!do-it 
+
+{
+    Bunch !grains
+    (
+        ?blocks,
+        {
+            ^signal ^time
+            ("Block ",?time)Println
+            ?do-it Do Done ToGrain !grain
+            ((>grain,>time),>grains)AddEnd !grains
+        }
+    )InvokeAll
+    "Joing blocks" Println
+    >grains MixAt Normalise !ret
+    "Blocks joined" Println
+    >ret
+}!do-blocks
+
+
+{
+    >fr1 !f1
+    >fr2 !f2
+    >fr3 !f3
+    
+    ?pitchr !pitch
+    ?mystic Do !right 
+    
+    >fl1 !f1
+    >fl2 !f2
+    >fl3 !f3
+    
+    ?pitchl !pitch
+    ?mystic Do !left
+
+    ?pitchl       !pitch
+    Random        !dullness
+    (random,-9)*  !dbs
+    ?play-bell Do !bl
+
+    ?pitchr       !pitch
+    Random        !dullness
+    (random,-9)* !dbs
+    ?play-bell Do !br
+
+    ((>left,0),(>bl,1000))MixAt  !left
+    ((>right,0),(>br,1000))MixAt !right
+    
+    (?left,?right)Mix pcnt+50 !middle
+
+    ((>left,?middle)Mix Normalise ,10000)Blockulate  !blocks
+    ?do-blocks Do !left
+    >blocks
+    ((>right,>middle)Mix Normalise,10000)Blockulate !blocks
+    ?do-blocks Do !right
+
+    ((0,0),(?length,1))NumericShape !fadeIn
+    ((?length,1),(0,0))NumericShape !fadeOut
+    (
+        (?left,?fadeIn)Multiply,
+        (?right,?fadeOut)Multiply
+    )Mix Normalise !newLeft
+    (
+        (?right,?fadeIn)Multiply,
+        (?left,?fadeOut)Multiply
+    )Mix Normalise !newRight
+        
+    >newLeft  !left
+    >newRight !right
+    
+    80 !first
+    0   !offset    
+    >left !sample
+    ?reflector Do !left
+    70 !first
+    50   !offset
+    >right !sample
+    ?reflector Do !right
+    (>left,>right)
+}!make-note
+
+(100000,(10,(2,0.5)**)* )SinWave !sqrt2-samples 
+(100000,(10,(3,0.5)**)* )SinWave !sqrt3-samples 
+(100000,(10,(5,0.5)**)* )SinWave !sqrt5-samples
+(100000,(10,(7,0.5)**)* )SinWave !sqrt7-samples
+(100000,(10,(11,0.3)**)*)SinWave !sqrt11-samples
+Bunch !notes
+(
+  1,50,
+  {
+    !x
+    {
+        (500,>x)* !x
+        (?sqrt2-samples,?x)ValueAt !x2
+        (?sqrt3-samples,?x)ValueAt !x3
+        (?sqrt5-samples,?x)ValueAt !x5
+        ((((?x2,1)+,100)*,0.5)** Integer,26)* !pitchl
+        ((((?x3,1)+,100)*,0.5)** Integer,26)* !pitchr
+        ("Pitchl ",?pitchl)StrCat Println
+        ("Pitchr ",?pitchr)StrCat Println
+        (((?x5,1)+,10000)*,20000)+ Integer    !length
+        (450,(200,Random)*)+  !fl1
+        (450,(200,Random)*)+  !fr1
+        (1600,(400,Random)*)+ !fl2
+        (1600,(400,Random)*)+ !fr2
+        (2300,(500,Random)*)+ !fl3
+        (2300,(500,Random)*)+ !fr3
+        ?make-note do done
+     }Do !do
+     (>do,>notes)AddEnd !notes
+  }
+)Repeat
+0 !placel
+0 !placer
+Bunch !left
+Bunch !right
+(
+    >notes,
+    {
+        ^leftNote ^rightNote
+        (((?leftNote,Random)NumericVolume ,?placel),>left)AddEnd  !left
+        (((?rightNote,Random)NumericVolume,?placer),>right)AddEnd !right
+        (>placel,(>leftNote  length,2)/)+ !placel
+        (>placer,(>rightNote length,2)/)+ !placer
+    }
+)InvokeAll
+{>right MixAt}Do !right
+{>left  MixAt}Do !left
+
+(>left Normalise,>right Normalise)!out
+"About to write" println
+(>out,"temp/done.wav")WriteFile32

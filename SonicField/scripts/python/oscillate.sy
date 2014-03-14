@@ -1,0 +1,37 @@
+from com.nerdscentral.audio import SFData
+
+def oscillator(damping):
+    damping = float(damping)
+    weight  =  0.1
+    value   =  0.0
+    middle  = value
+    
+    yield 0,0
+        
+    while(1):
+        if(value>middle):
+            weight-=damping
+        else:
+            weight+=damping
+
+        value+=weight
+   
+        yield value,weight
+
+osc=oscillator(0.002)
+
+length=960000
+dataS=SFData.build(length)
+dataT=SFData.build(length)
+
+for x in range(length):
+    s,t=osc.next()
+    dataS.setSample(x,s)
+    dataT.setSample(x,t)
+
+print sf.MaxValue(dataS)
+print sf.MaxValue(dataT)
+    
+dataS=sf.Normalise(dataS)
+dataT=sf.Normalise(dataT)
+sf.WriteFile32((dataS,dataS),"temp/waves.wav")

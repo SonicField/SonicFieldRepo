@@ -1,0 +1,174 @@
+{
+    (
+        (0,    0)
+        (1,    0),
+        (2,    1),
+        (3,   -1),
+        (4,    0),        
+        (10000, 0)
+    )NumericShape !drum
+    (>drum,(?pitch,8)*,2)ButterworthLowPass Clean Normalise !drum
+    (
+        (0,-20),
+        (4,0),
+        (5000,-60),
+        (10000,-99)
+    )SimpleShape !noise-shape
+    (
+        (((5000 WhiteNoise Clean,4)Power,>noise-shape)Multiply Normalise Clean,?pitch,(?pitch,2)*,2)ButterworthBandPass Normalise pcnt+25,
+        >drum
+    )Mix !drum
+    (
+        (?drum,?pitch,1,80)RBJPeaking            Normalise,
+        (?drum,(?pitch,2)*,1,75)RBJPeaking       Normalise pcnt+50,
+        (?drum,(?pitch,3)*,1,70)RBJPeaking       Normalise pcnt+33,
+        (?drum,(?pitch,4)*,1,65)RBJPeaking       Normalise pcnt+25,
+        (?drum,(?pitch,5)*,1,60)RBJPeaking       Normalise pcnt+20,
+
+        (?drum,(?pitch,PI)/,1,100)RBJPeaking     Normalise,
+        (?drum,((?pitch,PI)/,2)*,1,65)RBJPeaking Normalise pcnt+50,
+        (?drum,((?pitch,PI)/,3)*,1,60)RBJPeaking Normalise pcnt+33,
+        (?drum,((?pitch,PI)/,4)*,1,60)RBJPeaking Normalise pcnt+25,
+        (?drum,((?pitch,PI)/,5)*,1,60)RBJPeaking Normalise pcnt+20
+    )Mix Clean Normalise  !drum
+    (
+        >drum,
+        ((0,1),(95000,1),(10000,0))NumericShape
+    )Multiply Normalise
+}!creepy-drum
+
+{
+    (1000,(?pitch,2)/)SinWave !drum
+    (
+        ((0,1),(1000,0))NumericShape,
+        >drum
+    )Multiply !drum
+    (>drum,(?pitch,8)*,2)ButterworthLowPass Clean Normalise !drum
+    (
+        (0,-20),
+        (4,0),
+        (1000,-40),
+        (1900,-60),
+        (2000,-99)
+    )SimpleShape !noise-shape
+    (
+        (((2000 WhiteNoise Clean,4)Power,>noise-shape)Multiply Normalise Clean,?pitch,(?pitch,1.2)*,2)ButterworthBandPass Normalise pcnt+25,
+        >drum
+    )Mix !drum
+
+    (
+        (?drum,?pitch,1,40)RBJPeaking            Normalise pcnt+25,
+        (?drum,(?pitch,2)*,1,5)RBJPeaking        Normalise pcnt+50,
+
+        (?drum,(?pitch,1.1)*,1,40)RBJPeaking     Normalise pcnt+25,
+        (?drum,(?pitch,0.9)*,1,5)RBJPeaking      Normalise pcnt-25,
+
+        (?drum,(?pitch,PI)/,1,30)RBJPeaking      Normalise,
+        (?drum,((?pitch,PI)/,2)*,1,5)RBJPeaking  Normalise pcnt+50
+    )Mix Clean Normalise  !drum
+
+    (?drum,?drum Saturate dbs-3)Mix  Clean Normalise !drum
+    (?drum,(?pitch,4)*,2)ButterworthHighPass    !toExcite
+    (
+        (?toExcite,2.0)Power,
+        (>toExcite,0.5)Power
+    )Mix Clean Normalise                        !excited
+    (>excited,(?pitch,1)*,1)ButterworthLowPass  !excited
+    (>excited,?clatter)Volume                   !excited
+    (
+        >excited,
+        ((0,1),(500,0))NumericShape
+    )Multiply !excited
+    (
+        >excited,
+        >drum
+    )Mix !drum
+    
+    (
+        >drum,
+        ((0,1),(1900,1),(2000,0))NumericShape
+    )Multiply Normalise Clean !drum
+}!simple-drum
+
+1024  !beat
+1024  !time
+((8096 Silence,0)) !notes
+8096 !at
+(
+    1,16,
+    {
+        (?time,4)/ !stime
+        
+        128.0  !pitch
+           -6  !clatter
+        ?simple-drum Do !d1
+        ((>d1,?at),>notes)AddEnd !notes
+        
+        (>at,?stime)+ !at
+        
+        256.0  !pitch
+          -12  !clatter
+        ?simple-drum Do pcnt+25 !d1
+        ((>d1,?at),>notes)AddEnd !notes
+
+        (>at,?stime)+ !at
+
+        128.0  !pitch
+            0  !clatter
+        ?simple-drum Do pcnt-50 reverse !d1
+        ((?d1,(?at,?d1 length)-),>notes)AddEnd !notes
+
+        (>at,?stime)+ !at
+
+        192.0  !pitch
+           -6  !clatter
+        ?simple-drum Do pcnt+25 !d1
+        ((>d1,?at),>notes)AddEnd !notes
+
+        (>at,?stime)+ !at
+
+
+
+         96.0  !pitch
+            1  !clatter
+        ?simple-drum Do !d1
+        ((>d1,?at),>notes)AddEnd !notes
+        
+        (>at,?stime)+ !at
+        
+        396.0  !pitch
+          -12  !clatter
+        ?simple-drum Do pcnt+25 !d1
+        ((>d1,?at),>notes)AddEnd !notes
+
+        (>at,?stime)+ !at
+
+        128.0  !pitch
+            0  !clatter
+        ?simple-drum Do pcnt-50 reverse !d1
+        ((?d1,(?at,?d1 length)-),>notes)AddEnd !notes
+
+        (>at,?stime)+ !at
+
+        192.0  !pitch
+           -6  !clatter
+        ?simple-drum Do pcnt+15 !d1
+        ((>d1,?at),>notes)AddEnd !notes
+
+        (>at,(?stime,2)/)+ !at
+
+
+        128.0  !pitch
+            0  !clatter
+        ?simple-drum Do pcnt+15 !d1
+        ((>d1,?at),>notes)AddEnd !notes
+
+        (>at,(?stime,2)/)+ !at
+
+                
+    }
+)Repeat
+
+>notes MixAt Normalise !left
+
+((>left),"temp/temp.wav")WriteFile32

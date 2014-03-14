@@ -1,0 +1,283 @@
+[
+  Reverberator
+  ============
+]
+{
+    ?signal Magnitude !mag
+    (>signal,?grain-length Silence)Concatenate !signal   
+    (
+        (?mag,0)Eq,
+        {
+        },
+        {
+            (>signal,?grain-length Silence)Concatenate !signal   
+            >signal FrequencyDomain  !signal
+            (>convol,>signal)CrossMultiply  !signal
+            >signal TimeDomain !signal
+            ?signal Magnitude !newMag
+            (>signal,(>mag,>newMag)/)NumericVolume !signal
+            [ tail out clicks due to amplitude at end of signal ]
+            (
+                (
+                    (0,1),
+                    (100,1),
+                    ((?signal Length,100)-,1),
+                    (?signal Length,0)
+                )NumericShape,
+                >signal
+            )multiply !signal
+        }
+    )Choose Invoke
+    >signal
+}!reverb-inner
+
+{
+    ?convol Length !grain-length 
+
+    (>convol,?grain-length Silence)Concatenate FrequencyDomain  !convol
+    (>signal,?grain-length Silence)Concatenate !signal
+    Bunch !out
+    (
+        (>signal,?grain-length)Granulate,
+        {
+                ^signal ^time
+                ((?reverb-inner Do,>time),>out)AddEnd !out
+        }
+    )InvokeAll
+    >out MixAt Normalise
+}!reverb
+
+{
+    (1000,?frequency)ExactSinWave MakeSawTooth !filter
+    (>filter,?pitch,1)ButterworthLowPass       !filter
+    (?filter,(?length,2)* Silence)Concatenate  !filter
+    (?length,2)* WhiteNoise !signal
+    
+            ?signal Magnitude !mag
+            >signal FrequencyDomain  !signal
+            >filter FrequencyDomain  !convol
+            (>convol,>signal)CrossMultiply  !signal
+            >signal TimeDomain !signal
+            ?signal Magnitude !newMag
+            (>signal,(>mag,>newMag)/)NumericVolume !signal
+            (0,?length,>signal)Cut !signal
+    
+    (>signal,2000,5)ButterworthLowPass         !signal
+    (>signal,?frequency,2)ButterworthHighPass  !signal
+    (>signal,?frequency,1)ButterworthLowPass   !signal
+    (((0,0),((?length,0.75)*,1),(?length,0.5))NumericShape,(?length,(0.5,Random)+)ExactSinWave)Multiply !vvib
+    (1,>vvib pcnt+50)DirectMix                 !vvib
+    (>signal,?vvib)Multiply Saturate Normalise !signal
+
+    (>signal,0.6,0.5,?frequency Period)ResonantFilter Normalise !wave
+    (
+        -0.03,0.2,0,-1,0.2,2,
+        ?wave
+    )WaveShaper Normalise      !signal
+
+    [ Quash the end quite a bit  with a bug up front bulge ]
+    ((0,0),(?attack-a,1),(?attack-b,0.5),((?length,0.5)*,  0.12),(?length,0))NumericShape !sinEnv
+    (>signal,?sinEnv)Multiply  !signal
+    (
+        (?pitch,128)gt,
+        {
+            ((0,64),((?length,0.25)*,?frequency),(?length,64))NumericShape                      !lower
+            ((0,?frequency),((?length,0.25)*,(?frequency,4)*),(?length,?frequency))NumericShape !upper
+            (>signal,?lower,?upper,1)ShapedButterworthBandPass Normalise !signal
+            (>signal,?lower,?upper,1)ShapedButterworthBandPass Normalise !signal
+         },{
+            >signal Normalise !signal
+         }
+    )Choose Invoke
+    (>signal,?volume)Volume !signal 
+    >signal
+} !flute
+
+{
+    (?velocity,1.5)**         !volume
+    (((?velocity,1)+,2)**,1)- !velocity
+    (
+        (?velocity,0.5)lt,
+        {
+            256 !attack-a
+            999 !attack-b
+        },{
+            128 !attack-a
+            720 !attack-b
+        }
+    )Choose Invoke    
+    (>length,2000)+ !length            
+    (
+        "C",?count,
+        "P",?pitch,
+        "V",?volume,
+        "A",?attack-a,
+        "D",?attack-b,
+        "L",?length
+    )Println
+    
+    ?pitch !frequency
+    ?flute Do !s1
+    (?pitch,2)/ !frequency
+    ?flute Do !s2
+    (>s1,>s2)Mix pcnt+50
+}!play-flute
+
+{
+    Bunch !notes
+    0     !count
+    0     !prev-high
+    (
+        ?track,
+        {
+            ^tickOn ^tickOff ^note ^key ^velocity
+            (
+                (?count,?notesToPlay)lt,
+                {
+                    [ Set up the note ]
+                    (?tickOn,?beat)*                  !at
+                    ((?tickOff,?tickOn)-,?beat)*      !length
+                    (Semitone,?key)**                 !multi
+                    (?baseSound,>multi)*              !pitch
+                    (>pitch,1)/                       !pitch
+                    (>velocity,100)/                  !velocity
+                    
+                    (
+                        ?arp,
+                        {
+                            ?arp-bunch GetStart       !shift
+                            >arp-bunch GetRest        !arp-bunch
+                            (?shift,>arp-bunch)AddEnd !arp-bunch
+                            ("Arp shift A",?shift)Println
+                            ?pitch  !p1
+                            ?length !l1
+                            (>length,0.75)/ !length
+                            (?p1,>shift)* !pitch
+                            [ Play the note ]
+                            ((?voice Do,?at),>notes)AddEnd    !notes
+                            
+                            ?arp-bunch GetStart       !shift
+                            >arp-bunch GetRest        !arp-bunch
+                            (?shift,>arp-bunch)AddEnd !arp-bunch
+                            ("Arp shift B",?shift)Println
+                            (?p1,>shift)* !pitch
+                            [ Play the note ]
+                            ((?voice Do,(?at,(?l1,0.5)*)+),>notes)AddEnd    !notes
+                        },{
+                            [ Play the note ]
+                            ((?voice Do,?at),>notes)AddEnd    !notes
+                        }
+                    )Choose Invoke
+                },{
+                }
+             )Choose Invoke
+             (>count,1)+ !count 
+         }
+     )InvokeAll
+     >notes MixAt Normalise
+}!play
+
+"C0" Note !baseSound
+ 48.00    !beat
+(Semitone,3)** !minorThird
+(Semitone,7)** !fifth
+ 
+(
+    0.5,
+    (0.5,?fifth)*,
+    1,
+    ?fifth,
+    2
+)!arp-bunch
+
+"temp/chpn-p6.mid" ReadMidiFile 
+^t1
+^t2
+^t3
+
+?t2  !track
+9999 !notesToPlay
+
+?play-flute !voice
+true !arp 
+
+?play Do !left-1
+?play Do !right-1
+((?left-1,?right-1),"temp/prel-6-flute-1-mixc.wav")WriteFile32
+
+false !arp 
+?play-flute !voice
+?t3  !track
+
+?play Do !left-2
+?play Do !right-2
+
+((?left-2,?right-2),"temp/prel-6-flute-2-mixc.wav")WriteFile32
+
+(>baseSound,2)/ !baseSound
+?play Do !left-3
+?play Do !right-3
+
+((?left-3,?right-3),"temp/prel-6-flute-3-mixc.wav")WriteFile32
+
+[
+   Post
+   ===
+]
+"Post Processing" PrintLn
+
+"temp/prel-6-flute-1-mixc.wav"   ReadFile ^left1  ^right1 
+"temp/prel-6-flute-2-mixc.wav"   ReadFile ^left2  ^right2 
+
+(
+    >left1 pcnt+50,
+    >left2
+)Mix Normalise !left
+
+(
+    >right1 pcnt+50,
+    >right2
+)Mix Normalise !right
+    
+
+"temp/prel-6-flute-3-mixc.wav"   ReadFile ^left3  ^right3 
+
+(
+    >left,
+    >left3 pcnt+50
+)Mix Normalise !left
+
+(
+    >right,
+    >right3 pcnt+50
+)Mix Normalise !right
+
+"temp/long-marble-vlong-ambient.wav" ReadFile ^revl ^revr
+
+
+?left  !signal >revl !convol ?reverb Do Normalise !wleft
+?right !signal >revr !convol ?reverb Do Normalise !wright
+
+{
+    (
+        >wleft pcnt+50,
+        >left  pcnt+50
+    )Mix Normalise
+}Do !left
+{
+    (
+        >wright pcnt+50,
+        >right  pcnt+50
+    )Mix Normalise 
+}Do !right
+
+((>left,>right),"temp/pre-6-flute-postc.wav")WriteFile32 
+
+"temp/RCA_44BX_1.wav" ReadFile ^rev
+"temp/pre-6-flute-postc.wav" ReadFile ^left ^right
+
+?left  !signal ?rev !convol ?reverb Do Normalise !left
+?right !signal ?rev !convol ?reverb Do Normalise !right
+
+((>left,>right),"temp/pre-6-flute-post-mikec.wav")WriteFile32 
+

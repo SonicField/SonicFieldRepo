@@ -1,0 +1,55 @@
+{
+    Bunch !signals
+    ?pitch !o-pitch
+    1      !cut
+    (
+        1,?harmonics,
+        {
+            {
+                (?r,?pitch,Random)PhasedSinWave     !signal
+                (>signal,(1,(?cut,?damping)**)/)NumericVolume        !signal
+            }Do !signal
+            (>pitch ,?o-pitch)+       !pitch
+            (>pitch ,?expand)*        !pitch
+            (>cut,1)+                 !cut
+            (?signal,>signals)AddEnd  !signals        
+        }
+    )Repeat
+    ?signals Mix normalise !signal
+    ((0,0),(?a,1),(?d,?dv),(?s,?sv),(?r,0))NumericShape !venv
+    ((0,?pitch),(?a,?pitch),(?d,(?pitch,2)/),(?s,(?pitch,4)/),(?r,?o-pitch))NumericShape !fenv
+    ((0,0.25),(?a,0.25),(?d,0.1),(?s,0.1),(?r,0))NumericShape !renv
+    (>signal,>venv)Multiply !signal
+    (>signal,>fenv,>renv)ShapedLadderLowPass Normalise !signal
+    ((?d WhiteNoise,3)Power,((0,0),(?d,-20),((?d,10)+,-99))SimpleShape)Multiply !convol Length !l1
+    (?convol,?signal Length Silence)Concatenate !convol
+    (?signal,>l1 Silence)Concatenate !wet
+    ?wet Magnitude                   !mag   
+    >wet FrequencyDomain             !wet
+    >convol FrequencyDomain          !convol
+    (>convol,>wet)CrossMultiply      !wet
+    >wet TimeDomain                  !wet
+    ?wet Magnitude                   !newMag
+    (>wet,(>mag,>newMag)/)NumericVolume !wet Normalise
+   [ (>wet,>signal)Mix Normalise ]
+    
+}!tame-saw
+
+[
+     Paramters
+     =========
+      32    !pitch
+     512    !a
+    7000    !d  0.5   !dv
+    8096    !s  0.5   !sv
+    9990    !r
+      16    !harmonics
+     1.1    !damping
+    1.001   !expand
+
+     Example
+     =======
+    ?tame-saw Do !left
+    ?tame-saw Do !right
+    ((>left,>right)StereoMonitor,"temp/temp.wav")WriteFile32
+] 

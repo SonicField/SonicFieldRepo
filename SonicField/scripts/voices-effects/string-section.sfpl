@@ -1,0 +1,505 @@
+[ 
+    Plays a standard string section
+    but bold and bright
+    required convolution-reverb
+]
+
+[
+  Set Up Irs
+  ==========
+]
+ViolinBodyIRs !violinIRs
+ViolaBodyIRs  !violaIRs
+CelloBodyIRs  !celloIRs
+BassBodyIRs   !bassIRs
+
+{
+    [(?pitch,((?pitch,0.0001)*,Random)*)+ !pitch]
+    (
+        ?length WhiteNoise pcnt+50,
+        (?length,(?pitch,1.0005)*,Random)PhasedSinWave MakeSawtooth Pcnt+25,
+        (?length,(?pitch,2.0010)*,Random)PhasedSinWave MakeSawtooth Pcnt+12,
+        (?length,(?pitch,4.0030)*,Random)PhasedSinWave MakeSawtooth Pcnt+8,
+    )Mix Normalise !signal
+    (>signal,0.95,0.15,?pitch Period)ResonantFilter Normalise  !signal
+    (((?length,500)/ WhiteNoise,2500,6)ButterworthLowPass,0.001)DirectRelength Normalise !multi
+    (0,?signal Length,>multi)Cut  !multi
+    (
+        (1,>multi pcnt+1 )DirectMix,
+        >signal
+    )Resample !signal 
+    
+} !raw-string
+
+
+[ VIOLIN ]
+{
+    {
+        (
+            (?pitch,500)gt,
+            {
+                ( 
+                    { ?raw-string Do},
+                    { ?raw-string Do},
+                    { ?raw-string Do}
+                )DoAll Mix Normalise !base
+            },{
+                ( 
+                    { ?raw-string Do},
+                    { ?raw-string Do}
+                )DoAll Mix Normalise !base
+        
+           }
+        )Choose Invoke
+
+    } Do !sample
+          
+    ((?length WhiteNoise,500,6)ButterworthLowPass,0.01)DirectResample Normalise !multi
+    (>multi,(?pitch,2)/,6)ButterworthHighPass Normalise !multi
+    (
+        (0.5,?multi pcnt+15)DirectMix,
+        >sample
+    )Multiply Normalise  !sample 
+    
+    (>sample,(?pitch,2)/,6)ButterworthHighPass !sample
+    (>sample,2000,1)ButterworthHighPass        !sample [Poor resonance at lower frequencies]
+    (>sample,8000,1)ButterworthLowPass         !sample [Damping at high frequencies ]
+    (>sample,(?pitch,10)*,1)ButterworthLowPass !sample [Lower energy in longer strings]
+    (
+        ?sample pcnt+25,
+        (>sample,?pitch,0.5)RBJNotch pcnt+75
+     )Mix !sample
+
+} !play-violin
+
+[ VIOLA ]
+{
+    {
+        (
+            (?pitch,250)gt,
+            {
+                ( 
+                    { ?raw-string Do},
+                    { ?raw-string Do},
+                    { ?raw-string Do}
+                )DoAll Mix Normalise !base
+            },{
+                ( 
+                    { ?raw-string Do},
+                    { ?raw-string Do}
+                )DoAll Mix Normalise !base
+        
+           }
+        )Choose Invoke
+
+    } Do !sample
+          
+    ((?length WhiteNoise,250,6)ButterworthLowPass,0.01)DirectResample Normalise !multi
+    (>multi,(?pitch,2)/,6)ButterworthHighPass Normalise !multi
+    (
+        (0.5,?multi pcnt+10)DirectMix,
+        >sample
+    )Multiply Normalise  !sample 
+    
+    (>sample,(?pitch,2)/,6)ButterworthHighPass !sample
+    (>sample,1000,1)ButterworthHighPass        !sample [Poor resonance at lower frequencies]
+    (>sample,6000,1)ButterworthLowPass         !sample [Damping at high frequencies ]
+    (>sample,(?pitch,10)*,1)ButterworthLowPass !sample [Lower energy in longer strings]
+    (
+        ?sample pcnt+25,
+        (>sample,?pitch,0.5)RBJNotch pcnt+75
+     )Mix !sample
+
+} !play-viola
+
+[ CELLO ]
+{
+    {
+        (
+            (?pitch,250)gt,
+            {
+                ( 
+                    { ?raw-string Do},
+                    { ?raw-string Do},
+                    { ?raw-string Do},
+                    { ?raw-string Do},
+                    { ?raw-string Do}
+                )DoAll Mix Normalise !base
+            },{
+                ( 
+                    { ?raw-string Do},
+                    { ?raw-string Do},
+                    { ?raw-string Do},
+                    { ?raw-string Do}
+                )DoAll Mix Normalise !base
+        
+           }
+        )Choose Invoke
+
+    } Do !sample
+          
+    ((?length WhiteNoise,125,6)ButterworthLowPass,0.01)DirectResample Normalise !multi
+    (>multi,(?pitch,2)/,1)ButterworthHighPass Normalise !multi
+    (
+        (0.5,?multi pcnt+15)DirectMix,
+        >sample
+    )Multiply Normalise  !sample 
+    
+    (>sample,(?pitch,2)/,1)ButterworthHighPass !sample
+    (>sample, 750,1)ButterworthHighPass        !sample [Poor resonance at lower frequencies]
+    (>sample,4000,1)ButterworthLowPass         !sample [Damping at high frequencies ]
+    (>sample,(?pitch,10)*,1)ButterworthLowPass !sample [Lower energy in longer strings]
+    (
+        ?sample pcnt+25,
+        (>sample,?pitch,0.5)RBJNotch pcnt+75
+     )Mix !sample
+
+} !play-cello
+
+[ BASS ]
+{
+    {
+        (
+            (?pitch,125)gt,
+            {
+                
+                    { ?raw-string Do},
+                    { ?raw-string Do}
+                )DoAll Mix Normalise !base
+            },{
+                ( 
+                    { ?raw-string Do}
+                )DoAll Mix Normalise !base
+        
+           }
+        )Choose Invoke
+
+    } Do !sample
+          
+    ((?length WhiteNoise,125,6)ButterworthLowPass,0.01)DirectResample Normalise !multi
+    (>multi,(?pitch,2)/,1)ButterworthHighPass Normalise !multi
+    (
+        (0.5,?multi pcnt+15)DirectMix,
+        >sample
+    )Multiply Normalise  !sample 
+    
+    (>sample,(?pitch,2)/,1)ButterworthHighPass !sample
+    (>sample, 125,1)ButterworthHighPass        !sample [Poor resonance at lower frequencies]
+    (>sample,1000,1)ButterworthLowPass         !sample [Damping at high frequencies ]
+    (>sample,(?pitch,10)*,1)ButterworthLowPass !sample [Lower energy in longer strings]
+    (
+        ?sample pcnt+20,
+        (?sample,?pitch,0.5     )RBJNotch pcnt+40,
+        (>sample,(?pitch,2)*,0.5)RBJNotch pcnt+40
+     )Mix !sample
+
+} !play-bass
+
+{
+    (
+        ?play-violin Do,
+        ?play-violin Do,
+        ?play-violin Do,
+        ?play-violin Do,
+        ?play-violin Do,
+        ?play-violin Do
+    )Mix Normalise
+} !play-violins-1
+
+
+{
+    (
+        ?play-violin Do,
+        ?play-violin Do,
+        ?play-violin Do,
+        ?play-violin Do
+    )Mix Normalise
+} !play-violins-2
+
+{
+    (
+        ?play-violin Do,
+        ?play-violin Do,
+        ?play-violin Do
+    )Mix Normalise
+} !play-violins-3
+
+{
+    (
+        ?play-viola Do,
+        ?play-viola Do,
+        ?play-viola Do,
+        ?play-viola Do
+    )Mix Normalise
+} !play-violas
+
+{
+    (
+        ?play-cello Do,
+        ?play-cello Do,
+        ?play-cello Do
+    )Mix Normalise
+} !play-cellos
+
+{
+    (
+        ?play-bass Do,
+        ?play-bass Do
+    )Mix Normalise
+} !play-basses
+
+[ 
+ Play the notes
+ ==============
+]
+
+"C0" Note !baseSound
+4.00      !beat
+8000      !shortCut
+0500      !notesToPlay
+01.5      !spread
+
+[ 
+    Play a midi track:
+    
+    ?instrument  -> sound to generate
+    ?track       -> midi signal
+    ?bodies      -> body impulse responses
+    ?initial-cut -> frequency for gentle cut on initial notes - 4000 for Violins
+    ?second-cut  -> frequency for gentle cut on next    notes - 6000 for Violins
+    ?final-high  -> frequency for gentle high cut at end      - 2000 for Violins
+]
+
+{
+    true !strokeA
+    0 !count
+    0 !prevKey
+    Bunch !t2Notes
+    (
+        ?track,
+        {
+            ^tickOn ^tickOff ^pitch ^velocity
+            (
+                (?count,?notesToPlay)Lt,
+                {
+                    (?tickOn,?beat)*                  !at
+                    (>at,?spread)*                    !at
+                    ((?tickOff,?tickOn)-,?beat)*      !length
+                    [
+                        (Semitone,?key)**                 !multi
+                        (?baseSound,>multi)*              !pitch
+                        (>pitch,2)/                       !pitch
+                    ]
+                    (>velocity,100)/                  !velocity
+                    (
+                        (?velocity,0.9)*,
+                        ((?velocity,Random)*,0.2)*
+                    )+ !velocity
+                    
+                    (
+                        (?length,?shortCut)Gt,
+                        (750 ,?length)+,
+                        (750 ,?length)+                
+                    )Choose !length
+                    
+                    (>at,(250,Random)*)+ !at
+                               
+                    ("Starting Note: ",?count, "Pitch: ",?pitch," Length: ",?length," Velocity: ",?velocity, " At: ",?at)Println
+                    
+                    {
+                        ?instrument Do !signal
+    
+                        [ Get and rotate bunch ]
+                        ?length Silence !sout
+                        (
+                            ?bodies,
+                            {
+                                !ir
+                                (>ir,500 Silence)Concatenate !ir                             
+                                >ir  Normalise               !convol 
+                                ?reverb Do                   !body
+                                (
+                                    >body pcnt+20,
+                                    >sout 
+                                )Mix !sout
+                            }
+                        )InvokeAll    
+                        >sout !signal               
+                        (0,?length,>signal)Cut Normalise !signal
+                        
+                        (
+                            (
+                                -0.03,0.2,0,-1,0.2,2,
+                                ?signal
+                            )WaveShaper pcnt+75,
+                            >signal pcnt+25
+                        )Mix Normalise !signal
+          
+                        (
+                            (?length,?shortCut)Gt,
+                            {
+                                (?length,0.25)*         !a
+                                (?length,0.50)*         !b
+                                (?length,0.65)*         !c
+                                (?length,0.80)*         !d
+                        
+                                (
+                                    (0,0),
+                                    (?a,(?velocity,0.75)*),
+                                    (?b,?velocity),
+                                    (?c,?velocity),
+                                    (?d,(?velocity,0.75)*),
+                                    (?length,0)
+                                )NumericShape !vEnv
+                                true !strokeA
+                            }
+                            ,
+                            {
+                                (?length,0.10)*         !a
+                                (?length,0.25)*         !b
+                                (?length,0.75)*         !c
+                                (?length,0.90)*         !d
+                                (
+                                    ?strokeA,
+                                    {                    
+                                        (
+                                            (0,0),
+                                            (?a,?velocity),
+                                            (?b,?velocity),
+                                            (?c,(?velocity,0.75)*),
+                                            (?d,?velocity),
+                                            (?length,0)
+                                        )NumericShape !vEnv
+                                        false !strokeA
+                                    },
+                                    {
+                                       (
+                                            (0,0),
+                                            (?a,(?velocity,0.75)*),
+                                            (?b,(?velocity,0.75)*),
+                                            (?c,(?velocity,0.90)*),
+                                            (?d,(?velocity,0.75)*),
+                                            (?length,0)
+                                        )NumericShape !vEnv
+                                        true !strokeA
+                                    }
+                                )Choose Invoke
+                            }                
+                        )Choose Invoke
+                                                               
+                        256 !revLen
+                        (
+                            ((0,1),(?revLen,0))NumericShape,
+                            ?revLen WhiteNoise
+                        )Multiply !convol
+                        
+                        (
+                            (?convol,0.5)DirectRelength,
+                            512,
+                            1
+                        )ButterworthLowPass !c2
+                        
+                        (
+                            >convol pcnt+50,
+                            >c2     pcnt+50
+                        )Mix Normalise          !convol
+    
+                        (>vEnv,>signal)Multiply !signal
+                        
+                        ?reverb Do  !signal
+                                                
+                        [
+                          Note Specific Post Processing
+                          ============================= 
+                        ]
+
+                        [ 
+                          Note 1
+                          ====== 
+                        ]
+                        (
+                            (?count,0)Eq,
+                            {
+                                [ Very gentle first note ]
+                                ?signal Length !len
+                                (
+                                    ((0,0),(5000,0.25),(?len,1))NumericShape,
+                                    >signal
+                                )Multiply !signal
+                                1000 !revLen
+                                (
+                                    ((0,1),(?revLen,0))NumericShape,
+                                    ?revLen WhiteNoise
+                                )Multiply !convol
+                                (
+                                    ?reverb Do Pcnt+50,
+                                    >signal    Pcnt+50
+                                )Mix !signal
+                                (>signal,?initial-cut,1)BesselLowPass !signal
+                                
+                            },
+                            {
+                                (
+                                    [ Blend in second note ]
+                                    (?count,1)Eq,
+                                    {
+                                        ?signal Length !len
+                                        (
+                                            ((0,0),(?len,1.0))NumericShape,
+                                            >signal
+                                        )Multiply !signal
+                                        (>signal,?initial-cut,1)BesselLowPass !signal
+                                    },
+                                    {
+                                        (
+                                            (?count,10)Lt,
+                                            {
+                                                [ Quieter to start with ]
+                                                (>signal,((?count,20)/,0.5)+)NumericVolume !signal
+                                                
+                                                [ Make initial notes more mellow ]
+                                                (>signal,?second-cut,1)BesselLowPass !signal                                         
+                                            },{}
+                                        )Choose Invoke
+                                    }
+                                )Choose Invoke
+                            }
+                        )Choose Invoke
+
+                        ("Done Note", ?count)Println
+                        >signal
+                        
+                    } Do !signal
+                    (>at,(random,50)*)+ !at
+                    [
+                    (
+                        (?key,?prevKey)Eq,
+                        {},
+                        {
+                            ((>signal,?at),>t2Notes)AddEnd !t2Notes
+                        }
+                    )Choose Invoke [Note Hack]
+                    ?key !prevKey
+                    ]
+                    ((>signal,?at),>t2Notes)AddEnd !t2Notes
+                },
+                {}
+            )Choose Invoke
+            (>count,1)+ !count   
+        }
+    )InvokeAll
+    >t2Notes MixAt Normalise       !signal 
+    (>signal,?final-high,1)BesselHighPass !signal
+}!play-string-section
+
+
+[ 
+    Play string section:
+    
+    ?instrument  -> sound to generate
+    ?track       -> midi signal
+    ?bodies      -> body impulse responses
+    ?initial-cut -> frequency for gentle cut on initial notes - 4000 for Violins
+    ?second-cut  -> frequency for gentle cut on next    notes - 6000 for Violins
+    ?final-high  -> frequency for gentle high cut at end      - 2000 for Violins
+]

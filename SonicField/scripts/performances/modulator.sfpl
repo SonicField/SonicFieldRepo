@@ -1,0 +1,100 @@
+180000 WhiteNoise Normalise !signal
+
+(
+	(0,1),
+	(30000,0.0001),
+	(40000,0.0000001),
+	(80000,0.5),
+	(180000,0.5)
+)NumericShape !shape
+
+((0,10),(100000,0))Slide !modulator
+((0, 1),( 98000,1),(100000,0))NumericShape !atten
+(
+	>atten,
+	>modulator
+)Multiply !modulator
+(80000 Silence,>modulator)Concatenate !modulator
+(
+	>modulator pcnt+25,
+	>shape
+)Mix !shape
+
+(
+	(     0,1),
+	( 80000,1),
+	( 90000,(3,2)/),
+	(100000,(3,2)/),
+	(110000,(5,4)/),
+	(120000,(5,4)/),
+	(130000,(3,2)/),
+	(140000,(3,2)/),
+	(150000,(4,3)/),
+	(160000,(4,3)/),
+	(170000,(5,4)/),
+	(180000,(5,4)/)
+)NumericShape !tune
+	
+(?signal,0.99,0.15,(1000,222)/,?tune )ShapedResonantFilter Normalise !signal
+(?signal,0.80,0.15,(1000,440)/,?shape)ShapedResonantFilter Normalise !signal
+
+190000 WhiteNoise Normalise !hum
+(>hum,0.99,0.15,(1000,88)/)ResonantFilter   Normalise !hum
+(>hum,0.99,0.15,(1000,88.4)/)ResonantFilter Normalise !hum
+(>hum,88,4)DirectLowPass  Normalise !hum
+(>hum,44,2)DirectHighPass Normalise !hum
+(
+	(0   ,-99),
+	(150   ,3),
+	(189000,0),
+	(190000,-99)
+)SimpleShape !shape
+
+(
+	>hum,
+	>shape
+)Multiply !hum
+
+(
+	?hum pcnt+33,
+	(1000 Silence,>signal)Concatenate pcnt+64
+)Mix Normalise !signal
+	
+
+[ Over gain ]
+(
+    1,1,
+    {
+        (
+             0,0.59,0,-1.2,0.25,1,>signal
+        ) WaveShaper Normalise !signal
+    }
+)Repeat 
+
+(0,(?signal Length,10)-,>signal)Cut  !left !right
+
+(30 Silence,>left)Concatenate    !left
+
+
+(
+	1,16,
+	{
+	    !t
+	    {((30,(?t,10)*)+ Silence,?left)Concatenate } Do !nlTask
+	    {((40,(?t,10)*)+ Silence,?right)Concatenate} Do !nrTask
+	
+	    {((?nlTask Done, -18)Volume,4000,1)DirectLowPass} Do  !nlTask
+	    {((?nrTask Done, -18)Volume,4000,1)DirectLowPass} Do  !nrTask
+	
+	    {(?nlTask Done, ?left) Mix Normalise} Do !nlTask 
+	    {(?nrTask Done, ?right)Mix Normalise} Do !nrTask
+		
+		?nlTask Done !left
+		?nrTask Done !right
+	}
+)Repeat
+
+(?left,?right)StereoMonitor
+
+[ Get the results of the tasks and make a wav file ]
+((?left,?right),"temp/tone.wav")WriteFile32

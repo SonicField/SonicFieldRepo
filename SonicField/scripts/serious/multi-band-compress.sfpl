@@ -1,0 +1,65 @@
+{
+
+    (1,?compress)- !offset
+    (
+        {(?signal Reverse,1,50)Follow Reverse},
+        {(?signal        ,1,50)Follow}
+    )DoAll Mix !shape   
+
+    {(?shape,(1,?shape MaxValue)/)NumericVolume}Do          !shape
+    {(?offset,(>shape, ?compress)NumericVolume)DirectMix}Do !shape
+    {
+        (
+            >signal,
+            >shape 
+        )Divide Normalise
+    }Do !signal 
+    
+    (
+        {(?signal Normalise,25,25)Follow},
+        {(?signal Normalise Reverse,25,25)Follow Reverse}
+    )DoAll Mix !shape
+    
+    {(?shape,(1,?shape MaxValue)/)NumericVolume}Do          !shape
+    {(?offset,(>shape, ?compress)NumericVolume)DirectMix}Do !shape
+    
+    {
+        (
+            >signal,
+            >shape 
+        )Divide Normalise
+    }Do 
+}!envelope-compress
+
+{
+    {(?signal ,200,2000,4)BesselBandPass}Do !signal-m 
+    {(?signal     ,2000,4)BesselHighPass}Do !signal-h 
+    {(?signal     , 200,4)BesselLowPass}Do  !signal-l 
+    >signal-m !signal
+    ?envelope-compress Do !signal-m
+    >signal-h !signal
+    ?envelope-compress Do !signal-h
+    >signal-l !signal
+    ?envelope-compress Do !signal-l
+    (
+        ({>signal-l pcnt+50}Do,10),
+        ({>signal-m pcnt+30}Do,0),
+        ({>signal-h pcnt+20}Do,0)
+    )MixAt Normalise 
+}!do-it 
+
+"temp/input.wav" ReadFile ^left ^right
+
+[
+    As compression happens in two phases - 0.5 is actually
+    a lot - more gets silly - 0.9 makes stuff sound all crunchy
+    and old school.
+]
+0.5 !compress
+
+>left  !signal
+?do-it Do !left
+>right !signal
+?do-it Do !right
+
+((>left Done,>right Done),"temp/done.wav")WriteFile32

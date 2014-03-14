@@ -1,0 +1,133 @@
+import math
+import random
+sf.SetSampleRate(192000)
+
+def ring(pitch,length):
+    sig1 = sf.SineWave(length,pitch*1.2)
+    sig2 = sf.SineWave(length,pitch*1.2 + 1)
+    env  = sf.SimpleShape((0,-60),(125,0),(length,-30))
+    sig1 = sf.Multiply(+env,sig1)
+    sig2 = sf.Multiply(+env,sig2)
+
+    sig1 = sf.Pcnt90(sf.DirectMix(1,sig1))
+    sig3 = sf.PhaseModulatedSineWave(pitch,sig1)
+    sig3 = sf.Multiply(+env,sig3)
+
+    sig2 = sf.Pcnt90(sf.DirectMix(1,sig2))
+    sig4 = sf.PhaseModulatedSineWave(pitch,sig2)
+    sig4 = sf.Multiply(env,sig4)
+
+    sig5 = sf.Mix(sig3,sig4)
+    sig=sf.Saturate(sig5)
+    sig=sf.ResonantFilter(sig,0.99,0.05,1000.0/pitch)
+    return sf.Normalise(sig)
+
+def doFormant(pitch,sig,f1,f2,f3):
+    sig=sf.ButterworthLowPass(sig,f2,2)
+    sig1=sf.RBJPeaking(+sig,f1,1,40)
+    sig2=sf.RBJPeaking(+sig,f2,2,20)
+    sig3=sf.RBJPeaking( sig,f3,1,40)
+    x=sf.Mix(sig1,sig2,sig3)
+    x=sf.Normalise(x)
+    return x
+
+def makeSingBase(pitch,length):
+    pitch=float(pitch)
+    length=float(length)
+    drop=1.0
+    notes=[]
+    for i in range(1,100):
+        thisPitch=pitch*i
+        if(thisPitch>10000):
+            continue
+        print thisPitch
+        notes.append(sf.NumericVolume(sf.PhasedSineWave(length,thisPitch,random.random()),drop))
+        drop=drop*0.6
+    sig=sf.Normalise(sf.Mix(notes))
+    return sig
+
+def doSingEnv(sig):
+    len=sf.Length(sig)
+    a=0
+    d=0
+    s=0
+    r=len
+    k1=50.0
+    k2=len-50.0
+    if(len<1000):
+        a=100.0
+        d=250.0
+        s=(len-d)/2.0+d
+    else:
+        a=len*0.1
+        d=len*0.25
+        s=len*0.5
+        
+    env=sf.SimpleShape((0,-90),(k1,-30),(a,0),(d,-6),(s,-12),(k2,-30),(r,-90))
+    sig=sf.Multiply(sig,env)
+    sig=sf.FixSize(sig)
+    return sig
+
+#beat
+def doFormant1(pitch,sig):
+    return doFormant(pitch,sig,300,2800,3300)
+
+#bit
+def doFormant2(pitch,sig):
+    return doFormant(pitch,sig,430,2500,3100)
+
+#bet
+def doFormant3(pitch,sig):
+    return doFormant(pitch,sig,600,2350,3000)
+
+#bat
+def doFormant4(pitch,sig):
+    return doFormant(pitch,sig,860,2050,2850)
+
+#part
+def doFormant5(pitch,sig):
+    return doFormant(pitch,sig,850,1200,2800)
+
+#pot 
+def doFormant6(pitch,sig):
+    return doFormant(pitch,sig,590,900,2700)
+
+#boat
+def doFormant7(pitch,sig):
+    return doFormant(pitch,sig,470,1150,2700)
+
+#boat
+def doFormant8(pitch,sig):
+    return doFormant(pitch,sig,470,1150,2700)
+
+#book
+def doFormant9(pitch,sig):
+    return doFormant(pitch,sig,370,950,2650)
+#but
+def doFormant10(pitch,sig):
+    return doFormant(pitch,sig,760,1400,2800)
+
+#pert
+def doFormant11(pitch,sig):
+    return doFormant(pitch,sig,500,1650,1950)
+
+
+sigA=ring(256,20000)
+sigA=doFormant1(256,sigA)
+sigB=ring(512,20000)
+sigB=doFormant4(256,sigB)
+sigC=ring(196,20000)
+sigC=doFormant7(256,sigC)
+sigD=ring(256+192,40000)
+sigD=doFormant11(256,sigD)
+
+sig=sf.Concatenate(sigA,sigB,sigC,sigD)
+
+"""
+sig1=doSingEnv(doFormant5(880,makeSingBase(256,4096)))
+sig2=doSingEnv(doFormant1(880,makeSingBase(256,4096)))
+sig3=doSingEnv(doFormant8(880,makeSingBase(196,8192)))
+sig=sf.Concatenate(sig1,sig2,sig3)
+"""
+
+sf.WriteFile32([sig],"temp/temp.wav")

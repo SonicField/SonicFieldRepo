@@ -1,0 +1,164 @@
+{
+    bunch !notes-left
+    bunch !notes-right
+    
+    (
+        1,?nNotes,
+        {
+            !x
+            ?root !pitch
+            ((((?x,2)+,5)|,4)*,1)+ Truncate !dem
+            (((?x,8)|)*,1)+        Truncate !num
+            (>pitch,>dem)/   !pitch
+            (>pitch,>num)*   !pitch
+            
+            {                
+                (?length,2)/   !a
+                (?length,2)*   !d  0.75   !dv
+                (?length,16)*  !s  0.5   !sv
+                (?length,32)*  !r
+                (
+                    (?pitch,64)lt,
+                    32,16
+                )Choose        !harmonics
+                (
+                    (?pitch,64)lt,
+                    1.2,2.0
+                )Choose        !damping
+                (
+                    (?pitch,64)lt,
+                    1.001,1.01
+                )Choose        !expand
+                (
+                    (?pitch,128)lt,
+                    0.25,0.1
+                )Choose        !volume
+                (
+                    (?pitch,64)lt,
+                    1.0,?volume
+                )Choose        !volume
+                ("Tame pitch",?pitch)Println
+                ?tame-saw Do !signal
+                (?volume,(0.5,(0.5,Random)*)+)* !volume
+                (?signal,?volume)NumericVolume 
+            }!saw              
+            
+            ((?saw Do ,(?at,(Random,35)*)+),>notes-left )AddEnd !notes-left
+            ((?saw DO ,(?at,(Random,35)*)+),>notes-right)AddEnd !notes-right
+            (>at,(?length,4)*)+ !at
+        }
+    )repeat
+    (
+        {>notes-left  MixAt Normalise}Do,
+        {>notes-right MixAt Normalise}Do
+    )
+} !makeTrack
+
+ 128   !root
+1000   !at
+0128   !nNotes
+4096   !length
+
+[
+?makeTrack Do ^left ^right
+((?left,?right),"temp/temp.wav")WriteFile32 
+]
+
+[
+   Post
+   ===
+]
+"Post Processing" PrintLn
+
+"temp/temp.wav" ReadFile ^left ^right 
+
+{
+    ("Granulate")Println
+    Bunch !out
+    (
+        (>signal,4096,128)Granulate,
+        {
+            ^grain ^time
+            {
+                ?grain check Length         !len
+                (?time,(Random,60)*)+       !time
+                [
+                    ((Random,0.75)*,0.25)+      !vol
+                    (>grain,>vol)NumericVolume  !grain Length !len
+                ]
+                
+                ((?grain,28)Power,512,4)ButterworthHighPass  !noise
+                (?Length,9)/ WhiteNoise           !noise
+                (>noise, 16,1)ButterworthHighPass !noise
+                (>noise,0.1)DirectRelength        !noise
+                (>noise,8,1)ButterworthLowPass    !noise
+                (0.5,>noise pcnt+49)DirectMix     !env
+                (>grain,>env)Multiply RemoveDC RoundOff !grain
+                (?Length,9)/ WhiteNoise           !noise
+                (>noise, 16,1)ButterworthHighPass !noise
+                (>noise,0.1)DirectRelength        !noise
+                (>noise,8,1)ButterworthLowPass    !noise
+                (1.0,>noise pcnt+1)DirectMix      !env
+                (>env,>grain)Resample             !grain
+                ?grain                            !pulse
+                (?pulse,4)DirectResample          !subGrain1
+                (?pulse,6)DirectResample          !subGrain2
+                (?pulse,8)DirectResample          !subGrain3
+                (?pulse,12)DirectResample         !subGrain4
+                (?pulse,16)DirectResample         !subGrain5
+                
+                (
+                    (>grain,0),
+                    (?subGrain1 pcnt+3, (?length,0.2)*),
+                    (?subGrain3 pcnt-2, (?length,0.4)*),
+                    (?subGrain2 pcnt+5, (?length,0.6)*),
+                    (?subGrain5 pcnt-3, (?length,0.8)*),
+                    (?subGrain5 pcnt-6, (?length,1.0)*)
+                 )MixAt      !grain
+                ("Done at",?time)Println
+                (>grain,>time)
+            }!move
+            (?move Do,>out)AddEnd !out
+        }
+    )InvokeAll
+    >out MixAt Normalise
+}!haassel
+
+{?left  !signal (?haassel Do,?haassel Do)Mix Normalise}Do !left 
+{?right !signal (?haassel Do,?haassel Do)Mix Normalise}Do !right 
+
+((?left,?right)!m,"temp/temp-b.wav")WriteFile32 
+
+("Granulate Done")Println
+"temp/terrys_warehouse_stereo.wav" ReadFile ^convoll ^convolr
+>convoll Normalise !convoll
+>convolr Normalise !convolr
+
+{?left  !signal >convoll !convol ?reverb Do Normalise}Do !wleft
+{?right !signal >convolr !convol ?reverb Do Normalise}Do !wright
+
+{
+    (
+        >wleft pcnt+80,
+        >left  pcnt+20
+    )Mix Normalise
+}Do !left
+{
+    (
+        >wright pcnt+80,
+        >right  pcnt+20
+    )Mix Normalise
+}Do !right
+
+[
+   Quite bright to start with - be careful 
+]
+
+((?left,?right),"temp/music-for-trains-11-post.wav")WriteFile32
+[
+0.25 !compress-amount
+>left  !signal ?compress-excite Do !left
+>right !signal ?compress-excite Do !right
+
+((>left,>right),"temp/music-for-trains-11-post-excite.wav")WriteFile32
+]

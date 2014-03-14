@@ -1,0 +1,50 @@
+10000 WhiteNoise Normalise !signal
+
+(?signal ,0.99,0.15,(1000,440)/)ResonantFilter Normalise !signal1
+(?signal,0.99,0.15,(1000,660)/)ResonantFilter Normalise !signal2
+(?signal,0.99,0.15,(1000,(440,1.333)*)/)ResonantFilter Normalise !signal3
+
+(
+>signal1 Pcnt+33,
+>signal2 Pcnt-33,
+>signal3 Pcnt-33
+)Mix Normalise !signal !a
+10000 WhiteNoise Normalise !signal
+
+(?signal ,0.99,0.15,(1000,440)/)ResonantFilter Normalise !signal1
+(?signal,0.99,0.15,(1000,660)/)ResonantFilter Normalise !signal2
+(?signal,0.99,0.15,(1000,(440,1.25)*)/)ResonantFilter Normalise !signal3
+
+(
+>signal1 Pcnt+33,
+>signal2 Pcnt-33,
+>signal3 Pcnt-33
+)Mix Normalise !signal !b
+
+(>a,>b,10000 Silence)Concatenate !signal
+[ Delay ]
+(
+?signal,
+(
+  (-10,50),
+  (-12,110),
+  (-12,170)
+)
+) DirectResonate Normalise !signal
+
+(
+?signal,
+(
+  (-10,60),
+  (-12,150),
+  (-12,210)
+)
+) DirectResonate Normalise !signal
+(
+?signal,
+(
+  (-10,150),
+  (-12,210),
+  (-12,270)
+)
+) DirectResonate Normalise Monitor

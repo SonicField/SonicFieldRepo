@@ -1,0 +1,52 @@
+"temp/input.wav" ReadFile ^signal
+?signal Normalise !signal
+{
+    (>signal,30,10)Granulate !signal
+    Bunch !output
+    (
+        >signal,
+        {
+            ^grain ^time
+            (
+                ((?grain,100,800,3)ButterworthBandPass Rectify MaxValue,?cut-point)Gt,
+                {
+                    >grain Normalise !grain
+                }
+                ,
+                {
+                    >grain dbs-3    !grain
+                }
+            )Choose Invoke
+            ((>grain,>time),>output)AddEnd !output
+        }
+    )InvokeAll
+    >output MixAt Normalise !signal
+    (>signal,60,1)RBJHighPass !signal
+    (>signal,60,1)RBJHighPass !signal
+    (>signal Normalise,10,10)Granulate !signal
+    Bunch !output
+    (
+        >signal,
+        {
+            ^grain ^time
+            ((?grain,100,800,3)ButterworthBandPass Rectify MaxValue,?cut-point)Gt,
+            {
+                (   
+                    ?grain Normalise pcnt+50,
+                    >grain pcnt+50
+                )Mix  !grain
+            }
+            ,
+            {
+                >grain dbs-3    !grain
+            }
+            ((>grain,>time),>output)AddEnd !output
+        }
+    )InvokeAll
+    >output MixAt Normalise
+}!compress
+0.1 !cut-point
+(
+    ?compress,,,
+)DoAll Mix Normalise !signal
+((>signal),"temp/tone.wav")WriteFile32

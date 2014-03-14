@@ -1,0 +1,40 @@
+{
+    (
+        (0,0),
+        (?a,1),
+        (?d,0.5),
+        (?s,0.1)
+        (?r,0.0)
+    )NumericShape !env
+
+
+    (
+        ?frequency,
+        (
+            ((1,(?r,(?frequency,?frequency-spacing)*)ExactSinWave)DirectMix,?modulation-amount)NumericVolume
+        )Mix
+    )PhaseModulatedSinWave !signal
+    
+    (
+        >signal,
+        >env
+    )   Multiply Normalise,
+}!play-bell-inner
+
+ 64  !a
+128  !d
+2024 !s
+4096 !r
+440  !frequency
+
+0.15 !modulation-amount
+1.2  !frequency-spacing
+((?play-bell-inner Do),"temp/bell-tone-example.wav")WriteFile32
+
+0.35   !modulation-amount
+1.002  !frequency-spacing
+((?play-bell-inner Do),"temp/string-tone-example.wav")WriteFile32
+
+0.5  !modulation-amount
+2.0  !frequency-spacing
+((?play-bell-inner Do),"temp/clarinet-tone-example.wav")WriteFile32

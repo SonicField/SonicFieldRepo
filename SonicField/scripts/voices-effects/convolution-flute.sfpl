@@ -1,0 +1,45 @@
+{
+    (1000,?pitch)ExactSinWave MakeSawTooth !filter
+    (>filter,?pitch,1)ButterworthLowPass       !filter
+    (?filter,(?length,2)* Silence)Concatenate  !filter
+    (?length,2)* WhiteNoise !signal
+    
+    ?signal Magnitude !mag
+    >signal FrequencyDomain  !signal
+    >filter FrequencyDomain  !convol
+    (>convol,>signal)CrossMultiply  !signal
+    >signal TimeDomain !signal
+    ?signal Magnitude !newMag
+    (>signal,(>mag,>newMag)/)NumericVolume !signal
+    (0,?length,>signal)Cut !signal
+    
+    (>signal,2000,5)ButterworthLowPass         !signal
+    (>signal,?pitch,2)ButterworthHighPass  !signal
+    (>signal,?pitch,1)ButterworthLowPass   !signal
+    (((0,0),((?length,0.75)*,1),(?length,0.5))NumericShape,(?length,(0.5,Random)+)ExactSinWave)Multiply !vvib
+    (1,>vvib pcnt+50)DirectMix                 !vvib
+    (>signal,?vvib)Multiply Saturate Normalise !signal
+
+    (>signal,0.6,0.5,?pitch Period)ResonantFilter Normalise !wave
+    (
+        -0.03,0.2,0,-1,0.2,2,
+        ?wave
+    )WaveShaper Normalise      !signal
+
+    [ Quash the end quite a bit  with a bug up front bulge ]
+    ((0,0),(?attack-a,1),(?attack-b,0.5),((?length,0.5)*,  0.12),(?length,0))NumericShape !sinEnv
+    (>signal,?sinEnv)Multiply  !signal
+    (
+        (?pitch,128)gt,
+        {
+            ((0,64),((?length,0.25)*,?pitch),(?length,64))NumericShape                      !lower
+            ((0,?pitch),((?length,0.25)*,(?pitch,4)*),(?length,?pitch))NumericShape !upper
+            (>signal,?lower,?upper,1)ShapedButterworthBandPass Normalise !signal
+            (>signal,?lower,?upper,1)ShapedButterworthBandPass Normalise !signal
+         },{
+            >signal Normalise !signal
+         }
+    )Choose Invoke
+    (>signal,?volume)Volume !signal 
+    >signal
+} !flute

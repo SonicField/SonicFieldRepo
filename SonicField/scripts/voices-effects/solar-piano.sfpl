@@ -1,0 +1,209 @@
+"impulses/4-patches/Solar-Piano-Internal.wav" Readfile ^solar-convol-left ^solar-convol-right
+(>solar-convol-left,>solar-convol-right)Mix Pcnt+50 !solar-convol
+{
+    ((?attack,2)*,?pitch)ExactSinWave MakeSquare !hit
+    (?hit,(?pitch,2)*,4)ButterworthLowPass       !hit
+    (
+        (0,1),
+        (45,0.5),
+        (75,0)
+    )NumericShape !hit-env
+    (
+        >hit,
+        >hit-env
+    )Multiply Normalise !hit 
+    
+    (>hit,?hit-strength)Volume !hit
+    
+    (?attack,?decay,?sustain,?release)+ !length
+    (
+       (?length,?pitch)ExactSinWave      dbs+3,
+       (?length,(?pitch,2)*)ExactSinWave dbs-12, 
+       (?length,(?pitch,3)*)ExactSinWave dbs-18
+    )Mix                                !note
+    
+    (
+        (0,0),
+        (?attack,1),
+        ((?attack,?decay)+,0.5),
+        ((?attack,?decay,?sustain)+,0.1),
+        (?length,0)
+    )NumericShape !note-env
+    (
+        >note,
+        ?note-env
+    )Multiply Normalise !note 
+    (
+        1,
+        0,
+        1,
+        1,
+        4,
+        10,
+        >note
+    ) WaveShaper Normalise !note
+    (
+        0,
+        0,
+        1,
+        1,
+        4,
+        10,
+        >note
+    ) WaveShaper Normalise !note
+    
+    (>note,?pitch,1)ButterworthHighPass Normalise !note
+    (>note,1500,2)ButterworthLowPass    Normalise !note
+    
+    (
+        ((0,5),((?attack,?decay,?sustain)+,1))Slide,
+        ?note-env
+    )Multiply !twang
+    (?twang,?release silence)Concatenate !twang
+    
+    ( 1,>twang  pcnt+20)DirectMix !twang
+    (
+        >twang,
+        >note
+    )Multiply !note
+    
+    (
+        >hit dbs+6,
+        >note
+    )Mix !note
+    
+    (?note,((0,1.001),(?note length,0.999))NumericShape)Resample !note-1
+    (?note,((0,0.999),(?note length,1.001))NumericShape)Resample !note+1
+    (>note,>note-1 pcnt-50,>note+1 pcnt+50)Mix Normalise !note
+    
+    64 !base
+    (
+        (?note,110,2)ButterworthLowPass Normalise,
+        (
+            (-7,?base         Period),
+            (-7,(?base,1.25)* Period),
+            (-7,(?base,1.50)* Period),
+            (-7,(?base,1.75)* Period)
+        ),
+        -20
+    )MultipleResonantFilter Normalise !sounding-board
+    (>sounding-board,110,2)ButterworthLowPass Normalise !sounding-board 
+    ((0,0),(125,0),(500,1),((?note length,250)-,1),(?note length,0))NumericShape !damper
+    (>sounding-board,25,4)ButterworthHighPass !sounding-board
+    (
+        >sounding-board,
+        ?damper
+    )Multiply Normalise !sounding-board 
+    (>sounding-board,25,4)ButterworthHighPass !sounding-board
+    (
+        >sounding-board,
+        ?damper
+    )Multiply Normalise !sounding-board 
+    (>sounding-board,?pitch,1)ButterworthHighPass !sounding-board
+    (250,?sounding-board length,>sounding-board)Cut !sounding-board
+   
+    (
+        >sounding-board,
+        >note
+    )Mix Normalise !note
+    
+    (
+        (
+            250 Silence,
+            (?damper,?note)Multiply Saturate Normalise,
+        )Concatenate,
+        (
+            (-3,(?pitch,0.05)* Period),
+            (-6,(?pitch,0.2)* Period),
+            (-8,(?pitch,0.25)* Period),
+            (-8,(?pitch,0.333)* Period),
+            (-9,(?pitch,0.5)* Period),
+            (-6,(?pitch,1.5)* Period),
+            (-6,(?pitch,2.0)* Period) 
+        ),
+        -80
+    ) MultipleResonantFilter Normalise        !res
+    (0,?length,>res)Cut               !res
+    (
+        0,
+        0,
+        1,
+        1,
+        4,
+        10,
+        >res
+    ) WaveShaper Normalise !res    
+    (
+        >note,
+        >res Normalise pcnt+15
+    )Mix !note
+    (?note,(?pitch,2)*,1)ButterworthLowPass Normalise !note    
+    
+    (>note,500 Silence)Concatenate !note
+    
+    [ Mix in the characteristic white noise ]
+    (
+        (
+            1,
+            (
+                (
+                    ?note length WhiteNoise,
+                    ?pitch,
+                    4
+                )ButterworthHighPass
+                ,(?pitch,1.25)*
+                ,4
+            )ButterworthLowPass Normalise pcnt+5
+        )DirectMix,
+        >note
+    )Multiply !note
+    (>note,15,2)ButterworthHighPass     !note
+
+    (
+        (0,0),
+        (500,0),
+        (1000,1),
+        (?note length,1)
+    )NumericShape !note-env
+    
+    (
+        >note-env,
+        ?note
+    )Multiply !sample
+
+    (>sample,25,4)ButterworthHighPass !sample
+    ((?sample Length WhiteNoise,500,6)ButterworthLowPass,0.01)DirectResample Normalise !multi
+    (>sample,(1,>multi)DirectMix)Multiply !sample
+
+    >sample !signal
+    ?solar-convol !convol
+    (
+        ?reverb Do pcnt+50,
+        !sample
+    )Mix
+
+    ((?sample Length WhiteNoise,500,6)ButterworthLowPass,0.01)DirectResample Normalise !multi
+    (>sample,(1,>multi dbs-6)DirectMix)Multiply !sample
+    (
+        0,
+        0,
+        1,
+        1,
+        4,
+        10,
+        >sample
+    ) WaveShaper Normalise !sample
+    (
+        (((0,0.125),(4000,0.25),(?sample Length,1))NumericShape,>sample)Multiply,
+        >note
+    )Mix Normalise !note
+
+    
+    (
+        ((?note,1000,4)ButterworthHighPass,0.87)Power dbs-6,
+        >note
+    )Mix Normalise !note
+
+   ( >note,?volume)NumericVolume 
+        
+}!solar-piano

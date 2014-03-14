@@ -1,0 +1,253 @@
+
+
+[Compute File Names]
+{
+	(
+	    1,18,
+	    {
+	        (?pitch !pitch Maths.Truncate,?string)ListAddEnd !string
+			(?pitch,SF.Semitone)Prod          !pitch
+	    }
+	)Repeat
+	?string
+} _getFrets
+
+List            !string
+"E1" SF.Note    !pitch
+_getFrets Do Done _S6 PrintLn
+
+List            !string
+"A2" SF.Note    !pitch
+_getFrets Do Done _S5 PrintLn
+
+List            !string
+"D2" SF.Note    !pitch
+_getFrets Do Done _S4 PrintLn
+
+List            !string
+"G2" SF.Note    !pitch
+_getFrets Do Done _S3 PrintLn
+
+List            !string
+"B3" SF.Note    !pitch
+_getFrets Do Done _S2 PrintLn
+
+List            !string
+"E3sh" SF.Note    !pitch
+_getFrets Do Done _S1 PrintLn
+
+[ Load A File ]
+{
+	("c:\temp\tone",?pitch Maths.Truncate,".wav")StrCat !fileName
+	?wavFile Sf.ReadFile ListHead 
+} _readNote
+
+250 _beat
+0   !time
+{(?time,(_beat,2)Quot)Sum !time} _nextHBeat
+{(?time,_beat)Sum !time}         _nextSBeat
+{(?time,(_beat,2)Prod)Sum !time} _nextDBeat
+(_beat,12)Prod                   _2bar
+
+(
+[1]
+	(_s4,0,                0),
+	(_s3,2,_nextDBeat Invoke),
+	(_s2,1,_nextHBeat Invoke),
+	(_s1,0,_nextHBeat Invoke),
+	(_s2,1,_nextSBeat Invoke),
+	(_s3,0,_nextSBeat Invoke),
+[2]
+	(_s5,3,_nextSBeat Invoke),
+	(_s3,0,_nextDBeat Invoke),
+	(_s2,1,_nextHBeat Invoke),
+	(_s1,0,_nextHBeat Invoke),
+	(_s2,1,_nextSBeat Invoke),
+	(_s3,0,_nextSBeat Invoke),
+[3]
+	(_s4,0,_nextSBeat Invoke),
+	(_s3,2,_nextDBeat Invoke),
+	(_s2,3,_nextHBeat Invoke),
+	(_s1,2,_nextHBeat Invoke),
+	(_s2,3,_nextSBeat Invoke),
+	(_s3,2,_nextSBeat Invoke),
+[4]
+	(_s4,3,_nextSBeat Invoke),
+	(_s3,2,_nextDBeat Invoke),
+	(_s2,1,_nextHBeat Invoke),
+	(_s1,0,_nextHBeat Invoke),
+	(_s2,1,_nextSBeat Invoke),
+	(_s3,2,_nextSBeat Invoke),
+[5]
+	(_s5,0,_nextSBeat Invoke),
+	(_s3,2,_nextDBeat Invoke),
+	(_s2,1,_nextHBeat Invoke),
+	(_s1,0,_nextHBeat Invoke),
+	(_s2,1,_nextSBeat Invoke),
+	(_s3,2,_nextSBeat Invoke),
+[6]
+	(_s5,3,_nextSBeat Invoke),
+	(_s3,0,_nextDBeat Invoke),
+	(_s2,1,_nextHBeat Invoke),
+	(_s1,0,_nextHBeat Invoke),
+	(_s2,1,_nextSBeat Invoke),
+	(_s3,0,_nextSBeat Invoke),
+[7]
+	(_s6,0,_nextSBeat Invoke),
+	(_s3,1,_nextDBeat Invoke),
+	(_s2,0,_nextHBeat Invoke),
+	(_s1,0,_nextHBeat Invoke),
+	(_s2,0,_nextSBeat Invoke),
+	(_s3,1,_nextSBeat Invoke),
+[8]
+	(_s6,0,_nextSBeat Invoke),
+	(_s3,1,_nextDBeat Invoke),
+	(_s2,2,_nextHBeat Invoke),
+	(_s1,0,_nextHBeat Invoke),
+	(_s2,2,_nextSBeat Invoke),
+	(_s3,1,_nextSBeat Invoke),
+[9]
+	(_s5,0,_nextSBeat Invoke),
+	(_s3,2,_nextDBeat Invoke),
+	(_s2,1,_nextHBeat Invoke),
+	(_s1,0,_nextHBeat Invoke),
+	(_s2,1,_nextSBeat Invoke),
+	(_s3,0,_nextSBeat Invoke),
+[10]
+	(_s5,3,_nextSBeat Invoke),
+	(_s3,0,_nextDBeat Invoke),
+	(_s2,1,_nextHBeat Invoke),
+	(_s1,0,_nextHBeat Invoke),
+	(_s2,1,_nextSBeat Invoke),
+	(_s3,0,_nextSBeat Invoke),
+[11]
+	(_s4,0,_nextSBeat Invoke),
+	(_s3,2,_nextDBeat Invoke),
+	(_s2,3,_nextHBeat Invoke),
+	(_s1,2,_nextHBeat Invoke),
+	(_s2,3,_nextSBeat Invoke),
+	(_s3,2,_nextSBeat Invoke),
+[12]
+	(_s4,3,_nextSBeat Invoke),
+	(_s3,2,_nextDBeat Invoke),
+	(_s2,1,_nextHBeat Invoke),
+	(_s1,0,_nextHBeat Invoke),
+	(_s2,1,_nextSBeat Invoke),
+	(_s3,2,_nextSBeat Invoke),
+
+[13]
+	(_s5,0,_nextSBeat Invoke),
+	(_s3,2,_nextDBeat Invoke),
+	(_s2,1,_nextHBeat Invoke),
+	(_s1,0,_nextHBeat Invoke),
+	(_s2,1,_nextSBeat Invoke),
+	(_s3,2,_nextSBeat Invoke),
+[14]
+	(_s6,0,_nextSBeat Invoke),
+	(_s3,1,_nextDBeat Invoke),
+	(_s2,2,_nextHBeat Invoke),
+	(_s1,0,_nextHBeat Invoke),
+	(_s2,2,_nextSBeat Invoke),
+	(_s3,1,_nextSBeat Invoke),
+[15]
+	(_s5,0,_nextSBeat Invoke),
+	(_s3,2,_nextDBeat Invoke),
+	(_s2,1,_nextHBeat Invoke),
+	(_s1,0,_nextHBeat Invoke),
+	(_s2,1,_nextSBeat Invoke),
+	(_s3,2,_nextSBeat Invoke),
+
+[16]
+	(_s5,3,_nextSBeat Invoke),
+	(_s3,2,_nextDBeat Invoke),
+	(_s2,1,_nextHBeat Invoke),
+	(_s1,0,_nextHBeat Invoke),
+	(_s2,1,_nextSBeat Invoke),
+	(_s3,2,_nextSBeat Invoke),
+[17]
+	(_s4,0,_nextSBeat Invoke),
+	(_s3,2,_nextDBeat Invoke),
+	(_s2,3,_nextHBeat Invoke),
+	(_s1,2,_nextHBeat Invoke),
+	(_s2,3,_nextSBeat Invoke),
+	(_s3,2,_nextSBeat Invoke),
+[18]
+	(_s4,3,_nextSBeat Invoke),
+	(_s3,2,_nextDBeat Invoke),
+	(_s2,1,_nextHBeat Invoke),
+	(_s1,1,_nextHBeat Invoke),
+	(_s2,1,_nextSBeat Invoke),
+	(_s3,2,_nextSBeat Invoke),
+
+[19]
+	(_s5,0,_nextSBeat Invoke),
+	(_s3,2,_nextDBeat Invoke),
+	(_s2,1,_nextHBeat Invoke),
+	(_s1,0,_nextHBeat Invoke),
+	(_s2,1,_nextSBeat Invoke),
+	(_s3,2,_nextSBeat Invoke),
+[20]
+	(_s6,0,_nextSBeat Invoke),
+	(_s3,1,_nextDBeat Invoke),
+	(_s2,2,_nextHBeat Invoke),
+	(_s1,0,_nextHBeat Invoke),
+	(_s2,2,_nextSBeat Invoke),
+	(_s3,1,_nextSBeat Invoke),
+[21]
+	(_s5,0,_nextSBeat Invoke),
+	(_s3,2,_nextDBeat Invoke),
+	(_s2,1,_nextHBeat Invoke),
+	(_s1,0,_nextHBeat Invoke),
+	(_s2,1,_nextSBeat Invoke),
+	(_s3,2,_nextSBeat Invoke),
+[22]
+	(_s6,0,_nextSBeat Invoke),
+	(_s3,1,_nextDBeat Invoke),
+	(_s2,2,_nextHBeat Invoke),
+	(_s1,0,_nextHBeat Invoke),
+	(_s2,2,_nextSBeat Invoke),
+	(_s3,1,_nextSBeat Invoke)
+
+) !sequence
+
+{
+	1 SF.Silence !ret
+	(
+		?sequence,
+		{
+		    !note
+		    
+		    ?note !note ListHead                   !string
+		    ?note !note ListTail ListHead          !fret
+		    ?note !note ListTail ListTail ListHead !at
+		    (?string,?fret)ListGet                 !pitch
+			("c:\temp\tone",?pitch !pitch,".wav")StrCat SF.ReadFile ListHead !data
+			
+			(0,_2bar,?data)SF.Cut                            !data
+		 	
+		 	(0.995,(0.01,Maths.Random)Prod)Sum               !vary		 	
+		 	(?data,?vary)SFFilter.DirectResample             !data			
+			(?data !data SF.Length,?pitch)SF.SinWave         !ring
+			(?data !data,?ring)SF.Multiply SF.Normalise      !datar
+			(?data,(?datar,-2)SF.Volume)SF.Add SF.Normalise  !data
+			
+			?data SF.ClipToSafe                              !data
+		 	(?at SF.Silence,?data)SF.Concatenate             !data
+		 	(?data,50,2)SFFilter.NHighPass                   !data
+		 	(?ret,?data)SF.Add                               !ret   
+		}
+	)ListInvoke
+	[((?ret !ret,110,2)SFFilter.NLowPass,?ret)SF.Add] ?ret   !ret1
+	(_nextSBeat Invoke SF.Silence,?ret1 !ret1)SF.Concatenate !ret2
+	(?ret1,?ret2)SF.Add
+} _read
+
+_read Do Done SF.Normalise !tune
+
+[ Get the results of the tasks and make a wav file ]
+((?tune),"c:\temp\tone.wav")Sf.WriteFile16
+
+[ Play that wave file ]
+("c:\temp\tone.wav","Primary Sound Driver" Sf.Mixer)Sf.PlayFile sf.LineWait
+
+

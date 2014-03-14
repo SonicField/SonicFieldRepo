@@ -1,0 +1,25 @@
+{
+    Bunch !signals
+    ?pitch !o-pitch
+    1      !cut
+    {
+        {
+            (?length,?pitch)SinWave Invert   !signal
+            (>signal,(1,?cut)/)NumericVolume !signal
+        }Do !signal
+        (>pitch ,?o-pitch)+       !pitch
+        (>cut,1)+                 !cut
+        (?signal,>signals)AddEnd  !signals
+        ?pitch Println
+        (?pitch,20000)lt        
+    }
+    loop
+    ?signals Mix Normalise !signal
+}!alias-free-saw
+
+[
+   Parameters
+   ==========
+   Length
+   Pitch
+]

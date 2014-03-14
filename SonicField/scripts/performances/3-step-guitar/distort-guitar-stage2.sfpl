@@ -1,0 +1,94 @@
+[ Read the input ]
+"temp/tone-a.wav"      !wavFile
+?wavFile ReadFile GetStart !dry
+
+[ Sub Octave ]
+(	
+	?dry SubOctave !s pcnt+5,
+	?s   SubOctave !s pcnt+5,
+	?s   SubOctave !s pcnt+2,
+	>dry              pcnt+88
+)Mix Normalise !dry
+
+[ Model resonance in strings ]
+(
+	?dry,
+	(
+		(-16.0,(1000,"E2" Note)/),
+		(-16.0,(1000,"A3" Note)/),
+		(-16.0,(1000,"D3" Note)/),
+		(-16.0,(1000,"G3" Note)/),
+		(-16.0,(1000,"B4" Note)/),
+		(-16.0,(1000,"E4" Note)/)
+	)
+) DirectResonate Normalise !wet
+
+(>wet,3000,2)DirectLowPass !wet
+(>wet,1000,1)DirectLowPass !wet
+
+(
+	>wet pcnt+25,
+	>dry pcnt+75
+)Mix !signal
+
+[ Delay ]
+(
+	(?signal,880,2)DirectHighPass,
+	(
+		(-12,80),
+	)
+) DirectResonate Normalise !wet
+
+(
+	>wet    Pcnt+50,
+	?signal Pcnt-50
+)Mix !signal
+
+(
+	(?signal,880,3)DirectLowPass,
+	(
+		(-12,120),
+	)
+) DirectResonate Normalise !wet
+
+(
+	>wet    pcnt+25,
+	>signal pcnt+75
+)Mix !signal
+
+
+[ Do some ditortion ]
+?signal !distort
+
+>distort dbs+12 Saturate
+
+[ Final Mix ]    
+(
+   >distort pcnt+50,
+   >signal  pcnt+50,
+)Mix Normalise  !signal
+
+[ Compress ]
+
+(?signal Rectify,50,2)DirectLowPass !shape
+	
+(1.0,(>shape,0.5)Power dbs+3)DirectMix      !shape
+(
+	>signal,
+	>shape 
+)Divide Normalise !signal
+
+[DC Filter]
+(?signal,50,1)DirectHighPass  !signal
+>signal Normalise             !tune
+
+(>tune, 6000,1)DirectLowPass      Normalise !tune
+(>tune,10000,2)DirectLowPass      Normalise !tune
+(?tune, 110,1)DirectLowPassBessel Normalise !low
+(
+	>low dbs-6,
+	>tune
+)Mix Normalise  !tune
+
+
+((?tune Monitor),"temp/tone-b.wav")WriteFile32

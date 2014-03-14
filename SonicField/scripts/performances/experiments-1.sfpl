@@ -1,0 +1,174 @@
+
+{
+    (?velocity,1.5)**         !volume
+    (((?velocity,1)+,2)**,1)- !velocity
+    (
+        (?velocity,0.5)lt,
+        {
+            120 !attack
+            400 !decay
+        },{
+             50 !attack
+            400 !decay
+        }
+    )Choose Invoke 
+        
+    (?decay,(?length,4.5)/)+   !sustain
+        
+    ?length        !release
+    ?velocity      !hit-strength
+    ((?hit-strength,2.0)gt,2.0,?hit-strength)Choose !hit-strength
+ 
+    (
+        "@",?at,
+        "C",?count,
+        "P",?pitch,
+        "V",?volume,
+        "H",?hit-strength,
+        "A",?attack,
+        "D",?decay,
+        "S",?sustain,
+        "R",?release
+    )Println
+    ?nova-piano Invoke !signal
+
+    >signal
+}!play-nova
+
+{
+    Bunch !notes
+    0     !count
+    0     !prev-high
+    (
+        ?track,
+        {
+            ^tickOn ^tickOff ^note ^key ^velocity
+            (
+                (?count,?notesToPlay)lt,
+                {
+                    [ Set up the note ]
+                    (?tickOn,?beat)*                  !at
+                    (>at,(Random,20)*)+               !at
+                    ((?tickOff,?tickOn)-,?beat)*      !length
+                    (Semitone,?key)**                 !multi
+                    (?baseSound,>multi)*              !pitch
+                    (>velocity,(10,Random)*)+         !velocity
+                    (>velocity,110)/                  !velocity
+                    (>length,1.5)*                    !length
+                    [ Play the note ]
+                    ((?play-nova Do,?at),>notes)AddEnd    !notes
+                    (
+                        (?pitch,256)lt,
+                        {
+                            (>pitch,2)/ !pitch
+                            (?velocity,0.5)* !velocity
+                            ((?play-nova Do,?at),>notes)AddEnd    !notes                    
+                        },{}
+                    )Choose Invoke
+                },{
+                }
+             )Choose Invoke
+             (>count,1)+ !count 
+         }
+     )InvokeAll
+     >notes MixAt Normalise
+}!play
+
+"C0" Note !baseSound
+  5.00    !beat
+9999      !notesToPlay
+(?baseSound,2)/ !baseSound
+
+"temp/satie-2.mid" ReadMidiFile 
+^t1
+^t2
+^t3
+
+[
+  Set this to 0.5 for very slow pieces 
+  when you want a bright sound - like 
+  Further Experiments 1
+]
+0.1 !reverb-amount
+
+?t2 !track
+?play Do !left2
+?play Do !right2
+
+?t3 !track
+?play Do !left3
+?play Do !right3
+
+{(>left2,>left3)Mix   Normalise}Do !left
+>left2 >left3
+
+{(>right2,>right3)Mix Normalise}Do !right
+>right2 >right3
+
+[
+   Post
+   ===
+]
+"Post Processing" PrintLn
+((?left,?right),"temp/satie-2-mix.wav")WriteFile32 
+
+
+"temp/satie-2-mix.wav" ReadFile ^left ^right 
+{(?left  pcnt+50,(?left ,220,1)BesselLowPass  Normalise)Mix pcnt+50}Do !left
+{(?right pcnt+50,(?right,220,1)BesselHighPass Normalise)Mix pcnt+50}Do !right
+
+7000 !length
+{(?length WhiteNoise,20,1)ButterworthHighPass}Do           !convolr
+{((>convolr,2.5)Power Normalise,256,1)BesselLowPass}Do !convolr
+{(>convolr,128,1)BesselHighPass}Do !convolr
+{
+    (
+        (0,-99),
+        (50,0),
+        (1000,-6),
+        (1010,0),
+        (1100,-6),
+        (?length,-60)
+    )SimpleShape
+}Do  !renvr
+{(>convolr Normalise,>renvr)Multiply}Do                    !convolr
+
+[ remove infra sound ]
+{(?length WhiteNoise,20,1)ButterworthHighPass}Do           !convoll
+[ sort of brownish noise ]
+{((>convoll,2.5)Power Normalise,256,1)BesselLowPass}Do !convoll
+{(>convoll,128,1)ButterworthHighPass}Do !convoll
+{
+    (
+        (0,-99),
+        (50,0),
+        (900,-6),
+        (910,0),
+        (1000,-6),
+        (?length,-60)
+    )SimpleShape
+}Do  !renvl
+{(>convoll Normalise,>renvl)Multiply}Do                     !convoll
+
+
+{((?left pcnt+75,0),(?right pcnt+25,30))MixAt !signal >convoll !convol ?reverb Do Normalise}Do !wleft
+{((?left pcnt+25,30),(?right pcnt+75,0))MixAt !signal >convolr !convol ?reverb Do Normalise}Do !wright
+
+{
+    (
+        {>wleft pcnt+35}Do,
+        {>left  pcnt+65}Do
+        [,
+        {(>left,200,1)BesselHighPass pcnt+50}Do]
+    )Mix Normalise
+}Do !left
+{
+    (
+        {>wright pcnt+35}Do,
+        {>right  pcnt+65}Do
+        [,
+        {(>right,200,1)BesselHighPass pcnt+50}Do]
+    )Mix Normalise
+}Do !right
+
+((>left,>right),"temp/satie-2-post.wav")WriteFile32 

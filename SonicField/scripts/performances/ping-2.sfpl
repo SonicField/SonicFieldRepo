@@ -1,0 +1,23 @@
+250 !plen
+1600 !pitch
+(?plen,?pitch)SinWave !ping
+((0,0),((?plen,10)/,1),((?plen,0.9)*,1),(?plen,0))NumericShape !nshape
+(>ping,>nshape)Multiply !ping
+
+(10,?plen)* !slen
+(?plen,10)* WhiteNoise  !sing
+((0,0),((?plen,10)/,1.0),(?slen,0))NumericShape !sshape
+(?sing,>sshape)Multiply !sing
+(?sing,?pitch,2)ButterworthLowPass !sing
+
+((0,64),((?plen,10)/,880),(?slen,128))NumericShape !cuttoff-env
+((0,0.3),(?slen,0.75))NumericShape !resonance-env
+(
+    (?sing,?cuttoff-env,?resonance-env)ShapedLadderLowPass,
+    ?sing
+)Mix Normalise !sing 
+
+(
+    ?ping ,
+    ?sing pcnt+20
+)Mix Normalise monitor

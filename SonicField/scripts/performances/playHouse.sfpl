@@ -1,0 +1,81 @@
+"G:/Sound-Samples/House-Of-The-Rising-Sun.wav"  !wavFile
+"c:/temp/dog.wav" !tempFile
+
+?wavFile Sf.ReadFile        !channels
+?channels ListHead          SF.Normalise _normal
+
+[ Exciter ]
+(_normal,2000)SFFilter.LowPass                                !a
+(?a !a,2000)SFFilter.HighPass SFAMP.MakeTriangle SF.Normalise !b
+(?a,(?b,-6)SF.Volume)SF.Add SF.Normalise                     _pin
+		
+	
+[ An effect which adds a delay ad attenuates the result ]
+{
+    ((?delayTime Sf.Silence,?sample)Sf.Concatenate,?wetDbs)Sf.Volume 
+} _simpleDelay
+{
+(100 SF.Silence,_normal SFAMP.MakeTriangle,1000 SF.Silence)SF.Concatenate [SF.Normalise] _wetPin !wet
+(?wet,440 )SFFilter.HighPass              !wet
+(
+	1,50,
+	{
+	    !t
+	    (?t !t,(10,Maths.Random)Prod)Prod             !delayTime
+	    _wetPin                      !sample   
+	    (-3,(?t !t,5)Quot)Diff       !wetDbs
+	    _simpleDelay Do              !d
+	    (!d Done,?wet)SF.Add         !wet
+	    (?wet,7000)SFFilter.LowPass  !wet
+	}
+)Repeat
+
+(
+	1,25,
+	{
+	    !t
+	    (?t !t,(200,Maths.Random)Prod,50)Sum !delayTime
+	    ?wet !wet                            !sample   
+	    (-3,(?t !t,2)Quot)Diff               !wetDbs
+	    _simpleDelay Do !d
+	    ((!d Done,900)SFFilter.LowPass,?wet)SF.Add  !wet
+	}
+)Repeat
+} Do Done !wet
+
+((?wet,-6)SF.Volume,_pin)SF.Add !left
+
+
+[ Spatialise ]
+
+[ An effect which adds a delay ad attenuates the result ]
+{ ((?delayTime Sf.Silence,?sample)Sf.Concatenate,?wetDbs)Sf.Volume } _simpleDelay
+
+20  !delayTime
+-3  !wetDbs
+?left !left     !sample
+_simpleDelay Do !leftDelayTask
+
+25   !delayTime
+?left !left     !sample
+_simpleDelay Do !RightDelayTask
+
+[ An effect to mix two samples and normalize the result ]
+{ (?sampleA,?sampleB)Sf.Add Sf.Normalise } _simpleMix
+
+?left !left          !sampleA
+?leftDelayTask Done  !sampleB
+_simpleMix Do        !leftMixTask
+
+?left                !sampleA
+?RightDelayTask Done !sampleB
+_simpleMix Do        !rightMixTask
+
+?leftMixTask  Done !left
+?RightMixTask Done !Right
+
+[ Get the results of the tasks and make a wav file ]
+((?left SF.Normalise !left,?right SF.Normalise !Right),"c:\temp\tone.wav")Sf.WriteFile16
+
+[ Play that wave file ]
+("c:\temp\tone.wav","Primary Sound Driver" Sf.Mixer)Sf.PlayFile sf.LineWait

@@ -1,0 +1,396 @@
+{
+    (>length,2)* !length
+    (?length,(1,(?pitch,2)-)Max)SinWave    !signal1 
+    (?length,(?pitch,2)+)SinWave           !signal2 
+    (?length,(?pitch,1.2)*)SinWave dbs+48  !fm1
+    (?length,(?pitch,1.3)*)SinWave dbs+12  !fm2
+    
+    (
+        (
+            >signal1 ,
+            >fm1     
+        )FrequencyModulate,
+        (
+            >signal2  dbs-24,
+            >fm2     
+        )FrequencyModulate,
+    )Mix Normalise  !signal
+    
+    (
+        (
+            (100 WhiteNoise,?pitch,2)ButterworthLowPass,
+            (
+                (0,0),
+                (20,1),
+                (100,0)
+            )NumericShape
+        )Multiply,
+        >signal 
+    )Mix Normalise !signal
+    
+    (
+        (0,-99),
+        (50,0),
+        (?length,-99)
+    )SimpleShape !env
+    (
+        >signal,
+        >env
+    )Multiply !signal
+    
+    (>signal,(?pitch,2)*,2)ButterworthHighPass !signal
+    (>signal,(?pitch,1)*,?dullness)ButterworthLowPass  !signal
+}!play-bell
+
+{ >signal MakeTriangle } !triangle-shape
+{ >signal MakeSawTooth } !saw-tooth-shape
+{
+    ((Random,0.5)-,5)* !move
+    (?length,(1,(?pitch,>move)+)Max,Random)PhasedSinWave !signal
+    ?wave-shape Do Done !signal
+    ?signal Length  !sl
+    >signal  !signal
+    (((?length,500)/ WhiteNoise,2500,6)ButterworthLowPass,0.001)DirectRelength Normalise !multi
+    (0,>sl,>multi)Cut  !multi
+    (
+        (1,>multi pcnt+2 )DirectMix,
+        >signal 
+    )Resample !signal
+    (>signal,(?pitch,4)*,1)ButterworthLowPass Normalise
+} !string
+{
+    {
+        (?pitch,4)/  !pitch
+        (?length,4)* !length
+        ?triangle-shape  !wave-shape ?string Do Done  !signal1
+        ?triangle-shape  !wave-shape ?string Do Done  !signal2
+        ?triangle-shape  !wave-shape ?string Do Done  !signal3
+        ?triangle-shape  !wave-shape ?string Do Done  !signal4
+        ?saw-tooth-shape !wave-shape ?string Do Done  !signal5
+        ?saw-tooth-shape !wave-shape ?string Do Done  !signal6
+        ?saw-tooth-shape !wave-shape ?string Do Done  !signal7
+        
+        >signal1  !base
+        (>base,>signal2 )Mix !base
+        (>base,>signal3 )Mix !base
+        (>base,>signal4 )Mix !base
+        (>base,>signal5 )Mix !base
+        (>base,>signal6 )Mix !base
+        (>base,>signal7 )Mix !base
+        
+        (>base,4)DirectRelength Normalise
+    } Do Done !sample
+      
+    (>sample,(?pitch,5)*,2)ButterworthLowPass  !sample 
+    
+    ((?length WhiteNoise,500,6)ButterworthLowPass,0.01)DirectResample Normalise !multi
+
+    (
+        (0.5,?multi pcnt+5)DirectMix,
+        >sample 
+    )Multiply Normalise !sample
+    ?sample Length      !sl
+    >sample      !sample 
+    
+    (
+        (
+            (0,-99),
+            (150,0),
+            ((?sl,2)/,0),
+            (?sl,-99)
+        )SimpleShape,
+        >sample 
+    )Multiply Normalise
+    
+} !play-strings
+{
+    ((?length,100)+,?pitch)SinWave !root
+    ?root MakeSquare   !root-square
+    >root MakeSawTooth !root-saw
+
+    (
+        ?root-saw,
+        ?root-square Invert
+    )Mix Normalise
+}!play-simple
+{
+    (?beat,4)/ !a
+    (?beat,3)/ !d
+    (?beat,2)/ !s
+    ?beat      !r
+    
+    (
+        (0,(?pitch,2)*),
+        (?a,(20000,(?pitch,128)*)Min),
+        (?d,(?pitch,32)*),
+        (?s,(?pitch,4)*),
+        (?r,(?pitch,2)*)
+    )NumericShape !cuttoff-env
+ 
+    (
+        (0, Random),
+        (?a,Random),
+        (?d,Random),
+        (?s,Random),
+        (?r,Random)
+    )NumericShape !resonance-env
+    
+    (Random,0.1)+ !p
+    (Random,0.1)+ !q
+    (Random,0.1)+ !r
+    (Random,0.1)+ !s    
+    (
+        (?cuttoff-env,?p)DirectRelength,
+        (?cuttoff-env,?q)DirectRelength,
+        (?cuttoff-env,?r)DirectRelength,
+        (?cuttoff-env,?s)DirectRelength,
+        (?cuttoff-env,?p)DirectRelength,
+        (?cuttoff-env,?q)DirectRelength,
+        (?cuttoff-env,?r)DirectRelength,
+        (?cuttoff-env,?s)DirectRelength
+    )Concatenate !cuttoff-env
+    (
+        (?resonance-env,?p)DirectRelength,
+        (?resonance-env,?q)DirectRelength,
+        (?resonance-env,?r)DirectRelength,
+        (?resonance-env,?s)DirectRelength,
+        (?resonance-env,?p)DirectRelength,
+        (?resonance-env,?q)DirectRelength,
+        (?resonance-env,?r)DirectRelength,
+        (?resonance-env,?s)DirectRelength
+    )Concatenate !resonance-env
+
+    (?resonance-env Length,100)+ !length
+    
+    >resonance-env  !resonance-env
+    >cuttoff-env    !cuttoff-env 
+    ?play-bell    Do Done  !bell-signal
+    ?play-simple  Do Done  !simple-signal
+    ?play-strings Do Done  !string-signal
+    (
+        (>bell-signal ,Random)NumericVolume,
+        (
+            (
+                (
+                    >string-signal ,
+                    (?pitch,16)*,
+                    4
+                )ButterworthLowPass,
+                (
+                    ?simple-signal ,
+                    250,
+                    2
+                )ButterworthLowPass dbs-6
+            )Mix Normalise,
+            Random
+        )NumericVolume,
+    )Mix Normalise !signal
+    
+    >resonance-env  !resonance-env
+    >cuttoff-env    !cuttoff-env 
+    (0,?resonance-env Length,>signal)Cut !signal
+    
+    [(>signal,(?pitch,4)*,1)ButterworthLowPass Normalise !signal]
+    
+    (>signal,?cuttoff-env,?resonance-env)ShapedLadderLowPass !signal 
+    (>signal,?cuttoff-env,?resonance-env)ShapedLadderLowPass !signal 
+    
+    >resonance-env
+    >cuttoff-env
+    
+    ?signal Normalise Saturate Normalise ClipToSafe Normalise !signal
+    
+    (
+        ((?signal,0.9, 0.1,(?pitch,7)* Period)ResonantFilter MakeSawtooth Normalise,?saw-cut,1)ButterworthLowPass,
+        (?signal,0.99,0.01,(?pitch,5)* Period)ResonantFilter MakeTriangle Normalise,
+        (?signal,0.99,0.01,(?pitch,2)* Period)ResonantFilter MakeTriangle Normalise,
+        >signal dbs+9
+    )Mix Normalise ClipToSafe !signal
+    (?signal,>signal)Concatenate !signal
+    (0,(1,(?signal Length,Random)*)+,>signal)Cut !signal
+    (
+        ((0,-20),((?signal Length,0.25)*,0),((?signal Length,0.75)*,0),(?signal Length,-60))SimpleShape,
+        >signal
+    )Multiply Normalise ClipToSafe
+    
+    
+} !bass
+[300000]
+ 200000 !total-length
+(?total-length,(2,0.5)**,Random)PhasedSinWave       !divisor
+(?total-length,(3,0.5)**,Random)PhasedSinWave       !dividend
+(?total-length,(1.5,0.5)**,Random)PhasedSinWave     !beater
+(?total-length,(2,(1,3)/)**,Random)PhasedSinWave    !stereo
+(
+    ?total-length,
+    (
+        (3,(1,3)/)**,
+        ,2
+    )/
+)SinWave !volume
+
+>divisor    !divisor
+>dividend   !dividend
+>beater     !beater
+>stereo     !stereo
+>volume     !volume
+
+0 Silence !left !right
+250   !beat-in
+0.05  !rate
+2     !dullness
+
+{
+    >divisor    !divisor
+    >dividend   !dividend
+    >beater     !beater
+    >volume     !volume
+    (?x,?beat-in)* !x
+    (?x,?rate)*    !y
+    (1,(10,((?divisor,?y)ValueAt, 1)+)*)+ Integer !divisor-number
+    (1,(10,((?dividend,?y)ValueAt,1)+)*)+ Integer !dividend-number
+    (1,(3,((?beater  ,?x)ValueAt,1)+)*)+  Integer !beat 
+    (0.5,(0.5,(?volume,?x)ValueAt)*)+             !volume-number 
+    (?dividend-number,?divisor-number)/           !multiplier
+    (?multiplier,32)*                             !pitch 
+    (?pitch,(4,?beat)*)*                          !saw-cut
+    (?beat-in,(?beat,2)*)*                        !beat
+    >divisor   
+    >dividend 
+    >beater    
+    >volume     
+    (?bass Do Done,?volume-number)NumericVolume   !note
+    
+}!make-note
+
+
+12 !space
+ 6 !pa
+(
+    0,((?total-length,?beat-in)/,?pa)/ !of,
+    {
+        !x
+        ("Computing note ",(?x,1)+," of ",(1,?of)+)Println 
+        (>x,?pa)* !x !z
+        >left   !left
+        >right  !right
+        (
+            ?make-note            Do,
+            (>x,1)+ !x ?make-note Do,
+            (>x,1)+ !x ?make-note Do,
+            (>x,1)+ !x ?make-note Do,
+            (>x,1)+ !x ?make-note Do,
+            (>x,1)+ !x ?make-note Do
+        )DoneAll !notes
+        (?z,?space)*   !z
+        (?z,?beat-in)* !z
+        ?stereo  !stmp
+        >left   !left
+        >right  !right
+        (
+            >notes,
+            {
+                !note 
+                ("Note at ",?z)StrCat Println
+
+                (0.5,(0.5,(?stmp,(?z,?space)/)ValueAt)*)+ !stereo-number 
+                (?note,?stereo-number)NumericVolume       !note-left
+                (?note,(1,?stereo-number)-)NumericVolume  !note-right
+
+                [ Reverb ]
+
+                (
+                    ?note-left,
+                    ?note-right
+                )Mix Normalise !center
+                ((Random,100)* Silence,>center)Concatenate !center
+                (>center,Random)NumericVolume !center
+                (
+                    >note-left,
+                    ?center
+                )Mix !note-left    
+                (
+                    >note-right,
+                    ?center
+                )Mix !note-right    
+                >center
+                
+                ?note-left   !note-left-dry 
+                ?note-right  !note-right-dry
+                
+                (
+                    1,24,
+                    {
+                        !t
+                        [("Reverb ",?t," of ",24)Println]
+                        {((30,(?t,10)*)+ Prime Silence,?note-left )Concatenate}      Do !nlTask
+                        {((40,(?t,10)*)+ Prime Silence,?note-right)Concatenate}      Do !nrTask
+                    
+                        {((>nlTask Done, -11)Volume,(2000,(?t,3)*)-,1)ButterworthLowPass} Do  !nlTask
+                        {((>nrTask Done, -11)Volume,(2000,(?t,3)*)-,1)ButterworthLowPass} Do  !nrTask
+                    
+                        {(>nlTask Done, ?note-left )Mix Normalise}                   Do !nlTask 
+                        {(>nrTask Done, ?note-right)Mix Normalise}                   Do !nrTask
+                        
+                        ?nlTask Done !note-left
+                        ?nrTask Done !note-right
+                    }
+                )Repeat
+                
+                {
+                    (>wet,12,2)ButterworthHighPass        !wet
+                    (>wet,?dry Invert)Mix Normalise  !wet
+                    ?wet Length  !wlen
+                    >wet  !wet
+                    (
+                        (
+                            ((0,Random),(?wlen,Random))NumericShape,
+                            >wet 
+                        )Multiply,
+                        >dry Normalise
+                    )Mix Normalise
+                } !place
+                
+                >note-left-dry  !dry
+                >note-left            !wet
+                ?place Do             !note-left
+                >wet
+                >dry
+                
+                >note-right-dry  !dry
+                >note-right            !wet
+                ?place Do              !note-right
+                >wet
+                >dry
+                
+                >note-left  Done !note-left
+                >note-right Done !note-right
+                
+                {
+                    (
+                        (>left,0),
+                        (>note-left ,(?z,((Random,2)**,30)*)+)
+                    )MixAt !left
+                }Do !left-do
+                {
+                    (
+                        (>right,0),
+                        (>note-right ,?z)
+                    )MixAt !right
+                }Do !right-do
+                (>z,(?space,?beat-in)*)+ !z
+                >left-do  Done !left
+                >right-do Done !right
+            }
+        )InvokeAll
+        >stmp
+    }
+)Repeat
+(>left,12,2)ButterworthHighPass  !left
+(>right,12,2)ButterworthHighPass !right
+
+(1500 Silence,>left  Normalise ,1500 Silence)Concatenate !left
+(1500 Silence,>right Normalise ,1500 Silence)Concatenate !right
+
+((>left,>right),"temp/caverns-of-ganymede-2.wav")WriteFile32
+

@@ -1,0 +1,40 @@
+(4,250)SF.SinWave   SFAMP.MakeTriangle SF.Normalise               !pulse1
+((4,500)SF.SinWave  SFAMP.MakeTriangle SF.Normalise,-6)SF.Volume  !pulse2
+((4,1000)SF.SinWave SFAMP.MakeTriangle SF.Normalise,-12)SF.Volume !pulse3
+(?pulse1,?pulse2,?pulse3)SF.Add SF.Normalise   !pulse
+
+(?pulse,((0,1),(4,0))SFShape.Numeric)SF.Multiply  !pulse
+
+(?pulse,6 SF.Silence) SF.Concat !pulse
+(?pulse,1000)SFfilter.LowPass   !pulse
+?pulse !pulse SF.Length _len
+
+("Puls  length after resonace will be: ",_len, "ms")StrCat PrintLn
+("Frequency    after resonace will be: ",(2000,_len)Quot,"Hz")StrCat PrintLn
+
+List !output
+
+[ Damped Resonator ] 
+?pulse !input
+(
+   1,1000,
+    {
+        (?input !input,?output)ListAddEnd !output
+        (?input !input,(?input SF.Reverse SF.Invert,500)SFFilter.LowPass)SF.Add !input
+        (?input,-3.005)Sf.Volume SF.RemoveDC !input
+        [(?input,2000)SFFilter.LowPass !input]
+    }    
+)Repeat
+?output SF.Concat !left
+
+((1,1)Quot,6)SF.Shape.Sinc SF.Normalise !filterShape
+(?left,?filterShape !filterShape)SF.Convolve !left
+
+(?left !left,((0,1),(?left !left SF.Length,0))SFShape.Numeric)SF.Multiply !left
+
+[ Get the results of the tasks and make a wav file ]
+((?left SF.Normalise !left),"c:\temp\tone.wav")Sf.WriteFile16
+
+[ Play that wave file ]
+("c:\temp\tone.wav","Primary Sound Driver" Sf.Mixer)Sf.PlayFile sf.LineWait
+

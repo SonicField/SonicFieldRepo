@@ -1,0 +1,105 @@
+
+[
+  Reverberator
+  ============
+]
+{
+    ?signal Magnitude !mag
+    (>signal,?grain-length Silence)Concatenate !signal   
+    (
+        (?mag,0)Eq,
+        {
+        },
+        {
+            (>signal,?grain-length Silence)Concatenate !signal   
+            >signal FrequencyDomain  !signal
+            (>convol,>signal)CrossMultiply  !signal
+            >signal TimeDomain !signal
+            ?signal Magnitude !newMag
+            (>signal,(>mag,>newMag)/)NumericVolume !signal
+            [ tail out clicks due to amplitude at end of signal ]
+            (
+                (
+                    (0,1),
+                    (100,1),
+                    ((?signal Length,100)-,1),
+                    (?signal Length,0)
+                )NumericShape,
+                >signal
+            )multiply !signal
+        }
+    )Choose Invoke
+    >signal
+}!reverb-inner
+
+{
+    ?convol Length !grain-length 
+
+[    ("Convolving SignalLength:",?signal Length," ConvolutionLength:",?convol Length)Println ]
+
+    (>convol,?grain-length Silence)Concatenate FrequencyDomain  !convol
+    Bunch !out
+    (
+        (>signal,?grain-length)Granulate,
+        {
+                ^signal ^time
+                ((?reverb-inner Do,>time),>out)AddEnd !out
+        }
+    )InvokeAll
+    >out MixAt Normalise
+}!reverb
+
+"temp/Cello.wav"      ReadFile ^cello
+"temp/Bass.wav"       ReadFile ^bass
+"temp/Violin-1-l.wav" ReadFile ^violin-1-l
+"temp/Violin-1-r.wav" ReadFile ^violin-1-r
+"temp/Violin-2.wav"   ReadFile ^violin-2
+"temp/Violin-3.wav"   ReadFile ^violin-3
+"temp/Viola.wav"      ReadFile ^viola
+
+[ Maybe cut Bass and boost cello? ]
+
+{
+    (
+        (?violin-1-l  pcnt+40, 0), [left]
+        (?violin-2    pcnt+15,20), [right]
+        (?violin-3    pcnt+10, 0), [left]
+        (?viola       pcnt+10, 5), [right]
+        (?cello       pcnt+15,10), [right]
+        (?bass        pcnt+10,15)  [right]
+    )MixAt Normalise
+}Do !sleft
+
+{
+    (
+        (>violin-1-r  pcnt+20, 0), [right]
+        (>violin-2    pcnt+15, 0), [right]
+        (>violin-3    pcnt+5 ,20), [left]
+        (>viola       pcnt+15, 0), [right]
+        (>cello       pcnt+20, 0), [right]
+        (>bass        pcnt+25, 0)  [right]
+    )MixAt Normalise
+}Do !sright
+    
+"temp/1a_marble_hall.wav"      ReadFile ^left ^right
+
+>left  Normalise !left
+>right Normalise !right
+
+?sLeft  !signal >left  !convol ?reverb Do Normalise !wLeft
+?sRight !signal >right !convol ?reverb Do Normalise !wRight
+
+(
+    ?sLeft pcnt+50,
+    ?wLeft pcnt+50
+)Mix Normalise !sLeft
+
+(
+    ?sRight pcnt+50,
+    ?wRight pcnt+50
+)Mix Normalise !sRight
+
+
+((>sLeft,>sRight),"temp/adagio-done.wav")WriteFile32
+
+

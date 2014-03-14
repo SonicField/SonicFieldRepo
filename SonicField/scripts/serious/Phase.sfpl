@@ -1,0 +1,82 @@
+{
+    ?signal Magnitude !mag
+    (>signal,?grain-length Silence)Concatenate !signal   
+    >signal PhaseSpace  !signal
+    (>convol,>signal)CrossMultiply  !signal
+    >signal FrequencySpace !signal
+    ?signal Magnitude !newMag
+    (>signal,(>mag,>newMag)/)NumericVolume !signal
+    [ tail out clicks due to amplitude at end of signal ]
+    (
+        (
+            (0,1),
+            (100,1),
+            ((?signal Length,100)-,1),
+            (?signal Length,0)
+        )NumericShape,
+        >signal
+    )multiply !signal
+    
+}!reverb-inner
+
+{
+    ?convol Length !grain-length 
+    (>convol,?grain-length Silence)Concatenate PhaseSpace  !convol
+    
+    Bunch !out
+    (
+        (>signal,?grain-length)Granulate,
+        {
+                ^signal ^time
+                (?time,60000)/ truncate println
+                ((?reverb-inner Do,>time),>out)AddEnd !out
+        }
+    )InvokeAll
+    >out MixAt Normalise
+}!reverb
+
+"temp/track-1.wav" ReadFile ^sLeft ^sRight
+(1000 Silence,>sLeft )Concatenate !sLeft
+(1000 Silence,>sRight)Concatenate !sRight
+
+"impulses/terrys_warehouse_stereo_short.wav"      ReadFile ^left ^right
+[
+{
+    (
+        (
+            (
+                ((0,-9),(?signal Length,-60))SimpleShape, 
+                ?signal Length WhiteNoise
+            )Multiply
+        ,128,1)besselthLowPass,
+        >signal Normalise
+    )Mix 
+} !sme
+
+>left  !signal ?sme Do !left
+>right !signal ?sme Do !right
+]
+>left  Normalise !left
+>right Normalise !right
+
+[
+    "impulses/dales_site1_1way_bformat.wav" ReadFile ^bleft ^bright
+    (>aleft ,>bleft )Mix pcnt+50 !left 
+    (>aright,>bright)Mix pcnt+50 !right 
+]
+
+?sLeft  !signal >left  !convol ?reverb Do !wLeft
+?sRight !signal >right !convol ?reverb Do !wRight
+
+(
+    ?sLeft pcnt+25,
+    ?wLeft pcnt+75
+)Mix Normalise !sLeft
+
+(
+    ?sRight pcnt+25,
+    ?wRight pcnt+75
+)Mix Normalise !sRight
+
+((>sLeft,>sRight),"temp/reverb-1.wav")WriteFile32
+

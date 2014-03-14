@@ -1,0 +1,265 @@
+96000 SetSampleRate
+2 SetSwapLimit
+[(20248,3)/ !offset for skyfall intro]
+"temp/input.wav" ReadFile ^signal1 ^signal2
+(
+    >signal1,
+    >signal2
+)Mix !signal
+
+?signal Length !length
+(?length,0.5)* !offset
+1.025 !step
+  256 !bands
+   25 !pitch
+bunch !m-channels
+(
+    1,?bands,
+    {
+        {
+            ("Scanning channel ",?pitch)Println
+            (?signal,?pitch,0.1,18)RBJPeaking    !signal
+            (?signal,?pitch,0.1,18)RBJPeaking    !signal
+            (?signal,?pitch,0.1,18)RBJPeaking    !chan-sig
+            (?pitch period,10)/                 !p
+            (
+                (?chan-sig,?p,?p)Follow pcnt+50,
+                (>chan-sig,?p,?p)Follow pcnt+50
+            )Mix   dbs+6 WaveLimit               !chan-sig
+            >chan-sig 
+        }Do !job
+        (>job,>m-channels)AddEnd                 !m-channels
+        (>pitch,?step)* !pitch
+    }
+)Repeat
+
+bunch !final
+1 !swap
+0 !position
+-10 !shifter
+ -5 !shifter-shift
+(
+   1,32,
+   {
+        !x
+        ("***** Encoding ", ?x," Shift is ",?shifter,"*****")Println
+        (25,?shifter)+ !pitch-in
+        (
+           (?shifter,10)Gt,
+           {-5 !shifter-shift},
+           {}
+        )Choose Invoke
+        (
+           (?shifter,-10)lt,
+           { 5 !shifter-shift},
+           {}
+        )Choose Invoke
+        (>shifter,?shifter-shift)+ !shifter
+        
+        (
+               (>swap,1)eq,
+               {
+                   0 !swap
+               },
+               {
+                   1 !swap
+               }
+        )Choose Invoke
+        
+        {
+            1 Silence !output-l !output-r
+            [25 !pitch-in]
+            1 Silence !output
+            1 !c
+            (
+                ?m-channels,
+                {
+                    !chan-sig
+                    ?pitch-in !pitch 
+                    (>c,1)+ !c
+                    (
+                        >output,
+                        (
+                            (
+                                (?length,?pitch)SinWave,
+                                (
+                                    ?length,
+                                    (
+                                        0.1,
+                                        (Random,0.1)*
+                                    )+
+                                )SinWave pcnt+1
+                            )FrequencyModulate,
+                            ?chan-sig
+                        )Multiply !signal
+                    )Mix !output
+                                    
+                    >output RemoveDc RoundOff !output Length !len
+                    (>output,(?pitch,2)*,4)ButterworthLowPass !output
+                    {
+                        ((0,?swap),(?len,(1,?swap)-))NumericShape !shape
+                        (
+                            (?output,>shape)Multiply,
+                            >output-l
+                        )Mix RemoveDc
+                    }Do !output-l
+                    {
+                        ((0,(1,?swap)-),(?len,?swap))NumericShape !shape                
+                        (
+                            (>output,>shape)Multiply,
+                            >output-r
+                        )Mix RemoveDc
+                    }Do !output-r
+                    >output-l Done !output-l
+                    >output-r Done !output-r
+                    (>pitch-in,?step)* !pitch-in                              
+                }
+            )InvokeAll
+            [ The left and right record ready for splitting and
+              sending to MixAt
+            ]
+            ((>output-l,?position),(>output-r,?position))  
+        }Do !job            
+        (
+            >job,
+            >final
+        )AddEnd !final
+        (>position,?offset)+ !position
+    }
+)Repeat
+
+bunch !final-l !final-r
+(
+    >final,
+    {
+        ^l ^r
+        (>l,>final-l)AddEnd !final-l
+        (>r,>final-r)AddEnd !final-r
+    }
+)InvokeAll
+>final-l MixAt normalise !left
+>final-r MixAt normalise !right 
+
+[(?left,?right)StereoMonitor]
+
+{
+    ("Resonant Filtering")Println
+    (?signal,64,64)Follow Normalise           !shape
+    ((1,>shape)DirectMix,0.5)Power            !shape
+    (>shape,15000)NumericVolume               !cut
+    (?signal length WhiteNoise,1,2)RBJLowPass !q
+    (?q,1,2)RBJLowPass Normalise    pcnt+75   !q
+    (?signal,>cut,>q)ShapedLadderLowPass      !new
+    (>new pcnt+75,>signal pcnt+25)Mix Normalise
+}!res-filter
+>left  !signal ?res-filter Do !left
+>right !signal ?res-filter Do !right
+>left  Done !left
+>right Done !right
+(>left, 3000,2,12)RBJPeaking !left
+(>right,3000,2,12)RBJPeaking !right
+
+[ A very desnse reflector
+  Which splits the reflected wave form into smaller chunkcs
+  reflects them and then recombines the results. This is
+  very parallel.
+]
+{
+    {
+        (?sample,1000,5)ButterworthLowPass   !sampleL
+        (?sample,3000,2)ButterworthLowPass   !sampleN
+        (?sample,1000,4)ButterworthHighPass  !sampleH
+        (>sampleH ,5000,2)ButterworthLowPass  !sampleH
+        (?sample,((?first ,?offset)+ Prime Silence,(?sample,-13)Volume)Concatenate)Mix    !wet
+        (
+            1,2,
+            {
+                !z
+                "." Print
+                (>first,1.05)* Prime !first
+                (>wet ,(((?first,30)-,?offset)- Silence,(?sampleL ,(-10,?z)-)Volume)Concatenate)Mix    !wet
+                (>wet ,(((?first,30)+,?offset)- Silence,(?sampleN ,(-6, ?z)-)Volume)Concatenate)Mix    !wet
+                (>wet ,((?first      ,?offset)- Silence,(?sampleH ,(-10,?z)-)Volume)Concatenate)Mix    !wet
+            }
+        )Repeat
+        (?sampleL ,1000,1)ButterworthLowPass  !sampleL
+        (?sampleN ,1000,1)ButterworthLowPass  !sampleN
+        (?sampleH ,2000,1)ButterworthLowPass  !sampleH
+        (
+            (0,0),
+            ((?wet  Length,3)/,1),
+            (?wet   Length,0)
+        )NumericShape !env
+        (
+            3,20,
+            {
+                !z
+                (?z,4)/ !z
+                (>first,1.1)* Prime !first
+                (>wet ,(((?first,30)-,?offset)- Silence,((?sampleL ,(-7,?z)-)Volume,?env)Multiply)Concatenate)Mix  !wet
+                (>wet ,(((?first,30)+,?offset)- Silence,((?sampleN ,(-4,?z)-)Volume,?env)Multiply)Concatenate)Mix  !wet
+                (>wet ,((?first      ,?offset)- Silence,((?sampleH ,(-7,?z)-)Volume,?env)Multiply)Concatenate)Mix  !wet
+            }
+        )Repeat
+        0.99 !l
+        (
+            20,40,
+            {
+                !z
+                "." Print
+                (?z,6)/ !z
+                (>first,1.025)* Prime !first
+                (>wet ,(((?first,30)-,?offset)- Silence,(((?sampleL ,(-7,?z)-)Volume,?env)Multiply,500,2)ButterworthLowPass)Concatenate)Mix  !wet
+                (>wet ,(((?first,30)+,?offset)- Silence,(((?sampleN ,(-4,?z)-)Volume,?env)Multiply,500,2)ButterworthLowPass)Concatenate)Mix  !wet
+                (>wet ,((?first      ,?offset)- Silence,(((?sampleH ,(-7,?z)-)Volume,?env)Multiply,500,2)ButterworthLowPass)Concatenate)Mix  !wet
+            }
+        )Repeat
+        >wet
+    } !reflector
+    
+    bunch !dos
+    (
+        (>sample,?reflect-length)Granulate,
+        {
+            ^signal ^time
+            "" Println
+            ("Reverb at: ",?time)Println
+            (?signal,>signal Length Silence)Concatenate !sample
+            ?reflector Do !sample
+            ((>sample,?time),>dos)AddEnd  !dos
+        }
+    )InvokeAll
+    bunch !results
+    (
+        >dos,
+        {
+            ^signal ^time
+            ((>signal Done,?time),>results)AddEnd  !results
+        }
+    )InvokeAll
+
+    >results MixAt Normalise    
+}!do-reflector
+
+("Reverb")Println
+  80 !first
+  30 !offset
+5000 !reflect-length
+>left  !sample
+?do-reflector Do !left
+>right !sample
+?do-reflector Do !right
+(>left  Done,25,1)RBJHighPass Normalise !left
+(>right Done,25,1)RBJHighPass Normalise !right
+
+(>left  ,25,1)RBJHighPass Normalise !left
+(>right ,25,1)RBJHighPass Normalise !right
+
+
+(
+    (
+        (1000 Silence,>left  Normalise )Concatenate,
+        (1000 Silence,>right Normalise)Concatenate
+    ),
+    "temp/tone.wav"
+)WriteFile32

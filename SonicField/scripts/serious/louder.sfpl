@@ -1,0 +1,44 @@
+"temp/input.wav" ReadFile ^left ^right
+{
+    (
+        (?signal Reverse,1,50)Follow Reverse,
+        (?signal        ,1,50)Follow,
+    )Mix !shape    
+    (?shape,(2,?shape MaxValue)/)NumericVolume   !shape
+    (0.04,>shape)DirectMix Clip                  !shape
+    (>signal,?shape)Multiply Normalise           !signal
+    
+    (
+        (?signal Normalise,25,25)Follow,
+        (?signal Normalise Reverse,25,25)Follow Reverse,
+    )Mix !shape
+    (?shape,(1,?shape MaxValue)/)NumericVolume !shape
+    (0.3,>shape dbs+24)DirectMix               !shape
+    (
+        >signal,
+        >shape 
+    )Divide Normalise !signal 
+}!envelope-compress
+
+(?left ,2000,6)BesselHighPass         !signal-h 
+(?left ,2000,6)BesselLowPass          !signal 
+(>signal,150,1,3)RBJPeaking           !signal
+?envelope-compress Invoke
+(
+    (30 Silence,(>signal dbs+6 WaveLimit,2000,6)BesselLowPass)Concatenate,
+    >signal-h dbs+6 WaveLimit 
+)Mix Normalise dbs+3 WaveLimit !left-new
+
+
+(?right,2000,6)BesselHighPass         !signal-h 
+(?right,2000,6)BesselLowPass          !signal 
+(>signal,150,1,3)RBJPeaking           !signal
+?envelope-compress Invoke
+(
+    (30 Silence,(>signal dbs+6 WaveLimit,2000,6)BesselLowPass)Concatenate,
+    >signal-h dbs+6 WaveLimit
+)Mix Normalise  dbs+3 WaveLimit !right-new
+
+[(>left,>right)StereoMonitor]
+
+((>left-new,>right-new)StereoMonitor,"temp/tone.wav")WriteFile32

@@ -1,0 +1,32 @@
+[ Read the input ]
+"temp/final-mix.wav"  !wavFile
+?wavFile ReadFile !channels GetStart  !left
+?channels GetRest GetStart            !right
+
+(0,(?left Length,10)-,>left)Cut  !left !right
+
+(10 Silence,>left)Concatenate    !left
+
+[ Make This An Effect !]
+(
+	1,8,
+	{
+	    !t
+	    {((30,(?t,10)*)+ Silence,?left)Concatenate } Do !nlTask
+	    {((40,(?t,10)*)+ Silence,?right)Concatenate} Do !nrTask
+	
+	    {((?nlTask Done, -24)Volume,1000,1)DirectLowPass} Do  !nlTask
+	    {((?nrTask Done, -24)Volume,1000,1)DirectLowPass} Do  !nrTask
+	
+	    {(?nlTask Done, ?left) Mix Normalise} Do !nlTask 
+	    {(?nrTask Done, ?right)Mix Normalise} Do !nrTask
+		
+		?nlTask Done !left
+		?nrTask Done !right
+	}
+)Repeat
+
+[ Get the results of the tasks and make a wav file ]
+((>left,>right)StereoMonitor,"temp/tone-out.wav")WriteFile32
+
+

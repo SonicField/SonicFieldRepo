@@ -1,0 +1,100 @@
+[    EFFECTS     ]
+[================]
+
+[ An Exciter Effect ]
+{
+	(?sample,3000)SFFilter.LowPass                                !a
+	(?a !a,3000)SFFilter.HighPass SFAMP.MakeTriangle SF.Normalise !b
+	(?a,(?b,-6)SF.Volume)SF.Add SF.Normalise
+} _exciter
+
+[ An effect which adds some bass ]
+{ 
+	(((?sample !sample,220)SFFilter.LowPass,?sample)SF.Add,-3)SF.Volume
+} _speachBassBoost
+
+[ An effect which adds a delay ad attenuates the result ]
+{
+	((?delayTime Sf.Silence,?sample) Sf.Concatenate,?wetDbs)Sf.Volume 
+} _simpleDelay
+
+[ An effect to mix two samples and normalize the result ]
+{ 
+	(?sampleA,?sampleB)Sf.Add Sf.Normalise 
+} _simpleMix
+
+"c:/temp/podcastIn.wav"  !wavFile
+"c:/temp/podcastOut"      !tempFile
+
+?wavFile Sf.ReadFile                  !channels
+?channels !channels ListHead          !left
+?channels           ListTail ListHead !right
+
+"Done Reading" Println
+
+?left  !sample
+_exciter Do !leftExciteTask
+?right !sample
+_exciter Do !rightExciteTask
+
+?leftExciteTask  Done !left
+?rightExciteTask Done !Right
+
+
+?left  !sample
+_speachBassBoost Do !leftBassTask
+?right !sample
+_speachBassBoost Do !rightBassTask
+
+?leftBassTask    Done !left
+?rightBassTask   Done !right
+
+
+20   !delayTime
+-3   !wetDbs
+?left !left     !sample
+_simpleDelay Do !leftDelayTask
+
+25   !delayTime
+?right !right   !sample
+_simpleDelay Do !RightDelayTask
+
+
+?left                !sampleA
+?leftDelayTask Done  !sampleB
+_simpleMix Do        !leftMixTask
+
+?Right               !sampleA
+?RightDelayTask Done !sampleB
+_simpleMix Do        !rightMixTask
+
+?leftMixTask  Done !left
+?RightMixTask Done !Right
+
+[ Make This And Effect !]
+(
+	1,6,
+	{
+	    !t
+	    {((30,(?t,10)Prod)Sum Sf.Silence,?left)Sf.Concatenate } Do !nlTask
+	    {((40,(?t,10)Prod)Sum Sf.Silence,?right)Sf.Concatenate} Do !nrTask
+	
+	    {((?nlTask Done, -18)Sf.Volume,1000)SFFilter.LowPass} Do  !nlTask
+	    {((?nrTask Done, -18)Sf.Volume,1000)SFFilter.LowPass} Do  !nrTask
+	
+	    {(?nlTask Done, ?left) Sf.Add Sf.Normalise} Do !nlTask 
+	    {(?nrTask Done, ?right)Sf.Add Sf.Normalise} Do !nrTask
+		
+		?nlTask Done !left
+		?nrTask Done !right
+	}
+)Repeat
+
+"Done processing" PrintLn
+
+[ Get the results of the tasks and make a wav file ]
+(?tempFile,?wetDbs,".wav")StrCat !tempFile
+((?left,?right),?tempFile !tempFile)Sf.WriteFile16
+"Playing" PrintLn
+[ Play that wave file ]
+(?tempFile,"Primary Sound Driver" Sf.Mixer)Sf.PlayFile sf.LineWait

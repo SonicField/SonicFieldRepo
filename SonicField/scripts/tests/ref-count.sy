@@ -1,0 +1,38 @@
+s1=sf.Realise(sf.SineWave(1000,440))
+assert s1.getReference()==1
+
+s2=sf.Normalise(s1)
+
+# s1 is held in a translator inside s2
+assert s1.getReference()==1
+assert s2.getReference()==1
+
+# manually drop the reference count of s2 
+# should set s1 and s2 to ref count 0
+s2.close()
+assert s1.getReference()==0
+assert s2.getReference()==0
+
+# has the reference been collected?
+ok=0
+try:
+    s1.getSample(0)
+except:
+    ok=1
+    
+assert ok==1
+
+s1=sf.Realise(sf.Silence(1000))
+s1=+s1
+assert s1.getReference()==2
+-s1
+-s1
+assert s1.getReference()==0
+
+ok=0
+try:
+    -s1
+except:
+    ok=1
+    
+assert ok==1

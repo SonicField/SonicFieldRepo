@@ -1,0 +1,20 @@
+"temp/input.wav" ReadFile ^signal
+>signal Normalise !signal
+(
+   1,10,
+   {
+        (
+            (?signal pcnt+90,0),
+            (>signal pcnt+10,10)
+        )MixAt Normalise !signal
+   }
+)Repeat
+?signal dbs+6 clip !signal
+(?signal,0.25)DirectResample !signal-b
+?signal-b dbs+24 saturate !signal-b
+(
+    >signal,
+    >signal-b
+)Mix !signal
+(0,(?signal length,100)-,>signal)Cut !signal
+(?signal,,,,,,)Concatenate Normalise Monitor

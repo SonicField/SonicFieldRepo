@@ -1,0 +1,104 @@
+{
+    [ Parameters:
+      len     - length of note.
+      mix     - percent of resonant signal
+      pitch   - the pitch around which the drum is based 
+      clatter - high pitch boost
+    ]
+    
+    [
+     hand tuned noise envelope to make the drive for the drum
+    ]   
+    (?length WhiteNoise)Concatenate                       !sample
+    (
+        ((0,1),((?length,0.5)*,-16),(?length,-36))SimpleShape,
+        >sample
+    )Multiply                                             !sample
+    
+    [
+     The input noise is split into bands to agitate the radial and
+     circular resonance.
+    ]
+    (
+        ?sample,
+        (?pitch,1.5)/,
+        (?pitch,0.75)/,
+        2
+    )ButterworthBandPass Normalise                  !rSample
+    (?pitch,PI)/                                    !cPitch
+    (
+        ?sample,
+        (?cPitch,1.5)/,
+        (?cPitch,0.75)/,
+        2
+    )ButterworthBandPass Normalise                  !cSample
+
+    (
+        (>rSample, 0.0)Volume,
+        (>cSample, 0.0)Volume
+    )Mix Normalise                                  !sample
+    (>sample,(?pitch,6)*,1)ButterworthLowPass       !drive    !sample
+    
+    ((0,0),(5,1),(10,0))NumericShape                !shape
+
+    [
+      Black magic!
+      ============
+      
+      The setting for the shape of the convolution is simply
+      hand tunned to make the drum sound nice.
+    ]
+    (>shape,(?pitch,150)/)DirectResample         !shape
+    >shape NormaliseArea                         !shape
+    
+    [ This controls the gain of the resonator, which can be
+      effected by the sample rate ]
+    (>shape,1.6)Volume                                 !shape
+    (1000,(?pitch,1.5)/)/                              !d1
+    (2000,(?pitch,1.5)/)/                              !d2
+    (3000,(?pitch,1.5)/)/                              !d3
+    (1000,(?cPitch,1.5)/)/                             !cd1
+    (2000,(?cPitch,1.5)/)/                             !cd2
+    (3000,(?cPitch,1.5)/)/                             !cd3
+    
+    [
+     Circular and radial coupled resonance hand tuned for this drum 
+    ]
+    (
+        ?sample,
+        (       
+            ((?shape,-5 )Volume,?d1 ),
+            ((?shape,-10)Volume,?d2 ),
+            ((?shape,-10)Volume,?d3 ),
+            ((?shape,-3 )Volume,?cd1),
+            ((?shape,-8 )Volume,?cd2),
+            ((?shape,-8 )Volume,?cd3)
+        )
+    )Resonate Normalise                             !sample
+    
+    [ Pick the mix of resonant and noise singal ]
+    (>sample,?drive Invert )Mix Normalise           !resonant
+
+    (?resonant,(?pitch,4)*,4)ButterworthHighPass    !toExcite
+    (>toExcite,0.75)Power                           !excited
+    (>excited,?clatter)Volume                       !excited
+    (>excited,>resonant)Mix Normalise               !resonant
+    
+    (
+        (>resonant,(?mix,100)/)NumericVolume,
+        (>drive,((100,?mix)-,100)/)NumericVolume
+    )Mix                                            !sample
+    
+    [ Remove DC ]
+    ((?sample,1,1)ButterworthHighPass,3.0)Volume      !sampleB
+    (>sample Invert,>sampleB)Mix Normalise            !sample
+
+    (?sample,(?pitch,4)*,4)ButterworthHighPass        !toExcite
+    (>toExcite,0.75)Power                             !excited
+    (>excited,?clatter)Volume                         !excited
+    (>excited,>sample)Mix Normalise                   !sample
+    ((0,1),((?length,10)-,1),(?length,0))NumericShape !shape
+    (>sample,>shape)Multiply                          !sample
+
+    (>sample Normalise,?volume)NumericVolume
+} !morroccan-drum

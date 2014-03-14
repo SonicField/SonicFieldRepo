@@ -1,0 +1,252 @@
+{
+    ((?length,2)*,?pitch)SinWave !signal
+    (
+        (0,15),
+        ((?length,4)/,0),
+        ((?length,0.5)*,-30),
+        (?length,-60),
+        ((?length,2)*,-99)
+    )SimpleShape !env
+    (>signal,>env)Multiply !signal
+    (>signal,(>pitch,4)*,2)ButterworthLowPass Saturate !signal Clean
+       
+    >signal  Normalise !signal
+    
+    (>signal,>volume)NumericVolume 
+}!make-note
+
+{
+    ((3,Random)* Truncate,1)- !diff
+    (>n,>diff)+ !n
+    (
+        (?n,1)lt,
+        2,
+        ?n
+    )Choose !n
+    (
+        (?n,?u)gt,
+        (?u,2)-,
+        ?n
+    )Choose
+}!make-numb
+
+{
+    Bunch !notes
+    ?length !o-length
+    ?pitch  !o-pitch
+    1 !pitch-scale-denom
+    1 !pitch-scale-nume
+    1 !length-scale
+    4 !o-volume
+    1 !volume-scale
+    0 !at
+    {
+    
+    
+        (?pitch-scale-nume,?pitch-scale-denom)/ !pitch-scale
+        (1,?volume-scale)/           !rvs
+        (?rvs,?o-volume)*            !volume
+        (?pitch-scale,?o-pitch)*     !pitch
+        (?length-scale,?o-length)*   !length
+        ?make-note Do                !signal
+        (1,?pitch-scale)/            !v-correction
+        
+        [ Do not over correct very & v high low frequencies 
+          or very quiet notes. This aim it to stop loud highs
+          dominating (psycho-acoustics)
+        ]
+        (
+            (?rvs,0.2)lt,
+            {
+                (
+                    (?v-correction,1.0)lt,
+                    1,
+                    ?v-correction
+                )Choose !v-correction
+            },{
+                (
+                    (?v-correction,2)gt,
+                    2,
+                    ?v-correction
+                )Choose !v-correction
+                 
+                (
+                    (?v-correction,0.25)lt,
+                    0.75,
+                    ?v-correction
+                )Choose !v-correction
+                
+                (
+                    (?v-correction,0.5)lt,
+                    0.5,
+                    ?v-correction
+                )Choose !v-correction
+            }
+        )Choose Invoke 
+        
+        (>signal,?v-correction)NumericVolume !signal
+        ((>signal,?at),>notes)AddEnd !notes
+
+        (
+            (0,?pitch-scale-nume)+,
+            (0,?pitch-scale-denom)+,
+            (0,?length-scale)+,
+            (0,?volume-scale)+,
+            ?at,
+            ?v-correction
+        )PrintLn
+
+        (>at,(?length,4)/)+          !at
+        
+        10 !u
+        >pitch-scale-denom !n ?make-numb Do !pitch-scale-denom
+
+        16 !u
+        >pitch-scale-nume  !n ?make-numb Do !pitch-scale-nume
+        
+        8 !u
+        >length-scale !n ?make-numb Do !length-scale
+
+        8 !u
+        >volume-scale !n ?make-numb Do !volume-scale
+        
+        (?at,?time)lt
+    }Loop
+
+    >notes MixAt Clean Normalise
+}!run
+ 256   !pitch
+4000  !length
+  20 !minutes
+
+(60000,?minutes)* !time
+[
+
+(
+    ?run Do,
+    ?run Do
+)Mix Normalise !left
+
+(
+    ?run Do,
+    ?run Do
+)Mix Normalise !Right
+
+((?left,?right),"temp/temp.wav")WriteFile32
+]
+
+"temp/temp.wav" ReadFile ^left ^right 
+
+0.33 !compress-amount
+{
+    >signal Normalise !signal
+    (?signal,128,2)ButterworthLowPass Normalise !stf
+    >signal Saturate Normalise !signal
+    
+    (1,?compress-amount)- !offset
+    (
+        {(?stf Reverse,1,1024)Follow Reverse},
+        {(?stf        ,1,1024)Follow}
+    )DoAll Mix !shape 
+
+    {(?shape,(1,?shape MaxValue)/)NumericVolume}Do                 !shape
+    {(?offset,(>shape, ?compress-amount)NumericVolume)DirectMix}Do !shape
+    {
+        (
+            >signal,
+            >shape 
+        )Divide Normalise
+    }Do !signal 
+}!compress-inner
+
+{
+    ?compress-amount !cpo
+    {(?signal ,200,2000,4)BesselBandPass}Do !signal-m 
+    {(?signal     ,2000,4)BesselHighPass}Do !signal-h 
+    {(?signal     , 200,4)BesselLowPass}Do  !signal-l
+    
+    (?cpo,2)** !compress-amount 
+    >signal-m !signal
+    ?cpo       !compress-amount 
+    ?compress-excite-inner Do !signal-m
+    >signal-h !signal
+    ?compress-excite-inner Do !signal-h
+    >signal-l !signal
+    ?compress-excite-inner Do !signal-l
+    
+    (
+        ({>signal-l pcnt+40}Do,3.5),
+        ({>signal-m pcnt+20}Do,0),
+        ({>signal-h pcnt+40}Do,0)
+    )MixAt Normalise 
+}!compress
+
+>left  !signal ?compress Do !left
+>right !signal ?compress Do !right
+
+4000 !length
+{(?length WhiteNoise,32,1)ButterworthHighPass}Do       !convolr
+{(>convolr,2.5)Power Normalise}Do                      !convolr
+{
+    (
+        (0,-99),
+        ( 50,-40),
+        ( 55,  0),
+        ( 57,-20),
+        (100,-20),
+        (125,0),
+        (500,-6),
+        ((?length,2)/,-20),
+        (?length,-60)
+    )SimpleShape
+}Do  !renvr
+{(>convolr Normalise,>renvr)Multiply}Do                             !convolr
+{((?length,2)* WhiteNoise,20,1)ButterworthHighPass}Do               !convolrb
+{(>convolrb,4.0)Power Normalise}Do                                  !convolrb
+{(>convolrb,512,2)ButterworthLowPass Normalise}Do                   !convolrb
+(((0,-60),(500,0),((?length,2)*,-60))SimpleShape,>convolrb)Multiply !convolrb
+(>convolrb pcnt+20,?convolr pcnt+80)Mix                             !convolr
+
+[ remove infra sound and a bit more]
+{(?length WhiteNoise,32,1)ButterworthHighPass}Do       !convoll
+{(>convoll,2.5)Power Normalise}Do                      !convoll
+{
+    (
+        (0,-99),
+        ( 55,-40),
+        ( 60,  0),
+        ( 63,-20),
+        (100,-20),
+        (135,0),
+        (450,-6),
+        ((?length,2)/,-20),
+        (?length,-60)
+    )SimpleShape
+}Do  !renvl
+{(>convoll Normalise,>renvl)Multiply}Do                             !convoll
+{((?length,2)* WhiteNoise,20,1)ButterworthHighPass}Do               !convollb
+{(>convollb,4.0)Power Normalise}Do                                  !convollb
+{(>convollb,400,2)ButterworthLowPass Normalise}Do                   !convollb
+(((0,-60),(500,0),((?length,2)*,-60))SimpleShape,>convollb)Multiply !convollb
+(>convollb pcnt+20,?convoll pcnt+80)Mix                             !convoll
+
+
+{((?left pcnt+50,0)  ,(?right pcnt+50,110))MixAt !signal >convoll !convol ?reverb Do Normalise}Do !wleft
+{((?left pcnt+50,120),(?right pcnt+50,0)  )MixAt !signal >convolr !convol ?reverb Do Normalise}Do !wright
+
+{
+    (
+        {>wleft pcnt+75}Do,
+        {>left  pcnt+25}Do
+    )Mix Normalise
+}Do !left
+{
+    (
+        {>wright pcnt+75}Do,
+        {>right  pcnt+25}Do
+    )Mix Normalise
+}Do !right
+
+
+((>left,>right),"temp/music-for-trains-12-post.wav")WriteFile32
+  

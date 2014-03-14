@@ -1,0 +1,916 @@
+[
+  Reverberator
+  ============
+]
+{
+    ?signal Magnitude !mag
+    (>signal,?grain-length Silence)Concatenate !signal   
+    (
+        (?mag,0)Eq,
+        {
+        },
+        {
+            (>signal,?grain-length Silence)Concatenate !signal   
+            >signal FrequencyDomain  !signal
+            (>convol,>signal)CrossMultiply  !signal
+            >signal TimeDomain !signal
+            ?signal Magnitude !newMag
+            (>signal,(>mag,>newMag)/)NumericVolume !signal
+            [ tail out clicks due to amplitude at end of signal ]
+            (
+                (
+                    (0,1),
+                    (100,1),
+                    ((?signal Length,100)-,1),
+                    (?signal Length,0)
+                )NumericShape,
+                >signal
+            )multiply !signal
+        }
+    )Choose Invoke
+    >signal
+}!reverb-inner
+
+{
+    ?convol Length !grain-length 
+
+    (>convol,?grain-length Silence)Concatenate FrequencyDomain  !convol
+    (>signal,?grain-length Silence)Concatenate !signal
+    Bunch !out
+    (
+        (>signal,?grain-length)Granulate,
+        {
+                ^signal ^time
+                ((?reverb-inner Do,>time),>out)AddEnd !out
+        }
+    )InvokeAll
+    >out MixAt Normalise
+}!reverb
+
+{
+    (100,?frequency)SinWave MakeSawTooth !filter
+    (>filter,?length,1)ButterworthLowPass !filter
+    ?length WhiteNoise !signal
+    ((0,0),(?attack-a,0.25),(?attack-b,  1),((?length,0.8)*,  1),(?length,0))NumericShape !sinEnv
+    (>signal,?sinEnv)Multiply                  !signal
+    (>signal,>filter)Convolve Normalise        !signal
+    (>signal,2000,5)ButterworthLowPass         !signal
+    (>signal,?frequency,2)ButterworthHighPass  !signal
+    (>signal,?frequency,1)ButterworthLowPass   !signal
+    (((0,0),((?length,0.75)*,1),(?length,0.5))NumericShape,(?length,2.5)SinWave)Multiply !vvib
+    (1,>vvib pcnt+50)DirectMix                 !vvib
+    (>signal,?vvib)Multiply Saturate Normalise !signal
+    (>signal,0.6,0.5,?frequency Period)ResonantFilter Normalise !wave
+    (
+        -0.03,0.2,0,-1,0.2,2,
+        ?wave
+    )WaveShaper Normalise      !signal
+    (>signal,?sinEnv)Multiply  !signal
+    ((0,64),((?length,0.25)*,?frequency),(?length,64))NumericShape                      !lower
+    ((0,?frequency),((?length,0.25)*,(?frequency,4)*),(?length,?frequency))NumericShape !upper
+    (>signal,>lower,>upper,2)ShapedButterworthBandPass Normalise !signal
+    (>signal,?volume)Volume
+} !flute
+
+{
+    ((?attack,2)*,?pitch)ExactSinWave MakeSquare !hit
+    (?hit,(?pitch,2)*,4)ButterworthLowPass       !hit
+    (
+        (0,1),
+        (45,0.5),
+        (75,0)
+    )NumericShape !hit-env
+    (
+        >hit,
+        >hit-env
+    )Multiply Normalise !hit 
+    
+    (>hit,?hit-strength)Volume !hit
+    
+    (?attack,?decay,?sustain,?release)+ !length
+    (
+       (?length,?pitch)ExactSinWave      dbs+3,
+       (?length,(?pitch,2)*)ExactSinWave dbs-12, 
+       (?length,(?pitch,3)*)ExactSinWave dbs-18
+    )Mix                                !note
+    
+    (
+        (0,0),
+        (?attack,1),
+        ((?attack,?decay)+,0.5),
+        ((?attack,?decay,?sustain)+,0.1),
+        (?length,0)
+    )NumericShape !note-env
+    (
+        >note,
+        ?note-env
+    )Multiply Normalise !note 
+    (
+        1,
+        0,
+        1,
+        1,
+        4,
+        10,
+        >note
+    ) WaveShaper Normalise !note
+    (
+        0,
+        0,
+        1,
+        1,
+        4,
+        10,
+        >note
+    ) WaveShaper Normalise !note
+    
+    (>note,?pitch,1)ButterworthHighPass Normalise !note
+    (>note,1500,2)ButterworthLowPass    Normalise !note
+    
+    (
+        ((0,5),((?attack,?decay,?sustain)+,1))Slide,
+        ?note-env
+    )Multiply !twang
+    (?twang,?release silence)Concatenate !twang
+    
+    ( 1,>twang  pcnt+20)DirectMix !twang
+    (
+        >twang,
+        >note
+    )Multiply !note
+    
+    (
+        >hit dbs+6,
+        >note
+    )Mix !note
+    
+    (?note,((0,1.001),(?note length,0.999))NumericShape)Resample !note-1
+    (?note,((0,0.999),(?note length,1.001))NumericShape)Resample !note+1
+    (>note,>note-1 pcnt-50,>note+1 pcnt+50)Mix Normalise !note
+    
+    64 !base
+    (
+        (?note,110,2)ButterworthLowPass Normalise,
+        (
+            (-7,?base         Period),
+            (-7,(?base,1.25)* Period),
+            (-7,(?base,1.50)* Period),
+            (-7,(?base,1.75)* Period)
+        ),
+        -20
+    )MultipleResonantFilter Normalise !sounding-board
+    (>sounding-board,110,2)ButterworthLowPass Normalise !sounding-board 
+    ((0,0),(125,0),(500,1),((?note length,250)-,1),(?note length,0))NumericShape !damper
+    (>sounding-board,25,4)ButterworthHighPass !sounding-board
+    (
+        >sounding-board,
+        ?damper
+    )Multiply Normalise !sounding-board 
+    (>sounding-board,25,4)ButterworthHighPass !sounding-board
+    (
+        >sounding-board,
+        ?damper
+    )Multiply Normalise !sounding-board 
+    (>sounding-board,?pitch,1)ButterworthHighPass !sounding-board
+    (250,?sounding-board length,>sounding-board)Cut !sounding-board
+   
+    (
+        >sounding-board,
+        >note
+    )Mix Normalise !note
+    
+    (
+        (
+            250 Silence,
+            (?damper,?note)Multiply Saturate Normalise,
+        )Concatenate,
+        (
+            (-3,(?pitch,0.05)* Period),
+            (-6,(?pitch,0.2)* Period),
+            (-8,(?pitch,0.25)* Period),
+            (-8,(?pitch,0.333)* Period),
+            (-9,(?pitch,0.5)* Period),
+            (-6,(?pitch,1.5)* Period),
+            (-6,(?pitch,2.0)* Period) 
+        ),
+        -80
+    ) MultipleResonantFilter Normalise        !res
+    (0,?length,>res)Cut               !res
+    (
+        0,
+        0,
+        1,
+        1,
+        4,
+        10,
+        >res
+    ) WaveShaper Normalise !res    
+    (
+        >note,
+        >res Normalise pcnt+15
+    )Mix !note
+    (?note,(?pitch,2)*,1)ButterworthLowPass Normalise !note    
+    
+    (>note,500 Silence)Concatenate !note
+    (
+        (
+            1,
+            (
+                (
+                    ?note length WhiteNoise,
+                    ?pitch,
+                    4
+                )ButterworthHighPass
+                ,(?pitch,2)*
+                ,4
+            )ButterworthLowPass Normalise dbs-10
+        )DirectMix,
+        >note
+    )Multiply !note
+    (>note,15,2)ButterworthHighPass     !note
+
+    (
+        (0,0),
+        (500,0),
+        (1000,1),
+        (?note length,1)
+    )NumericShape !note-env
+    
+    (
+        >note-env,
+        ?note
+    )Multiply !sample
+
+    (>sample,25,4)ButterworthHighPass !sample
+    ((?sample Length WhiteNoise,500,6)ButterworthLowPass,0.01)DirectResample Normalise !multi
+    (>sample,(1,>multi)DirectMix)Multiply !sample
+
+    >sample !signal
+    (
+        (
+            ((2000 WhiteNoise,2)Power,2000,1)ButterworthLowPass Normalise,
+            ((0,0),(80,0),(90,1),(2000,0))NumericShape
+        )Multiply,
+        (
+            ((5000 WhiteNoise,3)Power,1000,2)ButterworthLowPass Normalise,
+            ((0,0),(125,0),(135,1),(5000,0))NumericShape
+        )Multiply
+    )Mix Normalise !convol
+    
+    (
+        ?reverb Do pcnt+50,
+        !sample
+    )Mix
+
+    ((?sample Length WhiteNoise,500,6)ButterworthLowPass,0.01)DirectResample Normalise !multi
+    (>sample,(1,>multi dbs-6)DirectMix)Multiply !sample
+    (
+        0,
+        0,
+        1,
+        1,
+        4,
+        10,
+        >sample
+    ) WaveShaper Normalise !sample
+    (
+        (((0,0.125),(4000,0.25),(?sample Length,1))NumericShape,>sample)Multiply,
+        >note
+    )Mix Normalise !note
+
+    
+    (
+        ((?note,1000,4)ButterworthHighPass,0.87)Power dbs-6,
+        >note
+    )Mix Normalise !note
+
+   ( >note,?volume)NumericVolume 
+        
+}!solar-piano
+
+{
+    Bunch !notes
+    (
+        ?tune,
+        {
+            ^pitch ^voice
+            ?voice Invoke
+            ?solar-piano Do !note
+            ((>note,?at),>notes)AddEnd !notes
+            ("Solar Pitch",?pitch,"At",?at,"Done")PrintLn
+            (>at,(?a-beat,>beats)*)+ !at
+        }
+    )InvokeAll
+    ?notes MixAt Normalise ClipToSafe
+}!play-solar
+
+{
+    Bunch !notes
+    (
+        ?tune,
+        {
+            ^frequency ^voice
+            ?voice Invoke
+            ?flute Do !note
+            ((>note,?at),>notes)AddEnd !notes
+            ("Flute Pitch",?frequency,"At",?at,"Done")PrintLn
+            (>at,?length)+ !at
+        }
+    )InvokeAll
+    ?notes MixAt Normalise ClipToSafe
+}!play-flute
+
+{
+    (
+        ?tune,
+        {
+            ^pitch ^voice
+            >voice Invoke
+            (>at,(?a-beat,>beats)*)+ !at
+        }
+    )InvokeAll
+}!forward-at
+
+{
+    50     !attack
+    500    !decay
+    2000   !sustain
+    4000   !release
+    1      !hit-strength
+    1      !volume
+    6      !beats
+}!long-solarf
+
+{
+    60     !attack
+    300    !decay
+    2000   !sustain
+    4000   !release
+    0.8    !hit-strength
+    0.8    !volume
+    6      !beats
+}!long-solar
+
+{
+    60     !attack
+    300    !decay
+    2000   !sustain
+    4000   !release
+    0.8    !hit-strength
+    0.8    !volume
+    4.5    !beats
+}!long-3-solar
+
+{
+    60     !attack
+    300    !decay
+    2000   !sustain
+    4000   !release
+    0.8    !hit-strength
+    0.8    !volume
+    3      !beats
+}!medium-solar
+
+{
+    120     !attack
+    300    !decay
+    2000   !sustain
+    4000   !release
+    0.5    !hit-strength
+    0.6    !volume
+    3      !beats
+}!medium-solarp
+
+{
+    120     !attack
+    300    !decay
+    2000   !sustain
+    4000   !release
+    0.5    !hit-strength
+    0.6    !volume
+    1.5    !beats
+}!short-solarp
+
+{
+    50     !attack
+    250    !decay
+    1000   !sustain
+    2000   !release
+    0.8    !hit-strength
+    0.7    !volume
+    0.5    !beats
+}!arp-aa
+
+{
+    50     !attack
+    125    !decay
+    500    !sustain
+    1500   !release
+    0.2    !hit-strength
+    0.5    !volume
+    0.5    !beats
+}!arp-a
+
+{
+    50     !attack
+    125    !decay
+    500    !sustain
+    1500   !release
+    0.0    !hit-strength
+    0.1    !volume
+    0.5    !beats
+}!arp-app
+
+{
+    50     !attack
+    125    !decay
+    500    !sustain
+    1500   !release
+    0.1    !hit-strength
+    0.2    !volume
+    0.5    !beats
+}!arp-ap
+
+{
+    75     !attack
+    125    !decay
+    500    !sustain
+    1500   !release
+    0.1    !hit-strength
+    0.3    !volume
+    0.49   !beats
+}!arp-b
+
+{
+    75     !attack
+    125    !decay
+    500    !sustain
+    1500   !release
+    0.0    !hit-strength
+    0.1    !volume
+    0.49   !beats
+}!arp-bpp
+
+{
+    75     !attack
+    125    !decay
+    500    !sustain
+    1500   !release
+    0.1    !hit-strength
+    0.2    !volume
+    0.49   !beats
+}!arp-bp
+
+{
+    75     !attack
+    125    !decay
+    500    !sustain
+    1500   !release
+    0.3    !hit-strength
+    0.3    !volume
+    0.51   !beats
+}!arp-c
+
+{
+    75     !attack
+    125    !decay
+    500    !sustain
+    1500   !release
+    0.0    !hit-strength
+    0.1    !volume
+    0.51   !beats
+}!arp-cpp
+
+{
+    75     !attack
+    125    !decay
+    500    !sustain
+    1500   !release
+    0.1    !hit-strength
+    0.2    !volume
+    0.51   !beats
+}!arp-cp
+
+{
+    75     !attack
+    125    !decay
+    500    !sustain
+    1000   !release
+    0.1    !hit-strength
+    0.2    !volume
+    0.27   !beats
+}!arp-d
+
+{
+    50     !attack
+    150    !decay
+    500    !sustain
+    1000   !release
+    0.2    !hit-strength
+    0.3    !volume
+    0.23   !beats
+}!arp-e
+
+{
+    (?a-beat,6)* !length
+     700 !attack-a
+    1280 !attack-b
+    1    !volume
+}!long-flute
+
+{
+    (?a-beat,6)* !length
+     700 !attack-a
+    1280 !attack-b
+    0.25 !volume
+}!long-flutep
+
+[
+{
+    (?a-beat,6)* !length
+    2024 !attack-a
+    5024 !attack-b
+}!long-flute-first
+]
+
+1536 !a-beat
+
+(
+    ("C4"  Note,?arp-a),
+    ("E4b" Note,?arp-b),
+    ("G4"  Note,?arp-c),
+    ("C4"  Note,?arp-a),
+    ("E4b" Note,?arp-b),
+    ("G4"  Note,?arp-c),
+    ("C4"  Note,?arp-a),
+    ("E4b" Note,?arp-b),
+    ("G4"  Note,?arp-c),
+    ("C4"  Note,?arp-a),
+    ("E4b" Note,?arp-b),
+    ("G4"  Note,?arp-c),
+
+[ Down 2nd]
+    ("B3b" Note,?arp-a),
+    ("C4#" Note,?arp-b),
+    ("F4"  Note,?arp-c),
+    ("B3b" Note,?arp-a),
+    ("C4#" Note,?arp-b),
+    ("F4"  Note,?arp-c),
+    ("B3b" Note,?arp-a),
+    ("C4#" Note,?arp-b),
+    ("F4"  Note,?arp-c),
+    ("B3b" Note,?arp-a),
+    ("C4#" Note,?arp-b),
+    ("F4"  Note,?arp-c),
+
+[rotate]    
+    ("F4"  Note,?arp-a),
+    ("C4#" Note,?arp-b),
+    ("B3b" Note,?arp-c),
+    ("F4"  Note,?arp-a),
+    ("C4#" Note,?arp-b),
+    ("B3b" Note,?arp-c),
+    ("F4"  Note,?arp-a),
+    ("C4#" Note,?arp-b),
+    ("B3b" Note,?arp-c),
+    ("F4"  Note,?arp-a),
+    ("C4#" Note,?arp-b),
+    ("B3b" Note,?arp-c),
+[down first]   
+    ("A3"  Note,?arp-a),
+    ("C4"  Note,?arp-b),
+    ("E4"  Note,?arp-c),
+    ("A3"  Note,?arp-a),
+    ("C4"  Note,?arp-b),
+    ("E4"  Note,?arp-c),
+    ("A3"  Note,?arp-a),
+    ("C4"  Note,?arp-b),
+    ("E4"  Note,?arp-c),
+    ("A3"  Note,?arp-a),
+    ("C4"  Note,?arp-b),
+    ("E4"  Note,?arp-c)
+
+)!tune-1
+
+(
+    ("B2b" Note,?long-flute),
+    ("F3"  Note,?long-flute),
+    ("A2"  Note,?long-flute)
+)!flute-1
+
+(
+    ("C4"  Note,?arp-aa),
+    ("A4"  Note,?arp-d),
+    ("G4"  Note,?arp-e),
+    ("E4b" Note,?arp-c),
+    ("C4"  Note,?arp-aa),
+    ("A4"  Note,?arp-d),
+    ("G4"  Note,?arp-e),
+    ("E4b" Note,?arp-c),
+    ("C4"  Note,?arp-aa),
+    ("A4"  Note,?arp-d),
+    ("G4"  Note,?arp-e),
+    ("E4b" Note,?arp-c),
+    ("C4"  Note,?arp-aa),
+    ("A4"  Note,?arp-d),
+    ("G4"  Note,?arp-e),
+    ("E4b" Note,?arp-c),
+[down second]    
+    ("B4b" Note,?arp-aa),
+    ("G4"  Note,?arp-d),
+    ("F4"  Note,?arp-e),
+    ("C4#" Note,?arp-c),
+    ("B4b" Note,?arp-aa),
+    ("G4"  Note,?arp-d),
+    ("F4"  Note,?arp-e),
+    ("C4#" Note,?arp-c),
+    ("B4b" Note,?arp-aa),
+    ("G4"  Note,?arp-d),
+    ("F4"  Note,?arp-e),
+    ("C4#" Note,?arp-c),
+    ("B4b" Note,?arp-aa),
+    ("G4"  Note,?arp-d),
+    ("F4"  Note,?arp-e),
+    ("C4#" Note,?arp-c)
+
+)!tune-2
+
+(
+    ("A3"  Note,?long-flute),
+    ("G3"  Note,?long-flute)
+)!flute-2
+
+(
+    ("C5"  Note,?long-solarf),
+    ("B4b" Note,?long-solar),
+    ("B4b" Note,?medium-solar),
+    ("B4b" Note,?medium-solarp),
+    ("A4"  Note,?long-3-solar),
+    ("A5"  Note,?short-solarp),
+    ("C6"  Note,?long-3-solar),
+    ("C6"  Note,?short-solarp),
+    ("B5b" Note,?long-3-solar),
+    ("G5"  Note,?short-solarp),
+    ("A5"  Note,?long-3-solar),
+    ("A5"  Note,?short-solarp),
+    ("G5"  Note,?long-3-solar)
+)!tune-3
+
+(
+    ("C4"  Note,?arp-app),
+    ("E4b" Note,?arp-bpp),
+    ("G4"  Note,?arp-cpp),
+    ("C4"  Note,?arp-ap),
+    ("E4b" Note,?arp-bp),
+    ("G4"  Note,?arp-cp),
+    ("C4"  Note,?arp-ap),
+    ("E4b" Note,?arp-bp),
+    ("G4"  Note,?arp-cp),
+    ("C4"  Note,?arp-a),
+    ("E4b" Note,?arp-b),
+    ("G4"  Note,?arp-c),
+
+[ Down 2nd]
+    ("B3b" Note,?arp-a),
+    ("C4#" Note,?arp-b),
+    ("F4"  Note,?arp-c),
+    ("B3b" Note,?arp-a),
+    ("C4#" Note,?arp-b),
+    ("F4"  Note,?arp-c),
+    ("B3b" Note,?arp-a),
+    ("C4#" Note,?arp-b),
+    ("F4"  Note,?arp-c),
+    ("B3b" Note,?arp-a),
+    ("C4#" Note,?arp-b),
+    ("F4"  Note,?arp-c),
+[ Again ]    
+    ("B3b" Note,?arp-a),
+    ("C4#" Note,?arp-b),
+    ("F4"  Note,?arp-c),
+    ("B3b" Note,?arp-a),
+    ("C4#" Note,?arp-b),
+    ("F4"  Note,?arp-c),
+    ("B3b" Note,?arp-a),
+    ("C4#" Note,?arp-b),
+    ("F4"  Note,?arp-c),
+    ("B3b" Note,?arp-a),
+    ("C4#" Note,?arp-b),
+    ("F4"  Note,?arp-c),
+[ Down first ]
+    ("A3" Note,?arp-a),
+    ("C4" Note,?arp-b),
+    ("E4" Note,?arp-c),
+    ("A3" Note,?arp-a),
+    ("C4" Note,?arp-b),
+    ("E4" Note,?arp-c),
+    ("A3" Note,?arp-a),
+    ("C4" Note,?arp-b),
+    ("E4" Note,?arp-c),
+    ("A3" Note,?arp-a),
+    ("C4" Note,?arp-b),
+    ("E4" Note,?arp-c),
+    
+[ Back to root ]
+    ("C4"  Note,?arp-app),
+    ("E4b" Note,?arp-bpp),
+    ("G4"  Note,?arp-cpp),
+    ("C4"  Note,?arp-ap),
+    ("E4b" Note,?arp-bp),
+    ("G4"  Note,?arp-cp),
+    ("C4"  Note,?arp-ap),
+    ("E4b" Note,?arp-bp),
+    ("G4"  Note,?arp-cp),
+    ("C4"  Note,?arp-a),
+    ("E4b" Note,?arp-b),
+    ("G4"  Note,?arp-c),
+
+[ Down 2nd and rotate and shift]
+    ("F4"  Note,?arp-a),
+    ("G3#" Note,?arp-b),
+    ("B3b" Note,?arp-c),
+    ("F4"  Note,?arp-a),
+    ("G3#" Note,?arp-b),
+    ("B3b" Note,?arp-c),
+    ("F4"  Note,?arp-a),
+    ("G3#" Note,?arp-b),
+    ("B3b" Note,?arp-c),
+    ("F4"  Note,?arp-a),
+    ("G3#" Note,?arp-b),
+    ("B3b" Note,?arp-c),
+
+[ Way Down and quiet ]    
+    ("C3"  Note,?arp-ap),
+    ("E3b" Note,?arp-bp),
+    ("G3"  Note,?arp-cp),
+    ("C3"  Note,?arp-ap),
+    ("E3b" Note,?arp-bp),
+    ("G3"  Note,?arp-cp),
+    ("C3"  Note,?arp-ap),
+    ("E3b" Note,?arp-bp),
+    ("G3"  Note,?arp-cp),
+    ("C3"  Note,?arp-ap),
+    ("E3b" Note,?arp-bp),
+    ("G3"  Note,?arp-cp)
+)!tune-3b    
+
+(
+    ("C4"  Note,?arp-a),
+    ("E4b" Note,?arp-b),
+    ("G4"  Note,?arp-c),
+    ("C4"  Note,?arp-a),
+    ("E4b" Note,?arp-b),
+    ("G4"  Note,?arp-c),
+    ("C4"  Note,?arp-a),
+    ("E4b" Note,?arp-b),
+    ("G4"  Note,?arp-c),
+    ("C4"  Note,?arp-a),
+    ("E4b" Note,?arp-b),
+    ("G4"  Note,?arp-c),
+
+[ Down 2nd]
+    ("B3b" Note,?arp-a),
+    ("C4#" Note,?arp-b),
+    ("F4"  Note,?arp-c),
+    ("B3b" Note,?arp-a),
+    ("C4#" Note,?arp-b),
+    ("F4"  Note,?arp-c),
+    ("B3b" Note,?arp-a),
+    ("C4#" Note,?arp-b),
+    ("F4"  Note,?arp-c),
+    ("B3b" Note,?arp-a),
+    ("C4#" Note,?arp-b),
+    ("F4"  Note,?arp-c),
+
+[rotate]    
+    ("F4"  Note,?arp-a),
+    ("C4#" Note,?arp-b),
+    ("B3b" Note,?arp-c),
+    ("F4"  Note,?arp-a),
+    ("C4#" Note,?arp-b),
+    ("B3b" Note,?arp-c),
+    ("F4"  Note,?arp-a),
+    ("C4#" Note,?arp-b),
+    ("B3b" Note,?arp-c),
+    ("F4"  Note,?arp-a),
+    ("C4#" Note,?arp-b),
+    ("B3b" Note,?arp-c),
+
+[down first]   
+    ("A3"  Note,?arp-a),
+    ("C4"  Note,?arp-b),
+    ("E4"  Note,?arp-c),
+    ("A3"  Note,?arp-ap),
+    ("C4"  Note,?arp-bp),
+    ("E4"  Note,?arp-cp),
+    ("A3"  Note,?arp-ap),
+    ("C4"  Note,?arp-bp),
+    ("E4"  Note,?arp-cp),
+    ("A3"  Note,?arp-app),
+    ("C4"  Note,?arp-bpp),
+    ("E4"  Note,?arp-cpp)
+
+)!tune-4
+
+(
+    ("G3"  Note,?long-flutep),
+    ("B2b" Note,?long-flute),
+    ("F3"  Note,?long-flute),
+    ("A2"  Note,?long-flute),
+    ("C3"  Note,?long-flutep),
+    ("G2"  Note,?long-flutep)
+)!flute-4
+
+500 !at
+?tune-1 !tune
+
+((?play-solar Do,?play-solar Do),"temp/arp-1.wav")WriteFile32
+?at !old-at
+(?at,(?a-beat,6)*)+ !at
+
+?flute-1 !tune
+((?play-flute Do,?play-flute Do),"temp/flute-1.wav")WriteFile32
+?old-at !at
+
+?tune-1 !tune
+?forward-at Invoke
+
+?tune-2 !tune
+
+((?play-solar Do,?play-solar Do),"temp/arp-2.wav")WriteFile32
+
+?flute-2 !tune
+((?play-flute Do,?play-flute Do),"temp/flute-2.wav")WriteFile32
+
+?tune-2 !tune
+?forward-at Invoke
+
+?tune-3  !tune
+((?play-solar Do,?play-solar Do),"temp/melody-3.wav")WriteFile32
+?tune-3b !tune
+((?play-solar Do,?play-solar Do),"temp/arp-3.wav")WriteFile32
+
+?tune-3b  !tune
+?forward-at Invoke
+
+?tune-4  !tune
+((?play-solar Do,?play-solar Do),"temp/arp-4.wav")WriteFile32
+
+?flute-4 !tune
+((?play-flute Do,?play-flute Do),"temp/flute-4.wav")WriteFile32
+
+
+"temp/arp-1.wav"    ReadFile  ^l-1  ^r-1
+"temp/flute-1.wav"  ReadFile ^fl-1 ^fr-1
+"temp/arp-2.wav"    ReadFile  ^l-2  ^r-2
+"temp/flute-2.wav"  ReadFile ^fl-2 ^fr-2
+"temp/arp-3.wav"    ReadFile  ^l-3  ^r-3
+"temp/melody-3.wav" ReadFile ^ml-3 ^mr-3
+"temp/arp-4.wav"    ReadFile  ^l-4  ^r-4
+"temp/flute-4.wav"  ReadFile ^fl-4 ^fr-4
+
+{
+    (
+        >l-1  dbs-6,
+        >fl-1 dbs-4,
+        >l-2  dbs-3,
+        >fl-2 dbs-4,
+        >l-3  dbs-6,
+        >ml-3 dbs-3,
+        >r-4  dbs-6,
+        >fr-4 dbs-9
+    )Mix Normalise 
+} !left
+{
+    (
+        >r-1  dbs-4,
+        >fr-1 dbs-8,
+        >r-2  dbs-2,
+        >fr-2 dbs-8,
+        >r-3  dbs-6,
+        >mr-3      ,
+        >r-4       ,
+        >fr-4 dbs-12
+    )Mix Normalise
+} !right
+
+
+[
+   Post
+   ===
+]
+"Post Processing" PrintLn
+((>left Do !left,>right Do !right),"temp/arp-mix.wav")WriteFile32 
+"temp/hm2_000_wx_48k.wav" ReadFile ^revl ^revr
+
+?left  !signal >revl !convol ?reverb Do Normalise !wleft
+?right !signal >revr !convol ?reverb Do Normalise !wright
+(
+    >wleft,
+    >left
+)Mix Normalise !left
+(
+    >wright,
+    >right
+)Mix Normalise !right
+
+((>left,>right),"temp/arp-post.wav")WriteFile32 

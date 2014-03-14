@@ -1,0 +1,206 @@
+{
+    (?sample,1000,5)DirectLowPass  !sampleL
+    (?sample,3000,2)DirectLowPass  !sampleN
+    (?sample,1000,4)DirectHighPass !sampleH
+    (>sampleH,5000,2)DirectLowPass !sampleH
+    (?sample,((?first ,?offset)+ Prime Silence,(?sample,-13)Volume)Concatenate)Mix    !wet
+    (
+        1,2,
+        {
+            !z
+            (>first,1.2)* Prime !first
+            (>wet,(((?first,30)-,?offset)- Silence,(?sampleL,(-10,?z)-)Volume)Concatenate)Mix   !wet
+            (>wet,(((?first,30)+,?offset)- Silence,(?sampleN,(-6, ?z)-)Volume)Concatenate)Mix   !wet
+            (>wet,((?first      ,?offset)- Silence,(?sampleH,(-10,?z)-)Volume)Concatenate)Mix   !wet
+        }
+    )Repeat
+    (?sampleL,1000,1)DirectLowPass  !sampleL
+    (?sampleN,1000,1)DirectLowPass  !sampleN
+    (?sampleH,2000,1)DirectLowPass  !sampleH
+    (
+        (0,0),
+        ((?wet Length,3)/,1),
+        (?wet Length,0)
+    )NumericShape !env
+    (
+        3,20,
+        {
+            !z 
+            (?z,2)/ !z
+            (>first,1.1)* Prime !first
+            (>wet,(((?first,30)-,?offset)- Silence,((?sampleL,(-7,?z)-)Volume,?env)Multiply)Concatenate)Mix    !wet
+            (>wet,(((?first,30)+,?offset)- Silence,((?sampleN,(-4,?z)-)Volume,?env)Multiply)Concatenate)Mix    !wet
+            (>wet,((?first      ,?offset)- Silence,((?sampleH,(-7,?z)-)Volume,?env)Multiply)Concatenate)Mix    !wet
+        }
+    )Repeat
+    (
+        20,80,
+        {
+            !z 
+            (?z,3)/ !z
+            (>first,1.05)* Prime !first
+            (>wet,(((?first,30)-,?offset)- Silence,(((?sampleL,(-7,?z)-)Volume,?env)Multiply,500,2)DirectLowPass)Concatenate)Mix    !wet
+            (>wet,(((?first,30)+,?offset)- Silence,(((?sampleN,(-4,?z)-)Volume,?env)Multiply,500,2)DirectLowPass)Concatenate)Mix    !wet
+            (>wet,((?first      ,?offset)- Silence,(((?sampleH,(-7,?z)-)Volume,?env)Multiply,500,2)DirectLowPass)Concatenate)Mix    !wet
+        }
+    )Repeat
+    >wet
+} !reflector
+
+"scripts/performances/thinks-1.wav"  !wavFile
+?wavFile ReadFile GetStart Normalise !signal
+
+>signal dbs+6 clip !signal
+(>signal,0.05)DirectRelength Normalise !signal
+
+[ Resonant pure ]
+{
+    ((?pitch,0.75)*,(?pitch,0.75)/,2)CreateDirectBandPass !filter
+    (
+        ((?sample,(?pitch,0.75)*,(?pitch,0.75)/,2)DirectBandPass Normalise,4)Power Normalise,
+        0.99,
+        0.15,
+        (?pitch,4)/ Period,
+        ?filter
+    )FilteredResonantFilter Normalise 
+}!resonateA
+
+[ Very Metalic ]
+{
+    ((?pitch,0.75)*,(?pitch,0.75)/,2)CreateDirectBandPass !filter
+    (
+        ((((?sample,(?pitch,0.75)*,(?pitch,0.75)/,2)DirectBandPass Normalise,4)Power,1000,3)DirectHighPass,2)Power Normalise,
+        0.985,
+        0.01,
+        (?pitch,4)/ Period,
+        ?filter
+    )FilteredResonantFilter Normalise !sample
+    (?sample length,?pitch Prime)SinWave dbs+24 !mod
+    (>sample,>mod)FrequencyModulate Normalise 
+}!resonateB
+
+{
+    (>sample,10,1)DirectHighPass !sample
+    (
+        ((0,0),(125,1),(1750,1),(2000,0))NumericShape,
+        >sample
+    )Multiply !sample
+    ((?sample Length WhiteNoise,500,6)DirectLowPass,0.01)DirectResample Normalise !multi
+    (>multi,10,1)DirectHighPass          Normalise !multi
+    (
+        >sample,
+        >multi
+    )Multiply Normalise
+}!wobble
+
+{
+    ?wobble Do Done !sample
+    80  !first
+    0   !offset
+    ?reflector Do Done Normalise
+}!wobblr
+
+(0,?signal Length Integer,>signal)Cut !signal Length !len
+
+[ Temp to reduce time ]
+[(0,100000,>signal)Cut !signal Length !len]
+
+1 Silence !left !right
+(
+    1,(?len,1000)/,
+    {
+        !x
+        (>x,1000)*   !end
+        (?end,1000)- !start
+        (>end,1000)+ !end
+        ("Start: ",?start," End: ",?end)StrCat Println
+        (?start,?end,?signal)Cut !sample
+        (>sample,1000 Silence)Concatenate !sample
+        (((Random,16)*,1)+,8)* Integer    !pitch-base
+        (?pitch-base,((5,4)/,4)*)*        !pitch ?resonateA Do !res1
+        ?pitch-base                       !pitch ?resonateB Do !res2
+        (?pitch-base,((3,4)/,8)*)*        !pitch ?resonateB Do !res3
+        ?sample !temp
+        >sample Normalise dbs+12 Saturate Normalise !sample
+        (?pitch-base,((Random,16)+,8)* Integer)*    !pitch ?resonateA Do !res4
+        >temp   !sample
+
+        (
+            ?sample,
+            (?sample,0.99,0.15,(?pitch-base,2)* Period)ResonantFilter
+        )Multiply Normalise !res5
+
+        "Bank 1" Println        
+        >res1 Done  !sample 
+        ?wobble Do  !res1-l
+        ?wobble Do  !res1-r
+        ?wobblr Do  !res1-l-ref
+        ?wobblr Do  !res1-r-ref
+        
+        "Bank 2" Println        
+        >res2 Done  !sample 
+        ?wobble Do  !res2-l
+        ?wobble Do  !res2-r
+        ?wobblr Do  !res2-l-ref
+        ?wobblr Do  !res2-r-ref
+        
+        "Bank 3" Println        
+        >res3 Done  !sample 
+        ?wobble Do  !res3-l
+        ?wobble Do  !res3-r
+        ?wobblr Do  !res3-l-ref
+        ?wobblr Do  !res3-r-ref
+        
+        "Bank 4" Println        
+        >res4 Done  !sample 
+        ?wobble Do  !res4-l
+        ?wobble Do  !res4-r
+        ?wobblr Do  !res4-l-ref
+        ?wobblr Do  !res4-r-ref
+        
+        "Bank 5" Println        
+        >res5       !sample 
+        ?wobble Do  !res5-l
+        ?wobble Do  !res5-r
+        ?wobblr Do  !res5-l-ref
+        ?wobblr Do  !res5-r-ref
+                
+        (
+            (>res1-l     Done,(Random,250)*),
+            (>res2-l     Done,(Random,250)*),
+            (>res3-l     Done,(Random,250)*),
+            (>res4-l     Done,(Random,250)*),
+            (>res5-l     Done,(Random,250)*),
+            (>res1-l-ref Done,(Random,250)*),
+            (>res2-l-ref Done,(Random,250)*),
+            (>res3-l-ref Done,(Random,250)*),
+            (>res4-l-ref Done,(Random,250)*),
+            (>res5-l-ref Done,(Random,250)*)
+        )MixAt !l-temp
+
+        (
+            (>res1-r Done,(Random,250)*),
+            (>res2-r Done,(Random,250)*),
+            (>res3-r Done,(Random,250)*),
+            (>res4-r Done,(Random,250)*),
+            (>res5-r Done,(Random,250)*),
+            (>res1-r-ref Done,(Random,250)*),
+            (>res2-r-ref Done,(Random,250)*),
+            (>res3-r-ref Done,(Random,250)*),
+            (>res4-r-ref Done,(Random,250)*),
+            (>res5-r-ref Done,(Random,250)*)
+        )MixAt !r-temp
+        
+        (
+            (>left,0),
+            (>l-temp,?start)
+        )MixAt !left
+        (
+            (>right,0),
+            (>r-temp,?start)
+        )MixAt !right
+    }
+)Repeat
+(>left Normalise,>right Normalise)!bus
+?bus StereoMonitor
+(>bus,"temp/it-thinks.wav")WriteFile32

@@ -1,0 +1,970 @@
+[ Strings ]
+{
+    >length !lenIn
+    (>pitch,1)*  !pitchIn
+    4 !overSample
+    1 Silence !signal
+    Bunch !stringDos
+    (
+        1,15,
+        {
+            {
+                (?lenIn,?overSample)* !len
+                ((?pitchIn,((Random,0.5)-,20)*)+,?overSample)/ !pitch
+                (
+                    ?len WhiteNoise                   pcnt+10,
+                    (?len,?pitch)SinWave MakeSawTooth pcnt+90
+                )Mix !temp
+                (
+                    >temp,
+                    ( 
+                        (0,-99), 
+                        (?envA,0),
+                        (750,?envB),
+                        ((?len,250)-,?envC),
+                        (?len,-99)
+                    )SimpleShape
+                )Multiply !temp !x
+                
+                (?temp,0.99,0.15,(1000,?pitch)/)ResonantFilter !temp
+                (
+                    >x Invert,
+                    >temp
+                )Mix Normalise !temp
+                ((0,Random),(?temp length,0))Slide !lfo
+                (
+                    (0.9,?lfo pcnt+5)DirectMix,
+                    >temp
+                )Multiply
+            }Do !do
+            (>do,>stringDos)AddEnd !stringDos
+        }
+    )Repeat
+    
+    (
+        >stringDos,
+        {
+            !do
+            (>signal,>do Done)Mix !signal
+        }
+    )InvokeAll
+    
+    >signal Normalise !signal
+    
+    (>signal,(?pitchIn,?overSample)*,6)DirectLowPass !signal
+    (>signal,?overSample)DirectResample              !signal
+    
+    (
+        0,
+        ?lenIn,
+        >signal
+        
+    )Cut !signal
+    (
+        (0,2),
+        (?lenIn,0.1)
+    )Slide !lfo
+    (
+        (0.9,?lfo pcnt+2)DirectMix,
+        >signal
+    )Multiply !signal
+    (
+        (1,?lfo pcnt-1 pcnt+10)DirectMix,
+        >signal
+    )Resample !signal
+    
+    [ Model resonance in strings ]
+    (
+        ?signal,
+        (
+            (-16.0,(1200,?pitchIn)/),
+            (-15.0,(1500,?pitchIn)/),
+            (-15.0,(1800,?pitchIn)/),
+            (-14.0,(2000,?pitchIn)/),
+            (-14.0,(4000,?pitchIn)/)
+        )
+    ) DirectResonate !wet
+    (>signal pcnt+50, >wet pcnt+50)Mix Normalise dbs+6 Saturate Normalise  !signal
+    (>signal,?pitchIn,1)DirectHighPass Normalise 
+
+}!strings
+
+[ Drum ]
+{
+	[ Parameters:
+	  len     - length of note.
+	  mix     - percent of resonant signal
+	  pitch   - the pitch around which the drum is based 
+	  clatter - high pitch boost
+	  
+	  Clatter settings:
+	   
+	  0  -> Mellow
+	  3  -> Normal
+	  6  -> Slap that drum up
+	  9  -> Loosing it on stage
+	  18 -> Hitting a harder or much less resonant drum
+	  
+	]
+	
+	[
+	 hand tuned noise envelope to make the drive for the drum
+	]   
+	(?len WhiteNoise)Concatenate                       !sample
+	(
+		((0,1),((?len,0.5)*,-16),(?len,-36))SimpleShape,
+		>sample
+	)Multiply                                             !sample
+	
+	[
+	 The input noise is split into bands to agitate the radial and
+	 circular resonance.
+	]
+	(
+		?sample,
+		(?pitch,1.5)/,
+		(?pitch,0.75)/,
+		2
+	)DirectBandPass Normalise                          !rSample
+	(?pitch,PI)/                                     !cPitch
+	(
+		?sample,
+		(?cPitch,1.5)/,
+		(?cPitch,0.75)/,
+		2
+	)DirectBandPass Normalise                          !cSample
+
+	(
+		(>rSample, 0.0)Volume,
+		(>cSample, 0.0)Volume
+	)Mix Normalise                                     !sample
+	(>sample,(?pitch,6)*,1)DirectLowPass              !drive    !sample
+	
+	((0,0),(5,1),(10,0))NumericShape                      !shape
+	 [
+	  Black magic!
+	  ============
+	  
+	  The setting for the shape of the convolution is simply
+	  hand tunned to make the drum sound nice.
+	 ]
+	(>shape,(?pitch,150)/)DirectResample         !shape
+	>shape NormaliseArea                                  !shape
+	[ This controls the gain of the resonator, which can be
+	  effected by the sample rate ]
+	(>shape,1.6)Volume                                 !shape
+	(1000,(?pitch,1.5)/)/                              !d1
+	(2000,(?pitch,1.5)/)/                              !d2
+	(3000,(?pitch,1.5)/)/                              !d3
+	(1000,(?cPitch,1.5)/)/                             !cd1
+	(2000,(?cPitch,1.5)/)/                             !cd2
+	(3000,(?cPitch,1.5)/)/                             !cd3
+	
+	[
+	 Circular and radial coupled resonance hand tuned for this drum 
+	]
+	(
+		?sample,
+		(		
+			((?shape,-5 )Volume ,?d1 ),
+			((?shape,-10 )Volume,?d2 ),
+			((?shape,-10)Volume ,?d3 ),
+			((?shape,-3)Volume  ,?cd1),
+			((?shape,-8)Volume  ,?cd2),
+			((?shape,-8)Volume  ,?cd3)
+		)
+	)Resonate Normalise                             !sample
+	
+	[ Pick the mix of resonant and noise singal ]
+	(>sample,?drive Invert )Mix Normalise           !resonant
+
+	(?resonant,(?pitch,4)*,4)DirectHighPass         !toExcite
+	>toExcite WarmALittle                           !excited
+	(>excited,?clatter)Volume                       !excited
+	(>excited,>resonant)Mix Normalise               !resonant
+	
+	(
+		(>resonant,(?mix,100)/)NumericVolume,
+		(>drive,((100,?mix)-,100)/)NumericVolume
+	)Mix                                            !sample
+	
+	[ Remove DC ]
+	((?sample,1,1)DirectHighPass,3.0)Volume         !sampleB
+	(>sample Invert,>sampleB)Mix Normalise          !sample
+
+	(?sample,(?pitch,4)*,4)DirectHighPass           !toExcite
+	>toExcite WarmALittle                           !excited
+	(>excited,?clatter)Volume                       !excited
+	(>excited,>sample)Mix Normalise                 !sample
+	((0,1),((?len,10)-,1),(?len,0))NumericShape     !shape
+	(>sample,>shape)Multiply                        !sample
+
+	>sample Normalise
+} !play-drum
+
+[ The initial white noise ]
+55000 !l1
+?l1 WhiteNoise                    !signal
+((0,1000),(10000,1000),(20000,2000),(?l1,2000))NumericShape !cutoff
+((0,0),(10000,1.0),(?l1,1.0))NumericShape                   !resonance
+(
+    (0,0),
+    (3000,1),
+    ((?l1,500)-,1),
+    (?l1,0)
+)NumericShape                      !venv
+(
+	>signal,
+	>cutoff,
+	>resonance
+)ShapedLadderFilter                !signal
+(>venv,>signal)Multiply  Normalise !signal
+
+
+(
+    >signal,
+    (
+        (0,1),
+        (40000,1),
+        (?l1,7)
+    )NumericShape
+)ShapedPower Normalise !signal
+
+[ Make an tweeting sound ]
+{
+	(
+		((500,?pitch)SinWave MakeSawTooth,(?pitch,2)*,2)DirectLowPass,
+		((0,0),(100,1),(450,1),(500,0))NumericShape
+	)Multiply Normalise !peep
+	
+	(
+		((0,0),(500,?vrate))Slide,
+		((0,0),(500,1))NumericShape
+	)Multiply Normalise !mod
+
+	(
+		>peep,
+		>mod
+	)Multiply Normalise
+} !tweetA
+
+[ Make an tweeting sound ]
+{
+    (
+        ((500,?pitch)SinWave MakeTriangle,(?pitch,2)*,2)DirectLowPass,
+        ((0,0),(100,1),(450,1),(500,0))NumericShape
+    )Multiply Normalise !peep
+    
+    (
+        ((0,0),(500,?vrate))Slide,
+        ((0,0),(500,1))NumericShape
+    )Multiply Normalise !mod
+
+    (
+        >peep,
+        >mod
+    )Multiply Normalise
+} !tweetB
+
+10 !vrate
+
+"G6" Note !pitch
+?tweetA Do !p1
+
+"C7" Note !pitch
+?tweetA Do !p2
+
+"G6" Note !pitch
+?tweetA Do !p3
+
+"C7" Note !pitch
+?tweetA Do !p4
+
+"F7" Note !pitch
+?tweetA Do !p5
+
+"G6" Note !pitch
+?tweetA Do !p6
+
+"C7" Note !pitch
+?tweetA Do !p7
+
+"B7" Note !pitch
+?tweetA Do !p8
+
+5 !vrate
+
+"G6" Note !pitch
+?tweetA Do !p9
+
+"C6" Note !pitch
+?tweetA Do !p10
+
+"B6" Note !pitch
+?tweetA Do !p11
+
+
+[
+    Construct the introduction
+    ==========================
+]
+[
+	  len     - length of note.
+	  mix     - percent of resonant signal
+	  pitch   - the pitch around which the drum is based 
+	  clatter - high pitch boost
+]
+
+250       !len
+50        !mix
+"A4" Note !pitch
+6         !clatter
+?play-drum Do !d1
+?play-drum Do !d2
+?play-drum Do !d3
+"B4" Note !pitch
+9         !clatter
+?play-drum Do !d4
+
+"F7" Note !pitch
+?tweetA Do !p12
+
+"A4" Note !pitch
+6         !clatter
+?play-drum Do !d5
+?play-drum Do !d6
+?play-drum Do !d7
+"B4" Note !pitch
+9         !clatter
+?play-drum Do !d8
+[    signal            time, left%,right%]
+(
+	(>signal           ,0     ,50,50),
+	(>p1  Done         ,21000 ,25,75),
+	(>p2  Done         ,22000 ,75,25),
+	(>p3  Done !p3     ,24000 ,25,75),
+	(>p4  Done !p4     ,25000 ,75,25),
+	(>p5  Done !p5     ,25500 ,25,75),
+	(>p3               ,27000 ,33,67),
+	(>p4               ,28000 , 1,99),
+	(>p5               ,28500 ,25,75),
+	(>p6  Done         ,30000 ,50,20),
+	(>p7  Done         ,30000 ,40,40),
+	(>p8  Done         ,30000 ,70, 1),
+	(>p9  Done         ,31000 ,25,75),
+	(>p10 Done         ,31000 ,75,25),
+	(>p11 Done         ,31000 ,45,55),
+	
+	(>d1  Done !d1     ,32000 ,50,50),
+	(>d2  Done !d2     ,32600 ,50,50),
+	(>d3  Done !d3     ,32900 ,50,50),
+	(>d4  Done !d4     ,33200 ,67,33),
+	(>p12 Done !p12    ,33500 ,25,75),
+	(>d5  Done !d5     ,34000 ,50,50),
+	(>d6  Done !d6     ,34300 ,50,50),
+	(>d7  Done !d7     ,34600 ,50,50),
+	(>d8  Done !d8     ,34900 ,67,33)
+	
+)!tune
+
+[
+    Layer in the beat line
+    ======================
+]
+35900 !x
+(
+    0,27,
+    {
+        !off-set
+        ("Beat at: ",?x)PrintLn
+        "A4" Note !pitch
+        (4,(Random,2)*)+    !clatter
+        ?play-drum Do !d1
+        ?play-drum Do !d2
+        ?play-drum Do !d3
+        "B4" Note !pitch
+        (9,(Random,2)*)+    !clatter
+        ?play-drum Do !d4
+
+        "A4" Note !pitch
+        (4,(Random,2)*)+    !clatter
+        ?play-drum Do !d5
+        ?play-drum Do !d6
+        ?play-drum Do !d7
+        "B4" Note !pitch
+        (9,(Random,2)*)+    !clatter
+        ?play-drum Do !d8
+        
+        (( ?d1 Done   ,?x         ,50,50),>tune)AddEnd !tune
+        (( ?d2 Done   ,(?x, 600)+ ,50,50),>tune)AddEnd !tune
+        (( ?d3 Done   ,(?x, 900)+ ,50,50),>tune)AddEnd !tune
+        (( ?d4 Done   ,(?x,1200)+ ,67,33),>tune)AddEnd !tune
+        (( ?p12 dbs-3 ,(?x,1500)+ ,(100,Random)* !r,(100,?r)-),>tune)AddEnd !tune
+        (( ?d5 Done   ,(?x,2000)+ ,50,50),>tune)AddEnd !tune
+        (( ?d6 Done   ,(?x,2300)+ ,50,50),>tune)AddEnd !tune
+        (( ?d7 Done   ,(?x,2600)+ ,50,50),>tune)AddEnd !tune
+        (( ?d8 Done   ,(?x,2900)+ ,67,33),>tune)AddEnd !tune
+        
+        (>x,3900)+ !x
+    }
+)Repeat
+
+[ Extra rhythm ]
+2000     !len
+50       !mix
+51500.0  !x
+
+"F6" Note  !pitch
+?tweetA Do !p13A
+"B6" Note  !pitch
+?tweetA Do !p13B
+
+(
+    >p13A Done,
+    >p13B Done
+)Mix Saturate !p13
+
+(
+    0,21,
+    {
+        !off-set
+        ("Secondary Beat at: ",?x)PrintLn
+        "D3" Note !pitch
+        (0,(Random,2)*)+    !clatter
+        ?play-drum Do !d4
+
+        "F3" Note !pitch
+        "D3b" Note !pitch
+        (0,(Random,2)*)+    !clatter
+        ?play-drum Do !d8
+
+        (>d4 Done,5000 Silence)Concatenate !d4
+        (>d8 Done,5000 Silence)Concatenate !d8
+
+        [ Delay ]
+        (
+            >d4,
+            (
+                (-15, 113),
+                (-12,1000)
+            )
+        ) DirectResonate Normalise !d4
+
+        (
+            >d8,
+            (
+                (-15, 113),
+                (-12,1000)
+            )
+        ) DirectResonate Normalise !d8
+
+
+        ?d4 dbs+6 Saturate !d4
+        ?d8 dbs+6 Saturate !d8
+
+        ((?d4,(?x,1350)+ ,80,20),>tune)AddEnd !tune
+        ((?p13 dbs-3 ,(?x,1500)+ ,(100,Random)* !r,(100,?r)-),>tune)AddEnd !tune
+        ((?d8,(?x,3050)+ ,20,80),>tune)AddEnd !tune
+        
+        (>x,3900)+ !x
+    }
+)Repeat
+>tune !tuneA
+bunch !tune
+[ Play the melody ]
+51500.0  !x
+(>x,3900)+ !x
+(>x,3900)+ !x
+?x !startB
+250 !envA [Peak Time]
+-3  !envB [Level at 750]
+-99 !envC [Level at length - 250]
+"b4" Note  !pitch
+4000       !length
+?strings do done dbs+3 !s1
+((?s1,?x,50,50),>tune)AddEnd !tune
+(>x,500)+  !x
+"b4b" Note  !pitch
+?strings do done  dbs+3 !s1
+((?s1,?x,50,50),>tune)AddEnd !tune
+(>x,500)+  !x
+"e4b" Note  !pitch
+?strings do done  dbs+3 !s1
+((?s1,?x,50,50),>tune)AddEnd !tune
+(>x,500)+  !x
+"e4" Note  !pitch
+?strings do done  dbs+3 !s1
+((?s1,?x,50,50),>tune)AddEnd !tune
+
+(>x,500)+  !x
+"f4" Note  !pitch
+?strings do done  dbs+3 !s1
+((?s1,?x,50,50),>tune)AddEnd !tune
+
+(>x,500)+  !x
+"e4" Note  !pitch
+?strings do done        !s1
+((?s1,?x,50,50),>tune)AddEnd !tune
+
+(>x,500)+  !x
+"g4" Note  !pitch
+?strings do done  dbs+3 !s1
+((?s1,?x,50,50),>tune)AddEnd !tune
+
+(>x,500)+  !x
+"e4" Note  !pitch
+?strings do done        !s1
+((?s1,?x,50,50),>tune)AddEnd !tune
+
+(>x,500)+  !x
+"a4" Note  !pitch
+?strings do done  dbs+3 !s1
+((?s1,?x,50,50),>tune)AddEnd !tune
+
+(>x,500)+  !x
+"e4" Note  !pitch
+?strings do done        !s1
+((?s1,?x,50,50),>tune)AddEnd !tune
+
+(>x,500)+  !x
+"b4" Note  !pitch
+?strings do done  dbs+3 !s1
+((?s1,?x,50,50),>tune)AddEnd !tune
+
+(>x,500)+  !x
+"e4" Note  !pitch
+?strings do done        !s1
+((?s1,?x,50,50),>tune)AddEnd !tune
+
+(>x,500)+  !x
+"c5" Note  !pitch
+?strings do done  dbs+3 !s1
+((?s1,?x,50,50),>tune)AddEnd !tune
+
+(>x,500)+  !x
+"e4" Note  !pitch
+?strings do done        !s1
+((?s1,?x,50,50),>tune)AddEnd !tune
+
+(>x,500)+  !x
+"D5" Note  !pitch
+?strings do done  dbs+3 !s1
+((?s1,?x,50,50),>tune)AddEnd !tune
+
+(>x,500)+  !x
+"e4" Note  !pitch
+?strings do done        !s1
+((?s1,?x,50,50),>tune)AddEnd !tune
+
+(>x,500)+  !x
+"e5" Note  !pitch
+?strings do done  dbs+3 !s1
+((?s1,?x,50,50),>tune)AddEnd !tune
+
+(>x,500)+  !x
+"e4" Note  !pitch
+?strings do done        !s1
+((?s1,?x,50,50),>tune)AddEnd !tune
+
+(>x,500)+  !x
+"f5" Note  !pitch
+?strings do done  dbs+3 !s1
+((?s1,?x,50,50),>tune)AddEnd !tune
+
+(>x,500)+  !x
+"e4" Note  !pitch
+?strings do done        !s1
+((?s1,?x,50,50),>tune)AddEnd !tune
+
+(>x,500)+  !x
+"g5" Note  !pitch
+?strings do done  dbs+3 !s1
+((?s1,?x,50,50),>tune)AddEnd !tune
+
+(>x,500)+  !x
+"e4" Note  !pitch
+?strings do done        !s1
+((?s1,?x,50,50),>tune)AddEnd !tune
+
+(>x,500)+  !x
+"a5" Note  !pitch
+?strings do done  dbs+3 !s1
+((?s1,?x,50,50),>tune)AddEnd !tune
+
+(>x,500)+  !x
+"e4" Note  !pitch
+?strings do done        !s1
+((?s1,?x,50,50),>tune)AddEnd !tune
+
+(>x,500)+  !x
+"b5" Note  !pitch
+?strings do done  dbs+3 !s1
+((?s1,?x,50,50),>tune)AddEnd !tune
+
+(>x,500)+  !x
+"e4" Note  !pitch
+?strings do done        !s1
+((?s1,?x,50,50),>tune)AddEnd !tune
+
+[ Mega chord ]
+
+[ Time the end to the beat at 82700 
+  but include the decay time 250
+]
+((82700,250)+,(?x,500)+)- !length !chordLength
+250 !envA [Peak Time]
+-3  !envB [Level at 750]
+-3  !envC [Level at length - 250]
+
+(>x,500)+  !x
+"b5" Note  !pitch
+?strings do done  dbs-2 !s1
+((?s1,?x,50,50),>tune)AddEnd !tune
+
+?x         !x
+"d5" Note  !pitch
+?strings do done  dbs-2 !s1
+((?s1,?x,50,50),>tune)AddEnd !tune
+
+?x         !x
+"e5" Note  !pitch
+?strings do done  dbs-2 !s1
+((?s1,?x,50,50),>tune)AddEnd !tune
+
+?x         !x
+"a5" Note  !pitch
+?strings do done  dbs-2 !s1
+((?s1,?x,50,50),>tune)AddEnd !tune
+
+
+[ End Mega Chord ]
+
+(>x,500)+  !x
+250 !envA [Peak Time]
+-3  !envB [Level at 750]
+-20 !envC [Level at length - 250]
+"b4" Note  !pitch
+4000       !length
+
+"b5" Note  !pitch
+?strings do done  dbs+3 !s1
+((?s1,?x,50,50),>tune)AddEnd !tune
+
+15 !vrate
+"C6" Note !pitch
+?tweetB Do !m1
+"D6" Note  !pitch
+?tweetB Do !m2
+"E6" Note  !pitch
+?tweetB Do !m3
+"F6" Note  !pitch
+?tweetB Do !m4
+"F6#" Note !pitch
+?tweetB Do !m5
+
+((?m1 Done,(>x,500)+ !x,20,80),>tune)AddEnd !tune
+((?m2 Done,(>x,500)+ !x,80,20),>tune)AddEnd !tune
+((?m3 Done,(>x,500)+ !x,20,80),>tune)AddEnd !tune
+((?m4 Done,(>x,500)+ !x,80,20),>tune)AddEnd !tune
+((?m5 Done,(>x,500)+ !x,20,80),>tune)AddEnd !tune
+
+"D6" Note  !pitch
+?tweetB Do !m1
+"E6" Note  !pitch
+?tweetB Do !m2
+"F6" Note  !pitch
+?tweetB Do !m3
+"G6" Note  !pitch
+?tweetB Do !m4
+"G6#" Note !pitch
+?tweetB Do !m5
+
+((?m1 Done,(>x,500)+ !x,40,60),>tune)AddEnd !tune
+((?m2 Done,(>x,500)+ !x,60,40),>tune)AddEnd !tune
+((?m3 Done,(>x,500)+ !x,40,60),>tune)AddEnd !tune
+((?m4 Done,(>x,500)+ !x,60,40),>tune)AddEnd !tune
+((?m5 Done,(>x,500)+ !x,40,60),>tune)AddEnd !tune
+
+"E6" Note  !pitch
+?tweetB Do !m1
+"F6" Note  !pitch
+?tweetB Do !m2
+"G6" Note  !pitch
+?tweetB Do !m3
+"A6" Note  !pitch
+?tweetB Do !m4
+"B6b" Note !pitch
+?tweetB Do !m5
+
+((?m1 Done,(>x,500)+ !x,20,80),>tune)AddEnd !tune
+((?m2 Done,(>x,500)+ !x,80,20),>tune)AddEnd !tune
+((?m3 Done,(>x,500)+ !x,20,80),>tune)AddEnd !tune
+((?m4 Done,(>x,500)+ !x,80,20),>tune)AddEnd !tune
+((?m5 Done,(>x,500)+ !x,20,80),>tune)AddEnd !tune
+
+
+"F6" Note !pitch
+?tweetB Do !m1
+"G6" Note !pitch
+?tweetB Do !m2
+"A6" Note !pitch
+?tweetB Do !m3
+"B6" Note !pitch
+?tweetB Do !m4
+"C7" Note !pitch
+?tweetB Do !m5
+
+((?m1 Done,(>x,500)+ !x,40,60),>tune)AddEnd !tune
+((?m2 Done,(>x,500)+ !x,60,40),>tune)AddEnd !tune
+((?m3 Done,(>x,500)+ !x,40,60),>tune)AddEnd !tune
+((?m4 Done,(>x,500)+ !x,60,40),>tune)AddEnd !tune
+((?m5 Done,(>x,500)+ !x,40,60),>tune)AddEnd !tune
+
+[ Mega chord ]
+
+?chordLength !length 
+250 !envA [Peak Time]
+-3  !envB [Level at 750]
+-3  !envC [Level at length - 250]
+
+"d6" Note  !pitch
+?strings do done  dbs-2 !s1
+((?s1,?x,50,50),>tune)AddEnd !tune
+
+?x         !x
+"e5" Note  !pitch
+?strings do done  dbs-2 !s1
+((?s1,?x,50,50),>tune)AddEnd !tune
+
+?x         !x
+"a5" Note  !pitch
+?strings do done  dbs-2 !s1
+((?s1,?x,50,50),>tune)AddEnd !tune
+
+?x         !x
+"b5" Note  !pitch
+?strings do done  dbs-2 !s1
+((?s1,?x,50,50),>tune)AddEnd !tune
+
+
+[ End Mega Chord ]
+
+15 !vrate
+"C7" Note !pitch
+?tweetB Do !m1
+"D7" Note  !pitch
+?tweetB Do !m2
+"E7" Note  !pitch
+?tweetB Do !m3
+"F7" Note  !pitch
+?tweetB Do !m4
+"F7#" Note !pitch
+?tweetB Do !m5
+
+((?m1 Done,(>x,500)+ !x,20,80),>tune)AddEnd !tune
+((?m2 Done,(>x,500)+ !x,80,20),>tune)AddEnd !tune
+((?m3 Done,(>x,500)+ !x,20,80),>tune)AddEnd !tune
+((?m4 Done,(>x,500)+ !x,80,20),>tune)AddEnd !tune
+((?m5 Done,(>x,500)+ !x,20,80),>tune)AddEnd !tune
+
+"D7" Note  !pitch
+?tweetB Do !m1
+"E7" Note  !pitch
+?tweetB Do !m2
+"F7" Note  !pitch
+?tweetB Do !m3
+"G7" Note  !pitch
+?tweetB Do !m4
+"G7#" Note !pitch
+?tweetB Do !m5
+
+((?m1 Done,(>x,500)+ !x,40,60),>tune)AddEnd !tune
+((?m2 Done,(>x,500)+ !x,60,40),>tune)AddEnd !tune
+((?m3 Done,(>x,500)+ !x,40,60),>tune)AddEnd !tune
+((?m4 Done,(>x,500)+ !x,60,40),>tune)AddEnd !tune
+((?m5 Done,(>x,500)+ !x,40,60),>tune)AddEnd !tune
+
+"E7" Note  !pitch
+?tweetB Do !m1
+"F7" Note  !pitch
+?tweetB Do !m2
+"G7" Note  !pitch
+?tweetB Do !m3
+"A7" Note  !pitch
+?tweetB Do !m4
+"B7b" Note !pitch
+?tweetB Do !m5
+
+((?m1 Done,(>x,500)+ !x,20,80),>tune)AddEnd !tune
+((?m2 Done,(>x,500)+ !x,80,20),>tune)AddEnd !tune
+((?m3 Done,(>x,500)+ !x,20,80),>tune)AddEnd !tune
+((?m4 Done,(>x,500)+ !x,80,20),>tune)AddEnd !tune
+((?m5 Done,(>x,500)+ !x,20,80),>tune)AddEnd !tune
+
+
+"F7" Note !pitch
+?tweetB Do !m1
+"G7" Note !pitch
+?tweetB Do !m2
+"A7" Note !pitch
+?tweetB Do !m3
+"B7" Note !pitch
+?tweetB Do !m4
+"C8" Note !pitch
+?tweetB Do !m5
+
+((?m1 Done,(>x,500)+ !x,40,60),>tune)AddEnd !tune
+((?m2 Done,(>x,500)+ !x,60,40),>tune)AddEnd !tune
+((?m3 Done,(>x,500)+ !x,40,60),>tune)AddEnd !tune
+((?m4 Done,(>x,500)+ !x,60,40),>tune)AddEnd !tune
+((?m5 Done,(>x,500)+ !x,40,60),>tune)AddEnd !tune
+?x    !endB
+>tune !tuneB
+
+1 Silence !leftB !rightB
+(
+    ?tuneB,
+    {
+        !def
+        ?def GetStart !signal >def GetRest !def
+        ?def GetStart !time   >def GetRest !def
+        ?def GetStart !vl     >def GetRest !def
+        >def GetStart !vr
+
+        {        
+            (
+                (>leftB,0),
+                ((>signal,(>vl,100)/)NumericVolume,>time)
+            )MixAt
+        } Do !dl
+        {
+            (
+                (>rightB,0),
+                ((>signal,(>vr,100)/)NumericVolume,>time)
+            )MixAt !left
+        } Do !dr
+        
+        >dl Done !leftB
+        >dr Done !rightB
+    }
+)InvokeAll
+
+(?startB,?endB,?leftB )Cut !leftC
+(?startB,?endB,?rightB)Cut !rightC
+(?leftC ,0.59,0.15,2.2)ResonantFilter Normalise !leftC
+(?rightC,0.59,0.15,2.2)ResonantFilter Normalise !rightC
+
+[ Reprocess section C]
+>leftC  dbs+6 Saturate Normalise !left
+>rightC dbs+6 Saturate Normalise !right
+
+(30 Silence,>right)Concatenate !right
+
+(
+    (0,-1),
+    (0.05,1),
+    (1,-1),
+    (1,-0.5),
+    (3,-1)
+)NumericShape NormaliseArea !filterA
+
+(
+    (0,-1),
+    (0.05,1),
+    (1.9,-0.7),
+    (3,-0.0)
+)NumericShape NormaliseArea !filterB
+
+250 !d1
+{
+    (
+        ?left,
+        (       
+            ((?filterB,-4 )Volume ,?d1 ),
+            ((?filterA,-4 )Volume ,(?d1,1.5)* Prime )
+        )
+    )Resonate Normalise 
+}Do !left
+
+{
+    (
+        ?right,
+        (       
+            ((?filterA,-4 )Volume ,?d1 Prime ),
+            ((?filterB,-4 )Volume ,(?d1,1.5)* Prime )
+        )
+    )Resonate Normalise 
+} Do !right
+
+>left  Done !leftC
+>right Done !rightC
+
+1 Silence !leftA !rightA
+(
+    ?tuneA,
+    {
+        !def
+        ?def GetStart !signal >def GetRest !def
+        ?def GetStart !time   >def GetRest !def
+        ?def GetStart !vl     >def GetRest !def
+        >def GetStart !vr
+
+        {        
+            (
+                (>leftA,0),
+                ((>signal,(>vl,100)/)NumericVolume,>time)
+            )MixAt
+        } Do !dl
+        {
+            (
+                (>rightA,0),
+                ((>signal,(>vr,100)/)NumericVolume,>time)
+            )MixAt !left
+        } Do !dr
+        
+        >dl Done !leftA
+        >dr Done !rightA
+    }
+)InvokeAll
+
+[ Process B to make quiet and wispy ]
+(?leftB Length WhiteNoise,880,4)DirectLowPass !hiss
+((?leftB Length  WhiteNoise,500,6)DirectLowPass,0.001)DirectResample Normalise !multi
+(
+	(0.5,>multi pcnt+35)DirectMix,
+	>leftB
+)Multiply Normalise  !leftB
+(
+	>leftB pcnt+50,
+	?hiss   pcnt+50
+)Mix Normalise !leftB
+((0,-24),(?leftB Length,-6))SimpleShape !env
+(
+	>leftB,
+	>env
+)Multiply !leftB
+
+(?rightB Length WhiteNoise,880,4)DirectLowPass !hiss
+((?rightB Length  WhiteNoise,500,6)DirectLowPass,0.001)DirectResample Normalise !multi
+(
+	(0.5,>multi pcnt+35)DirectMix,
+	>rightB
+)Multiply Normalise  !rightB
+(
+	>rightB pcnt+50,
+	?hiss   pcnt+50
+)Mix Normalise !rightB
+((0,-24),(?rightB Length,-6))SimpleShape !env
+(
+	>rightB,
+	>env
+)Multiply !rightB
+
+
+(>leftA, >leftB ,((?endB,1000)+ Silence,>leftC)Concatenate)Mix  !left
+(>rightA,>rightB,((?endB,1000)+ Silence,>rightC)Concatenate)Mix !right
+
+(>left Normalise,>right Normalise)   !bus
+
+[?bus StereoMonitor]
+(?bus,"temp/tone.wav")WriteFile32

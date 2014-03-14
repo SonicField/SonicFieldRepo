@@ -1,0 +1,55 @@
+"midi/barberadagiostrings.mid" ReadMidiFile 
+^t1
+^t2
+^t3
+^t4
+^t5
+^t6
+^t7
+Bunch !t2Notes
+true  !typeA
+(
+    ?t2,
+    {
+        ^tickOn ^tickOff ^note ^key ^velocity
+        (?tickOff,?tickOn)- !length
+        
+        (
+            (?length,2000)gt,
+            true,
+            false
+        )Choose !long
+        (
+            ?long,
+            {
+                
+            },
+            {
+                (
+                    ?typeA,
+                    {
+                        false     !typeA
+                        "?post-c" !post
+                    },
+                    {
+                        true      !typeB
+                        "?post-c" !post
+                    }
+            }
+        )
+        
+        "(",
+            ?tickOn,
+            ",",
+            ?length,
+            ",",
+            ?note,
+            ",",
+            ?velocity
+            ",?post-a"
+        ")"
+    }
+)InvokeAll
+          
+                        
+ 

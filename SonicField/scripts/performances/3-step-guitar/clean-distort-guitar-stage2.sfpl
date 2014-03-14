@@ -1,0 +1,115 @@
+[ Read the input ]
+"temp/tone-a.wav"      !wavFile
+?wavFile ReadFile GetStart !dry
+
+[ Model resonance in strings ]
+(
+	?dry,
+	(
+		(-16.0,(1000,"E2" Note)/),
+		(-16.0,(1000,"A3" Note)/),
+		(-16.0,(1000,"D3" Note)/),
+		(-16.0,(1000,"G3" Note)/),
+		(-16.0,(1000,"B4" Note)/),
+		(-16.0,(1000,"E4" Note)/)
+	)
+) DirectResonate Normalise !wet
+
+(>wet,3000,2)DirectLowPass !wet
+(>wet,1000,1)DirectLowPass !wet
+
+(
+	>wet pcnt+50,
+	>dry pcnt+50
+)Mix !signal
+
+[Clip of picks and a bit more]
+>signal dbs+9 Clip !signal
+
+[ Delay ]
+(
+	?signal,
+	(
+		(-8,120),
+	)
+) DirectResonate Normalise !wet
+
+[ Filter ]
+(
+	>wet    pcnt+25,
+	>signal pcnt+75
+)Mix !signal
+
+[ Do some ditortion ]
+?signal !distort
+
+(
+   ?distort Length (WhiteNoise,4)Power Normalise pcnt+2,
+   >distort pcnt+98
+)Mix !distort
+
+(>distort, 6000,2)DirectLowPass Normalise !distort
+
+[ Octave Fuzz - Big Fat Dollops of it ]
+(
+    ?distort Rectify !r Normalise  pcnt-50,
+	>distort                       pcnt+50
+)Mix Normalise !distort
+
+[ Delay Distory]
+(
+	?distort,
+	(
+		(-7,80),
+	)
+) DirectResonate Normalise !distort
+
+[ Final Mix ]    
+(
+   >distort pcnt+65,
+   >signal  pcnt+35,
+)Mix Normalise  !signal
+
+[ Over clip to remove plucks ]
+>signal dbs+6 Clip !signal
+
+[ Soft Clip - like an over driven valve amp ]
+[ Over gain ]
+(
+    1,2,
+    {
+        (
+             0,0.59,0,-1.2,0.25,1,>signal
+        ) WaveShaper Normalise    !signal
+    }
+)Repeat
+
+[ Compress ]
+
+(1000 Silence,>signal,1000 Silence)Concatenate !signal	
+(
+   1,1,
+   {
+		(?signal Rectify Reverse,50,2)DirectLowPass Reverse !shape
+	 	(1.0,(>shape,0.25)Power dbs+12)DirectMix            !shape
+		(
+			>signal,
+			>shape 
+		)Divide Normalise !signal
+   }
+)Repeat
+(1000,(?signal Length,1000)-,>signal)Cut !signal
+
+[DC Filter]
+(?signal,50,1)DirectHighPass  !signal
+>signal Normalise             !tune
+
+(>tune,110,6000,1 )DirectBandPass Normalise !tune
+(>tune,220,10000,1)DirectBandPass Normalise !tune
+[(>tune, 6000,2)DirectLowPass     Normalise !tune
+(>tune,10000,3)DirectLowPass     Normalise !tune
+]
+
+[ Get the results of the tasks and make a wav file ]
+((?tune Monitor),"temp/tone-b.wav")WriteFile32
+

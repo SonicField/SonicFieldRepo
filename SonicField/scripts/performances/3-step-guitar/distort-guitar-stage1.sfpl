@@ -1,0 +1,689 @@
+[ A deliberately simple simulation of a guitar
+  which makes a good feed stock for later distortion
+]
+{
+    8000       !sustain
+    ?frequency !pitch
+    
+    ((0,1),((1000,(Random,200)*)+,-9),(?sustain,-60))SimpleShape !decay
+	{
+		(?sustain,?pitch)SinWave !clean
+	    (
+	        >clean                                       pcnt+95,
+	        (2000 WhiteNoise,(?pitch,3)*,3)DirectLowPass pcnt+5
+	    )Mix      !clean
+
+	    (
+	    	?decay,
+	    	>clean
+	    )Multiply !clean
+	    
+	    [ Main guitar shaper ]
+	    (
+	        1,
+	        0,
+	        1,
+	        0,
+	        1,
+	        10,
+	        (
+	            1,
+	            0,
+	            1,
+	            0,
+	            1,
+	            10,
+	            ?clean
+	        ) WaveShaper
+	    ) WaveShaper Normalise !clean
+		    
+	} Do !clean
+	
+	
+	{
+	    (
+		    (?sustain,?pitch)SinWave MakeTriangle
+	    )Mix Normalise !signal
+	    
+	    [ Inject noise to give grit ]
+	    (
+	        >signal                                          pcnt+95,
+	        (?sustain WhiteNoise,(?pitch,5)*,3)DirectLowPass pcnt+5
+	    )Mix !signal
+
+	    (>signal,(?pitch,10)*,3)DirectLowPass !signal
+
+	    (
+	    	?decay,
+	    	>signal
+	    )Multiply !signal
+	    >signal Normalise !signal
+	}Do !signal
+    
+	[ Mix the two signals ]    
+    (    
+        >signal Done,
+        (>clean Done,Random)NumericVolume
+    ) Mix Normalise !signal
+    
+    [ Hammer on, pick, pull off etc ]
+	?sound Invoke !signal
+        
+    [ Pull up the harmonics ] 
+    (>signal,(?pitch,2)*,2)DirectHighPass Normalise !signal
+
+    [DC Filter]
+    (?signal,50,1)DirectHighPass          !signal
+    >signal Normalise !Signal
+} !pluck
+
+{
+    (
+        1,24,
+        {
+            (?pitch,?string)AddEnd !string
+            (?pitch,Semitone)*     !pitch
+        }
+    )Repeat
+    ?string
+} !getFrets
+
+[ ======================== ]
+
+[ Timing ]
+0           !0beat
+330         !1beat
+(?1beat,2)* !2beat
+(?1beat,3)* !3beat
+(?1beat,4)* !4beat
+(?1beat,6)* !6beat
+(?1beat,8)* !8beat
+(?1beat,2)/ !hbeat
+(?1beat,4)/ !qbeat
+
+((?1beat,2)*,3)/ !2/3beat
+
+[ Set up the strings ]
+1 Silence !ret6
+1 Silence !ret5
+1 Silence !ret4
+1 Silence !ret3
+1 Silence !ret2
+1 Silence !ret1
+
+[ Set up code blocks to setting and
+  getting to/from strings ]
+{ ?data !ret6 } !set6
+{ ?data !ret5 } !set5
+{ ?data !ret4 } !set4
+{ ?data !ret3 } !set3
+{ ?data !ret2 } !set2
+{ ?data !ret1 } !set1
+{ ?ret6       } !get6
+{ ?ret5       } !get5
+{ ?ret4       } !get4
+{ ?ret3       } !get3
+{ ?ret2       } !get2
+{ ?ret1       } !get1
+
+[ Set up the frets/string 
+  system for creating, mixing
+  and storing the notes on 
+  strings ]
+(
+    Bunch        !string
+    "E2" Note    !pitch
+    ?getFrets Do Done,
+    ?get6,
+    ?set6
+) !s6
+
+(
+    Bunch        !string
+    "A2" Note    !pitch
+    ?getFrets Do Done,
+    ?get5,
+    ?set5
+) !s5 
+
+(
+    Bunch        !string
+    "D3" Note    !pitch
+    ?getFrets Do Done,
+    ?get4,
+    ?set4
+) !s4
+
+(
+    Bunch        !string
+    "G3" Note    !pitch
+    ?getFrets Do Done,
+    ?get3,
+    ?set3
+) !s3 
+
+(
+    Bunch        !string
+    ("B3" Note    !pitch, " = B3") PrintLn
+    ?getFrets Do Done,
+    ?get2,
+    ?set2
+) !s2
+
+(
+    Bunch        !string
+    ("E4" Note    !pitch, " = E4") PrintLn
+    ?getFrets Do Done,
+    ?get1,
+    ?set1
+) !s1
+
+[ 
+    Post/Pre Processors 
+    ===================
+]
+
+[ Do Nothing ]
+{
+    >data
+} !nothing
+
+[ String blunting ]
+(
+    (0,1),
+    (((?1beat,2)*,100)-,1),
+    ((?1beat,2)*,0)
+) NumericShape !bluntAtAShape
+
+(
+    (0,1),
+    (((?1beat,1.75)*,100)-,1),
+    ((?1beat,1.75)*,0)
+) NumericShape !bluntAtBShape
+
+(
+    (0,1),
+    (((?1beat,3.25)*,200)-,1),
+    ((?1beat,3.25)*,0)
+) NumericShape !bluntAtCShape
+
+(
+    (0,1),
+    (((?hbeat,1.25)*,100)-,1),
+    ((?hbeat,1.25)*,0)
+) NumericShape !bluntAtDShape
+
+{
+
+	"Blunting A" PrintLn
+    (
+        (
+        	(0,?bluntAtAShape Length Println,>data)Cut,
+        	(
+ 				(
+ 					(0,0),
+ 					((?bluntAtBShape Length,100)-,0),
+ 					((?bluntAtBShape Length, 50)-,((1,Random)+,6)/),
+ 					( ?bluntAtBShape Length,0) 					
+ 				)NumericShape, 					
+        		((?bluntAtBShape Length WhiteNoise,100,3)DirectLowPass,2)Power Normalise
+        	)Multiply
+        )Mix,
+        ?bluntAtAShape
+    )Multiply 
+
+} !bluntAtA
+
+{
+
+	"Blunting B" PrintLn
+    (
+        (
+        	(0,?bluntAtBShape Length Println,>data)Cut,
+        	(
+ 				(
+ 					(0,0),
+ 					((?bluntAtBShape Length,100)-,0),
+ 					((?bluntAtBShape Length, 50)-,((1,Random)+,6)/),
+ 					( ?bluntAtBShape Length,0) 					
+ 				)NumericShape, 					
+        		((?bluntAtBShape Length WhiteNoise,100,3)DirectLowPass,2)Power Normalise
+        	)Multiply
+        )Mix,
+        ?bluntAtBShape
+    )Multiply 
+
+} !bluntAtB
+
+{
+
+	"Blunting C" PrintLn
+    (
+        (
+        	(0,?bluntAtCShape Length Println,>data)Cut,
+        	(
+ 				(
+ 					(0,0),
+ 					((?bluntAtCShape Length,200)-,0),
+ 					((?bluntAtCShape Length,100)-,((1,Random)+,3)/),
+ 					( ?bluntAtCShape Length,0) 					
+ 				)NumericShape, 					
+        		((?bluntAtCShape Length WhiteNoise,200,3)DirectLowPass,4)Power Normalise
+        	)Multiply
+        )Mix,
+        ?bluntAtCShape
+    )Multiply 
+
+} !bluntAtC
+
+{
+
+	"Blunting D" PrintLn
+    (
+        (
+        	(0,?bluntAtCShape Length Println,>data)Cut,
+        	(
+ 				(
+ 					(0,0),
+ 					((?bluntAtDShape Length,200)-,0),
+ 					((?bluntAtDShape Length,100)-,((1,Random)+,3)/),
+ 					( ?bluntAtDShape Length,0) 					
+ 				)NumericShape, 					
+        		((?bluntAtDShape Length WhiteNoise,200,3)DirectLowPass,4)Power Normalise
+        	)Multiply
+        )Mix,
+        ?bluntAtDShape
+    )Multiply 
+
+} !bluntAtD
+
+{
+	"Bend" Println
+	(
+		(
+			(0,(0.95,(Random,0.1)*)+),
+			((Random,25)*,(0.85,(Random,0.1)*)+),
+			(((Random,25)*,25)+,0.98),
+			(((Random,25)*,150)+,1.0),
+			(?data Length,1)
+		)NumericShape,
+		>data
+	)Resample Normalise 
+} !bend
+
+{
+	"200 slide" Println
+	(Semitone,Semitone)* !end
+	("By ",?end)StrCat Println
+	(
+		(
+			(     0,   1),
+			(?qbeat,   1),
+			(?hbeat,?end),
+			(?data Length,?end)
+		)NumericShape,
+		>data
+	)Resample Normalise 
+} !200Slide
+
+
+{
+	(
+		(0,1),
+		(?data Length,1)
+	)NumericShape !shape
+	
+	(
+		(0,(3.5,Random)+),
+		(?data Length,0)
+	)Slide Invert !warble
+	
+	(
+		?warble MakeSawTooth Pcnt+50,
+		>warble              Pcnt+50
+	)Mix !warble
+	
+	(
+		(
+			(0,1),
+			(?data Length,(Random,0.1)*)
+		)NumericShape,
+		>warble
+	)Mix !warble
+
+	(
+		>shape,
+		>warble pcnt+1 pcnt+50
+	)Mix !warble   
+
+	(
+		>warble
+		,
+		>data
+	)Resample Normalise 
+} !vib1
+
+{
+	(
+		(0,1),
+		(?data Length,1)
+	)NumericShape !shape
+	
+	(
+		(0,(5.5,(Random,2)*)+),
+		(?data Length,0)
+	)Slide Invert !warble
+	
+	?warble MakeTriangle !warble
+	
+	(
+		(
+			(0,(Random,0.1)*)
+			((250,0,5)*,1),
+			(?data Length,(Random,0.1)*)
+		)NumericShape,
+		>warble
+	)Mix !warble
+	(
+		>shape,
+		>warble pcnt+1
+	)Mix !warble   
+
+	(
+		>warble
+		,
+		>data
+	)Resample Normalise 
+} !vib2
+
+[ Sounding techniques ]
+
+[ A standard left hand pick ]
+{
+    [ Inject roughness in the pick ]
+    {
+	    (
+	        (
+	            (2000,?pitch)/ WhiteNoise,
+	            ?pitch,
+	            1
+	        )DirectLowPass Pcnt+20,
+	        >signal        Pcnt+80
+	    )Mix
+    } Do !doSignal
+    
+    [ Put in some twang ]
+    {
+	    (
+	        (0,(?pitch,((0.5,Random)-,2)*)+),
+	        (?signal Length,?pitch)
+	    )Slide !ring
+    }Do !doRing
+    
+    >doSignal Done !signal
+    >doRing   Done !ring
+    
+    (((0,0),(?ring Length,-99))SimpleShape,?ring)Multiply !ring
+    (?ring Normalise,?signal Normalise)Multiply !ring
+    (
+        >ring   Pcnt+20,
+        >signal Pcnt+80
+    )Mix !signal
+        
+    [ Envolope the pick ]
+    (
+        (0,Random),
+        ((1000,?pitch)/,1.1),
+        ((2000,?pitch)/,1),
+        (?signal Length,1)
+    )NumericShape !shape
+    (>signal,>shape)Multiply Normalise !signal
+} !pick
+
+[ A very smooth hammer on ]
+{    
+
+    [ Put in some twang ]
+    (
+        (0,(?pitch,((0.5,Random)-,2)*)+),
+        (?signal Length,?pitch)
+    )Slide !ring
+    (((0,0),(?ring Length,-99))SimpleShape,?ring)Multiply !ring
+    (?ring Normalise,?signal Normalise)Multiply !ring
+    (
+        >ring   Pcnt+5,
+        >signal Pcnt+95
+    )Mix !signal
+        
+    [ Envolope the note ]
+    (
+        (0,((0.5,Random)*,0.5)+),
+        ((1000,?pitch)/,0.8),
+        ((2000,?pitch)/,1),
+        (?signal Length,1)
+    )NumericShape !shape
+    (>signal,>shape)Multiply Normalise !signal
+} !hams
+
+[ A harder, rougher hammer on ]
+{    
+
+    [ Inject roughness in the string ]
+    (
+        (
+            ((2000,?pitch)/ WhiteNoise,2)Power,
+            ?pitch,
+            1
+        )DirectLowPass Pcnt+20,
+        >signal        Pcnt+80
+    )Mix !signal
+    
+    [ Put in some twang ]
+    (
+        (0,(?pitch,((0.5,Random)-,2)*)+),
+        (?signal Length,?pitch)
+    )Slide !ring
+
+    [ Inject roughness in the ring ]
+    (
+        (
+            (2000,?pitch)/ WhiteNoise,
+            ?pitch,
+            1
+        )DirectLowPass Pcnt+30,
+        >ring          Pcnt+70
+    )Mix !ring
+
+    (((0,0),(?ring Length,-99))SimpleShape,?ring)Multiply !ring
+    (?ring Normalise,?signal Normalise)Multiply !ring
+    
+    (
+        >ring   Pcnt+40,
+        >signal Pcnt+60
+    )Mix !signal
+        
+    [ Envolope the note ]
+    (
+        (0,(0.5,Random)*),
+        ((3000,?pitch)/,1),
+        (?signal Length,0)
+    )NumericShape !shape
+    (>signal,>shape)Multiply Normalise !signal
+} !hamh
+
+
+[ Smooth play of first harmonic (octave) ]
+{    
+    [ Double frequency and then make cleaner with filter ]
+	(>signal,2)DirectResample            !signal
+	(>signal,(?pitch,2)*,2)DirectLowPass !signal
+
+    [ Put in some twang ]
+    (
+        (0,(?pitch,((0.5,Random)-,2)*)+),
+        (?signal Length,(?pitch,2)*)
+    )Slide !ring
+    (((0,0),(?ring Length,-99))SimpleShape,?ring)Multiply !ring
+    (?ring Normalise,?signal Normalise)Multiply !ring
+    (
+        >ring   Pcnt+5,
+        >signal Pcnt+95
+    )Mix !signal
+        
+    [ Envolope the note ]
+    (
+        (0,((0.5,Random)*,0.5)+),
+        ((1000,?pitch)/,0.8),
+        ((2000,?pitch)/,1),
+        (?signal Length,1)
+    )NumericShape !shape
+    (>signal,>shape)Multiply Normalise !signal
+} !hrm1
+
+[
+	This plays the guitar ready for later
+	over drive and reverb - the output here
+	is very pure and boring:
+]
+
+
+{
+    0 !time !at
+    1 Silence !ret
+
+	Bunch !pluckDoes
+
+	[ Phase 1 ]
+    1 !count
+    (
+        ?sequence, 
+        {
+            !note
+            
+            ?note GetStart !stringInfo 
+            >note GetRest  !note
+            
+            ?note GetStart !fret 
+            >note GetRest  !note
+
+            ?note GetStart !at 
+            >note GetRest  !note
+
+            ?note GetStart !volume 
+            >note GetRest  !note
+
+            ?note GetStart !sound
+            >note GetRest  !note
+                          
+            ?note GetStart !post 
+
+            ?stringInfo GetStart !string 
+                        
+			{
+	            (>volume,((Random,0.5)-,1.5)*)+   !volume
+	            
+	            (?string,?fret)Get              !frequency
+	            ?pluck Do Done                  !data
+	            (?count," Pluck ",?frequency,",",?volume)StrCat Println
+	            [ If post processing does make a string over loud it can cause
+	              a click artefact, this clip removes that (mostly) without
+	              having to change the overall volume
+	            ]
+	            ?post Do Done Clip              !data
+	            
+				[ Write out the pluck so can use in phase 2 ]
+				(
+					(>data),
+					("temp/pluck",?count,".wav")StrCat
+				)WriteFile32
+			}Do !do
+			
+			(>do,>pluckDoes)AddEnd !pluckDoes
+			
+			(>count,1)+ !count
+		}
+
+    )InvokeAll
+
+	[ Phase 2 ]
+    1 !count
+    (
+        ?sequence, 
+        {
+            !note
+            
+            ?note GetStart !stringInfo 
+            >note GetRest  !note
+            
+            ?note GetStart !fret 
+            >note GetRest  !note
+
+            ?note GetStart !at 
+            >note GetRest  !note
+
+            ?note GetStart !volume 
+            >note GetRest  !note
+
+            ?note GetStart !sound
+            >note GetRest  !note
+                          
+            ?note GetStart !post 
+            
+            ?stringInfo GetStart !string 
+            ?stringInfo GetRest GetStart !getInvoke 
+            ?stringInfo GetRest GetRest GetStart !setInvoke 
+            
+            [ Work out where to place the next note ]
+            (?time !oldAt,?at)+ !time  
+            >oldAt !at
+            
+            >getInvoke Invoke !buffer
+
+			[ Get the data from phase1 ]
+			?pluckDoes GetStart Done
+			>pluckDoes GetRest  !pluckDoes
+			("temp/pluck",?count,".wav")StrCat ReadFile GetStart !data
+		    (?count," Read")StrCat Println
+			
+			(>count,1)+ !count
+
+            [ timing ]
+            (?at,-20)-                          !at
+            (?at,(40,Random)*)+                 !at
+            {
+            	(
+            		(?at Silence,?data)Concatenate Normalise,
+            		>volume
+            	)Volume          
+            }Do                                 !data
+            [ Kill string before adding new 
+              In this version I use a little bit of cross
+              fade to make the play smoother
+            ]
+            {
+	            (0,?at,>buffer)Cut              !buffer
+	            (
+	                (
+	                    (0,1),
+	                    ((?buffer Length,25)-,1),
+	                    ((?buffer Length,25)+,0)
+	                )NumericShape,
+	                >buffer
+	            )Multiply
+            }Do                             !buffer
+            (?buffer Done,?data Done)Mix    !data
+            ?setInvoke Invoke   
+        }
+    )InvokeAll
+    
+    [ Make different strings have different intensities ]
+    (
+        >ret6,
+        >ret5,
+        >ret4,
+        >ret3,
+        >ret2,
+        >ret1
+    )Mix Normalise  !dry
+
+} !play-guitar

@@ -1,0 +1,105 @@
+"temp/input.wav" ReadFile ^left ^right
+
+(>left ,10000,3)ButterworthLowPass !left
+(>right,10000,3)ButterworthLowPass !right
+
+{
+    ("Resonant Filtering")Println
+    (?signal,10,10)Follow Normalise           !shape
+    ((1,>shape)DirectMix,0.5)Power            !shape
+    (>shape,8000)NumericVolume                !cut
+    (?signal length WhiteNoise,1,2)RBJLowPass !q
+    (?q,1,2)RBJLowPass Normalise    dbs-2     !q
+    (?signal,>cut,>q)ShapedLadderLowPass      !new
+    (>new pcnt+75,>signal pcnt+25)Mix Normalise
+}!res-filter
+>left  !signal ?res-filter Do !left
+>right !signal ?res-filter Do !right
+>left  Done !left
+>right Done !right
+(>left,  150,2,12)RBJPeaking  !left
+(>right, 150,2,12)RBJPeaking  !right
+(>left ,4000,2,7)RBJPeaking   !left
+(>right,4000,2,7)RBJPeaking   !right
+(?left, 50,1, 24)RBJPeaking   !sub-l
+(?right,50,1, 24)RBJPeaking   !sub-r
+(?sub-l, 50,100)Follow        !sub-l-s
+(?sub-r, 50,100)Follow        !sub-r-s
+(?sub-l,  1,100)Follow        !sub-l-f
+(?sub-r,  1,100)Follow        !sub-r-f
+(>sub-l-f,>sub-l-s Invert)Mix !sub-l-shape
+(>sub-r-f,>sub-r-s Invert)Mix !sub-r-shape
+(?sub-l-shape,(1,>sub-l-shape MaxValue)/)NumericVolume !sub-l-shape
+(?sub-r-shape,(1,>sub-r-shape MaxValue)/)NumericVolume !sub-r-shape
+(>sub-l,>sub-l-shape)Multiply !sub-l
+(>sub-r,>sub-r-shape)Multiply !sub-r
+(>left pcnt+50, >sub-l pcnt+50)Mix Normalise  !left
+(>right pcnt+50,>sub-r pcnt+50)Mix Normalise  !right 
+
+[(?left,?right)StereoMonitor]
+
+{
+    (
+        (
+            -0.03,0.2,0,-1,0.2,2,
+            ?signal
+        )WaveShaper pcnt+25,
+        >signal pcnt+75
+    )Mix Normalise !signal
+    (
+        {(?signal Reverse,1,50)Follow Reverse},
+        {(?signal        ,1,50)Follow}
+    )DoAll Mix !shape   
+    
+    (
+        {(?signal Normalise,25,25)Follow},
+        {(?signal Normalise Reverse,25,25)Follow Reverse}
+    )DoAll Mix !shape
+    
+    (?shape,(1,?shape MaxValue)/)NumericVolume !shape
+    (0.05,>shape dbs+6)DirectMix               !shape
+    (
+        >signal,
+        >shape 
+    )Divide Normalise !signal 
+}!envelope-compress
+
+{
+    (?signal ,200,2000,4)BesselBandPass !signal-m 
+    (?signal     ,2000,4)BesselHighPass !signal-h 
+    (?signal     , 200,4)BesselLowPass  !signal-l 
+    >signal-m !signal
+    ?envelope-compress Invoke
+    >signal !signal-m
+    >signal-h !signal
+    ?envelope-compress Invoke
+    >signal !signal-h
+    >signal-l !signal
+    ?envelope-compress Invoke
+    >signal !signal-l
+    (
+        (30 Silence,(>signal-l dbs+3 WaveLimit,200,6)BesselLowPass)Concatenate pcnt+50,
+        (>signal-m dbs+3 WaveLimit,2000,6)BesselLowPass pcnt+30,
+        >signal-h  dbs+3 WaveLimit pcnt+20
+    )Mix Normalise 
+}!do-it 
+>left  !signal
+?do-it Do !left
+>right !signal
+?do-it Do !right
+{
+    Bunch !ret
+    0     !off-set 
+    (
+        (>signal,750,250)Granulate,
+        {
+            ^grain ^time
+            ((>grain,(>time,?off-set)+),>ret)AddEnd !ret
+            (>off-set,(Random,8)*)+ !off-set Println
+        }
+    )InvokeAll
+    >ret MixAt Normalise
+}!shatter
+>left  !signal ?shatter Do !left
+>right !signal ?shatter Do !right
+((>left,>right),"temp/done-filt.wav")WriteFile32

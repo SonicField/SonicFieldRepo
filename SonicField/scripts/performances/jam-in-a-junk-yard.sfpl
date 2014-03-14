@@ -1,0 +1,423 @@
+{
+    (?pitch,8)/ !bass
+    ((0,?bass),(?wide-point,?bass),(?narrow-point,(?pitch,?narrow-amount)*),(?length,(?pitch,0.95)*))NumericShape !low-shape
+    ((0,1000) ,(?wide-point,1000) ,(?narrow-point,(?pitch,?narrow-amount)/),(?length,(?pitch,0.95)*))NumericShape !high-shape
+    (
+        (?length,?pitch)SinWave MakeTriangle dbs+6,
+        (?length,(?pitch,2)/)SinWave MakeTriangle dbs-6,
+        (?length,(?pitch,4)/)SinWave MakeTriangle dbs-6,
+        (?length,(?pitch,8)/)SinWave MakeTriangle
+    )Mix Normalise !signal
+    
+    (>signal,15,2)DirectHighPass !signal
+    
+    (>signal,?low-shape,?high-shape,?order)ShapedBandPass Normalise !signal
+    (>signal,?low-shape,?high-shape,?order)ShapedBandPass Normalise !signal
+    (>signal,>low-shape,>high-shape,?order)ShapedBandPass Normalise !signal
+    
+    (
+        >signal,
+        (
+            (
+                ?length,
+                (?pitch,1.2)*
+            )SinWave,
+            ?modulation-index
+        )Volume
+    )FrequencyModulate !signal 
+    ((
+        (?a,?b,?c,?d,?e)NumericShape,
+        >signal
+    )Multiply Normalise,?over-drive)Volume Saturate Normalise !signal
+    (?length,2000)/ !res-scale
+    (
+        (?signal,4000 Silence)Concatenate,
+        (
+            (-14,((160,?pitch Period)+,?res-scale)* Prime),
+            (-15,((190,?pitch Period)+,?res-scale)* Prime),
+            (-14,((320,?pitch Period)+,?res-scale)* Prime),
+            (-15,((355,?pitch Period)+,?res-scale)* Prime),
+            (-17,((380,?pitch Period)+,?res-scale)* Prime)
+        )
+    ) DirectResonate Normalise !wet
+    (
+        >wet,
+        ?signal Invert
+    )Mix !wet
+    (
+        >signal,
+        >wet Normalise
+    )Mix Normalise !signal
+    
+    (>signal,?post-cut-low,3 )DirectLowPass Normalise !signal
+    (>signal,?post-cut-high,2)DirectHighPass Normalise !signal
+    >signal ClipToSafe
+} !clang
+
+{
+    0   !time
+    2000        !length
+    2           !order
+    "e0b" note  !pitch
+     200        !wide-point
+     600        !narrow-point
+    0.7         !narrow-amount
+    (1.0,0)     !a
+    (1,500)     !b
+    (1000,0.5)  !c
+    (1850,0.25) !d
+    (?length,0) !e
+    "e4b" Note  !post-cut-low
+    15          !post-cut-high
+    0           !modulation-index 
+    
+    24          !over-drive
+    ?clang Do   !1
+    
+    36          !over-drive
+    "e1b" note  !pitch
+    0.99        !narrow-amount
+    ?clang Do   !2
+    ?clang Do   !3
+    
+    0.9         !narrow-amount
+    "b1b" note  !pitch
+    12          !modulation-index 
+    ?clang Do   !4
+    (
+        (>1 Done dbs+6 !1,?time),
+        (>2 Done !2,(?beat,>time)+ !time), 
+        (>3 Done !3,(?beat,>time)+ !time), 
+        (>4 Done !4,(?beat,>time)+ !time)
+    )MixAt !low-rhyth
+    
+    (
+        1,400,
+        {
+            (
+                (>low-rhyth,0),
+                (?1,(?beat,>time)+ !time),
+                (?2,(?beat,>time)+ !time), 
+                (?3,(?beat,>time)+ !time), 
+                (?4,(?beat,>time)+ !time)
+            )MixAt !low-rhyth
+        }
+    )Repeat
+    >low-rhyth Normalise !signal
+    
+    [ Dong low ]
+    1000        !length
+    3           !order
+    "g4" note   !pitch
+     500        !wide-point
+     600        !narrow-point
+    0.8         !narrow-amount
+    (1.5,0)     !a
+    (1,2000)     !b
+    (750,0.5)   !c
+    (950,0.25)  !d
+    (?length,0) !e
+    24          !modulation-index 
+    24          !over-drive
+    ?clang Do   !b1
+    
+    0 Silence !left !right !centre
+    
+    (?beat,4)* !time
+    (
+        (>centre,0),
+        (>b1 Done dbs-6 !b1,(>time,(?beat,8)*)+ !time)
+    )MixAt !centre
+    
+    (
+        1,200,
+        {
+            (
+                (>centre,0),
+                (?b1,       (>time,(?beat,8)*)+ !time)
+            )MixAt !centre
+        }
+    )Repeat
+    
+    [ clang medium ]
+    750         !length
+    3           !order
+    "b6b" note  !pitch
+     200        !wide-point
+     500        !narrow-point
+    0.7         !narrow-amount
+    (1,0)       !a
+    (1,2000)     !b
+    (300,0.5)   !c
+    (400,0.25)  !d
+    (?length,0) !e
+    12          !modulation-index 
+     3          !over-drive
+     2500       !post-cut-low
+    "b4b" Note  !post-cut-high 
+    ?clang Do Done !b2
+    (
+        (?b2,0),
+        (?b2,50)
+    )MixAt Normalise dbs-18 !b2
+    
+    (?beat,21)* !time
+    (
+        1,200,
+        {
+            (
+                (>centre,0),
+                (?b2,(>time,(?beat,8)*)+ !time)
+            )MixAt !centre
+            
+            (
+                (>left,0),
+                (?b2,?time)
+            )MixAt !left
+        }
+    )Repeat
+    
+    [ clang high ]
+    750         !length
+    3           !order
+    "b6b" note  !pitch
+     100        !wide-point
+     200        !narrow-point
+    0.9         !narrow-amount
+    (1,0)       !a
+    (1,2000)     !b
+    (300,0.5)   !c
+    (400,0.25)  !d
+    (?length,0) !e
+    12          !modulation-index 
+     3          !over-drive
+     5000       !post-cut-low
+    "b6b" Note  !post-cut-high 
+    ?clang Do Done !b2
+    (
+        (?b2,0),
+        (?b2,50)
+    )MixAt Normalise dbs-24 !b3
+    
+    (?beat,29.5)* !time
+    (
+        1,200,
+        {
+            (
+                (>centre,0),
+                (?b3,(>time,(?beat,8)*)+ !time)
+            )MixAt !centre
+            
+            (
+                (>right,0),
+                (?b3,?time)
+            )MixAt !right
+        }
+    )Repeat
+
+    (>b3,0.75)DirectRelength !b3
+    (?beat,62.75)* !time
+    (
+        1,200,
+        {
+            (
+                (>centre,0),
+                (?b3 dbs-3,(>time,(?beat,8)*)+ !time)
+            )MixAt !centre
+            
+            (
+                (>right,0),
+                (?b3 dbs+3,(?time,30)-)
+            )MixAt !right
+        }
+    )Repeat
+    
+    [ high dong in middle ]
+    (?b1,1.5)DirectReLength !b4
+    (?beat,40)* !time
+    (
+        1,20,
+        {
+            (
+                (>centre,0),
+                (?b4,(>time,(?beat,8)*)+ !time)
+            )MixAt !centre    
+        }
+    )Repeat
+    
+    (?b1,(5,3)/)DirectReLength !b5
+    (?beat,49)* !time
+    (
+        1,200,
+        {
+            (
+                (>centre,0),
+                (?b5 dbs-6,(>time,(?beat,8)*)+ !time)
+            )MixAt !centre
+            (
+                (>left,0),
+                (?b5,?time)
+            )MixAt !left
+            
+        }
+    )Repeat
+    
+    [ ting te te te high ]
+    8000        !length
+    2           !order
+    "b1b" note  !pitch
+    1000        !wide-point
+    1500        !narrow-point
+    0.9         !narrow-amount
+    (1.5,0)     !a
+    (1,1000)    !b
+    (5000,0.5)  !c
+    (7000,0.25) !d
+    (?length,0) !e
+    18          !modulation-index 
+     6          !over-drive
+     5000       !post-cut-low
+     32         !post-cut-high 
+    ?clang Do Done !b6
+    (>b6,16)DirectRelength !b6 !b6-source
+    (?beat,4)/ !qbeat
+    (
+        (?b6 dbs+6,0),
+        (?b6      ,?qbeat),
+        (?b6      ,(?qbeat,2)*),
+        (?b6      ,(?qbeat,3)*)    
+    )MixAt Normalise dbs-12 !b6 
+    
+    (?beat,58.1)* !time
+    (
+        1,200,
+        {
+            (
+                (>right,0),
+                (?b6 dbs-6,(>time,(?beat,8)*)+ !time)
+            )MixAt !right
+            (
+                (>left,0),
+                (?b6,(?time,30)+)
+            )MixAt !left
+            (
+                (>centre,0),
+                (?b6,?time)
+            )MixAt !centre
+            
+        }
+    )Repeat
+    
+    [ Dong massive ]
+    (?beat,62.9)* !time
+    1500        !length
+    3           !order
+    "f3" note   !pitch
+    1000        !wide-point
+    1300        !narrow-point
+    0.95        !narrow-amount
+    (2.5,0)     !a
+    (1,500)     !b
+    ( 750,0.25) !c
+    (1400,0.25) !d
+    (?length,0) !e
+    12          !modulation-index 
+    36          !over-drive
+    "f5"  Note  !post-cut-high
+    "f1"  Note  !post-cut-low
+    ?clang Do  Done !b7
+    (
+        1,200,
+        {
+            (
+                (>centre,0),
+                (?b7 ,(>time,(?beat,8)*)+ !time)
+            )MixAt !centre
+        }
+    )Repeat
+    
+    (>b6-source,(2,3)/)DirectRelength !b8
+    (?beat,4)/ !qbeat
+    (
+        (?b8 dbs+6,0),
+        (?b8      ,?qbeat),
+        (?b8      ,(?qbeat,2)*),
+        (?b8      ,(?qbeat,3)*)    
+    )MixAt Normalise dbs-12 !b8 
+    (?beat,(60,16)+)* !time
+    (
+        1,200,
+        {
+            (
+                (>right,0),
+                (?b8 dbs-6,(>time,(?beat,8)*)+ !time)
+            )MixAt !right
+            (
+                (>centre,0),
+                (?b8,(?time,30)+)
+            )MixAt !centre
+            
+        }
+    )Repeat
+    
+    
+    [ Stich it all together ]
+    (
+        (>left,0),
+        (?signal,50),
+        (?centre,0)
+    )MixAt Normalise !left
+    
+    (
+        (>right,0),
+        (>signal,0),
+        (>centre,0)
+    )MixAt Normalise !right
+    (>left,>right)
+    
+} !play
+750 !beat
+?play Do !750
+760 !beat
+?play Do !800
+
+>750 Done !bus1
+>800 Done !bus2
+
+(
+    ?bus1 GetStart,
+    ?bus2 GetRest GetStart
+)Mix Normalise !left
+
+(
+    ?bus1 GetRest GetStart,
+    ?bus2 GetStart
+)Mix Normalise !right
+
+[
+(
+    ((48,?beat)*,?left  length,?left)Cut,
+    ((48,?beat)*,?right length,?right)Cut
+)StereoMonitor
+]
+
+(
+    1,12,
+    {
+        !t
+        {((30,(?t,10)*)+ Silence,?left)Concatenate } Do !nlTask
+        {((40,(?t,10)*)+ Silence,?right)Concatenate} Do !nrTask
+    
+        {((?nlTask Done, -18)Volume,2000,1)DirectLowPass} Do  !nlTask
+        {((?nrTask Done, -18)Volume,2000,1)DirectLowPass} Do  !nrTask
+    
+        {(?nlTask Done, ?left) Mix Normalise} Do !nlTask 
+        {(?nrTask Done, ?right)Mix Normalise} Do !nrTask
+        
+        ?nlTask Done !left
+        ?nrTask Done !right
+    }
+)Repeat
+
+    
+((>left,>right),"temp/tone.wav")WriteFile32

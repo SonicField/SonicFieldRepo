@@ -1,0 +1,116 @@
+{
+    (>length,2)*                          !length
+    (?length,(?pitch,2)-)SinWave          !signal1 
+    (?length,(?pitch,2)+)SinWave          !signal2 
+    (?length,(?pitch,1.2)*)SinWave dbs+48 !fm1
+    (?length,(?pitch,1.3)*)SinWave dbs+12 !fm2
+    
+    (
+        (
+            ?signal1,
+            >fm1
+        )FrequencyModulate,
+        (
+            >signal2 dbs-24,
+            >fm2
+        )FrequencyModulate,
+    )Mix Normalise !signal
+    
+    (
+        >signal,
+        (
+            (100 WhiteNoise,?pitch,2)ButterworthLowPass,
+            (
+                (0,0),
+                (20,1),
+                (100,0)
+            )NumericShape
+        )Multiply
+    )Mix Normalise !signal
+    
+    (
+        (0,-99),
+        (50,0),
+        (?length,-99)
+    )SimpleShape !env
+    (
+        >signal,
+        >env
+    )Multiply !signal
+    
+    (>signal,(?pitch,2)*,2)ButterworthHighPass         !signal
+    (>signal,(?pitch,1)*,?dullness)ButterworthLowPass  Normalise !signal
+    (>signal,?dbs)Volume pcnt+33 !s
+    ((?s,Random)Volume,(?s,Random)Volume)StereoMonitor
+}!play-bell
+{
+    (
+        1,1000,
+        {
+            !x
+            (>x,15)|       !x
+            (>x,(1,15)/)*  !x
+            (>x,0.5)+      !x
+            (>x,220)*      !pitch
+            10000          !length
+            1              !dullness
+            0              !dbs
+            ?play-bell Invoke
+        }
+    )Repeat
+}Do !a
+{
+    (
+        1,1000,
+        {
+            !x
+            (>x,20)|    !x
+            (>x,0.05)*  !x
+            (>x,0.5)+   !x
+            (>x,340)*   !pitch
+            3310        !length
+            2           !dullness
+            -6          !dbs
+            ?play-bell Invoke
+        }
+    )Repeat
+}Do !b
+{
+    (
+        1,1000,
+        {
+            !x
+            (>x,10)|   !x
+            (>x,0.1)*  !x
+            (>x,0.5)+  !x
+            4802       !length
+            (>x,647)*  !pitch
+            4          !dullness
+            -3         !dbs
+            ?play-bell Invoke
+        }
+    )Repeat
+}Do !c
+
+{
+    (
+        1,1000,
+        {
+            !x
+            (>x,15)|       !x
+            (15,>x)-       !x
+            (>x,(1,15)/)*  !x
+            (>x,0.5)+      !x
+            (>x,80)*       !pitch
+            15000          !length
+            1              !dullness
+            3              !dbs
+            ?play-bell Invoke
+        }
+    )Repeat
+}Do !d
+
+>a Done
+>b Done
+>c Done
+>d Done

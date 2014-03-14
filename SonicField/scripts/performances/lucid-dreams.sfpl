@@ -1,0 +1,349 @@
+[
+    Aim: To build an entire piece of music from a single sin wave
+]
+
+{
+    (?sample,1000,5)DirectLowPass  !sampleL
+    (?sample,3000,2)DirectLowPass  !sampleN
+    (?sample,1000,4)DirectHighPass !sampleH
+    (>sampleH,5000,2)DirectLowPass !sampleH
+    (?sample,((?first ,?offset)+ Prime Silence,(?sample,-13)Volume)Concatenate)Mix    !wet
+    (
+        1,2,
+        {
+            !z
+            (>first,1.2)* Prime !first
+            (>wet,(((?first,30)-,?offset)- Silence,(?sampleL,(-10,?z)-)Volume)Concatenate)Mix   !wet
+            (>wet,(((?first,30)+,?offset)- Silence,(?sampleN,(-6, ?z)-)Volume)Concatenate)Mix   !wet
+            (>wet,((?first      ,?offset)- Silence,(?sampleH,(-10,?z)-)Volume)Concatenate)Mix   !wet
+        }
+    )Repeat
+    (?sampleL,1000,1)DirectLowPass  !sampleL
+    (?sampleN,1000,1)DirectLowPass  !sampleN
+    (?sampleH,2000,1)DirectLowPass  !sampleH
+    (
+        (0,0),
+        ((?wet Length,3)/,1),
+        (?wet Length,0)
+    )NumericShape !env
+    (
+        3,20,
+        {
+            !z 
+            (?z,2)/ !z
+            (>first,1.1)* Prime !first
+            (>wet,(((?first,30)-,?offset)- Silence,((?sampleL,(-7,?z)-)Volume,?env)Multiply)Concatenate)Mix    !wet
+            (>wet,(((?first,30)+,?offset)- Silence,((?sampleN,(-4,?z)-)Volume,?env)Multiply)Concatenate)Mix    !wet
+            (>wet,((?first      ,?offset)- Silence,((?sampleH,(-7,?z)-)Volume,?env)Multiply)Concatenate)Mix    !wet
+        }
+    )Repeat
+    (
+        20,80,
+        {
+            !z 
+            (?z,3)/ !z
+            (>first,1.05)* Prime !first
+            (>wet,(((?first,30)-,?offset)- Silence,(((?sampleL,(-7,?z)-)Volume,?env)Multiply,500,2)DirectLowPass)Concatenate)Mix    !wet
+            (>wet,(((?first,30)+,?offset)- Silence,(((?sampleN,(-4,?z)-)Volume,?env)Multiply,500,2)DirectLowPass)Concatenate)Mix    !wet
+            (>wet,((?first      ,?offset)- Silence,(((?sampleH,(-7,?z)-)Volume,?env)Multiply,500,2)DirectLowPass)Concatenate)Mix    !wet
+        }
+    )Repeat
+    >wet
+} !reflector
+
+
+{
+    (?length,(?pitch,((Random,0.5)-,22)*)-,Random)PhasedSinWave !signal
+    ?wave-shape Do Done !signal
+    (((?length,500)/ WhiteNoise,2500,6)DirectLowPass,0.001)DirectRelength Normalise !multi
+    (0,?signal Length,>multi)Cut  !multi
+    (
+        (1,>multi pcnt+1)DirectMix,
+        >signal
+    )Resample !signal
+    (>signal,(?pitch,4)*,1)DirectLowPass Normalise
+} !string
+
+{ >signal MakeTriangle } !triangle-shape
+{ >signal MakeSawTooth } !saw-tooth-shape
+
+{
+    ( 
+        { ?triangle-shape  !wave-shape ?string Do Done },
+        { ?triangle-shape  !wave-shape ?string Do Done },
+        { ?triangle-shape  !wave-shape ?string Do Done },
+        { ?triangle-shape  !wave-shape ?string Do Done },
+        { ?saw-tooth-shape !wave-shape ?string Do Done },
+        { ?saw-tooth-shape !wave-shape ?string Do Done },
+        { ?saw-tooth-shape !wave-shape ?string Do Done }
+        { ?triangle-shape  !wave-shape ?string Do Done },
+        { ?triangle-shape  !wave-shape ?string Do Done },
+        { ?triangle-shape  !wave-shape ?string Do Done },
+        { ?triangle-shape  !wave-shape ?string Do Done },
+        { ?saw-tooth-shape !wave-shape ?string Do Done },
+        { ?saw-tooth-shape !wave-shape ?string Do Done },
+        { ?saw-tooth-shape !wave-shape ?string Do Done }
+    )DoAll Mix Normalise !base
+    
+    (
+        (0,0),
+        (1000,1),
+        (?length,0)
+    )NumericShape !main-envelope
+    
+    (   
+        >base,
+        ?main-envelope
+    )Multiply !base
+    
+    [ Model resonance in strings ]
+    (
+        ?base,
+        (
+            (-15.0,(1200 Prime,?pitch)/),
+            (-14.0,(1500 Prime,?pitch)/),
+            (-14.0,(1800 Prime,?pitch)/),
+            (-14.0,(2000 Prime,?pitch)/),
+            (-13.0,(4000 Prime,?pitch)/)
+        )
+    ) DirectResonate  Normalise Saturate Normalise !base
+    
+    (>base,(?pitch,1)*,2)DirectLowPass !base
+    ((?length WhiteNoise,500,6)DirectLowPass,0.001)DirectResample Normalise !multi
+    (?length WhiteNoise,?pitch,3)DirectLowPass !hiss
+    (
+        (0.5,>multi pcnt+35)DirectMix,
+        >base
+    )Multiply Normalise  !base
+    ((?length WhiteNoise,500,6)DirectLowPass,0.001)DirectResample Normalise !multi
+    (
+        (0.5,>multi pcnt+35)DirectMix,
+        >hiss
+    )Multiply Normalise  !hiss
+    (   
+        >hiss,
+        ?main-envelope
+    )Multiply !hiss
+    (
+        >base pcnt+60,
+        ?hiss  pcnt+30
+    )Mix Normalise !sample
+    (
+        (
+            (0,1),
+            ((?sample Length,100)-,1),
+            (?sample Length,0)
+        )NumericShape,
+        >sample
+    )Multiply !base
+    
+    (
+        (1000,(?pitch,2)*)SinWave,
+        (1000,(?pitch,4)*)SinWave  pcnt-50,
+        (1000,(?pitch,6)*)SinWave pcnt+25,
+        (1000,(?pitch,8)*)SinWave pcnt-10,
+        (1000,(?pitch,10)*)SinWave pcnt+5,
+        (1000,(?pitch,(2,PI)*)*)SinWave pcnt+30,
+        (1000,(?pitch,(4,PI)*)*)SinWave pcnt-20,
+        (1000,(?pitch,(6,PI)*)*)SinWave pcnt+10,
+        (1000,(?pitch,(10,PI)*)*)SinWave pcnt-10,
+        ((100 WhiteNoise pcnt-50,4)Power,(?pitch,8)*,4)DirectLowPass Normalise
+    )Mix Normalise !plonk
+    (
+        (
+            (0,0),
+            (100,1),
+            (500,0.8),
+            (1000,0)
+        )NumericShape,
+        >plonk
+    )Multiply !plonk
+    150 !first
+    0   !offset
+    >plonk !sample
+    ?reflector Do Done Normalise !plonk
+    (
+        (?plonk Length,10)SinWave,
+        >plonk
+    )Multiply !plonk
+    
+    (
+        (>plonk pcnt+10,((?length,2)/,Random)*),
+        (>base,0)
+    )MixAt !sample
+} !makeNote
+
+{ 
+    {
+        (?pitch,((Random,0.5)-,6)*)+             !pitch
+        (?length,?pitch)SinWave MakeSawTooth     !signal
+        (
+            (
+                (?signal Length,1.5)* WhiteNoise,
+                5000,
+                6
+            )DirectLowPass,
+            0.001
+        )DirectResample Normalise                !multi
+        (0,?signal Length,>multi)cut             !multi 
+        (0.5,>multi Normalise pcnt+50)DirectMix  !shape
+        (>signal,>shape)ShapedThreshold Normalise
+    }!horn
+    (
+        ?horn,
+        ?horn,
+        ?horn
+    )DoAll Mix Normalise !signal
+    (
+        (0,0.3),
+        ((?length,2)/,1),
+        (?length,0.3)
+    )NumericShape !resonance
+    (
+        (0,?pitch),
+        ((?length,2)/,(?pitch,4)*),
+        (?length,?pitch)
+    )NumericShape !cutoff
+    (
+        >signal,
+        >cutoff,
+        >resonance
+    )ShapedLadderFilter                !signal
+    (
+        (0,0),
+        ((?length,0.2)*,1),
+        ((?length,0.8)*,1),
+        (?length,0)
+    )NumericShape !envelope
+    (500 Silence,>signal)Concatenate        !signal
+    (>signal,12,1)DirectHighPass Normalise  !signal
+    (
+        >signal,
+        >envelope
+    )Multiply Normalise              !signal
+    ?signal dbs+3 clip               !clips
+    (?clips,?signal dbs+3 Invert)Mix !clips
+    (>clips,1000,1)DirectLowPass   !clips
+    (
+        ?clips,
+        (
+            (-0.1,(?pitch,?harmonic)* Period)
+        )
+    ) DirectResonate Normalise !clips
+    (>signal,12,1)DirectHighPass Normalise  !signal
+    (>clips,12,1)DirectHighPass  Normalise  !clips 
+    
+    (
+        ((?signal, ?drive-left-horn)NumericVolume,?delay-left-horn),
+        ((?clips,  ?drive-left-over)NumericVolume,?delay-left-over)
+    )MixAt !left
+    
+    (
+        ((?signal, ?drive-right-horn) NumericVolume,?delay-right-horn),
+        ((?clips,  ?drive-right-over)NumericVolume,?delay-right-over)
+    )MixAt !right
+    
+    (
+        (?left  pcnt+90,0),
+        (?right pcnt+10,?room-size)
+    )MixAt !left
+
+    (
+        (?right pcnt+90,0),
+        (?left  pcnt+10,?room-size)
+    )MixAt !right
+
+    (
+        (?right pcnt+5,?room-size),
+        (?left  pcnt+5,?room-size)
+    )MixAt !middle
+    
+    (
+        ?left,
+        ?middle
+    )Mix Normalise !left
+    
+    (
+        ?right,
+        ?middle
+    )Mix Normalise !right
+    [ Remove any initial click ]
+    (
+        (
+            (0,-99),
+            (100,0),
+            (?right Length,0)
+        )SimpleShape,
+        >right
+    )Multiply !right
+
+    (
+        (
+            (0,-99),
+            (100,0),
+            (?left Length,0)
+        )SimpleShape,
+        >left
+    )Multiply !left
+
+    
+    (>left,>right)
+}!over-horn
+
+(100000,(10,(2,0.5)**)* )SinWave !sqrt2-samples 
+(100000,(10,(3,0.5)**)* )SinWave !sqrt3-samples 
+(100000,(10,(5,0.5)**)* )SinWave !sqrt5-samples
+(100000,(10,(7,0.5)**)* )SinWave !sqrt7-samples
+500    !room-size
+1000   !pos
+1 Silence !left !right
+(
+    1,500,
+    {
+        !x !z
+        (100,>x)* !x
+        ("2: ",(?sqrt2-samples,?x)ValueAt !x2)StrCat Println
+        ("3: ",(?sqrt3-samples,?x)ValueAt !x3)StrCat Println
+        ("5: ",(?sqrt5-samples,?x)ValueAt !x5)StrCat Println
+        ("7: ",(?sqrt7-samples,?x)ValueAt !x7)StrCat Println
+        (((?x2,1)+,4)* Integer,54)* !pitch
+        ((10000,Random)*,500)+ !length
+        ((?x5,1)+,8)*          !harmonic
+        ((?x2,1)+,0.5)*        !drive-left-horn
+        (1,((?x2,1)+,0.5)*)-   !drive-right-horn
+        (1,((?x3,1)+,0.5)*)-   !drive-left-over
+        ((?x2,1)+,0.5)*        !drive-right-over
+        (Random,30)*           !delay-left-horn
+        (Random,30)*           !delay-right-horn
+        (Random,30)*           !delay-left-over
+        (Random,30)*           !delay-right-over
+        ?over-horn Do Done     !bus
+        ?bus GetStart          !leftTone
+        >bus GetRest GetStart  !rightTone
+        (
+            (>leftTone,?pos),
+            (>left,0)
+        )MixAt                 !left
+        (
+            (>rightTone,?pos),
+            (>right,0)
+        )MixAt                 !right
+        [(((?x2,1)+,(5000,?x)-)*,>pos)+ !pos]
+        (5000,(?z,10)*)- !y
+        (((?x2,1)+,?y)*,>pos)+ !pos
+        ("Pos: ",?pos)StrCat PrintLn
+    }
+)Repeat
+(>left,12,1 )DirectHighPass Normalise !left
+(>right,12,1)DirectHighPass Normalise !right
+
+80 !first
+0   !offset
+>left !sample
+?reflector Do !left
+>right !sample
+?reflector Do !right
+
+(>left Done Normalise !left,>right Done Normalise !right) [StereoMonitor]
+((2000 Silence,>left)Concatenate,(2000 Silence,>right)Concatenate)!bus
+(?bus,"temp/generated.wav")WriteFile32

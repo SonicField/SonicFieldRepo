@@ -1,0 +1,123 @@
+"A3" Note !pitch
+
+(2000,?pitch)SinWave !clean
+
+((?clean Normalise),"c:\temp\demo\clean.wav")WriteFile16
+
+(
+    (2000,?pitch)SinWave MakeTriangle
+)Mix Normalise !signal
+
+((?signal Normalise),"c:\temp\demo\triangle.wav")WriteFile16
+
+[ Inject noise to give grit ]
+(
+    >signal                                      pcnt+95,
+    (2000 WhiteNoise,(?pitch,5)*,3)DirectLowPass pcnt+5
+)Mix !signal
+
+((?signal Normalise),"c:\temp\demo\triangle-grit.wav")WriteFile16
+
+(
+    >clean                                       pcnt+95,
+    (2000 WhiteNoise,(?pitch,3)*,3)DirectLowPass pcnt+5
+)Mix !clean
+
+((?clean Normalise),"c:\temp\demo\clean-grit.wav")WriteFile16
+
+(>signal,(?pitch,10)*,3)DirectLowPass !signal
+
+((?signal Normalise),"c:\temp\demo\triangle-grit-lowpass.wav")WriteFile16
+
+((0,1),((1000,(Random,200)*)+,-9),(2000,-30))SimpleShape !decay
+(
+	?decay,
+	>signal
+)Multiply !signal
+
+((?signal Normalise),"c:\temp\demo\triangle-envoloped.wav")WriteFile16
+
+(
+	?decay,
+	>clean
+)Multiply !clean
+
+((?clean Normalise),"c:\temp\demo\clean-envoloped.wav")WriteFile16
+
+[ Main guitar shaper ]
+>signal Normalise !signal
+(
+    1,
+    0,
+    1,
+    0,
+    1,
+    10,
+    (
+        1,
+        0,
+        1,
+        0,
+        1,
+        10,
+        ?clean
+    ) WaveShaper
+) WaveShaper Normalise !clean
+
+((?clean Normalise),"c:\temp\demo\clean-with-harmonics.wav")WriteFile16
+
+[ Mix the two signals ]    
+(    
+    >signal,
+    (>clean,Random)NumericVolume
+) Mix Normalise !signal
+
+((?signal Normalise),"c:\temp\demo\full-initial-mix.wav")WriteFile16
+
+[ Inject roughness in the pick ]
+(
+    (
+        (2000,?pitch)/ WhiteNoise,
+        ?pitch,
+        1
+    )DirectLowPass Pcnt+20,
+    >signal        Pcnt+80
+)Mix !signal
+
+((?signal Normalise),"c:\temp\demo\picked.wav")WriteFile16
+
+[ Put in some twang ]
+(
+    (0,(?pitch,((0.5,Random)-,2)*)+),
+    (?signal Length,?pitch)
+)Slide !ring
+(((0,0),(?ring Length,-99))SimpleShape,?ring)Multiply !ring
+(?ring Normalise,?signal Normalise)Multiply !ring
+(
+    >ring   Pcnt+10,
+    >signal Pcnt+90
+)Mix !signal
+
+((?signal Normalise),"c:\temp\demo\twang.wav")WriteFile16
+
+[ Pull up the harmonics ] 
+(>signal,(?pitch,2)*,2)DirectHighPass Normalise !signal
+
+((?signal Normalise),"c:\temp\demo\pulled-up-harmonics.wav")WriteFile16
+
+[ Envolope the pick ]
+(
+    (0,Random),
+    ((1000,?pitch)/,1.1),
+    ((2000,?pitch)/,1),
+    (?signal Length,1)
+)NumericShape !shape
+(>signal,>shape)Multiply Normalise !signal
+
+((?signal Normalise),"c:\temp\demo\envoloped-pick.wav")WriteFile16
+    
+[DC Filter]
+(?signal,50,1)DirectHighPass          !signal
+>signal Normalise !Signal
+
+((?signal Normalise),"c:\temp\demo\remove-dc.wav")WriteFile16
