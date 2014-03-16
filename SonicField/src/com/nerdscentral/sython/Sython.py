@@ -12,5 +12,5 @@ class SonicField:
             args=list(args)
             args.insert(0,input)
             input=args
-        ret=self.processors.get( word).Interpret(input,self.context)
+        ret=self.processors.get(word).Interpret(input,self.context)
         return ret

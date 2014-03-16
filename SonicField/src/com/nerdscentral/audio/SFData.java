@@ -47,6 +47,7 @@ public class SFData extends SFSignal implements Serializable
     private final static long                                       swapLimit;
     private final static File                                       tempDir;
     private FileChannel                                             channelMapper;
+    private final NotCollectedException                             created;
     private static ConcurrentHashMap<SFData, NotCollectedException> resourceTracker        = new ConcurrentHashMap<>();
 
     static
@@ -150,6 +151,7 @@ public class SFData extends SFSignal implements Serializable
         NotCollectedException nc = new NotCollectedException();
         nc.fillInStackTrace();
         resourceTracker.put(this, nc);
+        this.created = nc;
     }
 
     /* (non-Javadoc)
@@ -328,6 +330,23 @@ public class SFData extends SFSignal implements Serializable
         if (referenceCount.get() != 0)
         {
             System.err.println(Messages.getString("SFData.13")); //$NON-NLS-1$
+        }
+    }
+
+    /* (non-Javadoc)
+     * @see com.nerdscentral.audio.SFSignal#close()
+     */
+    @Override
+    public void close() throws RuntimeException
+    {
+        try
+        {
+            super.close();
+        }
+        catch (RuntimeException e)
+        {
+            this.created.printStackTrace(System.out);
+            throw e;
         }
     }
 }

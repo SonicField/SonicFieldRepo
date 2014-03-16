@@ -2,34 +2,42 @@ import math
 import random
 sf.SetSampleRate(192000)
 
+# Single threaded for debug
+#def sf_do(toDo):
+#    return toDo()
+
 def ring(pitch,length):
     sig1 = sf.SineWave(length,pitch*1.2)
     sig2 = sf.SineWave(length,pitch*1.2 + 1)
     env  = sf.SimpleShape((0,-60),(125,0),(length,-30))
+    
     sig1 = sf.Multiply(+env,sig1)
-    sig2 = sf.Multiply(+env,sig2)
-
     sig1 = sf.Pcnt90(sf.DirectMix(1,sig1))
     sig3 = sf.PhaseModulatedSineWave(pitch,sig1)
     sig3 = sf.Multiply(+env,sig3)
 
+    sig2 = sf.Multiply(+env,sig2)
     sig2 = sf.Pcnt90(sf.DirectMix(1,sig2))
     sig4 = sf.PhaseModulatedSineWave(pitch,sig2)
     sig4 = sf.Multiply(env,sig4)
-
+    
     sig5 = sf.Mix(sig3,sig4)
     sig=sf.Saturate(sig5)
     sig=sf.ResonantFilter(sig,0.99,0.05,1000.0/pitch)
-    return sf.Normalise(sig)
+    return sf.Realise(sf.Normalise(sig))
 
-def doFormant(pitch,sig,f1,f2,f3):
+def doFormant(sig,f1,f2,f3):
     sig=sf.ButterworthLowPass(sig,f2,2)
-    sig1=sf.RBJPeaking(+sig,f1,1,40)
-    sig2=sf.RBJPeaking(+sig,f2,2,20)
-    sig3=sf.RBJPeaking( sig,f3,1,40)
+    def doFormantInner(a,b,c,d):
+        def doFII():
+            return sf.RBJPeaking(a,b,c,d)
+        return sf_do(doFII)
+    sig1=doFormantInner(+sig,f1,1,40)
+    sig2=doFormantInner(+sig,f2,2,20)
+    sig3=doFormantInner( sig,f3,1,40)
     x=sf.Mix(sig1,sig2,sig3)
     x=sf.Normalise(x)
-    return x
+    return sf.Realise(x)
 
 def makeSingBase(pitch,length):
     pitch=float(pitch)
@@ -47,21 +55,21 @@ def makeSingBase(pitch,length):
     return sig
 
 def doSingEnv(sig):
-    len=sf.Length(sig)
+    length=sf.Length(sig)
     a=0
     d=0
     s=0
-    r=len
+    r=length
     k1=50.0
-    k2=len-50.0
-    if(len<1000):
+    k2=length-50.0
+    if(length<1000):
         a=100.0
         d=250.0
-        s=(len-d)/2.0+d
+        s=(length-d)/2.0+d
     else:
-        a=len*0.1
-        d=len*0.25
-        s=len*0.5
+        a=length*0.1
+        d=length*0.25
+        s=length*0.5
         
     env=sf.SimpleShape((0,-90),(k1,-30),(a,0),(d,-6),(s,-12),(k2,-30),(r,-90))
     sig=sf.Multiply(sig,env)
@@ -69,65 +77,132 @@ def doSingEnv(sig):
     return sig
 
 #beat
-def doFormant1(pitch,sig):
-    return doFormant(pitch,sig,300,2800,3300)
+def doFormant1(sig):
+    return doFormant(sig,300,2800,3300)
 
 #bit
-def doFormant2(pitch,sig):
-    return doFormant(pitch,sig,430,2500,3100)
+def doFormant2(sig):
+    return doFormant(sig,430,2500,3100)
 
 #bet
-def doFormant3(pitch,sig):
-    return doFormant(pitch,sig,600,2350,3000)
+def doFormant3(sig):
+    return doFormant(sig,600,2350,3000)
 
 #bat
-def doFormant4(pitch,sig):
-    return doFormant(pitch,sig,860,2050,2850)
+def doFormant4(sig):
+    return doFormant(sig,860,2050,2850)
 
 #part
-def doFormant5(pitch,sig):
-    return doFormant(pitch,sig,850,1200,2800)
+def doFormant5(sig):
+    return doFormant(sig,850,1200,2800)
 
 #pot 
-def doFormant6(pitch,sig):
-    return doFormant(pitch,sig,590,900,2700)
+def doFormant6(sig):
+    return doFormant(sig,590,900,2700)
 
 #boat
-def doFormant7(pitch,sig):
-    return doFormant(pitch,sig,470,1150,2700)
+def doFormant7(sig):
+    return doFormant(sig,470,1150,2700)
 
 #boat
-def doFormant8(pitch,sig):
-    return doFormant(pitch,sig,470,1150,2700)
+def doFormant8(sig):
+    return doFormant(sig,470,1150,2700)
 
 #book
-def doFormant9(pitch,sig):
-    return doFormant(pitch,sig,370,950,2650)
+def doFormant9(sig):
+    return doFormant(sig,370,950,2650)
 #but
-def doFormant10(pitch,sig):
-    return doFormant(pitch,sig,760,1400,2800)
+def doFormant10(sig):
+    return doFormant(sig,760,1400,2800)
 
 #pert
-def doFormant11(pitch,sig):
-    return doFormant(pitch,sig,500,1650,1950)
+def doFormant11(sig):
+    return doFormant(sig,500,1650,1950)
+
+formants=[
+    doFormant1,
+    doFormant2,
+    doFormant3,
+    doFormant4,
+    doFormant5,
+    doFormant6,
+    doFormant7,
+    doFormant8,
+    doFormant9,
+    doFormant10,
+    doFormant11
+]
+
+def doNote(pitch,length,formant):
+    def doNoteInner():
+        sig=ring(pitch,length)
+        sig=formants[int(formant)](sig)
+        length_=sf.Length(sig)
+        env=sf.NumericShape((0,0),(length_/2.0,1),(length_,0))
+        return sf.Realise(sf.Normalise(sf.Multiply(sig,env)))
+    return sf_do(doNoteInner)
 
 
-sigA=ring(256,20000)
-sigA=doFormant1(256,sigA)
-sigB=ring(512,20000)
-sigB=doFormant4(256,sigB)
-sigC=ring(196,20000)
-sigC=doFormant7(256,sigC)
-sigD=ring(256+192,40000)
-sigD=doFormant11(256,sigD)
+root    = 32
+initial = sf.Silence(2000)
+nNotes  = 32
+length  = 4096
 
-sig=sf.Concatenate(sigA,sigB,sigC,sigD)
+def makeTrack():
+    notesL=[]
+    notesR=[]
+    at=1000
+    for x in range(1,nNotes):
+        print "Performing note: " + str(x)
+        a  = 1+x%7
+        b  = 1+x%11
+        c  = 2*(1+x%3)
+        d  = ((x+1)%3)*2
+        e  = math.floor(x%22/2)
+        f  = math.floor((11+x)%22/2)
+        g  = (x%8.0)/2.0
+        h  = (x%16.0)/4.0
+        i  = x%5
+        fa = root*a
+        fb = root*b
+        na1 = doNote(root*fa,length*g,e)
+        nb1 = doNote(root*fb,length*h,f)
+        a = 8  - (x%7)
+        b = 12 - (x%11)
+        fa = root*a
+        fb = root*b
+        na2 = doNote(root*fa,length*g,e)
+        nb2 = doNote(root*fb,length*h,f)
+        signal=sf.Volume(sf.Normalise(na1),c)
+        signal=sf.Concatenate(signal,sf.Normalise(nb1))
+        signal=sf.Concatenate(signal,sf.Volume(sf.Normalise(na2),d))
+        signal=sf.Concatenate(signal,sf.Normalise(nb2))
+        at=at+length*4
+        leftBias  = i/4.0
+        rightBias = 1.0-leftBias
+        leftT     = 30*leftBias
+        rightT    = 30*rightBias
+        signal=sf.Normalise(signal)
+        def ap1():
+            notesL.append((sf.NumericVolume(signal,leftBias), at+leftT))
+        def ap2():
+            notesR.append((sf.NumericVolume(signal,rightBias),at+rightT))
+        sf_do(ap1)
+        sf_do(ap2)
+    def mixL():
+        return sf.Normalise(sf.MixAt(notesL))    
+    def mixR():
+        return sf.Normalise(sf.MixAt(notesR))    
+    return (sf_do(mixL),sf_do(mixR))
 
-"""
-sig1=doSingEnv(doFormant5(880,makeSingBase(256,4096)))
-sig2=doSingEnv(doFormant1(880,makeSingBase(256,4096)))
-sig3=doSingEnv(doFormant8(880,makeSingBase(196,8192)))
-sig=sf.Concatenate(sig1,sig2,sig3)
-"""
+(left,right)=makeTrack()
 
-sf.WriteFile32([sig],"temp/temp.wav")
+lr=sf.Length(right)
+ll=sf.Length(left)
+if(lr>ll):
+    left=sf.Concatenate(left,sf.Silence(lr-ll))
+elif(ll>lr):
+    right=sf.Concatenate(right,sf.Silence(l-lr))
+ 
+
+sf.WriteFile32([left,right],"temp/temp.wav")

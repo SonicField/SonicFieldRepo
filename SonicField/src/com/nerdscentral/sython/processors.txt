@@ -148,3 +148,4 @@ com.nerdscentral.audio.volume.SF_Raise
 com.nerdscentral.audio.volume.SF_Rectify
 com.nerdscentral.audio.volume.SF_RemoveDC
 com.nerdscentral.audio.volume.SF_ShapedPower
+com.nerdscentral.audio.volume.SF_Volume

@@ -67,6 +67,7 @@ public class SF_MixAt implements SFPL_Operator
     private static final long serialVersionUID = 1L;
 
     @Override
+    // Manual reasource manangement - note this is not exception safe
     public Object Interpret(final Object input, final SFPL_Context context) throws SFPL_RuntimeException
     {
         List<Object> inList = Caster.makeBunch(input);
@@ -80,7 +81,12 @@ public class SF_MixAt implements SFPL_Operator
             offsets.add((int) SFMaths.floor(offset));
             signals.add(Caster.makeSFSignal(dataList.get(0)));
         }
-        return new Translator(signals, offsets);
+        Translator ret = new Translator(signals, offsets);
+        for (SFSignal s : signals)
+        {
+            s.decrReference();
+        }
+        return ret;
     }
 
     @Override
