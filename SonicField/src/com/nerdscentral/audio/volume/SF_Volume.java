@@ -47,10 +47,10 @@ public class SF_Volume implements SFPL_Operator
     public Object Interpret(final Object input, final SFPL_Context context) throws SFPL_RuntimeException
     {
         List<Object> inList = Caster.makeBunch(input);
-        try (SFSignal data = Caster.makeSFSignal(inList.get(0)).replicate();)
+        try (SFSignal in = Caster.makeSFSignal(inList.get(0)))
         {
             double scale = SFConstants.fromDBs(Caster.makeDouble(inList.get(1)));
-            try (Translator x = new Translator(data, scale);)
+            try (Translator x = new Translator(in, scale);)
             {
                 return Caster.prep4Ret(x);
             }

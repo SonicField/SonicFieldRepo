@@ -21,6 +21,7 @@ public class SF_NumericVolume implements SFPL_Operator
 {
     public static class Translator extends SFSingleTranslator
     {
+
         private final double volumeInner;
 
         Translator(SFSignal input, double volumeIn)
@@ -46,7 +47,7 @@ public class SF_NumericVolume implements SFPL_Operator
     public Object Interpret(final Object input, final SFPL_Context context) throws SFPL_RuntimeException
     {
         List<Object> inList = Caster.makeBunch(input);
-        try (SFSignal data = Caster.makeSFSignal(inList.get(0)).replicate();)
+        try (SFSignal data = Caster.makeSFSignal(inList.get(0));)
         {
             double scale = Caster.makeDouble(inList.get(1));
             try (SFSignal x = new Translator(data, scale))

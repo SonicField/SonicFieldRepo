@@ -26,29 +26,32 @@ public class SF_NormaliseArea implements SFPL_Operator
     @Override
     public Object Interpret(final Object input, final SFPL_Context context) throws SFPL_RuntimeException
     {
-        SFSignal data = Caster.makeSFSignal(input).replicate();
-        // remove DC
-        double dc = 0;
-        int len = data.getLength();
-        for (int i = 0; i < len; ++i)
+        try (SFSignal in = Caster.makeSFSignal(input); SFSignal data = Caster.makeSFSignal(input).replicateEmpty();)
         {
-            dc += data.getSample(i);
+
+            // remove DC
+            double dc = 0;
+            int len = data.getLength();
+            for (int i = 0; i < len; ++i)
+            {
+                dc += in.getSample(i);
+            }
+            dc = dc / len;
+            for (int i = 0; i < len; ++i)
+            {
+                data.setSample(i, in.getSample(i) - dc);
+            }
+            double totalExcersion = 0;
+            for (int i = 0; i < len; ++i)
+            {
+                totalExcersion += SFMaths.abs(data.getSample(i));
+            }
+            for (int i = 0; i < len; ++i)
+            {
+                data.setSample(i, data.getSample(i) / totalExcersion);
+            }
+            return Caster.prep4Ret(data);
         }
-        dc = dc / len;
-        for (int i = 0; i < len; ++i)
-        {
-            data.setSample(i, data.getSample(i) - dc);
-        }
-        double totalExcersion = 0;
-        for (int i = 0; i < len; ++i)
-        {
-            totalExcersion += SFMaths.abs(data.getSample(i));
-        }
-        for (int i = 0; i < len; ++i)
-        {
-            data.setSample(i, data.getSample(i) / totalExcersion);
-        }
-        return data;
     }
 
     @Override

@@ -1,3 +1,5 @@
+import traceback
+
 class SonicField:
     def __init__(self,procs):
         from com.nerdscentral.sython import SFPL_Context
@@ -12,5 +14,8 @@ class SonicField:
             args=list(args)
             args.insert(0,input)
             input=args
+        trace=''.join(traceback.format_stack())
+        from com.nerdscentral.audio import SFSignal
+        SFSignal.setPythonStack(trace)
         ret=self.processors.get(word).Interpret(input,self.context)
         return ret

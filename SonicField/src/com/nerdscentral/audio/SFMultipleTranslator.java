@@ -51,6 +51,12 @@ public abstract class SFMultipleTranslator extends SFGenerator
         return this;
     }
 
+    @Override
+    public void decrReference()
+    {
+        this.__neg__();
+    }
+
     private final List<SFSignal> signals;
     private final int            length;
 

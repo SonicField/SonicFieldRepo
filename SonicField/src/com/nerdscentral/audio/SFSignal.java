@@ -18,6 +18,8 @@ public abstract class SFSignal implements AutoCloseable
 
     public abstract SFSignal replicate();
 
+    private static ThreadLocal<String> pythonStack = new ThreadLocal<>();
+
     public final SFData replicateEmpty()
     {
         return SFData.build(this.getLength());
@@ -133,5 +135,15 @@ public abstract class SFSignal implements AutoCloseable
     public void decrReference()
     {
         referenceCount.decrementAndGet();
+    }
+
+    public static String getPythonStack()
+    {
+        return pythonStack.get();
+    }
+
+    public static void setPythonStack(String ps)
+    {
+        SFSignal.pythonStack.set(ps);
     }
 }

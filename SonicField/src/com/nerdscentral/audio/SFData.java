@@ -31,24 +31,38 @@ public class SFData extends SFSignal implements Serializable
     }
 
     // Swap limit in samples beyond which signals are send to swap
-    private static final String                                     SOMIC_FIELD_SWAP_LIMIT = "sonicFieldSwapLimit";    //$NON-NLS-1$
+    private static final String         SOMIC_FIELD_SWAP_LIMIT = "sonicFieldSwapLimit";    //$NON-NLS-1$
     // Directory to send swap files to
-    private static final String                                     SONIC_FIELD_TEMP       = "sonicFieldTemp";         //$NON-NLS-1$
+    private static final String         SONIC_FIELD_TEMP       = "sonicFieldTemp";     //$NON-NLS-1$
     // Default swap limit
-    private static final int                                        MAX_IN_RAM             = 8192 * 1024;
-    private static final long                                       serialVersionUID       = 1L;
-    private double[]                                                data;
-    private final int                                               length;
-    private volatile boolean                                        killed                 = false;
-    private File                                                    coreFile;
-    private RandomAccessFile                                        coreFileAccessor;
-    private final long                                              TWOGIG                 = 2097152;
-    private List<ByteBuffer>                                        chunks                 = new ArrayList<>();
-    private final static long                                       swapLimit;
-    private final static File                                       tempDir;
-    private FileChannel                                             channelMapper;
-    private final NotCollectedException                             created;
-    private static ConcurrentHashMap<SFData, NotCollectedException> resourceTracker        = new ConcurrentHashMap<>();
+    private static final int            MAX_IN_RAM             = 8192 * 1024;
+    private static final long           serialVersionUID       = 1L;
+    private double[]                    data;
+    private final int                   length;
+    private volatile boolean            killed                 = false;
+    private File                        coreFile;
+    private RandomAccessFile            coreFileAccessor;
+    private final long                  TWOGIG                 = 2097152;
+    private List<ByteBuffer>            chunks                 = new ArrayList<>();
+    private final static long           swapLimit;
+    private final static File           tempDir;
+    private FileChannel                 channelMapper;
+    private final NotCollectedException javaCreated;
+    private final String                pythonCreated;
+
+    private static class ResTracker
+    {
+        public ResTracker(NotCollectedException javaCreated, String pythonCreated)
+        {
+            j = javaCreated;
+            p = pythonCreated;
+        }
+
+        NotCollectedException j;
+        String                p;
+    }
+
+    private static ConcurrentHashMap<SFData, ResTracker> resourceTracker = new ConcurrentHashMap<>();
 
     static
     {
@@ -68,11 +82,11 @@ public class SFData extends SFSignal implements Serializable
     {
         if (resourceTracker.size() != 0)
         {
-            System.err.println(Messages.getString("SFData.14")); //$NON-NLS-1$
-            System.err.println(Messages.getString("SFData.15")); //$NON-NLS-1$
-            for (Entry<SFData, NotCollectedException> x : resourceTracker.entrySet())
+            System.out.println(Messages.getString("SFData.14")); //$NON-NLS-1$
+            System.out.println(Messages.getString("SFData.15")); //$NON-NLS-1$
+            for (Entry<SFData, ResTracker> x : resourceTracker.entrySet())
             {
-                x.getValue().printStackTrace();
+                printResourceError(Messages.getString("SFData.19"), x.getValue()); //$NON-NLS-1$
             }
         }
     }
@@ -150,8 +164,9 @@ public class SFData extends SFSignal implements Serializable
         this.length = lengthIn;
         NotCollectedException nc = new NotCollectedException();
         nc.fillInStackTrace();
-        resourceTracker.put(this, nc);
-        this.created = nc;
+        pythonCreated = getPythonStack();
+        resourceTracker.put(this, new ResTracker(nc, pythonCreated));
+        javaCreated = nc;
     }
 
     /* (non-Javadoc)
@@ -345,8 +360,21 @@ public class SFData extends SFSignal implements Serializable
         }
         catch (RuntimeException e)
         {
-            this.created.printStackTrace(System.out);
+            printResourceError(Messages.getString("SFData.16"), new ResTracker(this.javaCreated, this.pythonCreated)); //$NON-NLS-1$
             throw e;
         }
+    }
+
+    private static void printResourceError(String message, ResTracker data)
+    {
+        System.out.println(message);
+        System.out.println(Messages.getString("SFData.17")); //$NON-NLS-1$
+        for (StackTraceElement x : data.j.getStackTrace())
+        {
+            if (x.getClassName().contains(".reflect.")) break; //$NON-NLS-1$
+            System.out.println(x.getClassName() + "!" + x.getFileName() + ":" + x.getLineNumber()); //$NON-NLS-1$ //$NON-NLS-2$
+        }
+        System.out.println(Messages.getString("SFData.18")); //$NON-NLS-1$
+        System.out.println(data.p);
     }
 }

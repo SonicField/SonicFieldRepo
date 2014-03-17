@@ -7,3 +7,9 @@
 SonicField/bin/*
 SonicField/patches
 SonicField/impulses
+
+SonicField/bin/com/nerdscentral/sython/Sython.py
+
+SonicField/bin/com/nerdscentral/audio/messages.properties
+
+SonicField/bin/com/nerdscentral/audio/messages.properties
