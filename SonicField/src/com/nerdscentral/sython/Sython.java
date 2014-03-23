@@ -3,6 +3,9 @@ package com.nerdscentral.sython;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -30,6 +33,47 @@ public class Sython
     {
         try
         {
+            // Launch Thread Watchdog
+            new Thread(new Runnable()
+            {
+
+                @Override
+                public void run()
+                {
+                    ThreadMXBean bean = ManagementFactory.getThreadMXBean();
+                    while (true)
+                    {
+                        long[] threadIds = bean.findDeadlockedThreads(); // Returns null if no threads are deadlocked.
+                        if (threadIds != null)
+                        {
+                            System.err.println("DEADLOCK");
+                            System.err.println("========");
+                            ThreadInfo[] infos = bean.getThreadInfo(threadIds);
+
+                            for (ThreadInfo info : infos)
+                            {
+                                System.err.println("STACK:");
+                                StackTraceElement[] stack = info.getStackTrace();
+                                for (StackTraceElement x : stack)
+                                {
+                                    System.err.println("    " + x);
+                                }
+                            }
+                            System.exit(1);
+                        }
+                        try
+                        {
+                            Thread.sleep(1000);
+                        }
+                        catch (InterruptedException e)
+                        {
+                            // nop
+                        }
+                    }
+
+                }
+            }).start();
+
             // Create Java/Jython interface
             // ============================
 

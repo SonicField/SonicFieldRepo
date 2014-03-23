@@ -51,13 +51,7 @@ public class SF_PhasedSin implements SFPL_Operator
         double phase = (Caster.makeDouble(l.get(2)));
         final int size = (int) (duration * SFConstants.SAMPLE_RATE);
         final double PI2 = SFMaths.PI * 2.0d;
-        // SFData data = SFData.build(size);
         phase = phase * PI2;
-        // for (int i = 0; i < size; ++i)
-        // {
-        // data.setSample(i, SFMaths.sin(i * PI2 * frequency / SFConstants.SAMPLE_RATE + phase));
-        // }
-        // return data;
         return new Generator(size, frequency, phase);
     }
 }
