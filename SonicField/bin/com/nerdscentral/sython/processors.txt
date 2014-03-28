@@ -13,6 +13,7 @@ com.nerdscentral.audio.SF_Semitone
 com.nerdscentral.audio.SF_SetSampleRate
 com.nerdscentral.audio.SF_SpeedOfSound
 com.nerdscentral.audio.SF_StereoMonitor
+com.nerdscentral.audio.SF_Swap
 com.nerdscentral.audio.SF_WriteFile16
 com.nerdscentral.audio.SF_WriteFile32
 com.nerdscentral.audio.SF_WriteFileString

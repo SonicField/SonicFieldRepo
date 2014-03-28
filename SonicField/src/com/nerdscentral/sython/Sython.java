@@ -191,7 +191,8 @@ public class Sython
                 t.printStackTrace();
                 t = t.getCause();
             }
-            System.exit(0);
+            System.exit(1);
         }
+        System.exit(0);
     }
 }

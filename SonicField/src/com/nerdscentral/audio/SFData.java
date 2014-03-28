@@ -143,9 +143,9 @@ public class SFData extends SFSignal implements Serializable
         resourceTracker.remove(this);
     }
 
-    private SFData(int lengthIn)
+    private SFData(int lengthIn, boolean forceSwap)
     {
-        if (lengthIn <= swapLimit)
+        if (!forceSwap && lengthIn <= swapLimit)
         {
             data = new double[lengthIn];
         }
@@ -169,6 +169,11 @@ public class SFData extends SFSignal implements Serializable
         javaCreated = nc;
     }
 
+    public SFData(int length2)
+    {
+        this(length2, false);
+    }
+
     /* (non-Javadoc)
      * @see com.nerdscentral.audio.SFSignal#isKilled()
      */
@@ -180,7 +185,12 @@ public class SFData extends SFSignal implements Serializable
 
     public final static SFData build(int size)
     {
-        return new SFData(size);
+        return new SFData(size, false);
+    }
+
+    public final static SFData build(int size, boolean forceSwap)
+    {
+        return new SFData(size, forceSwap);
     }
 
     /* (non-Javadoc)
@@ -325,6 +335,18 @@ public class SFData extends SFSignal implements Serializable
     public double[] getDataInternalOnly()
     {
         return data;
+    }
+
+    public static SFData realiseSwap(SFSignal in)
+    {
+        if (in instanceof SFData && ((SFData) in).data == null) return (SFData) in;
+        int len = in.getLength();
+        SFData output = SFData.build(len, true);
+        for (int i = 0; i < len; ++i)
+        {
+            output.setSample(i, in.getSample(i));
+        }
+        return output;
     }
 
     public static SFData realise(SFSignal in)
