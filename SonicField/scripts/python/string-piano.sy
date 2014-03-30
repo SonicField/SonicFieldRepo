@@ -330,7 +330,7 @@ def playStringHardShort(pitch,length,volume):
                 64,                 # a
                 length*0.125,       # d
                 1.0,                # d at
-                length*0.75         # s
+                length*0.75,         # s
                 0.75,               # s at
                 length,             # r
                 w,                  # white amount  
@@ -340,7 +340,7 @@ def playStringHardShort(pitch,length,volume):
             ),
             volume
         ))
-    return playStringSoftLongInner()
+    return playStringHardShortInner()
 
 #def playStringHardRevLong(pitch,length,volume):
 
@@ -503,68 +503,269 @@ def phrase4():
     at   = 0
     sigl = []
     sigr = []
+    length=beat
 
-    pitch=sf.Note("G2")
-    length=beat*8
-    sigl.append((playStringSoftLong(pitch,length,0.15),at))
-    sigr.append((playStringSoftLong(pitch,length,0.15),at))
+    # G5
+
+    pitch=sf.Note("G5")
+    sigl.append((playStringHardShort(pitch,length,0.25),at))
+    sigr.append((playStringHardShort(pitch,length,0.25),at))
     
-    pitch=sf.Note("C2")
-    length=beat*8
-    at+=beat*4
+    at+=beat
+    pitch=sf.Note("F5")
+    sigl.append((playStringHardShort(pitch,length,0.15),at))
+    sigr.append((playStringHardShort(pitch,length,0.15),at))
+
+    at+=beat
+    pitch=sf.Note("E5")
+    sigl.append((playStringHardShort(pitch,length,0.15),at))
+    sigr.append((playStringHardShort(pitch,length,0.15),at))
+
+    at+=beat
+    pitch=sf.Note("D5")
+    sigl.append((playStringHardShort(pitch,length,0.15),at))
+    sigr.append((playStringHardShort(pitch,length,0.15),at))
+
+    at+=beat
+    pitch=sf.Note("G5")
+    sigl.append((playStringHardShort(pitch,length,0.15),at))
+    sigr.append((playStringHardShort(pitch,length,0.15),at))
+    
+    at+=beat
+    pitch=sf.Note("F5")
+    sigl.append((playStringHardShort(pitch,length,0.15),at))
+    sigr.append((playStringHardShort(pitch,length,0.15),at))
+
+    at+=beat
+    pitch=sf.Note("E5")
+    sigl.append((playStringHardShort(pitch,length,0.15),at))
+    sigr.append((playStringHardShort(pitch,length,0.15),at))
+
+    at+=beat
+    pitch=sf.Note("D5")
+    sigl.append((playStringHardShort(pitch,length,0.15),at))
+    sigr.append((playStringHardShort(pitch,length,0.15),at))
+
+    at+=beat
+    pitch=sf.Note("G5")
+    sigl.append((playStringHardShort(pitch,length,0.15),at))
+    sigr.append((playStringHardShort(pitch,length,0.15),at))
+    
+    at+=beat
+    pitch=sf.Note("F5")
+    sigl.append((playStringHardShort(pitch,length,0.15),at))
+    sigr.append((playStringHardShort(pitch,length,0.15),at))
+
+    at+=beat
+    pitch=sf.Note("E5")
+    sigl.append((playStringHardShort(pitch,length,0.15),at))
+    sigr.append((playStringHardShort(pitch,length,0.15),at))
+
+    at+=beat
+    pitch=sf.Note("D5")
+    sigl.append((playStringHardShort(pitch,length,0.15),at))
+    sigr.append((playStringHardShort(pitch,length,0.15),at))
+
+    # F5
+
+    at+=beat
+    pitch=sf.Note("F5")
+    sigl.append((playStringHardShort(pitch,length,0.25),at))
+    sigr.append((playStringHardShort(pitch,length,0.25),at))
+    
+    at+=beat
+    pitch=sf.Note("E5")
+    sigl.append((playStringHardShort(pitch,length,0.15),at))
+    sigr.append((playStringHardShort(pitch,length,0.15),at))
+
+    at+=beat
+    pitch=sf.Note("D5")
+    sigl.append((playStringHardShort(pitch,length,0.15),at))
+    sigr.append((playStringHardShort(pitch,length,0.15),at))
+
+    at+=beat
+    pitch=sf.Note("C5")
+    sigl.append((playStringHardShort(pitch,length,0.15),at))
+    sigr.append((playStringHardShort(pitch,length,0.15),at))
+
+    at+=beat
+    pitch=sf.Note("F5")
+    sigl.append((playStringHardShort(pitch,length,0.15),at))
+    sigr.append((playStringHardShort(pitch,length,0.15),at))
+    
+    at+=beat
+    pitch=sf.Note("E5")
+    sigl.append((playStringHardShort(pitch,length,0.15),at))
+    sigr.append((playStringHardShort(pitch,length,0.15),at))
+
+    at+=beat
+    pitch=sf.Note("D5")
+    sigl.append((playStringHardShort(pitch,length,0.15),at))
+    sigr.append((playStringHardShort(pitch,length,0.15),at))
+
+    at+=beat
+    pitch=sf.Note("C5")
+    sigl.append((playStringHardShort(pitch,length,0.15),at))
+    sigr.append((playStringHardShort(pitch,length,0.15),at))
+
+    at+=beat
+    pitch=sf.Note("F5")
+    sigl.append((playStringHardShort(pitch,length,0.25),at))
+    sigr.append((playStringHardShort(pitch,length,0.05),at))
+    
+    at+=beat
+    pitch=sf.Note("E5")
+    sigl.append((playStringHardShort(pitch,length,0.05),at))
+    sigr.append((playStringHardShort(pitch,length,0.25),at))
+
+    at+=beat
+    pitch=sf.Note("D5")
+    sigl.append((playStringHardShort(pitch,length,0.25),at))
+    sigr.append((playStringHardShort(pitch,length,0.05),at))
+
+    at+=beat
+    pitch=sf.Note("C5")
+    sigl.append((playStringHardShort(pitch,length,0.05),at))
+    sigr.append((playStringHardShort(pitch,length,0.25),at))
+
+    # E5b
+
+    at+=beat
+    pitch=sf.Note("E5b")
+    sigl.append((playStringHardShort(pitch,length,0.35),at))
+    sigr.append((playStringHardShort(pitch,length,0.15),at))
+    
+    at+=beat
+    pitch=sf.Note("D5")
+    sigl.append((playStringHardShort(pitch,length,0.15),at))
+    sigr.append((playStringHardShort(pitch,length,0.15),at))
+
+    at+=beat
+    pitch=sf.Note("C5")
+    sigl.append((playStringHardShort(pitch,length,0.15),at))
+    sigr.append((playStringHardShort(pitch,length,0.15),at))
+
+    at+=beat
+    pitch=sf.Note("B4b")
+    sigl.append((playStringHardShort(pitch,length,0.15),at))
+    sigr.append((playStringHardShort(pitch,length,0.15),at))
+
+    at+=beat
+    pitch=sf.Note("E5b")
+    sigl.append((playStringHardShort(pitch,length,0.25),at))
+    sigr.append((playStringHardShort(pitch,length,0.05),at))
+    
+    at+=beat
+    pitch=sf.Note("D5")
+    sigl.append((playStringHardShort(pitch,length,0.05),at))
+    sigr.append((playStringHardShort(pitch,length,0.25),at))
+
+    at+=beat
+    pitch=sf.Note("C5")
+    sigl.append((playStringHardShort(pitch,length,0.25),at))
+    sigr.append((playStringHardShort(pitch,length,0.05),at))
+
+    at+=beat
+    pitch=sf.Note("B4b")
+    sigl.append((playStringHardShort(pitch,length,0.05),at))
+    sigr.append((playStringHardShort(pitch,length,0.25),at))
+
+    at+=beat
+    pitch=sf.Note("E5b")
+    sigl.append((playStringHardShort(pitch,length,0.25),at))
+    sigr.append((playStringHardShort(pitch,length,0.05),at))
+    
+    at+=beat
+    pitch=sf.Note("D5")
+    sigl.append((playStringHardShort(pitch,length,0.05),at))
+    sigr.append((playStringHardShort(pitch,length,0.25),at))
+
+    at+=beat
+    pitch=sf.Note("C5")
+    sigl.append((playStringHardShort(pitch,length,0.25),at))
+    sigr.append((playStringHardShort(pitch,length,0.05),at))
+
+    at+=beat
+    pitch=sf.Note("B4b")
+    sigl.append((playStringHardShort(pitch,length,0.05),at))
+    sigr.append((playStringHardShort(pitch,length,0.25),at))
+
+    at+=beat
+    pitch=sf.Note("C5")
+    length=beat*12
     sigl.append((playStringSoftLong(pitch,length,0.25),at))
-    sigr.append((playStringSoftLong(pitch,length,0.35),at))
+    sigr.append((playStringSoftLong(pitch,length,0.25),at))
 
-    pitch=sf.Note("A2")
-    length=beat*4
+    pitch=sf.Note("G4")
     at+=beat*4
-    sigl.append((playStringSoftLong(pitch,length,0.40),at))
-    sigr.append((playStringSoftLong(pitch,length,0.30),at))
-    
-    pitchA=sf.Note("G2")
-    pitchB=sf.Note("D3")
-    length=beat*2
-    at+=beat*4
-    sigl.append((playStringSoftShort(pitchB,length,0.20),at))
-    sigr.append((playStringSoftShort(pitchA,length,0.50),at))
-    
-    pitchA=sf.Note("F2")
-    pitchB=sf.Note("C3")
-    length=beat*2
-    at+=beat*4
-    sigl.append((playStringSoftShort(pitchA,length,0.40),at))
-    sigr.append((playStringSoftShort(pitchB,length,0.10),at))
-    
-    pitch=sf.Note("D2")
     length=beat*8
-    at+=beat*4
-    sigl.append((playStringSoftLong(pitch,length,0.20),at))
-    sigr.append((playStringSoftLong(pitch,length,0.35),at))
+    sigl.append((playStringSoftLong(pitch,length,0.10),at))
+    sigr.append((playStringSoftLong(pitch,length,0.10),at))
 
-    pitch=sf.Note("E2")
-    length=beat*8
-    at+=beat*4
-    sigl.append((playStringSoftLong(pitch,length,0.20),at))
-    sigr.append((playStringSoftLong(pitch,length,0.35),at))
-    
-    pitchA=sf.Note("C2")
-    pitchB=sf.Note("C1")
-    length=beat*16
-    at+=beat*8
-    sigl.append((playStringSoftLong(pitchA,length,0.30),at))
-    sigr.append((playStringSoftLong(pitchA,length,0.30),at))
-    sigl.append((playStringSoftLong(pitchB,length,0.10),at))
-    sigr.append((playStringSoftLong(pitchB,length,0.10),at))
-
-    print "Compiling Phrase2"
+    print "Compiling Phrase4"
     left=sf.FixSize(sf.MixAt(sigl))
     right=sf.FixSize(sf.MixAt(sigr))
     
     sf.WriteFile32([left,right],"temp/phrase-4.wav")
 
+def phrase5():
+    print "Phrase 5"
+    at   = 0
+    sigl = []
+    sigr = []
+
+    pitch=sf.Note("G6")
+    length=beat*16
+    sigl.append((playStringSuperSoft(pitch,length,0.10),at))
+    sigr.append((playStringSuperSoft(pitch,length,0.05),at))
+    
+    pitch=sf.Note("D7")
+    length=beat*16
+    at+=beat*16
+    length=beat*16
+    sigl.append((playStringSuperSoft(pitch,length,0.05),at))
+    sigr.append((playStringSuperSoft(pitch,length,0.10),at))
+
+    pitchA=sf.Note("C8")
+    pitchB=sf.Note("E7")
+    pitchC=sf.Note("D7")
+    length=beat*16
+    at+=beat*16
+    length=beat*16
+    sigl.append((playStringSuperSoft(pitchA,length,0.05),at))
+    sigr.append((playStringSuperSoft(pitchB,length,0.10),at))
+    sigr.append((playStringSuperSoft(pitchC,length,0.05),at))
+
+    print "Compiling Phrase5"
+    left=sf.FixSize(sf.MixAt(sigl))
+    right=sf.FixSize(sf.MixAt(sigr))
+    
+    sf.WriteFile32([left,right],"temp/phrase-5.wav")
+
+def phrase6():
+    print "Phrase 6"
+    at   = 0
+    sigl = []
+    sigr = []
+
+    pitch=sf.Note("C2")
+    length=beat*48
+    sigl.append((playStringInitial(pitch,length,1.0),at))
+    sigr.append((playStringInitial(pitch,length,1.0),at))
+
+    print "Compiling Phrase6"
+    left=sf.FixSize(sf.MixAt(sigl))
+    right=sf.FixSize(sf.MixAt(sigr))
+    
+    sf.WriteFile32([left,right],"temp/phrase-6.wav")
+
+
 #phrase1()
 #phrase2()
 #phrase3()
+#phrase4()
+#phrase5()
+#phrase6()
 
 (left1,right1)=sf.ReadFile("temp/phrase-1.wav")
 left1  = sf.Swap(left1)
@@ -575,13 +776,26 @@ right2 = sf.Swap(right2)
 (left3,right3)=sf.ReadFile("temp/phrase-3.wav")
 left3  = sf.Swap(left3)
 right3 = sf.Swap(right3)
+(left4,right4)=sf.ReadFile("temp/phrase-4.wav")
+left4  = sf.Swap(left4)
+right4 = sf.Swap(right4)
+(left5,right5)=sf.ReadFile("temp/phrase-5.wav")
+left5  = sf.Swap(left5)
+right5 = sf.Swap(right5)
+(left6,right6)=sf.ReadFile("temp/phrase-6.wav")
+left6  = sf.Swap(left6)
+right6 = sf.Swap(right6)
+
 
 left = sf.FixSize(
     sf.MixAt(
         (left1,1000),
         (+left2,1000+44*beat),
         (sf.Pcnt10(left3),1000+88*beat),
-        (sf.Pcnt90(left2),1000+92*beat)
+        (sf.Pcnt90(+left2),1000+92*beat),
+        (sf.Pcnt5(left5),1000+136*beat),
+        (sf.Pcnt50(left2),1000+140*beat),
+        (sf.Pcnt40(left4),1000+140*beat)
     )
 )
 right = sf.FixSize(
@@ -589,13 +803,26 @@ right = sf.FixSize(
         (right1,1000),
         (+right2,1000+44*beat),
         (sf.Pcnt10(right3),1000+88*beat),        
-        (sf.Pcnt90(right2),1000+92*beat)
+        (sf.Pcnt90(+right2),1000+92*beat),
+        (sf.Pcnt5(right5),1000+136*beat),
+        (sf.Pcnt50(right2),1000+140*beat),
+        (sf.Pcnt40(right4),1000+140*beat)
     )
 )
 
 
 (convoll,convolr)=sf.ReadFile("temp/revb.wav")
 
+def procConvol(convol):
+    return sf.Normalise(
+        sf.Saturate(
+            sf.BesselHighPass(convol,7000,1)
+        )
+    )
+
+#convoll=procConvol(convoll)
+#convolr=procConvol(convolr)
+       
 wleft =reverberate(+left,convoll)
 wright=reverberate(+right,convolr)
 wleft=wleft.get()
@@ -617,4 +844,4 @@ right_out=sf.Normalise(sf.MixAt(
     (sf.Pcnt5(left),105)
 ))
 
-sf.WriteFile32((left_out,right_out),"temp/temp_post.wav")
+sf.WriteFile32((left_out,right_out),"temp/temp_postb.wav")
