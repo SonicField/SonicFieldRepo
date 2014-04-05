@@ -3,7 +3,7 @@ package com.nerdscentral.sython;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.FutureTask;
+import java.util.concurrent.Future;
 
 import javax.sound.midi.Sequence;
 import javax.sound.midi.Sequencer;
@@ -39,9 +39,9 @@ public class Caster
     public static Object checkAutoTranslation(Object o) throws SFPL_RuntimeException
     {
 
-        if (o instanceof FutureTask)
+        if (o instanceof Future)
         {
-            FutureTask doer = (FutureTask) o;
+            Future doer = (Future) o;
             try
             {
                 Object d = doer.get();

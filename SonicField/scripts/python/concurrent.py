@@ -4,7 +4,10 @@ from java.util.concurrent import Executors, TimeUnit
 from java.util.concurrent import Callable
 
 SF_MAX_CONCURRENT = 6
-SF_POOL = Executors.newFixedThreadPool(SF_MAX_CONCURRENT)
+#SF_POOL = Executors.newFixedThreadPool(SF_MAX_CONCURRENT)
+#SF_POOL = Executors.newCachedThreadPool()
+print SF_POOL
+System.exit(0)
 
 class sf_callable(Callable):
     def __init__(self,toDo):

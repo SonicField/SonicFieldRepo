@@ -4,6 +4,6 @@ rm -fr temp
 rm -fr bin
 cd ..
 rm sonicField-snapshot/scripts/performances/*.wav
-tar -cvzf SonicField-2.0.0.tgz SonicField-snapshot
+tar -cvzf SonicField-2.0.1.tgz SonicField-snapshot
 mv SonicField-*.tgz ~/Google\ Drive/SonicField-snapshots
 rm -fr SonicField-snapshot/
