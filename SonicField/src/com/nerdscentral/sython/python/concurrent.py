@@ -16,6 +16,27 @@ class sf_callable(Callable):
     def call(self):
         return self.toDo()
 
+class sf_futureWrapper(Future):
+    def __init__(self,toDo):
+        self.toDo=toDo
+        self.gotten=False
+        
+    def get(self):
+        if(self.gotten):
+            return self.result
+        else:
+            self.result=self.toDo.get()
+            self.gotten=True
+            return self.result
+    
+    def __pos__():
+        obj=self.get()
+        return +obj
+
+    def __neg__():
+        obj=self.get()
+        return -obj
+
 class sf_getter(Future):
     def __init__(self,toDo):
         self.toDo=toDo
@@ -28,7 +49,7 @@ def sf_do(toDo):
     #print "Thread Count: ",count
     if(count<SF_MAX_CONCURRENT):
         task=sf_callable(toDo)
-        return SF_POOL.submit(task)
+        return sf_futureWrapper(SF_POOL.submit(task))
     else:
         #print "Thread saturation - running inline"
         return sf_getter(toDo)

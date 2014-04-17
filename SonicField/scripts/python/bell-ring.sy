@@ -28,7 +28,6 @@ def ring(pitch,length):
     return sf.Realise(sf.Normalise(sig))
 
 def doFormant(sig,f1,f2,f3):
-    #sig=sf.BesselLowPass(sig,f3,1)
     def doFormantInner(a,b,c,d):
         def doFII():
             return sf.RBJPeaking(a,b,c,d)
