@@ -29,11 +29,11 @@ class sf_futureWrapper(Future):
             self.gotten=True
             return self.result
     
-    def __pos__():
+    def __pos__(self):
         obj=self.get()
         return +obj
 
-    def __neg__():
+    def __neg__(self):
         obj=self.get()
         return -obj
 
@@ -47,11 +47,11 @@ class sf_getter(Future):
 def sf_do(toDo):
     count=SF_POOL.getActiveCount()
     #print "Thread Count: ",count
-    if(count<SF_MAX_CONCURRENT):
+    if(count<SF_MAX_CONCURRENT*0.5):
         task=sf_callable(toDo)
         return sf_futureWrapper(SF_POOL.submit(task))
     else:
-        #print "Thread saturation - running inline"
+        #print "Thread saturation - running inline",count
         return sf_getter(toDo)
 
 from java.util.concurrent import TimeUnit

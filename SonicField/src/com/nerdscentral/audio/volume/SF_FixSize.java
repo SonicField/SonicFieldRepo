@@ -58,7 +58,7 @@ public class SF_FixSize implements SFPL_Operator
         try (SFData data = SFData.realise(signalIn);)
         {
             // If we keep the input then we increase its reference
-            // so when what ever calls doNormalisation reduces it all
+            // so when what ever calls reduces it all
             // is OK. IE this behaves as though the return is always new
             if (data == signalIn) data.incrReference();
             int len = data.getLength();

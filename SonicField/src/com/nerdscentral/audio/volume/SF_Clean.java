@@ -2,6 +2,7 @@
 package com.nerdscentral.audio.volume;
 
 import com.nerdscentral.audio.SFData;
+import com.nerdscentral.audio.SFSignal;
 import com.nerdscentral.sython.Caster;
 import com.nerdscentral.sython.SFPL_Context;
 import com.nerdscentral.sython.SFPL_Operator;
@@ -18,21 +19,26 @@ public class SF_Clean implements SFPL_Operator
     @Override
     public Object Interpret(final Object input, final SFPL_Context context) throws SFPL_RuntimeException
     {
-        try (SFData dataIn = SFData.realise(Caster.makeSFSignal(input)); SFData dataOut = dataIn.replicateEmpty();)
+        try (SFSignal sig = Caster.makeSFSignal(input))
         {
-            int length = decimateFilter(dataIn, dataOut);
-            // remove DC
-            double dc = 0;
-            for (int i = 0; i < length; ++i)
+            try (SFData dataIn = SFData.realise(sig); SFData dataOut = dataIn.replicateEmpty();)
             {
-                dc += dataOut.getSample(i);
+                if (dataIn == sig) dataIn.incrReference();
+
+                int length = decimateFilter(dataIn, dataOut);
+                // remove DC
+                double dc = 0;
+                for (int i = 0; i < length; ++i)
+                {
+                    dc += dataOut.getSample(i);
+                }
+                dc = dc / length;
+                for (int i = 0; i < length; ++i)
+                {
+                    dataOut.setSample(i, dataOut.getSample(i) - dc);
+                }
+                return Caster.prep4Ret(dataOut);
             }
-            dc = dc / length;
-            for (int i = 0; i < length; ++i)
-            {
-                dataOut.setSample(i, dataOut.getSample(i) - dc);
-            }
-            return Caster.prep4Ret(dataOut);
         }
     }
 
