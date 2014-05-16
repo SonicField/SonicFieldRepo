@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
@@ -217,8 +218,20 @@ public class SFData extends SFSignal implements Serializable
         {
             return this.data[index];
         }
-        ByteBuffer byteBuffer = setUpBuffer(index);
-        return byteBuffer.getDouble();
+        ByteBuffer byteBuffer = null;
+        try
+        {
+            byteBuffer = setUpBuffer(index);
+            return byteBuffer.getDouble();
+        }
+        catch (BufferUnderflowException b)
+        {
+            if (byteBuffer != null)
+            {
+                System.err.println("Buffer Underflow Index: " + index + " buffer capacity: " + byteBuffer.capacity());
+            }
+            throw b;
+        }
     }
 
     private ByteBuffer setUpBuffer(int index)

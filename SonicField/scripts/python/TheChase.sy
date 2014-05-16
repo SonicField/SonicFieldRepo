@@ -417,7 +417,7 @@ def makeClick(formant):
         clickB=formant(clickB)
         clickA=sf.MixAt(
             (clickA,0),
-            (clickB,beat/8)
+            (clickB,beat/16)
         )
     return sf.Normalise(clickA)
 
@@ -724,119 +724,25 @@ def phrase5():
         
     sf.WriteFile32([left,right],"temp/phrase-5.wav")
 
-
 def phrase6():
     print "Phrase 6"
     at   = 0
     sigl = []
     sigr = []
-    sat=0.33
+
     def double():
-        def doer():
-            return sf.Mix(
-               playStringHardShort(lpitch,length,0.5),
-               playStringHardShort(lpitch,length,0.25)
-            )
-        lpitch=pitch
-        lat=at
-        sigl.append((
-            sf.Saturate(
-                sf.NumericVolume(
-                    sf.FixSize(
-                        sf_do(doer)
-                    ),
-                    sat
-                )
-            ),
-            lat
-        ))
-        sigr.append((
-            sf.Saturate(
-                sf.NumericVolume(
-                    sf.FixSize(
-                        sf_do(doer)
-                    ),
-                    sat
-                )
-            ),
-            lat
-        ))
-        lpitch=pitch*2
-        sigl.append((
-            sf.Saturate(
-                sf.NumericVolume(
-                    sf.FixSize(
-                        sf_do(doer)
-                    ),
-                    sat
-                )
-            ),
-            lat
-        ))
-        sigr.append((
-            sf.Saturate(
-                sf.NumericVolume(
-                    sf.FixSize(
-                        sf_do(doer)
-                    ),
-                    sat
-                )
-            ),
-            lat
-        ))
-        
-        #
-        lat=lat+beat*0.23
-        lpitch=pitch
-        sigl.append((
-            sf.Saturate(
-                sf.NumericVolume(
-                    sf.FixSize(
-                        sf_do(doer)
-                    ),
-                    sat
-                )
-            ),
-            lat
-        ))
-        sigr.append((
-            sf.Saturate(
-                sf.NumericVolume(
-                    sf.FixSize(
-                        sf_do(doer)
-                    ),
-                    sat
-                )
-            ),
-            lat
-        ))
-        lpitch=pitch*2
-        sigl.append((
-            sf.Saturate(
-                sf.NumericVolume(
-                    sf.FixSize(
-                        sf_do(doer)
-                    ),
-                    sat
-                )
-            ),
-            lat
-        ))
-        sigr.append((
-            sf.Saturate(
-                sf.NumericVolume(
-                    sf.FixSize(
-                        sf_do(doer)
-                    ),
-                    sat
-                )
-            ),
-            lat
-        ))
-        
+        sigl.append((playStringHardShort(pitch,length,0.5),at))
+        sigr.append((playStringHardShort(pitch,length,0.5),at))
+        sigl.append((playStringHardShort(pitch,length,0.5),at+0.25*beat))
+        sigr.append((playStringHardShort(pitch,length,0.5),at+0.25*beat))
+        sigl.append((playStringHardShort(pitch*2.01,length,0.5),at))
+        sigr.append((playStringHardShort(pitch*1.99,length,0.5),at))
+        sigl.append((playStringHardShort(pitch*1.99,length,0.5),at+0.25*beat))
+        sigr.append((playStringHardShort(pitch*2.01,length,0.5),at+0.25*beat))    
+
     # 1
     pitch=sf.Note("D4")
-    length=beat*0.25
+    length=beat*0.5
     double()
     
     # 1.5
@@ -861,34 +767,37 @@ def phrase6():
 
     # 3.5
     at+=beat*0.5
+    length=beat*0.4
     pitch=sf.Note("B3")
     double()
 
     # 4
     at+=beat*0.5
+    length=beat*0.5
     pitch=sf.Note("A3")
     double()
     
     # 4.5
     at+=beat*0.5
+    length=beat*0.4
     pitch=sf.Note("B3")
     double()
        
     left=sf.FixSize(sf.MixAt(sigl))
     right=sf.FixSize(sf.MixAt(sigr))
     wleft  = sf.Mix(
-        granularReverb(+left, 1.00,beat*0.4,250),
-        granularReverb(+left, 0.50,beat*0.8,250),
-        granularReverb(+left, 0.25,beat*1.5,128)
+        granularReverb(+left, 2.0,beat*0.2,250),
+        granularReverb(+left, 1.0,beat*0.4,250),
+        granularReverb(+left, 0.5,beat*0.8,250)
     )        
     wright = sf.Mix(
-        granularReverb(+right,1.00,beat*0.4,250),
-        granularReverb(+right,0.50,beat*0.8,250),
-        granularReverb(+right,0.25,beat*1.5,128)
+        granularReverb(+right,1.0,beat*0.2,250),
+        granularReverb(+right,2.0,beat*0.4,250),
+        granularReverb(+right,0.5,beat*0.8,250)
     )
 
-    left2  = sf.Mix(sf.Pcnt30(+wleft), sf.Pcnt70(+left))
-    right2 = sf.Mix(sf.Pcnt30(+wright),sf.Pcnt70(+right))
+    left2  = sf.Mix(sf.Pcnt20(+wleft), +left)
+    right2 = sf.Mix(sf.Pcnt20(+wright),+right)
 
     print "Compiling Phrase6"
     
@@ -904,161 +813,42 @@ def phrase6():
         granularReverb(+sigr,0.50,beat,128),
         granularReverb( sigr,0.75,beat,128)
     )
-    wleft  = sayBut(wleft)
-    wright = sayBut(wright)
+    wleft  = sayPart(wleft)
+    wright = sayPart(wright)
     
     left=sf.Normalise(sf.MixAt(
-        (sf.Pcnt75(wleft),0),
-        (sf.Pcnt25(left2),0)
+        (sf.Pcnt35(wleft),0),
+        (sf.Pcnt65(left2),0)
     ))
     
     right=sf.Normalise(sf.MixAt(
-        (sf.Pcnt65(wright),0),
-        (sf.Pcnt35(right2),0)
+        (sf.Pcnt45(wright),0),
+        (sf.Pcnt55(right2),0)
     ))
         
     sf.WriteFile32([left,right],"temp/phrase-6.wav")
-
 
 def phrase7():
     print "Phrase 7"
     at   = 0
     sigl = []
     sigr = []
-    sat=0.5
-    def double():
-        def doer():
-            return sf.Mix(
-               playStringHardShort(lpitch,llength,0.5),
-               playStringHardShort(lpitch,llength,0.25)
-            )
-        llength=length*2.0
-        lpitch=pitch*0.25
-        lat=at
-        sigl.append((
-            sf.Saturate(
-                sf.NumericVolume(
-                    sf.FixSize(
-                        sf_do(doer)
-                    ),
-                    sat
-                )
-            ),
-            lat
-        ))
-        sigr.append((
-            sf.Saturate(
-                sf.NumericVolume(
-                    sf.FixSize(
-                        sf_do(doer)
-                    ),
-                    sat
-                )
-            ),
-            lat
-        ))
 
-        llength=length
-        lpitch=pitch
-        lat=at
-        sigl.append((
-            sf.Saturate(
-                sf.NumericVolume(
-                    sf.FixSize(
-                        sf_do(doer)
-                    ),
-                    sat
-                )
-            ),
-            lat
-        ))
-        sigr.append((
-            sf.Saturate(
-                sf.NumericVolume(
-                    sf.FixSize(
-                        sf_do(doer)
-                    ),
-                    sat
-                )
-            ),
-            lat
-        ))
-        lpitch=pitch*2
-        sigl.append((
-            sf.Saturate(
-                sf.NumericVolume(
-                    sf.FixSize(
-                        sf_do(doer)
-                    ),
-                    sat
-                )
-            ),
-            lat
-        ))
-        sigr.append((
-            sf.Saturate(
-                sf.NumericVolume(
-                    sf.FixSize(
-                        sf_do(doer)
-                    ),
-                    sat
-                )
-            ),
-            lat
-        ))
-        
-        #
-        lat=lat+beat*0.23
-        lpitch=pitch
-        sigl.append((
-            sf.Saturate(
-                sf.NumericVolume(
-                    sf.FixSize(
-                        sf_do(doer)
-                    ),
-                    sat
-                )
-            ),
-            lat
-        ))
-        sigr.append((
-            sf.Saturate(
-                sf.NumericVolume(
-                    sf.FixSize(
-                        sf_do(doer)
-                    ),
-                    sat
-                )
-            ),
-            lat
-        ))
-        lpitch=pitch*2
-        sigl.append((
-            sf.Saturate(
-                sf.NumericVolume(
-                    sf.FixSize(
-                        sf_do(doer)
-                    ),
-                    sat
-                )
-            ),
-            lat
-        ))
-        sigr.append((
-            sf.Saturate(
-                sf.NumericVolume(
-                    sf.FixSize(
-                        sf_do(doer)
-                    ),
-                    sat
-                )
-            ),
-            lat
-        ))
-        
+    def double():
+        sigl.append((playStringHardShort(pitch*0.5,length*2.0,0.5),at))
+        sigr.append((playStringHardShort(pitch*0.5,length*2.0,0.5),at))
+        sigl.append((playStringHardShort(pitch,length,0.5),at))
+        sigr.append((playStringHardShort(pitch,length,0.5),at))
+        sigl.append((playStringHardShort(pitch,length,0.5),at+0.25*beat))
+        sigr.append((playStringHardShort(pitch,length,0.5),at+0.25*beat))
+        sigl.append((playStringHardShort(pitch*2.01,length,0.5),at))
+        sigr.append((playStringHardShort(pitch*1.99,length,0.5),at))
+        sigl.append((playStringHardShort(pitch*1.99,length,0.5),at+0.25*beat))
+        sigr.append((playStringHardShort(pitch*2.01,length,0.5),at+0.25*beat))    
+
     # 1
     pitch=sf.Note("D4")
-    length=beat*0.25
+    length=beat*0.5
     double()
     
     # 1.5
@@ -1083,36 +873,147 @@ def phrase7():
 
     # 3.5
     at+=beat*0.5
+    length=beat*0.4
     pitch=sf.Note("B3")
     double()
 
     # 4
     at+=beat*0.5
+    length=beat*0.5
     pitch=sf.Note("A3")
     double()
     
     # 4.5
     at+=beat*0.5
+    length=beat*0.4
     pitch=sf.Note("B3")
     double()
        
     left=sf.FixSize(sf.MixAt(sigl))
     right=sf.FixSize(sf.MixAt(sigr))
     wleft  = sf.Mix(
-        granularReverb(+left, 1.00,beat*0.4,250),
-        granularReverb(+left, 0.50,beat*0.8,250),
-        granularReverb(+left, 0.25,beat*1.5,128)
+        granularReverb(+left, 2.0,beat*0.2,250),
+        granularReverb(+left, 1.0,beat*0.4,250),
+        granularReverb(+left, 0.5,beat*0.8,250)
     )        
     wright = sf.Mix(
-        granularReverb(+right,1.00,beat*0.4,250),
-        granularReverb(+right,0.50,beat*0.8,250),
-        granularReverb(+right,0.25,beat*1.5,128)
+        granularReverb(+right,1.0,beat*0.2,250),
+        granularReverb(+right,2.0,beat*0.4,250),
+        granularReverb(+right,0.5,beat*0.8,250)
     )
 
-    left2  = sf.Mix(sf.Pcnt30(+wleft), sf.Pcnt70(+left))
-    right2 = sf.Mix(sf.Pcnt30(+wright),sf.Pcnt70(+right))
+    left2  = sf.Mix(sf.Pcnt20(+wleft), +left)
+    right2 = sf.Mix(sf.Pcnt20(+wright),+right)
 
-    print "Compiling Phrase 7"
+    print "Compiling Phrase7"
+    
+    pitch=sf.Note("G4")
+    length=beat*2.0
+    sigl=playStringSuperSoft(pitch,length,0.5)
+    sigr=playStringSuperSoft(pitch,length,0.5)
+    wleft  = sf.Mix(
+        granularReverb(+sigl,0.50,beat,128),
+        granularReverb( sigl,0.75,beat,128)
+    )
+    wright = sf.Mix(
+        granularReverb(+sigr,0.50,beat,128),
+        granularReverb( sigr,0.75,beat,128)
+    )
+    wleft  = sayBit(wleft)
+    wright = sayBit(wright)
+    
+    left=sf.Normalise(sf.MixAt(
+        (sf.Pcnt35(wleft),0),
+        (sf.Pcnt65(left2),0)
+    ))
+    
+    right=sf.Normalise(sf.MixAt(
+        (sf.Pcnt45(wright),0),
+        (sf.Pcnt55(right2),0)
+    ))
+        
+    sf.WriteFile32([left,right],"temp/phrase-7.wav")
+
+def phrase8():
+    print "Phrase 8"
+    at   = 0
+    sigl = []
+    sigr = []
+
+    def double():
+        sigl.append((playStringHardLong(pitch*0.25,length*2.0,0.5),at))
+        sigr.append((playStringHardLong(pitch*0.25,length*2.0,0.5),at))
+        sigl.append((playStringHardShort(pitch*0.5,length*2.0,0.5),at))
+        sigr.append((playStringHardShort(pitch*0.5,length*2.0,0.5),at))
+        sigl.append((playStringHardShort(pitch,length,0.5),at))
+        sigr.append((playStringHardShort(pitch,length,0.5),at))
+        sigl.append((playStringHardShort(pitch,length,0.5),at+0.25*beat))
+        sigr.append((playStringHardShort(pitch,length,0.5),at+0.25*beat))
+        sigl.append((playStringPluck(pitch*2.01,length,0.5),at))
+        sigr.append((playStringPluck(pitch*1.99,length,0.5),at))
+        sigl.append((playStringPluck(pitch*1.99,length,0.5),at+0.25*beat))
+        sigr.append((playStringPluck(pitch*2.01,length,0.5),at+0.25*beat))    
+
+    # 1
+    pitch=sf.Note("D4")
+    length=beat*0.5
+    double()
+    
+    # 1.5
+    at+=beat*0.5
+    pitch=sf.Note("D4#")
+    double()
+    
+    # 2
+    at+=beat*0.5
+    pitch=sf.Note("D4")
+    double()
+
+    2.5
+    at+=beat*0.5
+    pitch=sf.Note("C4#")
+    double()
+
+    # 3
+    at+=beat*0.5
+    pitch=sf.Note("D4")
+    double()
+
+    # 3.5
+    at+=beat*0.5
+    length=beat*0.4
+    pitch=sf.Note("B3")
+    double()
+
+    # 4
+    at+=beat*0.5
+    length=beat*0.5
+    pitch=sf.Note("A3")
+    double()
+    
+    # 4.5
+    at+=beat*0.5
+    length=beat*0.4
+    pitch=sf.Note("B3")
+    double()
+       
+    left=sf.FixSize(sf.MixAt(sigl))
+    right=sf.FixSize(sf.MixAt(sigr))
+    wleft  = sf.Mix(
+        granularReverb(+left, 2.0,beat*0.2,250),
+        granularReverb(+left, 1.0,beat*0.4,250),
+        granularReverb(+left, 0.5,beat*0.8,250)
+    )        
+    wright = sf.Mix(
+        granularReverb(+right,1.0,beat*0.2,250),
+        granularReverb(+right,2.0,beat*0.4,250),
+        granularReverb(+right,0.5,beat*0.8,250)
+    )
+
+    left2  = sf.Mix(sf.Pcnt40(+wleft), +left)
+    right2 = sf.Mix(sf.Pcnt40(+wright),+right)
+
+    print "Compiling Phrase8"
     
     pitch=sf.Note("G4")
     length=beat*2.0
@@ -1130,29 +1031,842 @@ def phrase7():
     wright = sayBoat(wright)
     
     left=sf.Normalise(sf.MixAt(
-        (sf.Pcnt70(wleft),0),
-        (sf.Pcnt30(left2),0)
+        (sf.Pcnt35(wleft),0),
+        (sf.Pcnt65(left2),0)
     ))
     
     right=sf.Normalise(sf.MixAt(
-        (sf.Pcnt75(wright),0),
-        (sf.Pcnt25(right2),0)
+        (sf.Pcnt45(wright),0),
+        (sf.Pcnt55(right2),0)
     ))
         
-    sf.WriteFile32([left,right],"temp/phrase-7.wav")
+    sf.WriteFile32([left,right],"temp/phrase-8.wav")
+
+def phrase9():
+    print "Phrase 9"
+    at   = 0
+    sigl = []
+    sigr = []
+
+    def double():
+        sigl.append((playStringHardLong(pitch*0.25,length*2.0,0.5),at))
+        sigr.append((playStringHardLong(pitch*0.25,length*2.0,0.5),at))
+        sigl.append((playStringHardShort(pitch*0.5,length*2.0,0.5),at))
+        sigr.append((playStringHardShort(pitch*0.5,length*2.0,0.5),at))
+        sigl.append((playStringHardShort(pitch,length,0.5),at))
+        sigr.append((playStringHardShort(pitch,length,0.5),at))
+        sigl.append((playStringHardShort(pitch,length,0.5),at+0.25*beat))
+        sigr.append((playStringHardShort(pitch,length,0.5),at+0.25*beat))
+        sigl.append((playStringPluck(pitch*2.01,length,0.5),at))
+        sigr.append((playStringPluck(pitch*1.99,length,0.5),at))
+        sigl.append((playStringPluck(pitch*1.99,length,0.5),at+0.25*beat))
+        sigr.append((playStringPluck(pitch*2.01,length,0.5),at+0.25*beat))    
+
+    # 1
+    pitch=sf.Note("D4")
+    length=beat*0.5
+    double()
+    
+    # 1.5
+    at+=beat*0.5
+    pitch=sf.Note("D4#")
+    double()
+    
+    # 2
+    at+=beat*0.5
+    pitch=sf.Note("E4")
+    double()
+
+    2.5
+    at+=beat*0.5
+    pitch=sf.Note("C4#")
+    double()
+
+    # 3
+    at+=beat*0.5
+    pitch=sf.Note("D4")
+    double()
+
+    # 3.5
+    at+=beat*0.5
+    length=beat*0.4
+    pitch=sf.Note("B3")
+    double()
+
+    # 4
+    at+=beat*0.5
+    length=beat*0.5
+    pitch=sf.Note("A3")
+    double()
+    
+    # 4.5
+    at+=beat*0.5
+    length=beat*0.4
+    pitch=sf.Note("G3#")
+    double()
+       
+    left=sf.FixSize(sf.MixAt(sigl))
+    right=sf.FixSize(sf.MixAt(sigr))
+    wleft  = sf.Mix(
+        granularReverb(+left, 2.0,beat*0.2,250),
+        granularReverb(+left, 1.0,beat*0.4,250),
+        granularReverb(+left, 0.5,beat*0.8,250)
+    )        
+    wright = sf.Mix(
+        granularReverb(+right,1.0,beat*0.2,250),
+        granularReverb(+right,2.0,beat*0.4,250),
+        granularReverb(+right,0.5,beat*0.8,250)
+    )
+
+    left2  = sf.Mix(sf.Pcnt40(+wleft), +left)
+    right2 = sf.Mix(sf.Pcnt40(+wright),+right)
+
+    print "Compiling Phrase8"
+    
+    pitch=sf.Note("F4")
+    length=beat*2.0
+    sigl=playStringSuperSoft(pitch,length,0.5)
+    sigr=playStringSuperSoft(pitch,length,0.5)
+    wleft  = sf.Mix(
+        granularReverb(+sigl,0.50,beat,128),
+        granularReverb( sigl,0.75,beat,128)
+    )
+    wright = sf.Mix(
+        granularReverb(+sigr,0.50,beat,128),
+        granularReverb( sigr,0.75,beat,128)
+    )
+    wleft  = sayBook(wleft)
+    wright = sayBook(wright)
+    
+    left=sf.Normalise(sf.MixAt(
+        (sf.Pcnt35(wleft),0),
+        (sf.Pcnt65(left2),0)
+    ))
+    
+    right=sf.Normalise(sf.MixAt(
+        (sf.Pcnt45(wright),0),
+        (sf.Pcnt55(right2),0)
+    ))
+        
+    sf.WriteFile32([left,right],"temp/phrase-9.wav")
+    
+def phrase10():
+    print "Phrase 10"
+    at   = 0
+    sigl = []
+    sigr = []
+
+    def double():
+        sigl.append((playStringHardLong(pitch*0.25,length*2.0,0.5),at))
+        sigr.append((playStringHardLong(pitch*0.25,length*2.0,0.5),at))
+        sigl.append((playStringHardShort(pitch*0.5,length*2.0,0.5),at))
+        sigr.append((playStringHardShort(pitch*0.5,length*2.0,0.5),at))
+        sigl.append((playStringHardShort(pitch,length,0.5),at))
+        sigr.append((playStringHardShort(pitch,length,0.5),at))
+        sigl.append((playStringHardShort(pitch,length,0.5),at+0.25*beat))
+        sigr.append((playStringHardShort(pitch,length,0.5),at+0.25*beat))
+        sigl.append((playStringPluck(pitch*2.01,length,0.5),at))
+        sigr.append((playStringPluck(pitch*1.99,length,0.5),at))
+        sigl.append((playStringPluck(pitch*1.99,length,0.5),at+0.25*beat))
+        sigr.append((playStringPluck(pitch*2.01,length,0.5),at+0.25*beat))    
+
+    def vipvip():
+        sigl.append((playStringPluck(pitch,length,0.5),at))
+        sigr.append((playStringPluck(pitch,length,0.5),at))
+        
+
+    # 1
+    pitch=sf.Note("D4")
+    length=beat*0.5
+    double()
+    
+    pitch=sf.Note("G6")
+    vipvip()
+    
+    # 1.5
+    at+=beat*0.5
+    pitch=sf.Note("D4#")
+    double()
+
+    pitch=sf.Note("G6#")
+    vipvip()
+    
+    # 2
+    at+=beat*0.5
+    pitch=sf.Note("E4")
+    double()
+
+    pitch=sf.Note("A6")
+    vipvip()
+
+    2.5
+    at+=beat*0.5
+    pitch=sf.Note("C4#")
+    double()
+
+    pitch=sf.Note("G6#")
+    vipvip()
+
+    # 3
+    at+=beat*0.5
+    pitch=sf.Note("D4")
+    double()
+
+    pitch=sf.Note("G6")
+    vipvip()
+
+    # 3.5
+    at+=beat*0.5
+    length=beat*0.4
+    pitch=sf.Note("B3")
+    double()
+
+    pitch=sf.Note("G6#")
+    vipvip()
+
+    # 4
+    at+=beat*0.5
+    length=beat*0.5
+    pitch=sf.Note("A3")
+    double()
+
+    pitch=sf.Note("F6")
+    vipvip()
+    
+    # 4.5
+    at+=beat*0.5
+    length=beat*0.4
+    pitch=sf.Note("G3#")
+    double()
+
+    pitch=sf.Note("F6#")
+    vipvip()
+       
+    left=sf.FixSize(sf.MixAt(sigl))
+    right=sf.FixSize(sf.MixAt(sigr))
+    wleft  = sf.Mix(
+        granularReverb(+left, 2.0,beat*0.2,250),
+        granularReverb(+left, 1.0,beat*0.4,250),
+        granularReverb(+left, 0.5,beat*0.8,250)
+    )        
+    wright = sf.Mix(
+        granularReverb(+right,1.0,beat*0.2,250),
+        granularReverb(+right,2.0,beat*0.4,250),
+        granularReverb(+right,0.5,beat*0.8,250)
+    )
+
+    left2  = sf.Mix(sf.Pcnt40(+wleft), +left)
+    right2 = sf.Mix(sf.Pcnt40(+wright),+right)
+
+    print "Compiling Phrase10"
+    
+    pitch=sf.Note("A4")
+    length=beat*2.0
+    sigl=playStringSuperSoft(pitch,length,0.5)
+    sigr=playStringSuperSoft(pitch,length,0.5)
+    wleft  = sf.Mix(
+        granularReverb(+sigl,0.50,beat,128),
+        granularReverb( sigl,0.75,beat,128)
+    )
+    wright = sf.Mix(
+        granularReverb(+sigr,0.50,beat,128),
+        granularReverb( sigr,0.75,beat,128)
+    )
+    wleft  = sayBit(wleft)
+    wright = sayBit(wright)
+    
+    left=sf.Normalise(sf.MixAt(
+        (sf.Pcnt35(wleft),0),
+        (sf.Pcnt65(left2),0)
+    ))
+    
+    right=sf.Normalise(sf.MixAt(
+        (sf.Pcnt45(wright),0),
+        (sf.Pcnt55(right2),0)
+    ))
+        
+    sf.WriteFile32([left,right],"temp/phrase-10.wav")
+ 
+def phrase11():
+    print "Phrase 11"
+    at   = 0
+    sigl = []
+    sigr = []
+
+    # pitch up minor third
+    def double():
+        lpitch=pitch*sf.Semitone(())**3.0
+        sigl.append((playStringHardLong(lpitch*0.25,length*2.0,0.5),at))
+        sigr.append((playStringHardLong(lpitch*0.25,length*2.0,0.5),at))
+        sigl.append((playStringHardShort(lpitch*0.5,length*2.0,0.5),at))
+        sigr.append((playStringHardShort(lpitch*0.5,length*2.0,0.5),at))
+        sigl.append((playStringHardShort(lpitch,length,0.5),at))
+        sigr.append((playStringHardShort(lpitch,length,0.5),at))
+        sigl.append((playStringHardShort(lpitch,length,0.5),at+0.25*beat))
+        sigr.append((playStringHardShort(lpitch,length,0.5),at+0.25*beat))
+        sigl.append((playStringPluck(lpitch*2.01,length,0.5),at))
+        sigr.append((playStringPluck(lpitch*1.99,length,0.5),at))
+        sigl.append((playStringPluck(lpitch*1.99,length,0.5),at+0.25*beat))
+        sigr.append((playStringPluck(lpitch*2.01,length,0.5),at+0.25*beat))    
+
+    def vipvip():
+        lpitch=pitch*sf.Semitone(())**3.0
+        sigl.append((playStringPluck(lpitch,length,0.5),at))
+        sigr.append((playStringPluck(lpitch,length,0.5),at))
+        
+
+    # 1
+    pitch=sf.Note("D4")
+    length=beat*0.5
+    double()
+    
+    pitch=sf.Note("G6")
+    vipvip()
+    
+    # 1.5
+    at+=beat*0.5
+    pitch=sf.Note("D4#")
+    double()
+
+    pitch=sf.Note("G6#")
+    vipvip()
+    
+    # 2
+    at+=beat*0.5
+    pitch=sf.Note("E4")
+    double()
+
+    pitch=sf.Note("A6")
+    vipvip()
+
+    2.5
+    at+=beat*0.5
+    pitch=sf.Note("C4#")
+    double()
+
+    pitch=sf.Note("G6#")
+    vipvip()
+
+    # 3
+    at+=beat*0.5
+    pitch=sf.Note("D4")
+    double()
+
+    pitch=sf.Note("G6")
+    vipvip()
+
+    # 3.5
+    at+=beat*0.5
+    length=beat*0.4
+    pitch=sf.Note("B3")
+    double()
+
+    pitch=sf.Note("G6#")
+    vipvip()
+
+    # 4
+    at+=beat*0.5
+    length=beat*0.5
+    pitch=sf.Note("A3")
+    double()
+
+    pitch=sf.Note("F6")
+    vipvip()
+    
+    # 4.5
+    at+=beat*0.5
+    length=beat*0.4
+    pitch=sf.Note("G3#")
+    double()
+
+    pitch=sf.Note("F6#")
+    vipvip()
+       
+    left=sf.FixSize(sf.MixAt(sigl))
+    right=sf.FixSize(sf.MixAt(sigr))
+    wleft  = sf.Mix(
+        granularReverb(+left, 2.0,beat*0.2,250),
+        granularReverb(+left, 1.0,beat*0.4,250),
+        granularReverb(+left, 0.5,beat*0.8,250)
+    )        
+    wright = sf.Mix(
+        granularReverb(+right,1.0,beat*0.2,250),
+        granularReverb(+right,2.0,beat*0.4,250),
+        granularReverb(+right,0.5,beat*0.8,250)
+    )
+
+    left2  = sf.Mix(sf.Pcnt40(+wleft), +left)
+    right2 = sf.Mix(sf.Pcnt40(+wright),+right)
+
+    print "Compiling Phrase10"
+    
+    pitch=sf.Note("A3")
+    length=beat*2.0
+    sigl=playStringHardLong(pitch,length,0.5)
+    sigr=playStringHardLong(pitch,length,0.5)
+    wleft  = sf.Mix(
+        granularReverb(+sigl,0.50,beat,128),
+        granularReverb( sigl,0.75,beat,128)
+    )
+    wright = sf.Mix(
+        granularReverb(+sigr,0.50,beat,128),
+        granularReverb( sigr,0.75,beat,128)
+    )
+    wleft  = sayBat(wleft)
+    wright = sayBat(wright)
+    
+    left=sf.Normalise(sf.MixAt(
+        (sf.Pcnt35(wleft),0),
+        (sf.Pcnt65(left2),0)
+    ))
+    
+    right=sf.Normalise(sf.MixAt(
+        (sf.Pcnt45(wright),0),
+        (sf.Pcnt55(right2),0)
+    ))
+        
+    sf.WriteFile32([left,right],"temp/phrase-11.wav") 
+
+def phrase12():
+    print "Phrase 12"
+    at   = 0
+    sigl = []
+    sigr = []
+
+    # pitch up a fifth
+    def double():
+        lpitch=pitch*sf.Semitone(())**7.0
+        sigl.append((playStringHardLong(lpitch*0.25,length*2.0,0.75),at))
+        sigr.append((playStringHardLong(lpitch*0.25,length*2.0,0.25),at))
+        sigl.append((playStringHardShort(lpitch*0.5,length*2.0,0.75),at))
+        sigr.append((playStringHardShort(lpitch*0.5,length*2.0,0.25),at))
+        sigl.append((playStringHardShort(lpitch,length,0.5),at))
+        sigr.append((playStringHardShort(lpitch,length,0.5),at))
+        sigl.append((playStringHardShort(lpitch,length,0.5),at+0.25*beat))
+        sigr.append((playStringHardShort(lpitch,length,0.5),at+0.25*beat))
+        sigl.append((playStringPluck(lpitch*2.01,length,0.6),at))
+        sigr.append((playStringPluck(lpitch*1.99,length,0.4),at))
+        sigl.append((playStringPluck(lpitch*1.99,length,0.6),at+0.25*beat))
+        sigr.append((playStringPluck(lpitch*2.01,length,0.4),at+0.25*beat))    
+
+    def vipvip():
+        lpitch=pitch*sf.Semitone(())**7.0
+        sigl.append((playStringPluck(lpitch,length,0.25),at))
+        sigr.append((playStringPluck(lpitch,length,0.75),at))
+        
+
+    # 1
+    pitch=sf.Note("D4")
+    length=beat*0.5
+    double()
+    
+    pitch=sf.Note("G6")
+    vipvip()
+    
+    # 1.5
+    at+=beat*0.5
+    pitch=sf.Note("D4#")
+    double()
+
+    pitch=sf.Note("G6#")
+    vipvip()
+    
+    # 2
+    at+=beat*0.5
+    pitch=sf.Note("E4")
+    double()
+
+    pitch=sf.Note("A6")
+    vipvip()
+
+    2.5
+    at+=beat*0.5
+    pitch=sf.Note("C4#")
+    double()
+
+    pitch=sf.Note("G6#")
+    vipvip()
+
+    # 3
+    at+=beat*0.5
+    pitch=sf.Note("D4")
+    double()
+
+    pitch=sf.Note("G6")
+    vipvip()
+
+    # 3.5
+    at+=beat*0.5
+    length=beat*0.4
+    pitch=sf.Note("B3")
+    double()
+
+    pitch=sf.Note("G6#")
+    vipvip()
+
+    # 4
+    at+=beat*0.5
+    length=beat*0.5
+    pitch=sf.Note("A3")
+    double()
+
+    pitch=sf.Note("F6")
+    vipvip()
+    
+    # 4.5
+    at+=beat*0.5
+    length=beat*0.4
+    pitch=sf.Note("B3")
+    double()
+
+    pitch=sf.Note("F6#")
+    vipvip()
+       
+    left=sf.FixSize(sf.MixAt(sigl))
+    right=sf.FixSize(sf.MixAt(sigr))
+    wleft  = sf.Mix(
+        granularReverb(+left, 2.00,beat*0.2,250),
+        granularReverb(+left, 1.00,beat*0.4,250),
+        granularReverb(+left, 0.50,beat*0.8,250),
+        granularReverb(+left, 0.25,beat*0.8,250)
+    )        
+    wright = sf.Mix(
+        granularReverb(+right,1.00,beat*0.2,250),
+        granularReverb(+right,2.00,beat*0.4,250),
+        granularReverb(+right,0.50,beat*0.8,250),
+        granularReverb(+right,0.25,beat*0.8,250)
+    )
+
+    left2  = sf.Mix(sf.Pcnt40(+wleft), +left)
+    right2 = sf.Mix(sf.Pcnt40(+wright),+right)
+
+    print "Compiling Phrase11"
+    
+    pitch=sf.Note("A3")
+    length=beat*2.0
+    sigl=playStringHardLong(pitch,length,0.5)
+    sigr=playStringHardLong(pitch,length,0.5)
+    wleft  = sf.Mix(
+        granularReverb(+sigl,0.50,beat,128),
+        granularReverb( sigl,0.75,beat,128)
+    )
+    wright = sf.Mix(
+        granularReverb(+sigr,0.50,beat,128),
+        granularReverb( sigr,0.75,beat,128)
+    )
+    wleft  = sayBeat(wleft)
+    wright = sayBeat(wright)
+    
+    left=sf.Normalise(sf.MixAt(
+        (sf.Pcnt50(wleft),0),
+        (sf.Pcnt50(left2),0)
+    ))
+    
+    right=sf.Normalise(sf.MixAt(
+        (sf.Pcnt50(wright),0),
+        (sf.Pcnt50(right2),0)
+    ))
+        
+    sf.WriteFile32([left,right],"temp/phrase-12.wav") 
+
+def phrase14():
+    print "Phrase 14"
+    at   = 0
+    sigl = []
+    sigr = []
+
+    # pitch up a fifth
+    def double():
+        lpitch=pitch*sf.Semitone(())**7.0
+        sigl.append((playStringHardLong(lpitch*0.25,length*2.0,0.75),at))
+        sigr.append((playStringHardLong(lpitch*0.25,length*2.0,0.25),at))
+        sigl.append((playStringHardShort(lpitch*0.5,length*2.0,0.75),at))
+        sigr.append((playStringHardShort(lpitch*0.5,length*2.0,0.25),at))
+        sigl.append((playStringHardShort(lpitch,length,0.5),at))
+        sigr.append((playStringHardShort(lpitch,length,0.5),at))
+        sigl.append((playStringHardShort(lpitch,length,0.5),at+0.25*beat))
+        sigr.append((playStringHardShort(lpitch,length,0.5),at+0.25*beat))
+        sigl.append((playStringPluck(lpitch*2.01,length,0.6),at))
+        sigr.append((playStringPluck(lpitch*1.99,length,0.4),at))
+        sigl.append((playStringPluck(lpitch*1.99,length,0.6),at+0.25*beat))
+        sigr.append((playStringPluck(lpitch*2.01,length,0.4),at+0.25*beat))    
+
+    def vipvip():
+        lpitch=pitch*sf.Semitone(())**7.0
+        sigl.append((playStringPluck(lpitch,length,0.25),at))
+        sigr.append((playStringPluck(lpitch,length,0.75),at))
+        
+
+    # 1
+    pitch=sf.Note("D4")
+    length=beat*0.5
+    double()
+    
+    pitch=sf.Note("G6")
+    vipvip()
+    
+    # 1.5
+    at+=beat*0.5
+    pitch=sf.Note("D4#")
+    double()
+
+    pitch=sf.Note("G6#")
+    vipvip()
+    
+    # 2
+    at+=beat*0.5
+    pitch=sf.Note("E4")
+    double()
+
+    pitch=sf.Note("A6")
+    vipvip()
+
+    2.5
+    at+=beat*0.5
+    pitch=sf.Note("F4")
+    double()
+
+    pitch=sf.Note("G6#")
+    vipvip()
+
+    # 3
+    at+=beat*0.5
+    pitch=sf.Note("D4")
+    double()
+
+    pitch=sf.Note("G6")
+    vipvip()
+
+    # 3.5
+    at+=beat*0.5
+    length=beat*0.4
+    pitch=sf.Note("D4#")
+    double()
+
+    pitch=sf.Note("G6#")
+    vipvip()
+
+    # 4
+    at+=beat*0.5
+    length=beat*0.5
+    pitch=sf.Note("E4")
+    double()
+
+    pitch=sf.Note("F6")
+    vipvip()
+    
+    # 4.5
+    at+=beat*0.5
+    length=beat*0.4
+    pitch=sf.Note("F4")
+    double()
+
+    pitch=sf.Note("F6#")
+    vipvip()
+       
+    left=sf.FixSize(sf.MixAt(sigl))
+    right=sf.FixSize(sf.MixAt(sigr))
+    wleft  = sf.Mix(
+        granularReverb(+left, 4.00 ,beat*0.2,250),
+        granularReverb(+left, 2.00 ,beat*0.4,250),
+        granularReverb(+left, 0.25 ,beat*0.8,250),
+        granularReverb(+left, 0.125,beat*0.8,512)
+    )        
+    wright = sf.Mix(
+        granularReverb(+right,4.00 ,beat*0.2,250),
+        granularReverb(+right,2.00 ,beat*0.4,250),
+        granularReverb(+right,0.25 ,beat*0.8,250),
+        granularReverb(+right,0.125,beat*0.8,512)
+    )
+
+    left2  = sf.Mix(sf.Pcnt50(+wleft), sf.Pcnt50(+left))
+    right2 = sf.Mix(sf.Pcnt50(+wright),sf.Pcnt50(+right))
+
+    print "Compiling Phrase14"
+    
+    pitch=sf.Note("B3")
+    length=beat*2.0
+    sigl=playStringHardLong(pitch,length,0.5)
+    sigr=playStringHardLong(pitch,length,0.5)
+    wleft  = sf.Mix(
+        granularReverb(+sigl,0.50,beat,128),
+        granularReverb( sigl,0.75,beat,128)
+    )
+    wright = sf.Mix(
+        granularReverb(+sigr,0.50,beat,128),
+        granularReverb( sigr,0.75,beat,128)
+    )
+    wleft  = sayBit(wleft)
+    wright = sayBit(wright)
+    
+    left=sf.Normalise(sf.MixAt(
+        (sf.Pcnt50(wleft),0),
+        (sf.Pcnt50(left2),0)
+    ))
+    
+    right=sf.Normalise(sf.MixAt(
+        (sf.Pcnt50(wright),0),
+        (sf.Pcnt50(right2),0)
+    ))
+        
+    sf.WriteFile32([left,right],"temp/phrase-14.wav") 
+
+def phrase15():
+    print "Phrase 15"
+    at   = 0
+    sigl = []
+    sigr = []
+
+    # pitch up a octave and semitone
+    def double():
+        lpitch=pitch*sf.Semitone(())**13.0
+        sigl.append((playStringHardLong(lpitch*0.25,length*2.0,0.75),at))
+        sigr.append((playStringHardLong(lpitch*0.25,length*2.0,0.25),at))
+        sigl.append((playStringHardShort(lpitch*0.5,length*2.0,0.75),at))
+        sigr.append((playStringHardShort(lpitch*0.5,length*2.0,0.25),at))
+        sigl.append((playStringHardShort(lpitch,length,0.5),at))
+        sigr.append((playStringHardShort(lpitch,length,0.5),at))
+        sigl.append((playStringHardShort(lpitch,length,0.5),at+0.25*beat))
+        sigr.append((playStringHardShort(lpitch,length,0.5),at+0.25*beat))
+        sigl.append((playStringPluck(lpitch*2.01,length,0.6),at))
+        sigr.append((playStringPluck(lpitch*1.99,length,0.4),at))
+        sigl.append((playStringPluck(lpitch*1.99,length,0.6),at+0.25*beat))
+        sigr.append((playStringPluck(lpitch*2.01,length,0.4),at+0.25*beat))    
+
+    def vipvip():
+        lpitch=pitch*sf.Semitone(())**13.0
+        sigl.append((playStringPluck(lpitch,length,0.25),at))
+        sigr.append((playStringPluck(lpitch,length,0.75),at))
+        
+
+    # 1
+    pitch=sf.Note("D4")
+    length=beat*0.5
+    double()
+    
+    pitch=sf.Note("G6")
+    vipvip()
+    
+    # 1.5
+    at+=beat*0.5
+    pitch=sf.Note("D4#")
+    double()
+
+    pitch=sf.Note("G6#")
+    vipvip()
+    
+    # 2
+    at+=beat*0.5
+    pitch=sf.Note("E4")
+    double()
+
+    pitch=sf.Note("A6")
+    vipvip()
+
+    2.5
+    at+=beat*0.5
+    pitch=sf.Note("F4")
+    double()
+
+    pitch=sf.Note("G6#")
+    vipvip()
+
+    # 3
+    at+=beat*0.5
+    pitch=sf.Note("D4")
+    double()
+
+    pitch=sf.Note("G6")
+    vipvip()
+
+    # 3.5
+    at+=beat*0.5
+    length=beat*0.4
+    pitch=sf.Note("D4#")
+    double()
+
+    pitch=sf.Note("G6#")
+    vipvip()
+
+    # 4
+    at+=beat*0.5
+    length=beat*0.5
+    pitch=sf.Note("E4")
+    double()
+
+    pitch=sf.Note("F6")
+    vipvip()
+    
+    # 4.5
+    at+=beat*0.5
+    length=beat*0.4
+    pitch=sf.Note("F4")
+    double()
+
+    pitch=sf.Note("F6#")
+    vipvip()
+       
+    left=sf.FixSize(sf.MixAt(sigl))
+    right=sf.FixSize(sf.MixAt(sigr))
+    wleft  = sf.Mix(
+        granularReverb(+left, 4.00 ,beat*0.2,250),
+        granularReverb(+left, 2.00 ,beat*0.4,250),
+        granularReverb(+left, 0.25 ,beat*0.8,250),
+        granularReverb(+left, 0.125,beat*0.8,512)
+    )        
+    wright = sf.Mix(
+        granularReverb(+right,4.00 ,beat*0.2,250),
+        granularReverb(+right,2.00 ,beat*0.4,250),
+        granularReverb(+right,0.25 ,beat*0.8,250),
+        granularReverb(+right,0.125,beat*0.8,512)
+    )
+
+    left2  = sf.Mix(sf.Pcnt50(+wleft), sf.Pcnt50(+left))
+    right2 = sf.Mix(sf.Pcnt50(+wright),sf.Pcnt50(+right))
+
+    print "Compiling Phrase15"
+    
+    pitch=sf.Note("B3")
+    length=beat*2.0
+    sigl=playStringHardLong(pitch,length,0.5)
+    sigr=playStringHardLong(pitch,length,0.5)
+    wleft  = sf.Mix(
+        granularReverb(+sigl,0.50,beat,128),
+        granularReverb( sigl,0.75,beat,128)
+    )
+    wright = sf.Mix(
+        granularReverb(+sigr,0.50,beat,128),
+        granularReverb( sigr,0.75,beat,128)
+    )
+    wleft  = sayBoat(wleft)
+    wright = sayBoat(wright)
+    
+    left=sf.Normalise(sf.MixAt(
+        (sf.Pcnt50(wleft),0),
+        (sf.Pcnt50(left2),0)
+    ))
+    
+    right=sf.Normalise(sf.MixAt(
+        (sf.Pcnt50(wright),0),
+        (sf.Pcnt50(right2),0)
+    ))
+        
+    sf.WriteFile32([left,right],"temp/phrase-15.wav") 
 
 #phrase1()
 #phrase2()
 #phrase3()
 #phrase4()
 #phrase5()
-phrase6()
-phrase7()
+#phrase6()
+#phrase7()
 #phrase8()
 #phrase9()
 #phrase10()
 #phrase11()
-
+#phrase12()
+#phrase14()
+#phrase15()
 
 (left1,right1)=sf.ReadFile("temp/phrase-1.wav")
 left1  = sf.Swap(left1)
@@ -1183,7 +1897,6 @@ right6 = sf.Swap(right6)
 left7  = sf.Swap(left7)
 right7 = sf.Swap(right7)
 
-"""
 (left8,right8)=sf.ReadFile("temp/phrase-8.wav")
 left8  = sf.Swap(left8)
 right8 = sf.Swap(right8)
@@ -1199,7 +1912,28 @@ right10 = sf.Swap(right10)
 (left11,right11)=sf.ReadFile("temp/phrase-11.wav")
 left11  = sf.Swap(left11)
 right11 = sf.Swap(right11)
-"""
+
+(left12,right12)=sf.ReadFile("temp/phrase-12.wav")
+left12  = sf.Swap(left12)
+right12 = sf.Swap(right12)
+
+(left14,right14)=sf.ReadFile("temp/phrase-14.wav")
+left14  = sf.Swap(left14)
+right14 = sf.Swap(right14)
+
+(left15,right15)=sf.ReadFile("temp/phrase-15.wav")
+left15  = sf.Swap(left15)
+right15 = sf.Swap(right15)
+
+(left16,right16)=sf.ReadFile("temp/phrase-16.wav")
+left16  = sf.Swap(left16)
+right16 = sf.Swap(right16)
+
+convoll=sf.Multiply(sf.WhiteNoise(beat*4.0),sf.NumericShape((0,0),(beat*0.5,1),(beat,0.1),(beat*4,0)))
+convolr=sf.Multiply(sf.WhiteNoise(beat*4.0),sf.NumericShape((0,0),(beat*0.5,1),(beat,0.1),(beat*4,0)))
+left13 =reverberate(+left12,convoll)
+right13=reverberate(+right12,convolr)
+
 
 left = sf.FixSize(
     sf.MixAt(
@@ -1207,7 +1941,7 @@ left = sf.FixSize(
        
         ( sf.Pcnt40(                   left2)      ,1000+beat*4),
 
-        ( sf.Pcnt20(sf.BesselHighPass( left3,32,1)),1000+beat*8),
+        ( sf.Pcnt20(sf.BesselHighPass(+left3,32,1)),1000+beat*8),
 
         ( sf.Pcnt40(sf.BesselHighPass( left4,32,1)),1000+beat*12),
 
@@ -1215,7 +1949,59 @@ left = sf.FixSize(
 
         ( sf.Pcnt50(                   left6)      ,1000+beat*20),
 
-        ( sf.Pcnt50(                   left7)      ,1000+beat*24)
+        ( sf.Pcnt50(                   left7)      ,1000+beat*24),
+
+        ( sf.Pcnt50(                  +left8)      ,1000+beat*28),
+        ( sf.Pcnt50(                  +left8)      ,1000+beat*32),
+        ( sf.Pcnt50(                  +left8)      ,1000+beat*36),
+
+        ( sf.Pcnt50(                  +left9)      ,1000+beat*40),
+        ( sf.Pcnt50(                  +left9)      ,1000+beat*44),
+        ( sf.Pcnt50(                   left9)      ,1000+beat*48),
+        
+        ( sf.Pcnt50(                  +left10)     ,1000+beat*52),
+        ( sf.Pcnt50(                  +left10)     ,1000+beat*56),
+        ( sf.Pcnt50(                  +left10)     ,1000+beat*60),
+     
+        ( sf.Pcnt50(                  +left11)     ,1000+beat*64),
+        ( sf.Pcnt50(                  +left11)     ,1000+beat*68),
+        ( sf.Pcnt50(                  +left11)     ,1000+beat*72),
+     
+        ( sf.Pcnt50(                  +left12)     ,1000+beat*76),
+        ( sf.Pcnt50(                  +left12)     ,1000+beat*80),
+        ( sf.Pcnt50(                  +left12)     ,1000+beat*84),
+
+        ( sf.Pcnt10(                  +left13)     ,1000+beat*88),
+        ( sf.Pcnt10(                   left13)     ,1000+beat*92),
+
+        ( sf.Pcnt20(sf.ButterworthHighPass(+left3,400,2)),1000+beat*96),
+        ( sf.Pcnt20(sf.BesselHighPass(      left3,32 ,1)),1000+beat*100),
+        
+        ( sf.Pcnt50(                  +left8)      ,1000+beat*104),
+        ( sf.Pcnt50(                  +left8)      ,1000+beat*108),
+        ( sf.Pcnt50(                   left8)      ,1000+beat*112),
+
+        ( sf.Pcnt50(                  +left10)     ,1000+beat*116),
+        ( sf.Pcnt50(                  +left10)     ,1000+beat*120),
+        ( sf.Pcnt50(                   left10)     ,1000+beat*124),
+     
+        ( sf.Pcnt50(                  +left11)     ,1000+beat*128),
+        ( sf.Pcnt50(                  +left11)     ,1000+beat*132),
+        ( sf.Pcnt50(                   left11)     ,1000+beat*136),
+     
+        ( sf.Pcnt50(                  +left12)     ,1000+beat*140),
+        ( sf.Pcnt50(                  +left12)     ,1000+beat*144),
+        ( sf.Pcnt50(                   left12)     ,1000+beat*148),
+
+        ( sf.Pcnt50(                  +left14)     ,1000+beat*152),
+        ( sf.Pcnt50(                  +left14)     ,1000+beat*156),
+        ( sf.Pcnt50(                   left14)     ,1000+beat*160),
+
+        ( sf.Pcnt50(                  +left15)     ,1000+beat*164),
+        ( sf.Pcnt50(                  +left15)     ,1000+beat*168),
+        ( sf.Pcnt50(                   left15)     ,1000+beat*172),
+
+        ( sf.Pcnt50(                   left16)     ,1000+beat*178)
     )
 )
 
@@ -1225,7 +2011,7 @@ right = sf.FixSize(
         
         ( sf.Pcnt60(                   right2)      ,1000+beat*4),
         
-        ( sf.Pcnt30(sf.BesselHighPass( right3,32,1)),1000+beat*8),
+        ( sf.Pcnt30(sf.BesselHighPass(+right3,32,1)),1000+beat*8),
         
         ( sf.Pcnt60(sf.BesselHighPass( right4,32,1)),1000+beat*12),
 
@@ -1233,8 +2019,59 @@ right = sf.FixSize(
 
         ( sf.Pcnt50(                   right6)      ,1000+beat*20),
 
-        ( sf.Pcnt50(                   right7)      ,1000+beat*24)
+        ( sf.Pcnt50(                   right7)      ,1000+beat*24),
 
+        ( sf.Pcnt50(                  +right8)      ,1000+beat*28),
+        ( sf.Pcnt50(                  +right8)      ,1000+beat*32),
+        ( sf.Pcnt50(                  +right8)      ,1000+beat*36),
+
+        ( sf.Pcnt50(                  +right9)      ,1000+beat*40),
+        ( sf.Pcnt50(                  +right9)      ,1000+beat*44),
+        ( sf.Pcnt50(                   right9)      ,1000+beat*48),
+        
+        ( sf.Pcnt50(                  +right10)     ,1000+beat*52),
+        ( sf.Pcnt50(                  +right10)     ,1000+beat*56),
+        ( sf.Pcnt50(                  +right10)     ,1000+beat*60),
+
+        ( sf.Pcnt50(                  +right11)     ,1000+beat*64),
+        ( sf.Pcnt50(                  +right11)     ,1000+beat*68),
+        ( sf.Pcnt50(                  +right11)     ,1000+beat*72),
+
+        ( sf.Pcnt50(                  +right12)     ,1000+beat*76),
+        ( sf.Pcnt50(                  +right12)     ,1000+beat*80),
+        ( sf.Pcnt50(                  +right12)     ,1000+beat*84),
+
+        ( sf.Pcnt10(                  +right13)     ,1000+beat*88),
+        ( sf.Pcnt10(                   right13)     ,1000+beat*92),
+        
+        ( sf.Pcnt20(sf.ButterworthHighPass(+right3,400,2)),1000+beat*96),
+        ( sf.Pcnt20(sf.BesselHighPass(      right3,32,1)), 1000+beat*100),
+        
+        ( sf.Pcnt50(                  +right8)      ,1000+beat*104),
+        ( sf.Pcnt50(                  +right8)      ,1000+beat*108),
+        ( sf.Pcnt50(                   right8)      ,1000+beat*112),      
+
+        ( sf.Pcnt50(                  +right10)     ,1000+beat*116),
+        ( sf.Pcnt50(                  +right10)     ,1000+beat*120),
+        ( sf.Pcnt50(                   right10)     ,1000+beat*124),
+
+        ( sf.Pcnt50(                  +right11)     ,1000+beat*128),
+        ( sf.Pcnt50(                  +right11)     ,1000+beat*132),
+        ( sf.Pcnt50(                   right11)     ,1000+beat*136),
+
+        ( sf.Pcnt50(                  +right12)     ,1000+beat*140),
+        ( sf.Pcnt50(                  +right12)     ,1000+beat*144),
+        ( sf.Pcnt50(                   right12)     ,1000+beat*148),
+ 
+        ( sf.Pcnt50(                  +right14)     ,1000+beat*152),
+        ( sf.Pcnt50(                  +right14)     ,1000+beat*156),
+        ( sf.Pcnt50(                   right14)     ,1000+beat*160),
+
+        ( sf.Pcnt50(                  +right15)     ,1000+beat*164),
+        ( sf.Pcnt50(                  +right15)     ,1000+beat*168),
+        ( sf.Pcnt50(                   right15)     ,1000+beat*172),
+
+        ( sf.Pcnt50(                   right16)     ,1000+beat*178)       
     )
 )
 
