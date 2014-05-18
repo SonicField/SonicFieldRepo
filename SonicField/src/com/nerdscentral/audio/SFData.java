@@ -144,6 +144,18 @@ public class SFData extends SFSignal implements Serializable
         resourceTracker.remove(this);
     }
 
+    private SFData(double[] dataIn)
+    {
+
+        this.length = dataIn.length;
+        data = dataIn;
+        NotCollectedException nc = new NotCollectedException();
+        nc.fillInStackTrace();
+        pythonCreated = getPythonStack();
+        resourceTracker.put(this, new ResTracker(nc, pythonCreated));
+        javaCreated = nc;
+    }
+
     private SFData(int lengthIn, boolean forceSwap)
     {
         if (!forceSwap && lengthIn <= swapLimit)
@@ -218,19 +230,21 @@ public class SFData extends SFSignal implements Serializable
         {
             return this.data[index];
         }
-        ByteBuffer byteBuffer = null;
-        try
+        while (true)
         {
-            byteBuffer = setUpBuffer(index);
-            return byteBuffer.getDouble();
-        }
-        catch (BufferUnderflowException b)
-        {
-            if (byteBuffer != null)
+            ByteBuffer byteBuffer = null;
+            try
             {
-                System.err.println("Buffer Underflow Index: " + index + " buffer capacity: " + byteBuffer.capacity());
+                byteBuffer = setUpBuffer(index);
+                return byteBuffer.getDouble();
             }
-            throw b;
+            catch (BufferUnderflowException b)
+            {
+                if (byteBuffer != null)
+                {
+                    System.err.println(Messages.getString("SFData.20") + index + Messages.getString("SFData.21") + byteBuffer.capacity() + " : " + byteBuffer.position()); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                }
+            }
         }
     }
 
@@ -288,6 +302,11 @@ public class SFData extends SFSignal implements Serializable
         return data;
     }
 
+    public static SFSignal wrap(double[] input)
+    {
+        return new SFData(input);
+    }
+
     public static final SFData build(double[] input, int j)
     {
         SFData data = new SFData(j);
@@ -296,6 +315,18 @@ public class SFData extends SFSignal implements Serializable
             data.setSample(i, input[i]);
         }
         return data;
+    }
+
+    public double[] getData()
+    {
+        if (data != null) return data;
+        System.err.println(Messages.getString("SFData.22")); //$NON-NLS-1$
+        double[] ret = new double[length];
+        for (int i = 0; i < length; ++i)
+        {
+            ret[i] = getSample(i);
+        }
+        return ret;
     }
 
     /* (non-Javadoc)

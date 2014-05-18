@@ -42,6 +42,7 @@ com.nerdscentral.audio.combine.SF_Divide
 com.nerdscentral.audio.combine.SF_Granulate
 com.nerdscentral.audio.combine.SF_Mix
 com.nerdscentral.audio.combine.SF_MixAt
+com.nerdscentral.audio.combine.SF_DeGranulate
 com.nerdscentral.audio.combine.SF_Multiply
 com.nerdscentral.audio.combine.SF_RectangularJoin
 com.nerdscentral.audio.combine.SF_RectangularSplit

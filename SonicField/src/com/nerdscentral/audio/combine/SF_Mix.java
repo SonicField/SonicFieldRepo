@@ -60,7 +60,7 @@ public class SF_Mix implements SFPL_Operator
         Translator ret = new Translator(incomming);
         for (SFSignal x : incomming)
         {
-            x.decrReference();
+            x.close();
         }
         return ret;
     }

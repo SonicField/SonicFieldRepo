@@ -84,7 +84,7 @@ public class SF_MixAt implements SFPL_Operator
         Translator ret = new Translator(signals, offsets);
         for (SFSignal s : signals)
         {
-            s.decrReference();
+            s.close();
         }
         return ret;
     }
