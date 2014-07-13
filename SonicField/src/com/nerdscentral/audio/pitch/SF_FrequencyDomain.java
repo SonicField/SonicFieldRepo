@@ -40,9 +40,10 @@ public class SF_FrequencyDomain implements SFPL_Operator
             }
 
         }
-
+        // long t1 = System.nanoTime();
         double[] d = FFTbase.fft(re, im, true);
-
+        // long t2 = System.nanoTime();
+        // System.out.println("Int: " + (t2 - t1));
         try (SFData ret = SFData.build(d, NFFT))
         {
             return Caster.prep4Ret(ret);

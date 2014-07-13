@@ -1,12 +1,15 @@
 import threading
 import time
-import traceback
 from java.util.concurrent import Executors, TimeUnit
 from java.util.concurrent import Callable, Future
 from java.lang import System
+from java.lang import ThreadLocal    
+from java.util.concurrent import TimeUnit
+from java.util.concurrent.locks import ReentrantLock
 
 SF_MAX_CONCURRENT = int(System.getProperty("synthon.threads"))
 SF_MAX_CONQUEUE   = SF_MAX_CONCURRENT
+#SF_MAX_CONQUEUE   = -1
 
 print "Concurrent Threads: " + SF_MAX_CONCURRENT.__str__()
 SF_POOL = Executors.newCachedThreadPool()
@@ -30,9 +33,6 @@ class sf_futureWrapper(Future):
         if(self.gotten):
             return self.result
         else:
-            #if(not self.toDo.isDone()):
-            #    print "Waiting:"
-            #    print ''.join(traceback.format_stack())
             self.result=self.toDo.get()
             self.gotten=True
             return self.result
@@ -63,7 +63,6 @@ class sf_getter(Future):
         obj=self.get()
         return -obj
 
-from java.lang import ThreadLocal    
 class sf_taskQueue(ThreadLocal):
     def initialValue(self):
         return []
@@ -71,7 +70,10 @@ class sf_taskQueue(ThreadLocal):
 SF_TASK_QUEUE=sf_taskQueue()
 
 class sf_superFuture(Future):
+
+
     def __init__(self,toDo):
+        self.lock=ReentrantLock()
         self.toDo=toDo
         queue=SF_TASK_QUEUE.get()
         queue.append(self)
@@ -92,8 +94,11 @@ class sf_superFuture(Future):
             queue.pop().submit()
 
     def get(self):
+        self.lock.lock()
         self.submitAll()
-        return self.future.get()
+        r = self.future.get()
+        self.lock.unlock()
+        return r
 
     def __iter__(self):
         return iter(self.get())
@@ -102,14 +107,13 @@ class sf_superFuture(Future):
         obj=self.get()
         return +obj
 
+
     def __neg__(self):
         obj=self.get()
         return -obj
 
 def sf_do(toDo):
     return sf_superFuture(toDo)
-
-from java.util.concurrent import TimeUnit
 
 def shutdown_and_await_termination(pool, timeout):
     pool.shutdown()

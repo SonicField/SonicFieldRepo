@@ -49,7 +49,6 @@ public class Sython
                             System.err.println("DEADLOCK");
                             System.err.println("========");
                             ThreadInfo[] infos = bean.getThreadInfo(threadIds);
-
                             for (ThreadInfo info : infos)
                             {
                                 System.err.println("STACK:");
@@ -61,6 +60,22 @@ public class Sython
                             }
                             System.exit(1);
                         }
+                        /*
+                        ThreadInfo[] tis = bean.dumpAllThreads(true, true);
+                        for (ThreadInfo ti : tis)
+                        {
+                            LockInfo li = ti.getLockInfo();
+                            if (li != null)
+                            {
+                                System.out.println(li.toString());
+                            }
+                            StackTraceElement[] stack = ti.getStackTrace();
+                            for (StackTraceElement x : stack)
+                            {
+                                System.out.println("    " + x);
+                            }
+                        }
+                         */
                         try
                         {
                             Thread.sleep(1000);
