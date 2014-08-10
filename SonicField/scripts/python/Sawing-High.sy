@@ -1,0 +1,204 @@
+import random
+import math
+
+# Single threaded for debug
+#def sf_do(toDo):
+#   return toDo()
+
+def granInner(signal,ratio):
+    def ganII():
+        return sf.DirectRelength(signal,ratio-0.01+(0.02*random.random()))
+    return sf_do(ganII)
+    
+def granularReverb(signal,ratio,delay,density,length=50):
+
+    def granularReverbInner():
+        out=[]
+        for grain in sf.Granulate(signal,length,10):
+            (signal_i,at)=grain
+            #signal_i=sf.DirectRelength(signal_i,ratio-0.01+(0.02*random.random()))
+            signal_i=granInner(signal_i,ratio)
+            for x in range(0,density):
+                out.append(
+                    (
+                        +signal_i,
+                        at + (random.random()+random.random())*delay
+                    )
+                )
+            -signal_i
+        return sf.Clean(sf.MixAt(out))
+    return sf_do(granularReverbInner)
+
+def reverbInner(signal,convol,grainLength):
+    def reverbInnerDo():
+        mag=sf.Magnitude(+signal)
+        if mag>0:
+            signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+            signal_=sf.FrequencyDomain(signal_)
+            signal_=sf.CrossMultiply(convol,signal_)
+            signal_=sf.TimeDomain(signal_)
+            newMag=sf.Magnitude(+signal_)
+            signal_=sf.NumericVolume(signal_,mag/newMag)        
+            # tail out clicks due to amplitude at end of signal 
+            return signal_
+        else:
+            -convol
+            return signal
+            
+    return sf_do(reverbInnerDo)
+
+def reverberate(signal,convol):
+    grainLength = sf.Length(+convol)
+    convol_=sf.FrequencyDomain(sf.Concatenate(convol,sf.Silence(grainLength)))
+    signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+    out=[]
+    for grain in sf.Granulate(signal_,grainLength):
+        (signal_i,at)=grain
+        out.append((reverbInner(signal_i,+convol_,grainLength),at))
+    -convol_
+    return sf.Clean(sf.Normalise(sf.MixAt(out)))
+
+def doFormant(sig,f1,f2,f3):
+    def doFormantInner(a,b,c,d):
+        def doFII():
+            return sf.RBJPeaking(a,b,c,d)
+        return sf_do(doFII)
+    sig1=doFormantInner(+sig,f1,1,40)
+    sig2=doFormantInner(+sig,f2,2,20)
+    sig3=doFormantInner( sig,f3,1,40)
+    x=sf.Mix(sig1,sig2,sig3)
+    x=sf.Normalise(x)
+    return sf.Swap(x)
+
+#beat
+def sayBeat(sig):
+    return doFormant(sig,300,2800,3300)
+
+#bit
+def sayBit(sig):
+    return doFormant(sig,430,2500,3100)
+
+#bet
+def sayBet(sig):
+    return doFormant(sig,600,2350,3000)
+
+#bat
+def sayBat(sig):
+    return doFormant(sig,860,2050,2850)
+
+#part
+def sayPart(sig):
+    return doFormant(sig,850,1200,2800)
+
+#pot 
+def sayPot(sig):
+    return doFormant(sig,590,900,2700)
+
+#boat
+def sayBoat(sig):
+    return doFormant(sig,470,1150,2700)
+
+#book
+def sayBook(sig):
+    return doFormant(sig,370,950,2650)
+
+#but
+def sayBut(sig):
+    return doFormant(sig,760,1400,2800)
+
+#pert
+def sayPert(sig):
+    return doFormant(sig,500,1650,1950)
+
+# oddness
+def sayStrange(sig):
+    return doFormant(sig,550,1800,2050)
+
+def doFormantRand(sig):
+    formants=[
+    sayBeat,
+    sayBit,
+    sayBet,
+    sayBat,
+    sayPart,
+    sayPot,
+    sayBoat,
+    sayBook,
+    sayBut,
+    sayPert,
+    sayStrange
+    ]
+    r=int(math.floor(random.random()*10.999999));
+    f=formants[r];
+    return sf.Clean(f(sig))
+
+def createSawTooth(points):
+    signals=[]
+    v=1
+    opoints=points
+    it=1.0
+    phase=random.random()
+    for x in range(1,10):
+        signals.append(sf.NumericVolume(sf.RestrictedSlide(points),1.0/it))
+        tP=[]
+        for p,op in zip(points,opoints):
+            z=p[1]+op[1]
+            tP.append([p[0],z])
+        points=tP
+        it+=1
+    sig=sf.Mix(signals)
+    sig=sf.FixSize(sig)
+    return sf.Clean(sig)
+
+sig=createSawTooth([
+    [    0,1000],
+    [ 1000,2000],
+    [ 2000,2000],
+    [ 4000,8000],
+    [ 4010, 500],
+    [ 6000, 200],
+    [ 7000, 400],
+    [10000, 400]
+])
+
+echo=512
+def doNormal(sig):
+    def doNormalInner():
+        return sf.Normalise(sig)
+    return sf_do(doNormalInner)
+
+sig=sf.Concatenate(sig,sf.Silence(1000))    
+left = sf.Mix(
+    +sig,
+    granularReverb(+sig,2.0/1.0,echo  ,256),
+    granularReverb(+sig,1.0/2.0,echo*2,128),
+    granularReverb(+sig,1.0/4.0,echo*3,128),
+    granularReverb(+sig,1.0/8.0,echo*4,128)
+)
+right= sf.Mix(
+    +sig,
+    granularReverb(+sig,2.0/1.0,echo  ,256),
+    granularReverb(+sig,1.0/2.0,echo*1,128),
+    granularReverb(+sig,1.0/4.0,echo*5,128),
+    granularReverb( sig,1.0/8.0,echo*2,128)
+)
+left  = doNormal(left) 
+right = doNormal(right)
+
+(convoll,convolr)=sf.ReadFile("temp/revb2.wav")
+
+wleft =reverberate(+left,convoll)
+wright=reverberate(+right,convolr)
+
+left=sf.Normalise(sf.MixAt(
+    (sf.Pcnt50(wleft),0),
+    (sf.Pcnt50(left),00)
+))
+
+right=sf.Normalise(sf.MixAt(
+    (sf.Pcnt50(wright),0),
+    (sf.Pcnt50(right),0)
+))
+
+
+sf.WriteFile32((left,right),"temp/sawing1.wav")

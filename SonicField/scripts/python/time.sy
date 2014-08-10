@@ -1,0 +1,86 @@
+import random
+import math
+from java.lang import System
+
+sf.SetSampleRate(192000)
+count=10
+ncount=10000
+
+signal=sf.WhiteNoise(count)
+def runFFT():
+    times=[]
+    for i in range(1,ncount):
+        t1=System.nanoTime()
+        signal_=sf.FrequencyDomain(+signal)
+        t2=System.nanoTime()
+        -signal_
+        times.append(t2-t1)
+    print "Done Slow"
+    return times
+
+def runFast():
+    times=[]
+    for i in range(1,ncount):
+        t1=System.nanoTime()
+        t2=System.nanoTime()
+        times.append(t2-t1)
+    print "Done Fast"
+    return times
+
+# Warm
+runFFT()
+runFast()
+
+signal=sf.WhiteNoise(count)
+tRand=runFFT()
+signal=sf.Silence(count)
+tLini=runFFT()
+signal=sf.Volume(sf.WhiteNoise(count),1.0e-308)
+tSubN=runFFT()
+fast=runFast()
+
+def a():
+    signal=sf.WhiteNoise(count)
+    return sf_do(runFFT)
+tRandD=a()
+def b():
+    signal=sf.Silence(count)
+    return sf_do(runFFT)
+tLiniD=b()
+def c():
+    signal=sf.Volume(sf.WhiteNoise(count),1.0e-308)
+    return sf_do(runFFT)
+tSubND=c()
+
+def d():
+    return sf_do(runFast)
+fastD=d()
+
+tRandD=tRandD.get()
+tLiniD=tLiniD.get()
+tSubND=tSubND.get()
+fastD=fastD.get()
+out = open("fft-10ms.csv","w")
+out.write(
+    "Fast,"+
+    "Noise,"+
+    "Silence,"+
+    "Subnormal,"+
+    "P-Fast,"+
+    "P-Noise,"+
+    "P-Silence,"+
+    "P-Subnormal\n"
+    )
+    
+for t in range(0,len(tRand)):
+    out.write(
+        str(fast[t])+","+
+        str(tRand[t])+","+
+        str(tLini[t])+","+
+        str(tSubN[t])+","+
+        str(fastD[t])+","+
+        str(tRandD[t])+","+
+        str(tLiniD[t])+","+
+        str(tSubND[t])+"\n"
+    )
+out.close()

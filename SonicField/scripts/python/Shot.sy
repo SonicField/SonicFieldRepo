@@ -1,0 +1,15 @@
+
+wleft =reverberate(+left,convoll)
+wright=reverberate(+right,convolr)
+
+left_out=sf.Normalise(sf.MixAt(
+    (sf.Pcnt20(wleft),0),
+    (sf.Pcnt80(left),00)
+))
+
+right_out=sf.Normalise(sf.MixAt(
+    (sf.Pcnt20(wright),0),
+    (sf.Pcnt80(right),0)
+))
+
+sf.WriteFile32((left_out,right_out),"temp/temp_postb.wav")

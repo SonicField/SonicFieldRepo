@@ -1,0 +1,226 @@
+import random
+import math
+
+def makeCelsetinal(len,pitch,v):
+    def mcInner():
+        mod=sf.SineWave(len,f/15)
+        mod=sf.PhaseModulatedSineWave(f/10,mod)
+        mod=sf.FixSize(mod)
+        mod=sf.Pcnt10(mod)
+        mod=sf.PhaseModulatedSineWave(f/4,mod)
+        mod=sf.FixSize(mod)
+        mod=sf.Pcnt10(mod)
+        mod=sf.PhaseModulatedSineWave(f*1.5,mod)
+        mod=sf.Pcnt10(mod)
+        sig=sf.PhaseModulatedSineWave(f,mod)
+        a=64
+        d=128
+        l=len
+        if l/4 < d:
+            d=l/4
+        s=500
+        if l/2 < s:
+            s=l/2
+        r=l-10
+        env=sf.SimpleShape((0,-99),(a,0),(d,-10),(s,-20),(r,-60),(r+10,-99))
+        sig=sf.Multiply(env,sig)
+        p=sf.Period(f)
+        sig=sf.Resonate(
+            sig,
+            [
+                [sf.NumericShape((0,0.0),(0.5,0.010),(1,0.0)),10.0+10*random.random()],
+                [sf.NumericShape((0,0.0),(0.5,0.005),(1,0.0)),25.0+5 *random.random()],
+                [sf.NumericShape((0,0.0),(0.5,0.005),(1,0.0)), 1.0+1 *random.random()]   
+            ]
+        )
+        return sf.Realise(sf.NumericVolume(sf.Normalise(sf.ButterworthLowPass(sig,f*2,2)),v))
+    f=pitch
+    return sf_do(mcInner)
+
+def doFormant(sig,f1,f2,f3):
+    def doFormantInner(a,b,c,d):
+        def doFII():
+            return sf.RBJPeaking(a,b,c,d)
+        return sf_do(doFII)
+    sig1=doFormantInner(+sig,f1,1,40)
+    sig2=doFormantInner(+sig,f2,2,20)
+    sig3=doFormantInner( sig,f3,1,40)
+    x=sf.Mix(sig1,sig2,sig3)
+    x=sf.Normalise(x)
+    return x
+
+#beat
+def sayBeat(sig):
+    return doFormant(sig,300,2800,3300)
+
+#bit
+def sayBit(sig):
+    return doFormant(sig,430,2500,3100)
+
+#bet
+def sayBet(sig):
+    return doFormant(sig,600,2350,3000)
+
+#bat
+def sayBat(sig):
+    return doFormant(sig,860,2050,2850)
+
+#part
+def sayPart(sig):
+    return doFormant(sig,850,1200,2800)
+
+#pot 
+def sayPot(sig):
+    return doFormant(sig,590,900,2700)
+
+#boat
+def sayBoat(sig):
+    return doFormant(sig,470,1150,2700)
+
+#book
+def sayBook(sig):
+    return doFormant(sig,370,950,2650)
+
+#but
+def sayBut(sig):
+    return doFormant(sig,760,1400,2800)
+
+#pert
+def sayPert(sig):
+    return doFormant(sig,500,1650,1950)
+
+# oddness
+def sayStrange(sig):
+    return doFormant(sig,550,1800,2050)
+
+def doFormantRand(sig):
+    formants=[
+    sayBeat,
+    sayBit,
+    sayBet,
+    sayBat,
+    sayPart,
+    sayPot,
+    sayBoat,
+    sayBook,
+    sayBut,
+    sayPert,
+    sayStrange
+    ]
+    r=int(math.floor(random.random()*10.999999));
+    f=formants[r];
+    return sf.Clean(f(sig))
+
+def reverbInner(signal,convol,grainLength):
+    mag=sf.Magnitude(+signal)
+    if mag>0:
+        signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+        signal_=sf.FrequencyDomain(signal_)
+        signal_=sf.CrossMultiply(convol,signal_)
+        signal_=sf.TimeDomain(signal_)
+        newMag=sf.Magnitude(+signal_)
+        signal_=sf.NumericVolume(signal_,mag/newMag)        
+        # tail out clicks due to amplitude at end of signal 
+        return signal_
+    else:
+        -convol
+        return signal
+
+def reverberate(signal,convol):
+    grainLength = sf.Length(+convol)
+    convol_=sf.FrequencyDomain(sf.Concatenate(convol,sf.Silence(grainLength)))
+    signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+    return sf.Swap(reverbInner(signal_,convol_,grainLength))
+
+def voiceVerb(signal):
+    def voiceVerbInner():
+        print "Voice Reverb"
+        l=sf.Length(+signal)
+        conv=sf.Power(sf.WhiteNoise(l),3)
+        cshp=sf.SimpleShape((0,0),(l-25,-45),(l,-99))
+        conv=sf.Multiply(conv,cshp)
+        conv=sf.FixSize(conv)
+        conv=doFormantRand(conv)
+        return sf.Swap(sf.Clean(reverberate(signal,conv)))
+    return sf_do(voiceVerbInner)
+
+def granularSay(signal,length):
+
+    def granularReverbInner():
+        out=[]
+        print "GR Inner"
+        for grain in sf.Granulate(signal,length,length/4):
+            (signal_i,at)=grain
+            signal_i=voiceVerb(signal_i)
+            out.append((signal_i,at))
+        return sf.Swap(sf.MixAt(out))
+    return sf_do(granularReverbInner)
+
+beat=512
+def play():
+    def doPlay():
+        def doSig():
+            return sf.Realise(sf.MixAt(
+            (sf.Saturate(makeCelsetinal(10000,sf.JustNote("C2"),2)),0),
+            (makeCelsetinal( 5000,sf.JustNote("D3"),0.5),beat*2),
+            (makeCelsetinal(15000,sf.JustNote("B2b"),0.5),beat*4),
+            (makeCelsetinal( 5000,sf.JustNote("B6b"),0.07),beat*6),
+            (makeCelsetinal( 5000,sf.JustNote("B6b")+10,0.07),beat*6),
+            (makeCelsetinal( 5000,sf.JustNote("A6"),0.05),beat*7),
+            (makeCelsetinal( 5000,sf.JustNote("A6")+8,0.05),beat*7),
+            
+            (sf.Saturate(makeCelsetinal(10000,sf.JustNote("C2"),2)),beat*12),
+            (makeCelsetinal( 5000,sf.JustNote("D3"),0.5),beat*14),
+            (makeCelsetinal(15000,sf.JustNote("B2b"),0.5),beat*16),
+            (makeCelsetinal( 5000,sf.JustNote("B6b"),0.07),beat*18.1),
+            (makeCelsetinal( 5000,sf.JustNote("B6b")+10,0.07),beat*18),
+            (makeCelsetinal( 5000,sf.JustNote("A6"),0.05),beat*19),
+            (makeCelsetinal( 5000,sf.JustNote("A6")+8,0.05),beat*19),
+            (makeCelsetinal(10000,sf.JustNote("G6"),0.05),beat*21),
+            (makeCelsetinal(10000,sf.JustNote("G6")+8,0.05),beat*21),
+    
+            (sf.Saturate(makeCelsetinal(10000,sf.JustNote("B1"),2.5)),beat*24),
+            (makeCelsetinal( 5000,sf.JustNote("D3b"),0.5),beat*26),
+            (makeCelsetinal(15000,sf.JustNote("A2" ),0.5),beat*28),
+            (makeCelsetinal( 5000,sf.JustNote("A6"), 0.07),beat*30),
+            (makeCelsetinal( 5000,sf.JustNote("A6b"),0.07),beat*30),
+            (makeCelsetinal( 5000,sf.JustNote("G6"), 0.05),beat*31),
+            (makeCelsetinal( 5000,sf.JustNote("G6b"),0.05),beat*31),
+            (makeCelsetinal(10000,sf.JustNote("F6"), 0.05),beat*33.02),
+            (makeCelsetinal(10000,sf.JustNote("B6b"),0.02),beat*33.01),
+            (makeCelsetinal(20000,sf.JustNote("D3b"),0.5 ),beat*33.00)
+        ))
+        spacer=0
+        sounds=[]
+        sounds.append(( sf.Silence(beat*6),0))
+        for x in range(0,20):
+            b=beat*6+beat*x*48+spacer
+            sounds.append((doSig(),b))
+            spacer+=random.random()*beat*0.5
+        sig=sf.Realise(sf.MixAt(sounds))
+        l=sf.Length(+sig)
+        noise=sf.Power(sf.WhiteNoise(l),4)
+        noise=sf.ButterworthHighPass(noise,4000,3)
+        noise=sf.Realise(sf.Pcnt5(sf.Normalise(noise)))
+        sig=sf.Normalise(sf.Mix(sig,noise))
+        return sf.Realise(sig)
+    return sf_do(doPlay) 
+
+right=sf.FixSize(sf.Mix(play(),play()))
+left =sf.FixSize(sf.Mix(play(),play()))
+
+sf.WriteFile32((+left,+right),"temp/temp.wav")
+
+wleft =granularSay(+left,beat*2)
+wright=granularSay(+right,beat*2)
+
+left=sf.Normalise(sf.MixAt(
+    (sf.Pcnt50(sf.Swap(sf.Normalise(wleft))),0),
+    (sf.Pcnt50(sf.Swap(sf.Normalise( left))),00)
+))
+
+right=sf.Normalise(sf.MixAt(
+    (sf.Pcnt50(sf.Swap(sf.Normalise(wright))),0),
+    (sf.Pcnt50(sf.Swap(sf.Normalise( right))),0)
+))
+sf.WriteFile32((left,right),"temp/temp-w.wav")

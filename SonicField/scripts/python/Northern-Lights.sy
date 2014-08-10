@@ -1,0 +1,587 @@
+import random
+import math
+#sf.SetSampleRate(48000)
+
+# Single threaded for debug
+#def sf_do(toDo):
+#   return toDo()
+
+def granularReverb(signal,ratio,delay,density,length=50):
+
+    def granularReverbInner():
+        out=[]
+        for grain in sf.Granulate(signal,length,10):
+            (signal_i,at)=grain
+            signal_i=sf.DirectRelength(signal_i,ratio-0.01+(0.02*random.random()))
+            for x in range(0,density):
+                out.append(
+                    (
+                        +signal_i,
+                        at + (random.random()+random.random())*delay
+                    )
+                )
+            -signal_i
+        return sf.MixAt(out)
+    return sf_do(granularReverbInner)
+
+def reverbInner(signal,convol,grainLength):
+    def reverbInnerDo():
+        mag=sf.Magnitude(+signal)
+        if mag>0:
+            signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+            signal_=sf.FrequencyDomain(signal_)
+            signal_=sf.CrossMultiply(convol,signal_)
+            signal_=sf.TimeDomain(signal_)
+            newMag=sf.Magnitude(+signal_)
+            signal_=sf.NumericVolume(signal_,mag/newMag)        
+            # tail out clicks due to amplitude at end of signal 
+            return signal_
+        else:
+            -convol
+            return signal
+            
+    return sf_do(reverbInnerDo)
+
+def reverberate(signal,convol):
+    grainLength = sf.Length(+convol)
+    convol_=sf.FrequencyDomain(sf.Concatenate(convol,sf.Silence(grainLength)))
+    signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+    out=[]
+    for grain in sf.Granulate(signal_,grainLength):
+        (signal_i,at)=grain
+        out.append((reverbInner(signal_i,+convol_,grainLength),at))
+    -convol_
+    return sf.Clean(sf.Normalise(sf.MixAt(out)))
+
+# Get IRs
+violinIRs = sf.ViolinBodyIRs(())
+#violaIRs  = sf.ViolaBodyIRs(())
+celloIRs  = sf.CelloBodyIRs(())
+bassIRs   = sf.BassBodyIRs(())
+
+def createSawTooth(length,pitch):
+    signals=[]
+    v=1
+    opitch=pitch
+    it=1.0
+    phase=random.random()
+    while pitch<18000:
+        signals.append(sf.NumericVolume(sf.PhasedSineWave(length,pitch,phase),1.0/it))
+        pitch+=opitch
+        it+=1
+    sig=sf.Mix(signals)
+    sig=sf.FixSize(sig)
+    return sf.Clean(sig)
+
+def rawString(length,pitch):
+    def rawStringA(l,p):
+        return createSawTooth(l,p)
+    pitch=float(pitch)
+    #pitch=pitch+pitch*random.random()*0.0001
+    s1=rawStringA(length,pitch)
+    s2=rawStringA(length,pitch*2.0)
+    s3=rawStringA(length,pitch*4.0)
+    s4=sf.WhiteNoise(length)
+    signal=sf.Normalise(
+        sf.Mix(
+            sf.Pcnt20(s4),
+            sf.Pcnt50(s1),
+            sf.Pcnt20(s2),
+            sf.Pcnt10(s3)
+        )
+    )
+    signal=sf.Clean(sf.ResonantFilter(signal,0.95,0.15,sf.Period(pitch)))
+    multi=sf.Normalise(
+        sf.DirectRelength(
+            sf.ButterworthLowPass(sf.WhiteNoise(length/500.0),2500,6),
+            0.001
+        )
+    )
+    multi=sf.Cut(0,sf.Length(+signal),multi)
+    signal=sf.Resample(
+        sf.DirectMix(1,sf.NumericVolume(multi,0.001)),
+        signal
+    )
+    return sf.Realise(sf.Normalise(sf.Clean(signal)))
+
+def playStringClean(a,length,pitch,whiteAmount):
+    def rsd():
+        def rsdi():
+            return rawString(length,pitch)   
+        return sf_do(rsdi)
+    signal=0
+    if(pitch>500):
+        signal=sf.Normalise(sf.Mix(rsd(),rsd(),rsd()))
+    else:
+        signal=sf.Normalise(sf.Mix(rsd(),rsd()))
+    if(pitch>440):    
+        signal=sf.ButterworthHighPass(signal,pitch*0.5,6)
+        signal=sf.ButterworthHighPass(signal,2000,1)
+        signal=sf.ButterworthLowPass(signal,8000,1)
+    if(pitch<128):
+        signal=sf.ButterworthHighPass(signal,pitch*0.5,1)
+        signal=sf.ButterworthHighPass(signal,500,1)
+        signal=sf.ButterworthLowPass(signal,2000,1)
+    else:
+        signal=sf.ButterworthHighPass(signal,pitch*0.5,3)
+        signal=sf.ButterworthHighPass(signal,1500,1)
+        signal=sf.ButterworthLowPass(signal,4000,1)
+
+    signal=sf.ButterworthLowPass(signal,pitch*10.0,1)
+    signal=sf.Mix(
+        sf.Pcnt25(+signal),
+        sf.Pcnt75(sf.RBJNotch(signal,pitch,0.5))
+    )    
+    white=sf.WhiteNoise(length)
+    white=sf.ButterworthHighPass(white,pitch*2.0,2)
+    white=sf.ButterworthLowPass(white,pitch*6.0,1)
+    white=sf.Normalise(white)
+    white=sf.Multiply(white,+signal)
+    white=sf.NumericVolume(white,whiteAmount)
+    signal=sf.NumericVolume(signal,1.0-whiteAmount)
+    signal=sf.Normalise(sf.Mix(signal,white))
+
+    sq=sf.Mix(
+        sf.PhasedSineWave(length,pitch*0.95,random.random()),
+        sf.PhasedSineWave(length,pitch*1.05,random.random())
+    )
+    envb=sf.NumericShape((0,0.25),(a,0),(length,0))
+    sq=sf.Multiply(envb,sf.FixSize(sq))
+
+    enva=sf.NumericShape((0,0.75),(a,1),(length,1))
+    signal=sf.Multiply(enva,signal)
+
+    signal=sf.Mix(sq,sf.FixSize(signal))
+    sigs=[]
+    bodies=[]
+    if(pitch<128):
+        bodies=bassIRs
+    elif(pitch<440):
+        bodies=celloIRs
+    else:
+        bodies=violinIRs
+    
+    for body in violinIRs:
+        sigs.append(reverberate(+signal,+body))  
+    -signal
+    signal=sf.Normalise(sf.Mix(sigs))
+    return signal
+
+def playString(pitch,e,a,d,dat,s,sat,r,whiteAmount,vibStart,vibMiddle,vibAmount,vibRate=2.0):
+    print (
+        "Performing Note: ",pitch,
+        " E:",  e,
+        " A:",  a,
+        " D:",  d,
+        " Dat:",dat,
+        " S:",  s,
+        " Sat:",sat,
+        " R:",  r,
+        " WA:", whiteAmount,
+        " VS:", vibStart,
+        " VM:", vibMiddle,
+        " VA:", vibAmount,
+        " VR:", vibRate
+    )
+    envA=sf.SimpleShape(
+        (0,-60),
+        (e,0),
+        (d,0),
+        (s,0),
+        (r,0)
+    )
+    envB=sf.NumericShape(
+        (0,0),
+        (a,1),
+        (d,dat),
+        (s,sat),
+        (r,0)
+    )
+    env=sf.Multiply(envA,envB)
+    sigs=[]
+    for x in range(0,5):
+        sigs.append(playStringClean(a,r,pitch,whiteAmount))
+    signal=sf.Normalise(sf.Mix(sigs))
+    signal=sf.Multiply(signal,env)
+    if(vibAmount>0):
+        l=sf.Length(+signal)
+        env=sf.NumericShape((0,0),(vibStart,0),(vibMiddle,1),(r,0.75),(l,0))
+        env=sf.NumericVolume(env,vibAmount)
+        trem=sf.SineWave(l,2.0+random.random())
+        trem=sf.Multiply(env,trem)
+        vib=+trem
+        trem=sf.DirectMix(1,sf.Pcnt50(trem))
+        signal=sf.Multiply(trem,signal)
+        vib=sf.DirectMix(1,sf.NumericVolume(vib,0.01))
+        signal=sf.Resample(vib,signal)
+    
+    if(pitch>128):
+        signal=sf.ButterworthHighPass(signal,pitch*0.75,3)
+        signal=sf.BesselLowPass(signal,pitch,1)
+    else:
+        signal=sf.ButterworthHighPass(signal,pitch*0.75,3)
+    print "--== String Done ==--"        
+    return sf.Realise(sf.Normalise(sf.Clean(signal)))
+
+def playStringInitial(pitch,length,volume):
+    def playStringInitialInner():
+        sig=playString(
+            pitch,
+            64,                 # e
+            128,                # a
+            length*0.5,         # d
+            0.75,               # d at
+            length*0.75,        # s
+            1.0,                # s at
+            length,             # r
+            0.75,               # white amount  
+            length*0.75,        # vib start
+            length*0.75,        # vib middle
+            0.5                 # vib amount
+        )
+        envH=sf.NumericShape((0,1),(length*0.25,0.25),(length,0.25))
+        envL=sf.NumericShape((0,0),(length*0.25,0.75),(length,0.75))
+        sigLow=sf.ButterworthLowPass(+sig,pitch*2.0,2)
+        sigHi =sf.ButterworthHighPass(sig ,pitch*2.0,2)
+        sigLow=sf.Multiply(sigLow,envL)
+        sigHi =sf.Multiply(sigHi ,envH)
+        env   =sf.NumericShape((0,0),(length*0.25,0.25),(length*0.5,1),(length,1))
+        sig   =sf.Mix(sigLow,sigHi)
+        sig   =sf.FixSize(sf.Multiply(env,sig))
+        return sf.Clean(sf.NumericVolume(sig,volume))
+    return sf_do(playStringInitialInner)
+    
+def playStringSuperSoft(pitch,length,volume):
+    def playStringSoftSuperInner():
+        if(pitch<256):
+            w=0.75
+        else:
+            if(pitch<720):
+                w=0.33
+            else:
+                w=0.25
+        sig = sf.NumericVolume(
+            playString(
+                pitch,
+                64,                 # e
+                length*0.25,        # a
+                length*0.50,        # d
+                1.0,                # d at
+                length*0.75,        # s
+                1.0,                # s at
+                length,             # r
+                w,                  # white amount  
+                length*0.50,        # vib start
+                length*0.75,        # vib middle
+                0.5                 # vib amount
+            ),
+            volume
+        )
+        env   = sf.NumericShape((0,0),(length*0.25,1),(length,1))
+        return sf.Clean(sf.FixSize(sf.Multiply(env,sig)))
+    return sf_do(playStringSoftSuperInner)
+
+def playStringSoftShort(pitch,length,volume):
+    def playStringSoftShortInner():
+        if(pitch<256):
+            w=0.5
+        else:
+            if(pitch<720):
+                w=0.25
+            else:
+                w=0.15
+        return sf.Clean(sf.NumericVolume(
+            playString(
+                pitch,
+                32,                 # e
+                64,                 # a
+                length*0.15,        # d
+                1.0,                # d at
+                length*0.5,         # s
+                0.5,                # s at
+                length,             # r
+                w,                  # white amount  
+                length*0.50,        # vib start
+                length*0.75,        # vib middle
+                0.5                 # vib amount
+            ),
+            volume
+        ))
+    return sf_do(playStringSoftShortInner)
+
+def playStringHardLong(pitch,length,volume):
+    def playStringHardLong():
+        if(pitch<256):
+            w=0.1
+        else:
+            if(pitch<720):
+                w=0.1
+            else:
+                w=0.05
+        return sf.Clean(sf.NumericVolume(
+            playString(
+                pitch,
+                32,                 # e
+                64,                 # a
+                length*0.25,        # d
+                1.0,                # d at
+                length*0.75,        # s
+                0.75,               # s at
+                length,             # r
+                w,                  # white amount  
+                length*0.25,        # vib start
+                length*0.75,        # vib middle
+                0.5                 # vib amount - no vib in this case
+            ),
+            volume
+        ))
+    return sf_do(playStringHardLong)
+
+def playStringHardShort(pitch,length,volume):
+    def playStringHardShortInner():
+        if(pitch<256):
+            w=0.1
+        else:
+            if(pitch<720):
+                w=0.1
+            else:
+                w=0.05
+        return sf.Clean(sf.NumericVolume(
+            playString(
+                pitch,
+                32,                 # e
+                64,                 # a
+                length*0.125,       # d
+                1.0,                # d at
+                length*0.75,         # s
+                0.75,               # s at
+                length,             # r
+                w,                  # white amount  
+                length*0.25,        # vib start
+                length*0.75,        # vib middle
+                0                   # vib amount - no vib in this case
+            ),
+            volume
+        ))
+    return sf_do(playStringHardShortInner)
+
+def playStringPluck(pitch,length,volume):
+    def playStringPluckInner():
+        sig=playString(
+                pitch,
+                8,                  # e
+                16,                 # a
+                32,                 # d
+                0.5,                # d at
+                length*0.75,        # s
+                0.25,               # s at
+                length,             # r
+                0,                  # white amount  
+                length*0.50,        # vib start
+                length*0.90,        # vib middle
+                1                   # vib amount - no vib in this case
+        )
+        envH=sf.NumericShape((0,0),(32,1),(length,0))
+        envL=sf.NumericShape((0,1),(32,0),(length,1))
+        sigL=sf.ButterworthLowPass(+sig,pitch,1)
+        sigL=sf.ButterworthLowPass(sigL,pitch*3,1)
+        sigH=sf.Multiply(sig,envH)
+        sigL=sf.Multiply(sigL,envL)
+        sig=sf.Mix(sigL,sigH)
+        sig=sf.NumericVolume(sig,volume)
+        return sig
+        
+    return sf_do(playStringPluckInner)
+
+def makeClick(formant):
+    clickA=sf.Multiply(
+        sf.SimpleShape((0,0),(500,-30),(512,-60)),
+        sf.NumericShape((0,0),(100,1),(-300,-1),(400,0)),
+        sf.FixSize(sf.Power(sf.WhiteNoise(512),8))
+    )
+    clickA=sf.BesselLowPass(clickA,440,1)
+    clickA=formant(clickA)
+
+    for i in range(0,4):
+        clickB=sf.BesselLowPass(+clickA,440,1)
+        clickB=formant(clickB)
+        clickA=sf.MixAt(
+            (clickA,0),
+            (clickB,beat/16)
+        )
+    return sf.Normalise(clickA)
+
+def doFormant(sig,f1,f2,f3):
+    def doFormantInner(a,b,c,d):
+        def doFII():
+            return sf.RBJPeaking(a,b,c,d)
+        return sf_do(doFII)
+    sig1=doFormantInner(+sig,f1,1,40)
+    sig2=doFormantInner(+sig,f2,2,20)
+    sig3=doFormantInner( sig,f3,1,40)
+    x=sf.Mix(sig1,sig2,sig3)
+    x=sf.Normalise(x)
+    return sf.Swap(x)
+
+#beat
+def sayBeat(sig):
+    return doFormant(sig,300,2800,3300)
+
+#bit
+def sayBit(sig):
+    return doFormant(sig,430,2500,3100)
+
+#bet
+def sayBet(sig):
+    return doFormant(sig,600,2350,3000)
+
+#bat
+def sayBat(sig):
+    return doFormant(sig,860,2050,2850)
+
+#part
+def sayPart(sig):
+    return doFormant(sig,850,1200,2800)
+
+#pot 
+def sayPot(sig):
+    return doFormant(sig,590,900,2700)
+
+#boat
+def sayBoat(sig):
+    return doFormant(sig,470,1150,2700)
+
+#book
+def sayBook(sig):
+    return doFormant(sig,370,950,2650)
+
+#but
+def sayBut(sig):
+    return doFormant(sig,760,1400,2800)
+
+#pert
+def sayPert(sig):
+    return doFormant(sig,500,1650,1950)
+
+# oddness
+def sayStrange(sig):
+    return doFormant(sig,550,1800,2050)
+
+def doFormantRand(sig):
+    formants=[
+    sayBeat,
+    sayBit,
+    sayBet,
+    sayBat,
+    sayPart,
+    sayPot,
+    sayBoat,
+    sayBook,
+    sayBut,
+    sayPert,
+    sayStrange
+    ]
+    r=int(math.floor(random.random()*10.999999));
+    f=formants[r];
+    return sf.Clean(f(sig))
+
+# Very slow indeed
+beat = 1024
+
+def sawingStrings(pitch,lengthIn):
+    def sawingStringsInner():
+        at   = 0
+        sigl = []
+        sigr = []
+        
+        length=lengthIn*2.0
+        def dol():
+            sigl=playStringHardLong(pitch,length,0.5)
+            l = sf.Mix(
+                granularReverb(+sigl,0.50,beat,128),
+                granularReverb( sigl,0.75,beat,128)
+            )
+            return doFormantRand(l)
+        
+        def dor():
+            sigr=playStringHardLong(pitch,length,0.5)
+            r = sf.Mix(
+                granularReverb(+sigr,0.50,beat,128),
+                granularReverb( sigr,0.75,beat,128)
+            )
+            return doFormantRand(r)
+            
+        left  = sf.NumericVolume(dol(),0.25+0.75*random.random())
+        right = sf.NumericVolume(dor(),0.25+0.75*random.random())
+            
+        return (sf.Swap(left),sf.Swap(right)) 
+    return sf_do(sawingStringsInner)
+
+def randWalk3(value,uBound):
+    return randWalk(value,3,uBound)
+
+# Generative engine here
+#(left,right)=sawingStrings(1024,2048,128,beat)
+
+def getRand(range):
+    return int(math.floor(random.random()*range+0.999999))
+    
+def runSingle(root,lengthIn,at):
+    def innerRun():
+        pitch=root*int(getRand(256)**0.5)
+        left,right=sawingStrings(pitch,lengthIn)
+        atl=str(at+getRand(64))
+        atr=str(at+getRand(64))
+        sf.WriteFile32((left,right),"temp/low_signal_left_"+atl+"_"+atr+".wav")
+        return True
+    return sf_do(innerRun)
+    
+  
+def run():
+    root=16
+    all  = {}
+    at=1024
+    nnotes=64
+    for x in range(0,nnotes):        
+        lengthIn=beat*0.5*getRand(8)
+        all[x]=runSingle(root,lengthIn,at)
+        if(getRand(4)>3):
+            space=2.0
+        else:
+            space=1.0
+        at=at+lengthIn*space
+    
+    for x in range(0,nnotes):
+        all[x].get()
+        print "-----===== done " + str(x) + " =====-----"
+
+run()
+
+stopNow()
+
+left,right=sf.ReadFile("temp/temp.wav")
+left = sf.Mix(
+    granularReverb(+left,0.50,4096,64),
+    granularReverb( left,2.0,4096,128)
+)
+right = sf.Mix(
+    granularReverb(+right,0.50,4096,64),
+    granularReverb( right,2.0,4096,128)
+)
+
+(convoll,convolr)=sf.ReadFile("temp/revb.wav")
+
+wleft =reverberate(+left,convoll)
+wright=reverberate(+right,convolr)
+
+left_out=sf.Normalise(sf.MixAt(
+    (sf.Pcnt50(wleft),0),
+    (sf.Pcnt50(left),00)
+))
+
+right_out=sf.Normalise(sf.MixAt(
+    (sf.Pcnt50(wright),0),
+    (sf.Pcnt50(right),0)
+))
+
+sf.WriteFile32((left_out,right_out),"temp/temp_postb.wav")

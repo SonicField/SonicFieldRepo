@@ -1,0 +1,189 @@
+import random
+import math
+
+# Single threaded for debug
+#def sf_do(toDo):
+#   return toDo()
+    
+def granularReverb(signal,ratio,delay,density,length=50,stretch=1,vol=1):
+
+    def granularReverbInner():
+        out=[]
+        print "GR Inner"
+        for grain in sf.Granulate(signal,length,10):
+            (signal_i,at)=grain
+            signal_i=sf.DirectRelength(signal_i,ratio-0.01+(0.02*random.random()))
+            for x in range(0,density):
+                out.append(
+                    (
+                        +signal_i,
+                        int((at + (random.random()+random.random())*delay)*stretch)
+                    )
+                )
+            -signal_i
+        return sf.Clean(sf.NumericVolume(sf.MixAt(out),vol))
+    return sf_do(granularReverbInner)
+
+def reverbInner(signal,convol,grainLength):
+    def reverbInnerDo():
+        mag=sf.Magnitude(+signal)
+        if mag>0:
+            signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+            signal_=sf.FrequencyDomain(signal_)
+            signal_=sf.CrossMultiply(convol,signal_)
+            signal_=sf.TimeDomain(signal_)
+            newMag=sf.Magnitude(+signal_)
+            signal_=sf.NumericVolume(signal_,mag/newMag)        
+            # tail out clicks due to amplitude at end of signal 
+            return signal_
+        else:
+            -convol
+            return signal
+            
+    return sf_do(reverbInnerDo)
+
+def reverberate(signal,convol):
+    grainLength = sf.Length(+convol)
+    convol_=sf.FrequencyDomain(sf.Concatenate(convol,sf.Silence(grainLength)))
+    signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+    out=[]
+    for grain in sf.Granulate(signal_,grainLength):
+        (signal_i,at)=grain
+        out.append((reverbInner(signal_i,+convol_,grainLength),at))
+    -convol_
+    return sf.Clean(sf.Normalise(sf.MixAt(out)))
+
+def doFormant(sig,f1,f2,f3):
+    def doFormantInner(a,b,c,d):
+        def doFII():
+            return sf.RBJPeaking(a,b,c,d)
+        return sf_do(doFII)
+    sig1=doFormantInner(+sig,f1,1,40)
+    sig2=doFormantInner(+sig,f2,2,20)
+    sig3=doFormantInner( sig,f3,1,40)
+    x=sf.Mix(sig1,sig2,sig3)
+    x=sf.Normalise(x)
+    return sf.Swap(x)
+
+#beat
+def sayBeat(sig):
+    return doFormant(sig,300,2800,3300)
+
+#bit
+def sayBit(sig):
+    return doFormant(sig,430,2500,3100)
+
+#bet
+def sayBet(sig):
+    return doFormant(sig,600,2350,3000)
+
+#bat
+def sayBat(sig):
+    return doFormant(sig,860,2050,2850)
+
+#part
+def sayPart(sig):
+    return doFormant(sig,850,1200,2800)
+
+#pot 
+def sayPot(sig):
+    return doFormant(sig,590,900,2700)
+
+#boat
+def sayBoat(sig):
+    return doFormant(sig,470,1150,2700)
+
+#book
+def sayBook(sig):
+    return doFormant(sig,370,950,2650)
+
+#but
+def sayBut(sig):
+    return doFormant(sig,760,1400,2800)
+
+#pert
+def sayPert(sig):
+    return doFormant(sig,500,1650,1950)
+
+# oddness
+def sayStrange(sig):
+    return doFormant(sig,550,1800,2050)
+
+def doFormantRand(sig):
+    formants=[
+    sayBeat,
+    sayBit,
+    sayBet,
+    sayBat,
+    sayPart,
+    sayPot,
+    sayBoat,
+    sayBook,
+    sayBut,
+    sayPert,
+    sayStrange
+    ]
+    r=int(math.floor(random.random()*10.999999));
+    f=formants[r];
+    return sf.Clean(f(sig))
+
+(left)=sf.ReadFile("temp/Infection.wav")
+left=left[0]
+right=+left
+#left =sf.Cut(0,10000,left)
+#right=sf.Cut(0,10000,right)
+echo=512
+def doNormal(sig):
+    def doNormalInner():
+        return sf.Normalise(sig)
+    return sf_do(doNormalInner)
+
+def stretch(sig):
+    print "Stretch outer"
+    def stretchInner():
+        print "Stretch inner"
+        a=granularReverb(+sig,1,echo,128,1024,5,1.0)
+        b=sf.ButterworthLowPass(granularReverb(sig,0.125,echo, 16,2048,5,1.0),512,4)
+        c=sf.ButterworthHighPass(+a,4096,6)
+        z=sf.Magnitude(+c)
+        c=sf.Power(c,4)
+        z=z/sf.Magnitude(+c)
+        c=sf.NumericVolume(c,z)
+        a=sf.ButterworthLowPass(a,4096,6)
+        c=reverberate(
+            c,sf.Normalise(
+                sf.Multiply(
+                    sf.NumericShape((0,1),(1024,0)),
+                    sf.Power(sf.WhiteNoise(1024),4)
+                )
+            )
+        )
+        return sf.Clean(sf.Mix(a,b,c))
+    return sf_do(stretchInner)
+ 
+left  = stretch(left)
+right = stretch(right)    
+
+right = doNormal(right)
+left  = doNormal(left) 
+
+
+sf.WriteFile32((+left,+right),"temp/sea4-1.wav")
+
+(convoll,convolr)=sf.ReadFile("temp/terrys_warehouse_stereo_short.wav")
+
+wleft =reverberate(+left,convoll)
+wright=reverberate(+right,convolr)
+
+left=sf.Normalise(sf.MixAt(
+    (sf.Pcnt30(wleft),0),
+    (sf.Pcnt70(left),00)
+))
+
+right=sf.Normalise(sf.MixAt(
+    (sf.Pcnt30(wright),0),
+    (sf.Pcnt70(right),0)
+))
+
+
+sf.WriteFile32((left,right),"temp/sea4-2.wav")

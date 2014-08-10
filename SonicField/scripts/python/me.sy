@@ -1,0 +1,82 @@
+import random
+import math
+#sf.SetSampleRate(192000)
+
+# Single threaded for debug
+#def sf_do(toDo):
+#   return toDo()
+
+def granularReverb(signal,ratio,delay,density,length):
+
+    def granularReverbInner():
+        out=[]
+        for grain in sf.Granulate(signal,length,10):
+            (signal_i,at)=grain
+            signal_i=sf.DirectRelength(signal_i,ratio-0.01+(0.02*random.random()))
+            for x in range(0,density):
+                out.append(
+                    (
+                        +signal_i,
+                        at + (random.random()+random.random())*delay
+                    )
+                )
+            -signal_i
+        return sf.Clean(sf.Normalise(sf.MixAt(out)))
+    return sf_do(granularReverbInner)
+
+
+def reverbInner(signal,convol,grainLength):
+    def reverbInnerDo():
+        mag=sf.Magnitude(+signal)
+        if mag>0:
+            signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+            signal_=sf.FrequencyDomain(signal_)
+            signal_=sf.CrossMultiply(convol,signal_)
+            signal_=sf.TimeDomain(signal_)
+            newMag=sf.Magnitude(+signal_)
+            signal_=sf.NumericVolume(signal_,mag/newMag)        
+            # tail out clicks due to amplitude at end of signal 
+            return signal_
+        else:
+            -convol
+            return signal
+            
+    return sf_do(reverbInnerDo)
+
+def reverberate(signal,convol):
+    def reverberateDo():
+        grainLength = sf.Length(+convol)
+        convol_=sf.FrequencyDomain(sf.Concatenate(convol,sf.Silence(grainLength)))
+        signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+        out=[]
+        for grain in sf.Granulate(signal_,grainLength):
+            (signal_i,at)=grain
+            out.append((reverbInner(signal_i,+convol_,grainLength),at))
+        -convol_
+        return sf.Realise(sf.Normalise(sf.MixAt(out)))
+    return sf_do(reverberateDo)
+
+(left,right)=sf.ReadFile("temp/f7.wav")
+wleft =granularReverb(+left ,1,512,50,128)
+wright=granularReverb(+right,1,512,50,128)
+left =sf.Normalise(sf.Mix(sf.Pcnt75(left),sf.Pcnt25(wleft)))
+right=sf.Normalise(sf.Mix(sf.Pcnt75(right),sf.Pcnt25(wright)))
+"""
+(convoll,convolr)=sf.ReadFile("temp/revb2.wav")
+
+wleft =reverberate(+left,convoll)
+wright=reverberate(+right,convolr)
+
+left_out=sf.Normalise(sf.MixAt(
+    (sf.Pcnt50(wleft),0),
+    (sf.Pcnt50(left),00)
+))
+
+right_out=sf.Normalise(sf.MixAt(
+    (sf.Pcnt50(wright),0),
+    (sf.Pcnt50(right),0)
+))
+"""
+left_out=left
+right_out=right
+sf.WriteFile32((left_out,right_out),"temp/me-done-7.wav")

@@ -1,0 +1,133 @@
+import random
+import math
+#sf.SetSampleRate(48000)
+
+# Single threaded for debug
+#def sf_do(toDo):
+#   return toDo()
+
+def granularReverb2(signal,ratio,delay,density,length):
+    def granularReverbInner():
+        print "Doing reverb"
+        out=[]
+        cl=sf.Clean(signal)
+        for grain in sf.Granulate(cl,length,10):
+            (signal_i,at)=grain
+            signal_i=sf.DirectRelength(signal_i,ratio-0.01+(0.02*random.random()))
+            for x in range(0,density):
+                out.append(
+                    (
+                        +signal_i,
+                        at + (random.random()+random.random())*delay
+                    )
+                )
+            -signal_i
+        ret = sf.DeGranulate(out)
+        ret = sf.Swap(ret)
+        return ret
+    return sf_do(granularReverbInner)
+
+def granularReverb(signal,ratio,delay,density,length=64):
+    out=[]
+    for grain in sf.Granulate(signal,length*10,length):
+        (signal_i,at)=grain
+        out.append(
+            (
+                granularReverb2(signal_i,ratio,delay,density,length),
+                at
+            )
+        )
+    return sf.Swap(sf.MixAt(out))
+
+def reverbInner(signal,convol,grainLength):
+    def reverbInnerDo():
+        mag=sf.Magnitude(+signal)
+        if mag>0:
+            signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+            signal_=sf.FrequencyDomain(signal_)
+            signal_=sf.CrossMultiply(convol,signal_)
+            signal_=sf.TimeDomain(signal_)
+            newMag=sf.Magnitude(+signal_)
+            signal_=sf.NumericVolume(signal_,mag/newMag)        
+            # tail out clicks due to amplitude at end of signal 
+            return signal_
+        else:
+            -convol
+            return signal
+            
+    return sf_do(reverbInnerDo)
+
+def reverberate(signal,convol):
+    grainLength = sf.Length(+convol)
+    convol_=sf.FrequencyDomain(sf.Concatenate(convol,sf.Silence(grainLength)))
+    signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+    out=[]
+    for grain in sf.Granulate(signal_,grainLength):
+        (signal_i,at)=grain
+        out.append((reverbInner(signal_i,+convol_,grainLength),at))
+    -convol_
+    return sf.Clean(sf.Normalise(sf.MixAt(out)))
+
+from os import listdir
+from os.path import isfile, join
+
+def spliceAll():
+    onlyfiles = [ f for f in listdir("temp/") if isfile(join("temp/",f)) ]
+    leftAll=[]
+    rightAll=[]
+    for file in onlyfiles:
+        if "signal_left" in file:
+            if "low_" in file:
+                long=True
+                time=file[len("low_signal_left_"):len(file)-4]
+            else:
+                long=False
+                time=file[len("signal_left_"):len(file)-4]
+            atl,atr=tuple(time.split("_"))
+            atl=float(atl)
+            atr=float(atr)               
+            print "File: ",file," at: ",atl,atr
+            left,right=sf.ReadFile("temp/"+file)
+            if long:
+                leftAll.append((+left,atl))
+                rightAll.append((+right,atr))
+                leftAll.append((left  ,atl+(180*1024)))
+                rightAll.append((right,atr+(180*1024)))
+            else:
+                left=sf.WaveShaper(-0.03,0.2,0,-1,0.2,2,left)
+                right=sf.WaveShaper(-0.03,0.2,0,-1,0.2,2,right)
+                leftAll.append((left,atl*2))
+                rightAll.append((right,atr*2))
+                
+    left=sf.MixAt(leftAll)
+    right=sf.MixAt(rightAll)
+    sf.WriteFile32((sf.Normalise(left),sf.Normalise(right)),"temp/temp-n2.wav")
+
+#spliceAll()
+
+left,right=sf.ReadFile("temp/temp-n2.wav")
+left = sf.Mix(
+    granularReverb(+left,0.50,4096,256),
+    granularReverb( left,2.00,4096,256)
+)
+right = sf.Mix(
+    granularReverb(+right,0.50,4096,256),
+    granularReverb( right,2.00,4096,256)
+)
+
+(convoll,convolr)=sf.ReadFile("temp/revb.wav")
+
+wleft =reverberate(+left,convoll)
+wright=reverberate(+right,convolr)
+
+left_out=sf.Normalise(sf.MixAt(
+    (sf.Pcnt50(wleft),0),
+    (sf.Pcnt50(left),00)
+))
+
+right_out=sf.Normalise(sf.MixAt(
+    (sf.Pcnt50(wright),0),
+    (sf.Pcnt50(right),0)
+))
+
+sf.WriteFile32((left_out,right_out),"temp/temp_postb.wav")
