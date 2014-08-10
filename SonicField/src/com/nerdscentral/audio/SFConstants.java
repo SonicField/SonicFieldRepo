@@ -111,12 +111,16 @@ public class SFConstants
     public static final double getEqualPitch(String note) throws SFPL_RuntimeException
     {
         Object ret = equalNotes.get(note.toLowerCase());
+        if (ret == null) throw new RuntimeException(
+                        Messages.getString("SFConstants.0") + note + Messages.getString("SFConstants.1")); //$NON-NLS-1$ //$NON-NLS-2$
         return Caster.makeDouble(ret);
     }
 
     public static final double getJustPitch(String note) throws SFPL_RuntimeException
     {
         Object ret = justNotes.get(note.toLowerCase());
+        if (ret == null) throw new RuntimeException(
+                        Messages.getString("SFConstants.0") + note + Messages.getString("SFConstants.1")); //$NON-NLS-1$ //$NON-NLS-2$
         return Caster.makeDouble(ret);
     }
 

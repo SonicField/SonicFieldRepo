@@ -61,11 +61,10 @@ public class SF_Resonate implements SFPL_Operator
         for (int i = 0; i < lin.size(); ++i)
         {
             List<Object> llin = Caster.makeBunch(lin.get(i));
-            try (SFSignal shape = Caster.makeSFSignal(llin.get(0)))
-            {
-                int delay = (int) (Caster.makeDouble(llin.get(1)) * SFConstants.SAMPLE_RATE_MS);
-                descriptors.add(new ResonantDescriptor(delay, Caster.incrReference(shape)));
-            }
+            @SuppressWarnings("resource")
+            SFSignal shape = Caster.makeSFSignal(llin.get(0));
+            int delay = (int) (Caster.makeDouble(llin.get(1)) * SFConstants.SAMPLE_RATE_MS);
+            descriptors.add(new ResonantDescriptor(delay, shape));
         }
         try (SFSignal out = in.replicate())
         {
@@ -76,22 +75,28 @@ public class SF_Resonate implements SFPL_Operator
                 boolean overflowAll = true;
                 endOne: for (ResonantDescriptor descriptor : descriptors)
                 {
-                    // This will call close so compensate for the incr in reference above
-                    try (SFSignal shape = descriptor.getShape())
+                    @SuppressWarnings("resource")
+                    SFSignal shape = descriptor.getShape();
+                    int delay = descriptor.getDelaySamples();
+                    int t = shape.getLength();
+                    for (int m = 0; m < t; ++m)
                     {
-                        int delay = descriptor.getDelaySamples();
-                        int t = shape.getLength();
-                        for (int m = 0; m < t; ++m)
-                        {
-                            int index = n + delay + m;
-                            if (index >= r) break endOne;
-                            out.setSample(index, out.getSample(index) + q * shape.getSample(m));
-                        }
-                        overflowAll = false;
+                        int index = n + delay + m;
+                        if (index >= r) break endOne;
+                        out.setSample(index, out.getSample(index) + q * shape.getSample(m));
                     }
+                    overflowAll = false;
+
                 }
                 if (overflowAll) break endAll;
             }
+            for (ResonantDescriptor descriptor : descriptors)
+            {
+                @SuppressWarnings("resource")
+                SFSignal shape = descriptor.getShape();
+                shape.close();
+            }
+            in.close();
             return Caster.prep4Ret(out);
         }
     }

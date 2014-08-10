@@ -71,9 +71,7 @@ SF_TASK_QUEUE=sf_taskQueue()
 
 class sf_superFuture(Future):
 
-
     def __init__(self,toDo):
-        self.lock=ReentrantLock()
         self.toDo=toDo
         queue=SF_TASK_QUEUE.get()
         queue.append(self)
@@ -91,13 +89,13 @@ class sf_superFuture(Future):
     def submitAll(self):
         queue=SF_TASK_QUEUE.get()
         while(len(queue)):
-            queue.pop().submit()
+            queue.pop().submit()   
 
     def get(self):
-        self.lock.lock()
         self.submitAll()
+        while not hasattr(self,'future'):
+            print "race"
         r = self.future.get()
-        self.lock.unlock()
         return r
 
     def __iter__(self):
