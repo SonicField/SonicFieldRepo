@@ -43,7 +43,7 @@ public class SFData extends SFSignal implements Serializable
     private volatile boolean            killed                 = false;
     private File                        coreFile;
     private RandomAccessFile            coreFileAccessor;
-    private final long                  TWOGIG                 = 2097152;
+    private final long                  TWOGIG                 = 1073741824;
     private List<ByteBuffer>            chunks                 = new ArrayList<>();
     private final static long           swapLimit;
     private final static File           tempDir;
@@ -94,7 +94,6 @@ public class SFData extends SFSignal implements Serializable
 
     private void makeMap(long size) throws IOException
     {
-        if (size > Integer.MAX_VALUE) throw new RuntimeException(Messages.getString("SFData.12")); //$NON-NLS-1$
         if (tempDir != null)
         {
             coreFile = File.createTempFile("SonicFieldSwap" + getUniqueId(), ".mem", tempDir);  //$NON-NLS-1$//$NON-NLS-2$
@@ -167,7 +166,9 @@ public class SFData extends SFSignal implements Serializable
             data = null;
             try
             {
-                makeMap(lengthIn * 8);
+                if (lengthIn > Integer.MAX_VALUE) throw new RuntimeException(Messages.getString("SFData.12") + ": " + lengthIn); //$NON-NLS-1$
+
+                makeMap(lengthIn * 8l);
             }
             catch (IOException e)
             {
@@ -250,7 +251,7 @@ public class SFData extends SFSignal implements Serializable
 
     private ByteBuffer setUpBuffer(int index)
     {
-        long bytePos = index * 8;
+        long bytePos = index * 8l;
         long pos = bytePos % TWOGIG;
         long bufPos = (bytePos - pos) / TWOGIG;
         ByteBuffer byteBuffer = chunks.get((int) bufPos);
@@ -282,9 +283,9 @@ public class SFData extends SFSignal implements Serializable
         return this.length;
     }
 
-    public static final SFData build(float[] input)
+    public static final SFSignal build(float[] input)
     {
-        SFData data = new SFData(input.length);
+        SFSignal data = SFData.build(input.length);
         for (int i = 0; i < input.length; ++i)
         {
             data.setSample(i, input[i]);
@@ -294,7 +295,7 @@ public class SFData extends SFSignal implements Serializable
 
     public static SFSignal build(double[] input)
     {
-        SFSignal data = new SFData(input.length);
+        SFSignal data = SFData.build(input.length);
         for (int i = 0; i < input.length; ++i)
         {
             data.setSample(i, input[i]);
@@ -302,14 +303,9 @@ public class SFData extends SFSignal implements Serializable
         return data;
     }
 
-    public static SFSignal wrap(double[] input)
-    {
-        return new SFData(input);
-    }
-
     public static final SFData build(double[] input, int j)
     {
-        SFData data = new SFData(j);
+        SFData data = SFData.build(j);
         for (int i = 0; i < j; ++i)
         {
             data.setSample(i, input[i]);

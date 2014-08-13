@@ -93,7 +93,7 @@ public final class SF2JavaSound
         }
     }
 
-    public final static List<SFData> readFile(String fileName) throws SFPL_RuntimeException, UnsupportedAudioFileException,
+    public final static List<SFSignal> readFile(String fileName) throws SFPL_RuntimeException, UnsupportedAudioFileException,
                     IOException
     {
         InputStream in = new FileInputStream(fileName);
@@ -104,7 +104,7 @@ public final class SF2JavaSound
         }
     }
 
-    public final static List<SFData> getChannels(AudioInputStream ain) throws SFPL_RuntimeException, IOException
+    public final static List<SFSignal> getChannels(AudioInputStream ain) throws SFPL_RuntimeException, IOException
     {
         AudioFormat af = ain.getFormat();
         int nChannels = af.getChannels();
@@ -140,7 +140,7 @@ public final class SF2JavaSound
                         data[channel][pos] = (((float) sample) / ((float) Integer.MAX_VALUE));
                     }
                 }
-                List<SFData> ret = new ArrayList<>(nChannels);
+                List<SFSignal> ret = new ArrayList<>(nChannels);
                 for (int c = 0; c < nChannels; ++c)
                 {
                     ret.add(SFData.build(data[c]));

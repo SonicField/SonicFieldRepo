@@ -48,9 +48,10 @@ class sf_futureWrapper(Future):
 class sf_getter(Future):
     def __init__(self,toDo):
         self.toDo=toDo
+        self.result=self.toDo()
 
     def get(self):
-        return self.toDo()
+        return self.result
 
     def __iter__(self):
         return iter(self.get())
@@ -89,7 +90,7 @@ class sf_superFuture(Future):
     def submitAll(self):
         queue=SF_TASK_QUEUE.get()
         while(len(queue)):
-            queue.pop().submit()   
+            queue.pop().submit()
 
     def get(self):
         self.submitAll()
