@@ -3,7 +3,8 @@ import time
 from java.util.concurrent import Executors, TimeUnit
 from java.util.concurrent import Callable, Future
 from java.lang import System
-from java.lang import ThreadLocal    
+from java.lang import ThreadLocal
+from java.lang import Thread
 from java.util.concurrent import TimeUnit
 from java.util.concurrent.locks import ReentrantLock
 
@@ -95,7 +96,7 @@ class sf_superFuture(Future):
     def get(self):
         self.submitAll()
         while not hasattr(self,'future'):
-            print "race"
+            Thread.yield()
         r = self.future.get()
         return r
 

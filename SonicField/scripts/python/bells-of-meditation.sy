@@ -1,0 +1,202 @@
+import random
+import math
+
+def randWalk(value,size=4,ubound=8):
+    value  = float(value)
+    size   = float(size)
+    ubound = float(ubound)
+    r=(random.random()+random.random())/2.0
+    r=math.floor(r*size)-math.floor((size/2.0))    
+    value+=r
+    if value<1:
+        value=ubound
+    elif value>ubound:
+        value=1
+    return value
+
+def ping(length,pitch):
+    wave=sf.SineWave(length,pitch)
+    if length<60:
+        raise("signal too short")
+    wave=sf.Multiply(
+        wave,
+        sf.SimpleShape((0,-60),(50,0),(length-20,0),(length,-60))
+    )
+    return sf.Saturate(sf.Power(wave,2))
+
+def reverbInner(signal,convol,grainLength):
+    def reverbInnerDo():
+        mag=sf.Magnitude(+signal)
+        if mag>0:
+            signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+            signal_=sf.FrequencyDomain(signal_)
+            signal_=sf.CrossMultiply(convol,signal_)
+            signal_=sf.TimeDomain(signal_)
+            newMag=sf.Magnitude(+signal_)
+            signal_=sf.NumericVolume(signal_,mag/newMag)        
+            # tail out clicks due to amplitude at end of signal 
+            return signal_
+        else:
+            -convol
+            return signal
+            
+    return sf_do(reverbInnerDo)
+
+def reverberate(signal,convol):
+    grainLength = sf.Length(+convol)
+    convol_=sf.FrequencyDomain(sf.Concatenate(convol,sf.Silence(grainLength)))
+    signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+    out=[]
+    for grain in sf.Granulate(signal_,grainLength):
+        (signal_i,at)=grain
+        out.append((reverbInner(signal_i,+convol_,grainLength),at))
+    -convol_
+    return sf.Clean(sf.FixSize(sf.MixAt(out)))
+
+def ring(lengthI,pitch,dullness=1):
+    def ringInner():
+        length=lengthI*32
+        print "Ring: " ,length,pitch,dullness
+        signal1=sf.SineWave(length,pitch-2)
+        signal2=sf.SineWave(length,pitch+2)
+        fm1=sf.DB48(sf.SineWave(length,pitch*1.2))
+        fm2=sf.DB48(sf.SineWave(length,pitch*1.3))
+        
+        signal=sf.Mix(
+            sf.FrequencyModulate(signal1,fm1),
+            sf.FrequencyModulate(signal2,fm2)
+        )
+        signal=sf.Normalise(signal)
+        
+        wn=sf.ButterworthLowPass(sf.WhiteNoise(100),pitch,2)
+        wn=sf.Multiply(wn,sf.NumericShape((0,0),(20,1),(100,0)))
+        
+        signal=sf.Mix(signal,wn)
+        signal=sf.Normalise(signal)
+        
+        env=sf.SimpleShape(
+            (0,-99),
+            (50,0),
+            (length,-99)
+        )
+        
+        signal=sf.Multiply(
+            signal,
+            env
+        )
+        
+        signal=sf.ButterworthHighPass(signal,pitch*2,2)
+        if dullness>0:
+            return sf.Clean(sf.BesselLowPass(signal,pitch,dullness))
+        else:
+            return sf.Clean(signal)
+
+    return sf_do(ringInner)
+    
+def generate(pcentre,ptop,beat,n):
+    def generateInner():
+        left=[]
+        right=[]
+        lvalue  = pcentre
+        rvalue  = pcentre
+        bvaluel = 4
+        bvaluer = 4
+        beat  = 128
+        pitch = 16
+        lat=0
+        rat=0
+        for r in range(0,n*3):
+            lvalue  = randWalk(lvalue,size=5,ubound=ptop)
+            rvalue  = randWalk(rvalue,size=5,ubound=ptop)
+            bvaluel = randWalk(bvaluel)
+            bvaluer = randWalk(bvaluer)
+            svaluel = 1.0+random.random()*4.0
+            svaluer = 1.0+random.random()*4.0
+        
+            lat+=svaluel*beat*64
+            rat+=svaluer*beat*64
+            
+            l=ring(bvaluel*beat,lvalue*pitch,int(random.random()*4))
+            r=ring(bvaluer*beat,rvalue*pitch,int(random.random()*4))
+            
+            vl=random.random()
+            vr=random.random()
+                    
+            left.append([sf.NumericVolume(+l,vl),lat+random.random()*64])
+            left.append([sf.NumericVolume(+r,vr),rat+random.random()*64])
+        
+            right.append([sf.NumericVolume(r,vl),rat+random.random()*64])
+            right.append([sf.NumericVolume(l,vr),lat+random.random()*64])
+
+        left=sf.Clean(sf.Normalise(sf.MixAt(left)))
+        right=sf.Clean(sf.Normalise(sf.MixAt(right)))
+        return (left,right)
+    return sf_do(generateInner)
+
+print "Generating"
+left1,right1  = generate(  2, 32,192,16)
+left2,right2  = generate( 32, 64,192,16)
+left3,right3  = generate(128,256,192,16)
+left4,right4  = generate(  4, 16,192,16)
+left5,right5  = generate(  1,  4,192,16)
+
+print "Mixing"
+left  = sf.Normalise(
+    sf.MixAt(
+        (left1,0),
+        (left2,12000),
+        (left3,24000),
+        (left4,36000), 
+        (left5,60000)
+    )
+)
+right  = sf.Normalise(
+    sf.MixAt(
+        (right1,0),
+        (right2,12000),
+        (right3,24000),
+        (right4,36000), 
+        (right5,60000)
+    )
+)
+sf.WriteFile32((+left,+right),"temp/output1.wav")
+
+print "Convolving"
+
+(convoll,convolr)=sf.ReadFile("temp/ambience-impulse.wav")
+    
+wleft =reverberate(+left, convoll)
+wright=reverberate(+right,convolr)
+
+print "Mixing"
+left=sf.Normalise(sf.MixAt(
+    (sf.Pcnt65(+wleft),0),
+    (sf.Pcnt25(left),12700),
+    (sf.Pcnt10(+wright),12750)
+))
+
+right=sf.Normalise(sf.MixAt(
+    (sf.Pcnt65(wright),0),
+    (sf.Pcnt25(right),12759),
+    (sf.Pcnt25(wleft),12690)
+))
+print "Writing"
+sf.WriteFile32((+left,+right),"temp/output2.wav")
+
+print "Convolving"
+(convoll,convolr)=sf.ReadFile("temp/terrys_warehouse_stereo_short.wav")
+    
+wleft =reverberate(+left, convoll)
+wright=reverberate(+right,convolr)
+
+left=sf.Normalise(sf.MixAt(
+    (sf.Pcnt50(wleft),0),
+    (sf.Pcnt50(left),20)
+))
+
+right=sf.Normalise(sf.MixAt(
+    (sf.Pcnt50(wright),0),
+    (sf.Pcnt50(right),20)
+))
+print "Writing"
+sf.WriteFile32((left,right),"temp/output3.wav")

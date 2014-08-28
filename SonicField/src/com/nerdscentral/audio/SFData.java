@@ -166,7 +166,7 @@ public class SFData extends SFSignal implements Serializable
             data = null;
             try
             {
-                if (lengthIn > Integer.MAX_VALUE) throw new RuntimeException(Messages.getString("SFData.12") + ": " + lengthIn); //$NON-NLS-1$
+                if (lengthIn > Integer.MAX_VALUE) throw new RuntimeException(Messages.getString("SFData.12") + ": " + lengthIn); //$NON-NLS-1$ //$NON-NLS-2$
 
                 makeMap(lengthIn * 8l);
             }

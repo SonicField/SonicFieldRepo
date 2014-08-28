@@ -29,9 +29,7 @@ def reverberate(signal,convol):
 
     
 (left,right)=sf.ReadFile("temp/input.wav")
-#left =sf.Cut(0,120000,left)
-#right=sf.Cut(0,120000,right)
-(convoll,convolr)=sf.ReadFile("temp/spring.wav")
+(convoll,convolr)=sf.ReadFile("temp/revb.wav")
 
 wleft =reverberate(+left,convoll)
 wright=reverberate(+right,convolr)

@@ -1,0 +1,216 @@
+import random
+import math
+
+def randWalk(value,size=4,uBound=8):
+    value  = float(value)
+    size   = float(size)
+    uBound = float(uBound)
+    r=(random.random()+random.random())/2.0
+    r=math.floor(r*size)-math.floor((size/2.0))    
+    value+=r
+    if value<1:
+        value=2
+    elif value>uBound:
+        value=uBound-2
+    return value
+
+def ping(length,pitch):
+    wave=sf.SineWave(length,pitch)
+    if length<60:
+        raise("signal too short")
+    wave=sf.Multiply(
+        wave,
+        sf.SimpleShape((0,-60),(50,0),(length-20,0),(length,-60))
+    )
+    return sf.Saturate(sf.Power(wave,2))
+
+def reverbInner(signal,convol,grainLength):
+    def reverbInnerDo():
+        mag=sf.Magnitude(+signal)
+        if mag>0:
+            signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+            signal_=sf.FrequencyDomain(signal_)
+            signal_=sf.CrossMultiply(convol,signal_)
+            signal_=sf.TimeDomain(signal_)
+            newMag=sf.Magnitude(+signal_)
+            signal_=sf.NumericVolume(signal_,mag/newMag)        
+            # tail out clicks due to amplitude at end of signal 
+            return signal_
+        else:
+            -convol
+            return signal
+            
+    return sf_do(reverbInnerDo)
+
+def reverberate(signal,convol):
+    grainLength = sf.Length(+convol)
+    convol_=sf.FrequencyDomain(sf.Concatenate(convol,sf.Silence(grainLength)))
+    signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+    out=[]
+    for grain in sf.Granulate(signal_,grainLength):
+        (signal_i,at)=grain
+        out.append((reverbInner(signal_i,+convol_,grainLength),at))
+    -convol_
+    return sf.Clean(sf.FixSize(sf.MixAt(out)))
+
+def makeCode(length,pitch):
+    def makeCodeInner():
+        dot1 =ping(length,pitch)
+        dash1=ping(length*2,pitch)
+        gap=sf.Silence(64)
+        def dotDash():
+            if random.random()<0.5:
+                return +dot1
+            else:
+                return +dash1
+        sig=sf.Concatenate(
+            dotDash(),
+            +gap,
+            dotDash(),
+            +gap,
+            dotDash(),
+            +gap,
+            dotDash(),
+            +gap,
+            dotDash()
+        )
+        if random.random()<0.25 :
+            sig=sf.Concatenate(+sig,+gap,sig);
+        elif random.random()>0.75:
+            sig=sf.Concatenate(
+                sig,
+                +gap,
+                dotDash(),
+                +gap,
+                dotDash(),
+                +gap,
+                dotDash(),
+                +gap,
+                dotDash(),
+                +gap,
+                dotDash()
+            )
+        
+        -dot1
+        -dash1
+        -gap
+        n=sf.WhiteNoise(sf.Length(+sig)/8.0)
+        n=sf.ButterworthLowPass(n,10,4)
+        n=sf.DirectRelength(n,0.1)
+        n=sf.Cut(0,sf.Length(+sig),n)
+        n=sf.Normalise(n)
+        sig=sf.Multiply(n,sig)
+        return sf.Clean(sig)
+    return sf_do(makeCodeInner)
+
+def generate():
+    def generateInner():
+        left=[]
+        right=[]
+        lvalue  = 4
+        rvalue  = 4
+        bvaluel = 4
+        bvaluer = 4
+        svaluel = 4
+        svaluer = 4
+        beat  = 128
+        pitch = 64
+        lat=0
+        rat=0
+        for r in range(0,15):
+            lvalue  = randWalk(lvalue)
+            rvalue  = randWalk(rvalue)
+            bvaluel = randWalk(bvaluel)
+            bvaluer = randWalk(bvaluer)
+            svaluel = randWalk(svaluel)
+            svaluer = randWalk(svaluer)
+        
+            lat+=svaluel*beat*64
+            rat+=svaluer*beat*64
+            
+            l=makeCode(bvaluel*beat,lvalue*pitch)
+            r=makeCode(bvaluer*beat,rvalue*pitch)
+            
+            vl=random.random()
+            vr=random.random()
+            
+            fl=sf.SineWave(sf.Length(+l),random.random()*5000.0)
+            fr=sf.SineWave(sf.Length(+r),random.random()*5000.0)
+            fl=sf.Cut(0,int(sf.Length(+l)),fl)
+            fr=sf.Cut(0,int(sf.Length(+r)),fr)
+            l=sf.Cut(0,int(sf.Length(+fl)),l)
+            r=sf.Cut(0,int(sf.Length(+fr)),r)
+            fl=sf.Cut(0,int(sf.Length(+l)),fl)
+            fr=sf.Cut(0,int(sf.Length(+r)),fr)
+            
+            print sf.Length(+l),sf.Length(+fl)
+            print sf.Length(+r),sf.Length(+fr)
+            q=sf.FrequencyModulate(+l,fl)
+            p=sf.FrequencyModulate(+r,fr)
+            q=sf.Raise(q,2)
+            p=sf.Raise(p,2)
+            q=sf.ButterworthHighPass(q,1024,2)
+            p=sf.ButterworthHighPass(p,1024,2)
+            q=sf.FixSize(q)
+            p=sf.FixSize(p)
+            q=sf.Pcnt15(q)
+            p=sf.Pcnt15(p)
+            
+            left.append([sf.NumericVolume(+l,vl),lat])
+            left.append([sf.NumericVolume(+r,vr),rat])
+            left.append([q,lat-random.random()*1024])
+        
+            right.append([sf.NumericVolume(r,vl),rat])
+            right.append([sf.NumericVolume(l,vr),lat])
+            right.append([p,rat-random.random()*1024])
+        left=sf.Clean(sf.Normalise(sf.MixAt(left)))
+        right=sf.Clean(sf.Normalise(sf.MixAt(right)))
+        return (left,right)
+    return sf_do(generateInner)
+
+print "Generating"
+left1,right1  = generate()
+left2,right2  = generate()
+
+print "Mixing"
+left  =sf.Mix(left1 ,left2 )
+right =sf.Mix(right1,right2)
+
+print "Convolving"
+def makeDiamond():
+    a=sf.SimpleShape((0,-60),(512,0),(8192,-20),(10240,-60))
+    b=sf.WhiteNoise(10240)
+    b=sf.Power(b,3)
+    b=sf.ButterworthLowPass(b,32,1)
+    return sf.FixSize(sf.Multiply(a,b))
+
+convollr=makeDiamond()
+convolrr=makeDiamond()
+
+convoll=sf.Mix(
+    sf.Pcnt75(+convollr),
+    sf.Pcnt25(+convolrr)
+)
+convolr=sf.Mix(
+    sf.Pcnt25( convollr),
+    sf.Pcnt75( convolrr)
+)
+    
+wleft =reverberate(+left, convoll)
+wright=reverberate(+right,convolr)
+
+print "Mixing"
+left=sf.Normalise(sf.MixAt(
+    (sf.Pcnt65(+wleft),0),
+    (sf.Pcnt25(left),512),
+    (sf.Pcnt10(+wright),530)
+))
+
+right=sf.Normalise(sf.MixAt(
+    (sf.Pcnt65(wright),0),
+    (sf.Pcnt25(right),512),
+    (sf.Pcnt25(wleft),490)
+))
+
+print "Writing"
+sf.WriteFile32((left,right),"temp/output.wav")

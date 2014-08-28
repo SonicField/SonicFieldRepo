@@ -1,0 +1,85 @@
+def reverbInner(signal,convol,grainLength):
+    def reverbInnerDo():
+        mag=sf.Magnitude(+signal)
+        if mag>0:
+            signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+            signal_=sf.FrequencyDomain(signal_)
+            signal_=sf.CrossMultiply(convol,signal_)
+            signal_=sf.TimeDomain(signal_)
+            newMag=sf.Magnitude(+signal_)
+            signal_=sf.NumericVolume(signal_,mag/newMag)        
+            # tail out clicks due to amplitude at end of signal 
+            return sf.Clean(signal_)
+        else:
+            -convol
+            return signal
+            
+    return sf_do(reverbInnerDo)
+
+def reverberate(signal,convol):
+    grainLength = sf.Length(+convol)
+    convol_=sf.FrequencyDomain(sf.Concatenate(convol,sf.Silence(grainLength)))
+    signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+    out=[]
+    for grain in sf.Granulate(signal_,grainLength):
+        (signal_i,at)=grain
+        signal_i=sf.Realise(signal_i)
+        out.append((reverbInner(signal_i,+convol_,grainLength),at))
+    -convol_
+    return sf.Clean(sf.Normalise(sf.MixAt(out)))
+
+def reverbStrInner(signal,grainLength):
+    def reverbInnerDo():
+        x=sf.Length(+signal)
+        convol=sf.WhiteNoise(x)
+        convol=sf.Multiply(sf.NumericVolume((0,0),(x*0.24,1),(x*0.75,1),(x,0)),convol)
+        convol=sf.FrequencyDomain(convol)
+        mag=sf.Magnitude(+signal)
+        if mag>0:
+            signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+            signal_=sf.FrequencyDomain(signal_)
+            signal_=sf.CrossMultiply(convol,signal_)
+            signal_=sf.TimeDomain(signal_)
+            newMag=sf.Magnitude(+signal_)
+            signal_=sf.NumericVolume(signal_,mag/newMag)        
+            # tail out clicks due to amplitude at end of signal 
+            return sf.Clean(signal_)
+        else:
+            -convol
+            return signal      
+    return sf_do(reverbInnerDo)
+    
+def stretch(signal,amount,sampleSize):
+    grainLength = sampleSize*amount*2
+    signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+    out=[]
+    for grain in sf.Granulate(signal_,sampleSize):
+        (signal_i,at)=grain
+        signal_i=sf.Realise(signal_i)
+        out.append((reverbStrInner(+signal_i,grainLength),at*amount))
+    return sf.Clean(sf.Normalise(sf.MixAt(out)))
+    
+    
+(left,right)=sf.ReadFile("temp/input.wav")
+left =sf.Cut(0,12000,left)
+right=sf.Cut(0,12000,right)
+left,right=(stretch(left,4,250),stretch(right,4,250))
+sf.WriteFile32((+left,+right),"temp/stretch.wav")
+print "Stretched"
+
+(convoll,convolr)=sf.ReadFile("temp/spring.wav")
+
+wleft =reverberate(+left,convoll)
+wright=reverberate(+right,convolr)
+
+left=sf.Normalise(sf.MixAt(
+    (sf.Pcnt30(wleft),0),
+    (sf.Pcnt70(left),00)
+))
+
+right=sf.Normalise(sf.MixAt(
+    (sf.Pcnt30(wright),0),
+    (sf.Pcnt70(right),0)
+))
+
+sf.WriteFile32((left,right),"temp/output.wav")
