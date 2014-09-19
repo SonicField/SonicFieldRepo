@@ -150,11 +150,12 @@ public class SFAmpAlgorithms
         int len = in.getLength();
         SFSignal out = SFData.build(len);
         int start = 0;
-        int end = 0;
+        int end = 1;
         boolean ab = true;
         for (;;)
         {
-            start = end;
+            // Must use -1 or get an extra zero at the cross over
+            start = end - 1;
             int sign = getSign(in.getSample(end));
             double sum = 0;
             while (end < len && getSign(in.getSample(end)) == sign)

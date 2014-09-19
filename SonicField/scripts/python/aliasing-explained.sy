@@ -1,0 +1,98 @@
+def restricted(points,volume):
+    p=[]
+    for pp in points :
+        p.append(pp)
+    def inner():
+        return sf.Realise(sf.NumericVolume(sf.RestrictedSlide(p),volume))
+    return sf_do(inner)
+
+def direct(points,volume):
+    p=[]
+    for pp in points :
+        p.append(pp)
+    def inner():
+        return sf.Realise(sf.NumericVolume(sf.Slide(p),volume))
+    return sf_do(inner)
+
+def createSawTooth(points,generator):
+                
+    signals=[]
+    v=1
+    opoints=points
+    it=1.0
+    print "Generating"
+    for x in range(1,625):
+        signals.append(generator(points,1.0/it))
+        tP=[]
+        minz=99999999
+        for p,op in zip(points,opoints):
+            z=p[1]+op[1]
+            tP.append([p[0],z])
+            if z<minz:
+                minz=z
+        # if the lowest point is below nyquist
+        # give up generating
+        if minz>20000:
+            break
+        points=tP
+        it+=1
+    print "Mixing"    
+    sig=sf.Mix(signals)
+    print "Scaling"
+    sig=sf.FixSize(sig)
+    return sig
+    
+test1=[[0,32],[5000,3000],[10000,10000],[15000,440]]
+#sig1=createSawTooth(test1,restricted)
+#sig2=createSawTooth(test1,direct)
+sig3=sf.FixSize(sf.MakeSawTooth(sf.Slide(test1)))
+
+print "Writing"
+#sf.WriteFile32((+sig1,sig1),"temp/test1.wav")
+#sf.WriteFile32((+sig2,sig2),"temp/test2.wav")
+sf.WriteFile32((+sig3,sig3),"temp/test3.wav")
+
+test1=[[0,440*3],[10000,440*3]]
+sig=createSawTooth(test1,restricted)
+env=sf.NumericShape((0,0),(128,1),(512,0.25),(10000,0))
+sig=sf.Multiply(sig,env)
+sf.WriteFile32((+sig,+sig),"temp/test4.wav")
+mod=sf.SineWave(10000,2)
+sig2=sf.FrequencyModulate(+sig,sf.Pcnt1(mod))
+mod=sf.SineWave(10000,2.1)
+sig3=sf.FrequencyModulate(+sig,sf.Pcnt1(mod))
+mod=sf.SineWave(10000,1.9)
+sig4=sf.FrequencyModulate(+sig,sf.Pcnt1(mod))
+sig=sf.Mix(sig,sf.Pcnt15(sig2),sf.Pcnt15(sig3),sf.Pcnt15(sig4))
+sig=sf.Saturate(sf.NumericVolume(sig,2))
+sig=sf.Power(sig,1.2)
+sig=sf.FixSize(sig)
+sf.WriteFile32((+sig,sig),"temp/test5.wav")
+
+
+
+sig=createSawTooth(test1,restricted)
+sig=sf.BesselLowPass(sig,15000,4)
+env=sf.NumericShape((0,0),(128,1),(512,0.25),(10000,0))
+sig=sf.Multiply(sig,env)
+sf.WriteFile32((+sig,+sig),"temp/test4.wav")
+mod=sf.SineWave(10000,2)
+sig2=sf.FrequencyModulate(+sig,sf.Pcnt1(mod))
+mod=sf.SineWave(10000,2.1)
+sig3=sf.FrequencyModulate(+sig,sf.Pcnt1(mod))
+mod=sf.SineWave(10000,1.9)
+sig4=sf.FrequencyModulate(+sig,sf.Pcnt1(mod))
+sig2=sf.Clean(sig2)
+sig3=sf.Clean(sig3)
+sig4=sf.Clean(sig4)
+sig=sf.Mix(sig,sf.Pcnt15(sig2),sf.Pcnt15(sig3),sf.Pcnt15(sig4))
+sig=sf.Clean(sig)
+sig=sf.Saturate(sf.NumericVolume(sig,2))
+sig=sf.Clean(sig)
+sig=sf.Power(sig,1.2)
+sig=sf.Clean(sig)
+sig=sf.FixSize(sig)
+sf.WriteFile32((+sig,+sig),"temp/test6.wav")
+sig=sf.Clean(sig)
+sig=sf.FixSize(sig)
+sf.WriteFile32((+sig,sig),"temp/test7.wav")

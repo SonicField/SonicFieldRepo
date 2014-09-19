@@ -1,0 +1,103 @@
+import random
+import math
+    
+def granularReverb(signal,ratio,delay,density,length=50,stretch=1,vol=1):
+    print "Granular reverb: ratio:",ratio," delay:",delay," density",density," length:",length," stretch:",stretch," volume:",vol
+    def granularReverbInner():
+        out=[]
+        for grain in sf.Granulate(signal,length,10):
+            (signal_i,at)=grain
+            signal_i=sf.Realise(signal_i)
+            signal_i=sf.DirectRelength(signal_i,ratio-0.01+(0.02*random.random()))
+            for x in range(0,density):
+                out.append(
+                    (
+                        +signal_i,
+                        int((at + (random.random()+random.random())*delay)*stretch)
+                    )
+                )
+            -signal_i
+      
+        out=sf.Collapse(out)
+        out=sf.Realise(sf.MixAt(out))
+        out=sf.Realise(sf.NumericVolume(out,vol))
+        out=sf.Clean(out)
+        return out
+    return sf_do(granularReverbInner)
+
+def reverbInner(signal,convol,grainLength):
+    def reverbInnerDo():
+        mag=sf.Magnitude(+signal)
+        if mag>0:
+            signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+            signal_=sf.FrequencyDomain(signal_)
+            signal_=sf.CrossMultiply(convol,signal_)
+            signal_=sf.TimeDomain(signal_)
+            newMag=sf.Magnitude(+signal_)
+            signal_=sf.NumericVolume(signal_,mag/newMag)        
+            # tail out clicks due to amplitude at end of signal 
+            return sf.Realise(signal_)
+        else:
+            -convol
+            return signal
+            
+    return sf_do(reverbInnerDo)
+
+def reverberate(signal,convol):
+    grainLength = sf.Length(+convol)
+    convol_=sf.FrequencyDomain(sf.Concatenate(convol,sf.Silence(grainLength)))
+    signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+    out=[]
+    for grain in sf.Granulate(signal_,grainLength):
+        (signal_i,at)=grain
+        out.append((reverbInner(signal_i,+convol_,grainLength),at))
+    -convol_
+    return sf.Normalise(sf.Clean(sf.MixAt(out)))
+
+def doNormal(sig):
+    def doNormalInner():
+        return sf.Normalise(sig)
+    return sf_do(doNormalInner)
+
+def stretch(sig,echo):
+    print "Stretch outer"
+    def stretchInner():
+        print "Stretch inner"
+        a=granularReverb(+sig,1    ,echo,   8, 512,10,1.0)
+        b=granularReverb(+sig,1    ,echo,   8, 512,10,1.0)
+        c=granularReverb(+sig,0.25 ,echo,   4, 256,10,1.0)
+        d=granularReverb(+sig,2    ,echo*2,16,1024,10,1.0)
+        e=granularReverb( sig,0.125,echo,   4, 256,10,1.0)
+        
+        a=sf.ButterworthBandPass(a,512,4096,3)
+        b=sf.ButterworthLowPass ( b, 999,3)
+        c=sf.ButterworthLowPass ( c, 400,4)
+        d=sf.ButterworthHighPass( d,2048,4)
+        e=sf.ButterworthLowPass ( e, 256,4)
+        return sf.Clean(sf.Mix(
+            sf.Pcnt25(a),
+            sf.Pcnt25(b),
+            sf.Pcnt75(c),
+            sf.Pcnt50(d),
+            sf.Pcnt50(e)
+        ))
+    return sf_do(stretchInner)
+
+(left,right)=sf.ReadFile("temp/input.wav")
+
+#left =sf.Cut(0,10000,left)
+#right=sf.Cut(0,10000,right)
+ 
+left  = stretch(left,1024)
+right = stretch(right,1024)    
+
+right = doNormal(right)
+left  = doNormal(left) 
+
+sf.WriteFile32((+left,+right),"temp/ambient-stretch-dry.wav")
+convoll,convolr=sf.ReadFile("temp/revb.wav")
+
+wleft =reverberate(left,convoll)
+wright=reverberate(right,convolr)
+
+sf.WriteFile32((wleft,wright),"temp/ambient-stretch-wet.wav")

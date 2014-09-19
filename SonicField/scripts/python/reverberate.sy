@@ -1,47 +1,100 @@
+sf.SetSampleRate(64000)
+
 def reverbInner(signal,convol,grainLength):
-    def reverbInnerDo():
-        mag=sf.Magnitude(+signal)
-        if mag>0:
-            signal_=sf.Concatenate(signal,sf.Silence(grainLength))
-            signal_=sf.FrequencyDomain(signal_)
-            signal_=sf.CrossMultiply(convol,signal_)
-            signal_=sf.TimeDomain(signal_)
-            newMag=sf.Magnitude(+signal_)
-            signal_=sf.NumericVolume(signal_,mag/newMag)        
-            # tail out clicks due to amplitude at end of signal 
-            return signal_
-        else:
-            -convol
-            return signal
+    mag=sf.Magnitude(+signal)
+    if mag>0:
+        signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+        signal_=sf.FrequencyDomain(signal_)
+        signal_=sf.CrossMultiply(convol,signal_)
+        signal_=sf.TimeDomain(signal_)
+        newMag=sf.Magnitude(+signal_)
+        signal_=sf.NumericVolume(signal_,mag/newMag)        
+        # tail out clicks due to amplitude at end of signal 
+        return signal_
+    else:
+        -convol
+        return signal
             
-    return sf_do(reverbInnerDo)
-
 def reverberate(signal,convol):
-    grainLength = sf.Length(+convol)
-    convol_=sf.FrequencyDomain(sf.Concatenate(convol,sf.Silence(grainLength)))
-    signal_=sf.Concatenate(signal,sf.Silence(grainLength))
-    out=[]
-    for grain in sf.Granulate(signal_,grainLength):
-        (signal_i,at)=grain
-        out.append((reverbInner(signal_i,+convol_,grainLength),at))
-    -convol_
-    return sf.Clean(sf.Normalise(sf.MixAt(out)))
+    def revi():
+        grainLength = sf.Length(+convol)
+        convol_=sf.FrequencyDomain(sf.Concatenate(convol,sf.Silence(grainLength)))
+        signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+        out=[]
+        for grain in sf.Granulate(signal_,grainLength):
+            (signal_i,at)=grain
+            out.append((reverbInner(signal_i,+convol_,grainLength),at))
+        -convol_
+        return sf.Clean(sf.Normalise(sf.MixAt(out)))
+    return sf_do(revi)
 
+(left,right)=sf.ReadFile("temp/dry.wav")
+
+#left =sf.Cut(0,60000,left )
+#right=sf.Cut(0,60000,right)
+left =sf.Multiply(sf.NumericShape((0,0),(64,1),(sf.Length(+left ),1)),left )
+right=sf.Multiply(sf.NumericShape((0,0),(64,1),(sf.Length(+right),1)),right)
+left =sf.Concatenate(sf.Silence(1024),left)
+right=sf.Concatenate(sf.Silence(1024),right)
+
+#Mono To Stereo
+"""
+l1 = sf.Realise(sf.Mix(+left,+right))
+r1 = sf.Realise(sf.Mix( left, right))
+left =l1
+right=r1
+(convoll,convolr)=sf.ReadFile("temp/revb.wav")
+wleft =reverberate(left,convoll)
+wright=reverberate(right,convolr)
+"""
+
+def excite(sig_,mix,power):
+    def exciteInner():
+        sig=sig_
+        m=sf.Magnitude(+sig)
+        sigh=sf.BesselHighPass(+sig,500,2)
+        mh=sf.Magnitude(+sigh)
+        sigh=sf.Power(sigh,power)
+        sigh=sf.BesselHighPass(sigh,1000,2)
+        nh=sf.Magnitude(+sigh)
+        sigh=sf.NumericVolume(sigh,mh/nh)
+        sig=sf.Mix(sf.NumericVolume(sigh,mix),sf.NumericVolume(sig,1.0-mix))
+        n=sf.Magnitude(+sig)
+        return sf.Realise(sf.NumericVolume(sig,m/n))
+    return sf_do(exciteInner)
     
+(convoll,convolr)=sf.ReadFile("temp/revl.wav")
+(convorl,convorr)=sf.ReadFile("temp/revr.wav")
+
+convoll=excite(convoll,0.75,2.0)
+convolr=excite(convolr,0.75,2.0)
+convorl=excite(convorl,0.75,2.0)
+convorr=excite(convorr,0.75,2.0)
+
+ll  = reverberate(+left ,convoll)
+lr  = reverberate(+left ,convolr)
+rl  = reverberate(+right,convorl)
+rr  = reverberate(+right,convorr)
+wleft =sf.FixSize(sf.Mix(ll,rl))
+wright=sf.FixSize(sf.Mix(rr,lr))
+
+wright = excite(wright,0.15,1.11)
+wleft  = excite(wleft ,0.15,1.11)
+right  = excite(right,0.15,1.05)
+left   = excite(left ,0.15,1.05)
+
+sf.WriteFile32((sf.FixSize(+wleft),sf.FixSize(+wright)),"temp/wet.wav")
+
+wleft =sf.FixSize(sf.Mix(sf.Pcnt15(left),sf.Pcnt85(wleft)))
+wright =sf.FixSize(sf.Mix(sf.Pcnt15(right),sf.Pcnt85(wright)))
+
+sf.WriteFile32((wleft,wright),"temp/mix.wav")
+
+"""
+# Unmixed
 (left,right)=sf.ReadFile("temp/input.wav")
 (convoll,convolr)=sf.ReadFile("temp/revb.wav")
-
-wleft =reverberate(+left,convoll)
-wright=reverberate(+right,convolr)
-
-left=sf.Normalise(sf.MixAt(
-    (sf.Pcnt30(wleft),0),
-    (sf.Pcnt70(left),00)
-))
-
-right=sf.Normalise(sf.MixAt(
-    (sf.Pcnt30(wright),0),
-    (sf.Pcnt70(right),0)
-))
-
-sf.WriteFile32((left,right),"temp/output.wav")
+wleft =reverberate(left,convoll)
+wright=reverberate(right,convolr)
+sf.WriteFile32((sf.FixSize(wleft),sf.FixSize(wright)),"temp/wet.wav")
+"""

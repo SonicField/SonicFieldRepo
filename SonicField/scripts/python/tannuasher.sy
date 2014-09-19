@@ -1,0 +1,272 @@
+import math
+import random
+
+violinIRs = sf.ViolinBodyIRs(())
+violaIRs  = sf.ViolaBodyIRs(())
+celloIRs  = sf.CelloBodyIRs(())
+bassIRs   = sf.BassBodyIRs(())
+
+def my_do(what):
+    return what()
+
+def granularReverb(signal,ratio,delay,density,length=50,stretch=1,vol=1):
+    def granularReverbInner():
+        out=[]
+        for grain in sf.Granulate(signal,length,10):
+            (signal_i,at)=grain
+            signal_i=sf.Realise(signal_i)
+            signal_i=sf.DirectRelength(signal_i,ratio-0.005+(0.01*random.random()))
+            #signal_i=sf.DirectRelength(signal_i,ratio)
+            for x in range(0,density):
+                out.append(
+                    (
+                        +signal_i,
+                        int((at + (random.random()+random.random())*delay)*stretch)
+                    )
+                )
+            -signal_i
+      
+        out=sf.Collapse(out)
+        out=sf.Realise(sf.MixAt(out))
+        out=sf.Clean(sf.NumericVolume(out,vol))
+        return out
+    return my_do(granularReverbInner)
+
+def reverbInner(signal,convol,grainLength):
+    def reverbInnerDo():
+        mag=sf.Magnitude(+signal)
+        if mag>0:
+            signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+            signal_=sf.FrequencyDomain(signal_)
+            signal_=sf.CrossMultiply(convol,signal_)
+            signal_=sf.TimeDomain(signal_)
+            newMag=sf.Magnitude(+signal_)
+            signal_=sf.NumericVolume(signal_,mag/newMag)        
+            # tail out clicks due to amplitude at end of signal 
+            return signal_
+        else:
+            -convol
+            -signal
+            return sf.Silence(0)
+            
+    return my_do(reverbInnerDo)
+
+def reverberate(signal,convol):
+    grainLength = sf.Length(+convol)
+    convol_=sf.FrequencyDomain(sf.Concatenate(convol,sf.Silence(grainLength)))
+    signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+    out=[]
+    for grain in sf.Granulate(signal_,grainLength):
+        (signal_i,at)=grain
+        inp=reverbInner(signal_i,+convol_,grainLength)
+        if sf.Length(+inp)>0:
+            out.append((inp,at))
+        else:
+            print "Skipping"
+            -inp
+    -convol_
+    return sf.Clean(sf.Normalise(sf.MixAt(out)))
+
+def makeHarm(length,freq,vol):
+
+    def makeHarmInner():
+        return sf.Realise(sf.NumericVolume(sf.PhasedSineWave(length,freq+random.random()*freq/1000.0,random.random()),vol))
+    return my_do(makeHarmInner)
+    
+
+def vocalRaw(length,freq):
+    harms=[]
+    ofreq=freq
+    multi=1.0
+    count=1
+    while freq < 20000:
+        freq=ofreq*multi
+        v=1.0/multi
+        if count%2==0:
+            v*=0.75
+        harms.append(makeHarm(length,freq,v))
+        multi+=1.0
+        count+=1
+    sig=sf.Mix(harms)
+    move=sf.NumericShape(
+        (0,0.995+random.random()*0.01),
+        (sf.Length(+sig),0.995+random.random()*0.01)
+    )
+    sig=sf.Resample(move,sig)
+    if freq<440:
+        sig=sf.Mix(
+            sf.Pcnt80(granularReverb(+sig,1.000,128, 64,128,2,1)),
+            sf.Pcnt15(sf.ButterworthHighPass(granularReverb(+sig,4.000,64,128,128,2,1),freq*2,2)),
+            sf.Pcnt5( sf.ButterworthLowPass (granularReverb( sig,0.250,64, 16,256,4,1),freq  ,2)),
+        )
+    else:
+        sig=sf.Mix(
+            sf.Pcnt80(granularReverb(+sig,1.000,128, 64,128,2,1)),
+            sf.Pcnt15(sf.ButterworthHighPass(granularReverb(+sig,4.000,64,128,128,2,1),freq*2,2))
+        )
+    
+    return sf.FixSize(sf.Realise(sig))  
+
+def vocalRaw(length,freq):
+    sig=sf.Power(sf.MakeSquare(sf.SineWave(length,freq)),2.0)
+    move=sf.NumericShape(
+        (0,0.995+random.random()*0.01),
+        (sf.Length(+sig),0.995+random.random()*0.01)
+    )
+    return sf.Resample(move,sig)
+
+def sing(pitch,lengthIn,beat,v,vl,vr):
+    def singInner():
+        length=lengthIn
+        tp=0
+        doVib=0
+        if length<250*beat:
+            length=250*beat
+        if length<500*beat:
+            length*=3
+            doVib=1
+            tp=1
+        elif length<800*beat:
+            doVib=2
+            if pitch<220:
+                length*=3
+            elif pitch<440:
+                length*=2.0
+            length*=2
+            tp=2
+        else:
+            doVib=2
+            length*=1.5
+            tp=3
+            
+        sig=[]
+        for x in range(1,5):
+            sig.append(vocalRaw(length,pitch))
+        sig=sf.Realise(sf.Mix(sig))
+
+        sig = sf.FixSize(sig)
+        length=sf.Length(+sig)
+        
+        print "Type: ",tp
+        if tp==1:
+            env=sf.NumericShape((0,0),(32,0.5),(64,0.75),(128,1),(length*0.5,0.75),(length,0))
+        elif tp==2:
+            env=sf.NumericShape((0,0),(128,0.5),(256,1),(512,0.75),(length,0))
+        else:
+            env=sf.NumericShape((0,0),(128,0.25),(512,1),(length/2,0.5),(length,0))
+
+        sig=sf.Multiply(sig,+env)
+        sig=sf.Normalise(sig)
+        
+        if doVib>0:
+            if doVib==1:
+                q   = (0.9+random.random()*0.2)/2.0
+                x   = 0.002
+                m   = 0.4
+            else:
+                q   = 0.9+random.random()*0.2
+                x   = 0.005
+                m   = 0.2
+            trem=sf.SineWave(length,q)
+            trem=sf.Multiply(sf.NumericShape((0,0),(length,m)),trem)
+            trem=sf.DirectMix(1,trem)
+            sig=sf.Multiply(trem,sig)
+            vibr=sf.SineWave(length,q)
+            vibr=sf.Multiply(sf.NumericShape((0,0),(length/3.0,0),(length/2.0,x*0.5),(length,x)),vibr)
+            sig=sf.FrequencyModulate(sig,vibr)  
+
+        mod=sf.NumericShape((0,0.995),(length,1.005))
+        mod=sf.Mix(mod,sf.NumericVolume(env,0.01))
+        sig=sf.FrequencyModulate(sig,mod)  
+        sig=sf.FixSize(sig)
+
+            
+        if pitch<220:
+            sig=sf.BesselLowPass(sig,pitch*10.0,2)
+        elif pitch<440:
+            sig=sf.BesselLowPass(sig,pitch*7.5, 1)
+        else:
+            sig=sf.BesselLowPass(sig,pitch*5.0, 1)
+          
+        sigs=[]
+        bodies=[]
+        if(pitch<110):
+            bodies=bassIRs
+        elif(pitch<330):
+            bodies=celloIRs
+        elif(pitch<660):
+            bodies=celloIRs
+        else:
+            bodies=violinIRs
+        
+        for body in bodies:
+            sigs.append(reverberate(+sig,+body))  
+        sigs.append(sig)
+        note=sf.Realise(sf.Normalise(sf.Mix(sigs)))
+        note=sf.NumericVolume(note,v)
+        notel=sf.Swap(sf.NumericVolume(+note,vl))
+        noter=sf.Swap(sf.NumericVolume( note,vr))
+        return (notel,noter)
+    return sf_do(singInner)
+
+midi=sf.ReadMidiFile("temp/tfdm.mid")
+midi=midi[1]
+count       =     0.0
+notesStart  =     0.0
+notesEnd    =    20.0
+beat        =     4.0
+base        =     8.1757989156
+
+def my_so(what):
+    return what()
+
+notes=[]
+for tickOn,tickOff,note,key,velocity in midi:
+    if count>notesEnd:
+        break
+    at=tickOn*beat
+    if count<notesStart:
+        count+=1
+        continue
+    length=(tickOff-tickOn)*beat
+    if key==0:
+        pitch=base
+    else:
+        key=float(key)
+        pitch= (sf.Semitone(0)**key) * base
+    velocity=velocity/100
+    length*=1.5
+    v=velocity
+    lr=random.random()*0.5+0.25
+    rl=1.0-lr
+    print "C",count,"P",pitch,"@",at,"L",length,"V",velocity
+    note = sing(pitch, length,beat,v,lr,rl)
+    dl=30*rl
+    dr=38*lr
+    notes.append((note,at+dl,at+dr))
+    count+=1
+
+notesl=[]
+notesr=[]
+count=0
+for note in notes:
+    nlr,atl,atr=note
+    print "Done: ",count
+    notel,noter=nlr
+    notesl.append([notel,atl])
+    notesr.append([noter,atr])
+    count+=1
+
+def mix(notes):
+    def mixInner():
+        return sf.Realise(sf.Normalise(sf.Clean(sf.MixAt(notes))))
+    return my_do(mixInner)
+
+my_do=sf_do
+
+left =sf.Trim(mix(notesl))
+right=sf.Trim(mix(notesr))
+sf.WriteFile32((left,right),"temp/sines.wav")
+
+
+

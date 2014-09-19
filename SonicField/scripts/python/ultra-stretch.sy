@@ -173,7 +173,7 @@ def granularCompress(signal,length,amount):
             
             signal_i=sf.NumericVolume(signal_i,diff)
             out.append((signal_i,at))
-        return sf.Swap(sf.MixAt(out))
+        return sf.Realise(sf.MixAt(out))
     return sf_do(granularReverbInner)
  
 def granularMultiBandCompress(signal,amount):

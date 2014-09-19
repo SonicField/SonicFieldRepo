@@ -1,0 +1,122 @@
+import math
+import random
+sf.SetSampleRate(60000)
+
+def clean(sig):
+    return sf.ButterworthLowPass(sig,15000,6)
+
+def granularReverb(signal,ratio,delay,density,length=50,stretch=1,vol=1):
+    def granularReverbInner():
+        out=[]
+        for grain in sf.Granulate(signal,length,10):
+            (signal_i,at)=grain
+            signal_i=sf.Realise(signal_i)
+            #signal_i=sf.DirectRelength(signal_i,ratio-0.005+(0.01*random.random()))
+            signal_i=sf.DirectRelength(signal_i,ratio)
+            for x in range(0,density):
+                out.append(
+                    (
+                        +signal_i,
+                        int((at + (random.random()+random.random())*delay)*stretch)
+                    )
+                )
+            -signal_i
+      
+        out=sf.Collapse(out)
+        out=sf.Realise(sf.MixAt(out))
+        out=clean(sf.NumericVolume(out,vol))
+        return out
+    return sf_do(granularReverbInner)
+
+def reverbInner(signal,convol,grainLength):
+    mag=sf.Magnitude(+signal)
+    if mag>0:
+        signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+        signal_=sf.FrequencyDomain(signal_)
+        signal_=sf.CrossMultiply(convol,signal_)
+        signal_=sf.TimeDomain(signal_)
+        newMag=sf.Magnitude(+signal_)
+        signal_=sf.NumericVolume(signal_,mag/newMag)        
+        return signal_
+    else:
+        -convol
+        -signal
+        return sf.Silence(0)        
+
+def reverberate(signal,convol):
+    def reverberateInner():
+        grainLength = sf.Length(+convol)
+        convol_=sf.FrequencyDomain(sf.Concatenate(convol,sf.Silence(grainLength)))
+        signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+        out=[]
+        for grain in sf.Granulate(signal_,grainLength):
+            (signal_i,at)=grain
+            inp=reverbInner(sf.Realise(signal_i),+convol_,grainLength)
+            if sf.Length(+inp)>0:
+                out.append((inp,at))
+            else:
+                -inp
+        -convol_
+        return clean(sf.Normalise(sf.MixAt(out)))
+    return sf_do(reverberateInner)
+    
+(convoll,convolr)=sf.ReadFile("temp/revl.wav")
+(convorl,convorr)=sf.ReadFile("temp/revr.wav")
+
+convoll=sf.Trim(convoll)
+convolr=sf.Trim(convolr)
+convorl=sf.Trim(convorl)
+convorr=sf.Trim(convorr)
+
+#burst=sf.NumericShape((0,0),(0.1,1),(0.2,-1),(0.3,0))
+
+burstl=sf.SineWave(2000,440)
+burstr=sf.SineWave(2000,440*6.0/5.0)
+left =+burstl
+right=+burstr
+
+for loop in range(25):
+    print "R1"
+    ll  = reverberate(+left ,+convoll)
+    print "R2"
+    lr  = reverberate( left ,+convolr)
+    print "R3"
+    rl  = reverberate(+right,+convorl)
+    print "R4"
+    rr  = reverberate( right,+convorr)
+    left =sf.FixSize(sf.Mix(ll,rl))
+    right=sf.FixSize(sf.Mix(rr,lr))
+    ofn="temp/output" + str(loop) + ".wav"
+    print ofn
+    sf.WriteFile32((+left,+right),ofn)
+    print "Before: ",sf.Length(+left)
+    left=sf.Trim(left)
+    right=sf.Trim(right)
+    #left =sf.Realise(sf.WaveShaper(-0.03,0.2,0,-1,0.2,2,left ))
+    #right=sf.Realise(sf.WaveShaper(-0.03,0.2,0,-1,0.2,2,right))
+    a=granularReverb(+left, ratio=2.0, delay=256,density=32,length=128,stretch=1.0,vol=0.50)
+    b=granularReverb(+left, ratio=0.75,delay=64 ,density=16,length=128,stretch=1.0,vol=0.50)
+    c=granularReverb(  left,ratio=0.5, delay=128,density=16,length=256,stretch=1.0,vol=0.25)
+    d=granularReverb(+right,ratio=2.0, delay=256,density=32,length=128,stretch=1.0,vol=0.50)
+    e=granularReverb(+right,ratio=.75, delay=64 ,density=16,length=128,stretch=1.0,vol=0.50)
+    f=granularReverb( right,ratio=0.5 ,delay=128,density=16,length=256,stretch=1.0,vol=0.25)
+    left =sf.Mix(a,b,c)
+    right=sf.Mix(d,e,f)
+    left=sf.FixSize(clean(left))
+    right=sf.FixSize(clean(right))
+    left=sf.ButterworthHighPass(left ,16,2)
+    right=sf.ButterworthHighPass(right,16,2)
+    left =sf.Concatenate(sf.Pcnt25(+burstl),left)
+    right=sf.Concatenate(sf.Pcnt25(+burstl),right)
+    left =sf.Mix(+left,sf.BesselLowPass(left ,128,1))
+    right=sf.Mix(+right,sf.BesselLowPass(right,128,1))
+    left=sf.FixSize(left)
+    right=sf.FixSize(right)
+    print "After: " , sf.Length(+left)
+
+-convoll
+-convolr
+-convorl
+-convorr
+
+sf.WriteFile32((left,right),"temp/output.wav")

@@ -1,0 +1,54 @@
+def granularCompress(signal,length,amount,peek):
+
+    def granularCompressInner():
+        out=[]
+        print "GR Inner"
+        grains=sf.Granulate(signal,length,length/4)
+        maxMag=0
+        mags=[]
+        for grain in grains:
+            (signal_i,at)=grain
+            mag=sf.Magnitude(+signal_i)
+            mags.append(mag)
+            if mag>maxMag:
+                maxMag=mag
+                
+        for grain,mag in zip(grains,mags):
+            signal_i,at=grain
+            diff=mag/maxMag
+            diff=1.0-(amount*(1.0-diff))
+            diff=1.0/diff
+            if diff>peek:
+                diff=peek
+            #print diff
+            signal_i=sf.NumericVolume(signal_i,diff)
+            out.append((signal_i,at))
+        return sf.Realise(sf.MixAt(out))
+    return sf_do(granularCompressInner)
+ 
+def granularMultiBandCompress(signal,amount,peak):
+    signal=sf.ButterworthHighPass(sf.Normalise(signal),8,2)
+    low =sf.BesselLowPass(+signal ,128,6)
+    med =sf.BesselLowPass(+signal ,800,6)
+    med =sf.BesselHighPass(med    ,128,4)
+    high=sf.BesselHighPass(+signal,800,6)
+    high=sf.BesselLowPass(high    ,2000,6)
+    vigh=sf.BesselHighPass(signal ,2000,6)
+    vigh=granularCompress(vigh,  5,amount,peak/4.0)
+    high=granularCompress(high, 10,amount,peak/2.0)
+    med =granularCompress( med, 25,amount,peak*0.75)
+    low =granularCompress( low, 50,amount,peak)
+    vigh=sf.BesselHighPass(vigh,1000,1)
+    high=sf.BesselHighPass(high,400, 1)
+    high=sf.BesselLowPass(high, 4000,1)
+    med =sf.BesselHighPass(med ,64,  1)
+    med =sf.BesselLowPass( med ,1600,1)
+    low =sf.BesselHighPass(low ,16,  1)
+    low =sf.BesselLowPass( low ,256, 1)
+    return sf.Normalise(sf.Mix(vigh,high,med,low))
+
+(left,right)=sf.ReadFile("temp/x.wav")
+
+left =sf.Normalise(granularMultiBandCompress(left ,1.0,20))
+right=sf.Normalise(granularMultiBandCompress(right,1.0,20))
+sf.WriteFile32((sf.FixSize(left),sf.FixSize(right)),"temp/y.wav")
