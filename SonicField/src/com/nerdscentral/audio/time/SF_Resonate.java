@@ -92,7 +92,6 @@ public class SF_Resonate implements SFPL_Operator
             }
             for (ResonantDescriptor descriptor : descriptors)
             {
-                @SuppressWarnings("resource")
                 SFSignal shape = descriptor.getShape();
                 shape.close();
             }

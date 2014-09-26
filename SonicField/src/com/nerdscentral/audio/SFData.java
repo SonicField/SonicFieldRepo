@@ -143,18 +143,6 @@ public class SFData extends SFSignal implements Serializable
         resourceTracker.remove(this);
     }
 
-    private SFData(double[] dataIn)
-    {
-
-        this.length = dataIn.length;
-        data = dataIn;
-        NotCollectedException nc = new NotCollectedException();
-        nc.fillInStackTrace();
-        pythonCreated = getPythonStack();
-        resourceTracker.put(this, new ResTracker(nc, pythonCreated));
-        javaCreated = nc;
-    }
-
     private SFData(int lengthIn, boolean forceSwap)
     {
         if (!forceSwap && lengthIn <= swapLimit)

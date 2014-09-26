@@ -63,8 +63,8 @@ def excite(sig_,mix,power):
         return sf.Realise(sf.NumericVolume(sig,m/n))
     return sf_do(exciteInner)
     
-(convoll,convolr)=sf.ReadFile("temp/revl.wav")
-(convorl,convorr)=sf.ReadFile("temp/revr.wav")
+(convoll,convolr)=sf.ReadFile("temp/bh-l.wav")
+(convorl,convorr)=sf.ReadFile("temp/bh-r.wav")
 
 convoll=excite(convoll,0.75,2.0)
 convolr=excite(convolr,0.75,2.0)
@@ -80,15 +80,29 @@ wright=sf.FixSize(sf.Mix(rr,lr))
 
 wright = excite(wright,0.15,1.11)
 wleft  = excite(wleft ,0.15,1.11)
-right  = excite(right,0.15,1.05)
-left   = excite(left ,0.15,1.05)
+#right  = excite(right,0.15,1.05)
+#left   = excite(left ,0.15,1.05)
 
 sf.WriteFile32((sf.FixSize(+wleft),sf.FixSize(+wright)),"temp/wet.wav")
 
-wleft =sf.FixSize(sf.Mix(sf.Pcnt15(left),sf.Pcnt85(wleft)))
-wright =sf.FixSize(sf.Mix(sf.Pcnt15(right),sf.Pcnt85(wright)))
+wleft =sf.FixSize(sf.Mix(sf.Pcnt15(+left),sf.Pcnt85(wleft)))
+wright =sf.FixSize(sf.Mix(sf.Pcnt15(+right),sf.Pcnt85(wright)))
 
-sf.WriteFile32((wleft,wright),"temp/mix.wav")
+sf.WriteFile32((+wleft,+wright),"temp/mix.wav")
+
+(convoll,convolr)=sf.ReadFile("temp/v-grand-l.wav")
+(convorl,convorr)=sf.ReadFile("temp/v-grand-r.wav")
+left  = sf.BesselLowPass(left  ,392,1)
+right = sf.BesselLowPass(right,392,1)
+ll  = reverberate(+left ,convoll)
+lr  = reverberate( left ,convolr)
+rl  = reverberate(+right,convorl)
+rr  = reverberate( right,convorr)
+vwleft =sf.FixSize(sf.Mix(ll,rl))
+vwright=sf.FixSize(sf.Mix(rr,lr))
+wleft =sf.FixSize(sf.Mix(wleft ,sf.Pcnt20(vwleft )))
+wright=sf.FixSize(sf.Mix(wright,sf.Pcnt20(vwright)))
+sf.WriteFile32((wleft,wright),"temp/grand.wav")
 
 """
 # Unmixed

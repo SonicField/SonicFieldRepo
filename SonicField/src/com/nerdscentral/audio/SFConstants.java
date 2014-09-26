@@ -116,6 +116,26 @@ public class SFConstants
         return Caster.makeDouble(ret);
     }
 
+    /**
+     * @param to
+     */
+    public static final double closesJustNote(double to)
+    {
+        double q = 0;
+        double d = Double.MAX_VALUE;
+        for (Double v : equalNotes.values())
+        {
+
+            double m = SFMaths.abs(v - q);
+            if (m < d)
+            {
+                d = m;
+                q = v;
+            }
+        }
+        return q;
+    }
+
     public static final double getJustPitch(String note) throws SFPL_RuntimeException
     {
         Object ret = justNotes.get(note.toLowerCase());

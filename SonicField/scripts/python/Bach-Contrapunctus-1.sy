@@ -166,22 +166,19 @@ def sing(pitch,lengthIn,beat,v,vl,vr,voice,vCorrect):
         print "Type: ",tp
         if tp==0:
             env=sf.NumericShape((0,0),(96,1),(192,0.5),(length,0))
-            if length<193:
-                print "Time error: ",length
         elif tp==1:
             env=sf.NumericShape((0,0),(96,0.75),(length-128,1.0),(length,0))
-            if length-128<=96:
-                print "Time error: ",length
         elif tp==2:
             env=sf.NumericShape((0,0),(96,0.75),(length-256,1.0),(length,0))
-            if length-128<=96:
-                print "Time error: ",length
         elif tp==3:
-            env=sf.NumericShape((0,0),(64,0.5),(256,1),(512,0.75),(length-512,0.5),(length,0))
+            if length<1280:
+                env=sf.NumericShape((0,0),(64,0.5),(256,1),(512,0.75),(length-256,0.5),(length,0))
+            else:
+                env=sf.NumericShape((0,0),(64,0.5),(256,1),(512,0.75),(length-512,.75),(length,0))
         else:
             env=sf.NumericShape((0,0),(64,0.25),(512,1),(length/2,0.75),(length,0))
 
-        #sig=sf.Multiply(sig,+env)
+        sig=sf.Multiply(sig,+env)
         sig=sf.FixSize(sig)
 
         mod=sf.NumericShape((0,0.995),(length,1.005))
@@ -213,8 +210,8 @@ def sing(pitch,lengthIn,beat,v,vl,vr,voice,vCorrect):
         sig=sf.FixSize(sig)
         cnv=sf.WhiteNoise(10240)
         cnv=sf.ButterworthHighPass(cnv,32,4)
-        cnv=sf.Cut(5000,5128,cnv)
-        cnv=sf.Multiply(cnv,sf.NumericShape((0,0),(32,1),(256,0)),sf.WhiteNoise(128))
+        cnv=sf.Cut(5000,5256,cnv)
+        cnv=sf.Multiply(cnv,sf.NumericShape((0,0),(32,1),(256,0)))
         sigr=reverberate(+sig,cnv)
         sigr=sf.Multiply(
             sf.NumericShape((0,0),(256,1),(sf.Length(+sigr),1.5)),
@@ -247,19 +244,7 @@ def doMidi(count,notesStart,notesEnd,notes,midi,voice,vCorrect,pitchShift=1.0):
         velocity=velocity/100
         v=velocity
         pl=pitch
-        """
-        cl=pl
-        # Create a sliding boost to low pitches
-        if cl<32:
-            cl=32
-        if cl>232:
-            cl=332
-        cl=1.0-float(cl-32)/200.0
-        cl*=1.5
-        cl+=1.0
-        print "Pitch volume correction: " , cl
-        vCUse=cl*vCorrect
-        """
+
         vCUse=vCorrect
         
         if pl<300:
@@ -303,7 +288,7 @@ notesr=[]
 notes=[]
 count       =     0.0
 notesStart  =     0.0
-notesEnd    =   999.0
+notesEnd    =  9999.0
 print "Channel 0"
 midi=midis[1]
 doMidi(count,notesStart,notesEnd,notes,midi,vocalRaw1,1.0)
@@ -379,7 +364,7 @@ for note in notes:
 
 def mix(notes):
     def mixInner():
-        return sf.Realise(sf.Trim(sf.FixSize(sf.Clean(sf.MixAt(notes)))))
+        return sf.Realise(sf.FixSize(sf.Clean(sf.MixAt(notes))))
     return sf_do(mixInner)
 
 print "Mix"
