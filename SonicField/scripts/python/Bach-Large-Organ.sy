@@ -1,5 +1,6 @@
 import math
 import random
+import sys
 
 def granularReverb(signal,ratio,delay,density,length=50,stretch=1,vol=1):
     out=[]
@@ -54,33 +55,167 @@ def reverberate(signal,convol):
         return sf.Clean(sf.FixSize(sf.MixAt(out)))
     return sf_do(reverbI)
 
-def niceSaw(length,frequency):
+def bombardPulse(length,frequency):
     p=random.random()
     if frequency>4000:
         sig=sf.Mix(
             sf.PhasedSineWave(length,frequency,p),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*2.0,p),1.0/2.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*3.0,p),1.0/3.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*4.0,p),1.0/4.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*5.0,p),1.0/5.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*6.0,p),1.0/6.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*7.0,p),1.0/7.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*8.0,p),1.0/8.0)
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*2.0,p),2.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*3.0,p),1.5),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*4.0,p),1.3),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*5.0,p),1.2),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*6.0,p),1.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*7.0,p),0.8),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*8.0,p),0.5)
             )
     else:
         sig=sf.Mix(
             sf.PhasedSineWave(length,frequency,p),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*2.0,p),1.0/2.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*3.0,p),1.0/3.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*4.0,p),1.0/4.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*5.0,p),1.0/5.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*6.0,p),1.0/6.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*7.0,p),1.0/7.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*8.0,p),1.0/8.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*9.0,p),1.0/9.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*2.0,p),2.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*3.0,p),1.5),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*4.0,p),1.3),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*5.0,p),1.2),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*6.0,p),1.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*7.0,p),0.8),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*8.0,p),0.6),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*9.0,p),0.4),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*10.0,p),0.2)
+        )
+    return sf.FixSize(sig)
+
+def ophicleidePulse(length,frequency):
+    p=random.random()
+    if frequency>4000:
+        sig=sf.Mix(
+            sf.PhasedSineWave(length,frequency,p),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*2.0,p),1.5),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*3.0,p),2.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*4.0,p),2.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*5.0,p),1.5),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*6.0,p),1.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*7.0,p),0.8),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*8.0,p),0.5)
+            )
+    elif frequency>1000:
+        sig=sf.Mix(
+            sf.PhasedSineWave(length,frequency,p),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*2.0,p),1.5),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*3.0,p),2.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*4.0,p),2.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*5.0,p),1.5),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*6.0,p),1.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*7.0,p),0.9),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*8.0,p),0.8),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*9.0,p),0.6),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*10.0,p),0.4)
+        )
+    else:
+        sig=sf.Mix(
+            sf.PhasedSineWave(length,frequency,p),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*2.0,p),1.5),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*3.0,p),2.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*4.0,p),2.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*5.0,p),1.8),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*6.0,p),1.6),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*7.0,p),1.4),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*8.0,p),1.2),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*9.0,p),1.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*10.0,p),0.8),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*11.0,p),0.5),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*12.0,p),0.3),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*13.0,p),0.2),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*14.0,p),0.1)
+       )   
+    return sf.FixSize(sig)
+    
+def nicePulse(length,frequency):
+    p=random.random()
+    if frequency>4000:
+        sig=sf.Mix(
+            sf.PhasedSineWave(length,frequency,p),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*2.0,p),1.0/1.5),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*3.0,p),1.0/1.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*4.0,p),1.0/1.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*5.0,p),1.0/1.5),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*6.0,p),1.0/2.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*7.0,p),1.0/3.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*8.0,p),1.0/4.0)
+            )
+    else:
+        sig=sf.Mix(
+            sf.PhasedSineWave(length,frequency,p),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*2.0,p),1.0/1.5),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*3.0,p),1.0/1.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*4.0,p),1.0/1.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*5.0,p),1.0/1.5),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*6.0,p),1.0/2.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*7.0,p),1.0/3.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*8.0,p),1.0/4.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*9.0,p),1.0/6.0),
             sf.NumericVolume(sf.PhasedSineWave(length,frequency*10.0,p),1.0/10.0)
         )
     return sf.FixSize(sig)
+
+def makeSimpleBase(length,frequency,z):
+    p=random.random()
+    if frequency>4000:
+        sig=sf.Mix(
+            sf.PhasedSineWave(length,frequency,p),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*2.0,p),(1.0/2.0)**z),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*3.0,p),(1.0/3.0)**z),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*4.0,p),(1.0/4.0)**z),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*5.0,p),(1.0/5.0)**z),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*6.0,p),(1.0/6.0)**z),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*7.0,p),(1.0/7.0)**z),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*8.0,p),(1.0/8.0)**z)
+            )
+    else:
+        sig=sf.Mix(
+            sf.PhasedSineWave(length,frequency,p),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*2.0,p),(1.0/2.0)**z),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*3.0,p),(1.0/3.0)**z),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*4.0,p),(1.0/4.0)**z),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*5.0,p),(1.0/5.0)**z),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*6.0,p),(1.0/6.0)**z),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*7.0,p),(1.0/7.0)**z),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*8.0,p),(1.0/8.0)**z),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*9.0,p),(1.0/9.0)**z),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*10.0,p),(1.0/10.0)**z)
+        )
+    return sf.FixSize(sig)
+
+def niceSaw(length,frequency):
+    return makeSimpleBase(length,frequency,1.0)
+
+def violaBase(length,frequency):
+    return makeSimpleBase(length,frequency,0.5)
+
+def sweetFluteBase(length,frequency):
+    return makeSimpleBase(length,frequency,8.0)
+    
+def brightFluteBase(length,frequency):
+    return makeSimpleBase(length,frequency,3.5)
+
+def stoppedPulse(length,frequency):
+    p=random.random()
+    if frequency>3000:
+        sig=sf.Mix(
+            sf.PhasedSineWave(length,frequency,p),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*3.0,p),1.0/1.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*5.0,p),1.0/1.5),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*7.0,p),1.0/2.0)
+            )
+    else:
+        sig=sf.Mix(
+            sf.PhasedSineWave(length,frequency,p),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*3.0,p),1.0/1.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*5.0,p),1.0/1.5),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*7.0,p),1.0/2.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*9.0,p),1.0/4.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*11.0,p),1.0/8.0)
+        )
+    return sf.FixSize(sig)
+
 
 def cleanNoise(length,freq):
     return sf.FixSize(
@@ -111,13 +246,82 @@ def pitchMove(sig):
         )
     else:
         return sig
-    return sf.Resample(move,sig)
+    return sf.Clean(sf.Resample(move,sig))
+    
+def polish(sig,freq):
+    if freq > 64:
+        sig=sf.ButterworthHighPass(sig,freq*0.66,6)
+    else:
+        sig=sf.ButterworthHighPass(sig,freq*0.66,2)   
+    return sf.Clean(sig)
 
 ###############################################################################
 #
 # Voices
 #
 ###############################################################################
+
+def celestFlute(length,freq):
+    sig=sf.Mix(
+        sf.Pcnt50(sweetFluteBase(length,freq)),
+        sf.Pcnt50(sweetFluteBase(length,freq+1.0)),
+        sf.Multiply(
+            cleanNoise(length,freq*0.5),
+            sf.SimpleShape((0,-60),(64,-28),(128,-40),(length,-40))
+        )
+    )
+    return pitchMove(sig)
+
+def sweetFlute(length,freq):
+    sig=sf.Mix(
+        sweetFluteBase(length,freq),
+        sf.Multiply(
+            cleanNoise(length,freq*0.5),
+            sf.SimpleShape((0,-60),(64,-30),(128,-40),(length,-40))
+        )
+    )
+    sig=sf.FixSize(polish(sig,freq))
+    return pitchMove(sig)
+
+def brightFlute(length,freq):
+    sig=sf.Mix(
+        brightFluteBase(length,freq),
+        sf.Multiply(
+            cleanNoise(length,freq*0.5),
+            sf.SimpleShape((0,-60),(64,-28),(128,-40),(length,-40))
+        )
+    )
+    sig=sf.FixSize(polish(sig,freq))
+    return pitchMove(sig)
+
+def string(length,freq):
+    def ms():
+        sig=sf.Mix(
+            sf.Pcnt45(sf.MakeTriangle(sf.PhasedSineWave(length,freq,random.random()))),
+            sf.Pcnt25(sf.MakeTriangle(sf.PhasedSineWave(length,freq*2.0,random.random()))),
+            sf.Pcnt15(sf.MakeTriangle(sf.PhasedSineWave(length,freq*4.0,random.random()))),
+            sf.Pcnt15(sf.PhasedSineWave(length,freq*6.0,random.random())),
+            sf.Multiply(
+                cleanNoise(length,freq),
+                sf.SimpleShape((0,-60),(64,-20),(128,-36),(length,-36))
+            )
+        )
+        sig=polish(sig,freq)
+        sig=sf.FixSize(polish(sf.Saturate(sig),freq))
+        return pitchMove(sig)
+        
+    return sf.FixSize(sf.Mix(ms(),ms()))
+
+def viola(length,freq):
+    sig=sf.Mix(
+        roundedStringBase(length,freq),
+        sf.Multiply(
+            cleanNoise(length,freq*0.5),
+            sf.SimpleShape((0,-60),(64,-20),(128,-36),(length,-36))
+        )
+    )
+    sig=sf.FixSize(polish(sig,freq))
+    return pitchMove(sig)
 
 def leadDiapason(length,freq):
     sig=sf.Mix(
@@ -129,6 +333,7 @@ def leadDiapason(length,freq):
             sf.SimpleShape((0,-60),(64,-20),(128,-36),(length,-36))
         )
     )
+    sig=sf.FixSize(polish(sig,freq))
     return pitchMove(sig)
 
 def secondDiapason(length,freq):
@@ -142,6 +347,7 @@ def secondDiapason(length,freq):
             sf.SimpleShape((0,-60),(64,-20),(128,-26),(length,-20))
         )
     )
+    sig=sf.FixSize(polish(sig,freq))
     return pitchMove(sig)
 
 def grandBass(length,freq):
@@ -158,21 +364,101 @@ def grandBass(length,freq):
         )
     )
     sig=sf.BesselLowPass(sig,freq*3.0,1)
+    sig=sf.FixSize(polish(sig,freq))
     return pitchMove(sig)
 
+def doubleBombard(length,freq):
+    sig=sf.Mix(
+        sf.MixAt(
+            [sf.Pcnt33(bombardPulse(length,freq/1.5)),20],
+            [sf.Pcnt33(bombardPulse(length,freq)),0],
+            [sf.Pcnt33(bombardPulse(length,freq*1.5)),10],
+        ),          
+        sf.Multiply(
+            cleanNoise(length,freq*0.5),
+            sf.SimpleShape((0,-60),(64,-16),(128,-24),(length,-20))
+        )
+    )
+    return pitchMove(sig)
+
+def bombard(length,freq):
+    b=sf.MixAt(
+            [sf.Pcnt33(bombardPulse(length,freq)),0],
+            [sf.Pcnt33(bombardPulse(length,freq)),10],
+            [sf.Pcnt33(bombardPulse(length,freq)),20]
+    )
+    b=polish(b,freq)
+    sig=sf.Mix(
+        b
+        ,
+        sf.Pcnt10(sf.Multiply(+b,sf.WhiteNoise(length))),          
+        sf.Multiply(
+            cleanNoise(length,freq*0.5),
+            sf.SimpleShape((0,-60),(64,-20),(128,-28),(length,-24))
+        )
+    )
+    return pitchMove(sig)
+
+def singleBombard(length,freq):
+    sig=sf.Mix(
+        sf.Pcnt33(bombardPulse(length,freq))
+        ,          
+        sf.Multiply(
+            cleanNoise(length,freq*0.5),
+            sf.SimpleShape((0,-60),(64,-16),(128,-24),(length,-20))
+        )
+    )
+    return pitchMove(sig)
+
+def ophicleide(length,freq):
+    b=sf.MixAt(
+            [sf.Pcnt10(ophicleidePulse(length,freq*0.25-1)),0],
+            [sf.Pcnt20(ophicleidePulse(length,freq)),15],
+            [sf.Pcnt20(ophicleidePulse(length,freq)),10],
+            [sf.Pcnt20(ophicleidePulse(length,freq*2.0)),5],
+            [sf.Pcnt20(ophicleidePulse(length,freq*3.0)),0]
+    )
+    b=sf.Mix(
+        sf.Power(+b,2.0),
+        sf.Pcnt10(sf.Raise(+b,2.0)),
+        sf.Pcnt50(b)
+    )
+    b=polish(b,freq)
+    sig=sf.Mix(
+        sf.Pcnt90(b)
+        ,
+        sf.Pcnt10(sf.FixSize(sf.Multiply(+b,cleanNoise(length,freq*2.0)))),          
+        sf.Multiply(
+            cleanNoise(length,freq*0.5),
+            sf.SimpleShape((0,-60),(64,-16),(128,-20),(length,-22))
+        )
+    )
+    return sig
+
+
 def upperAccent(length,freq):
-    return sf.FixSize(sf.Power(sf.MakeTriangle(sf.SineWave(length,freq)),2.0))
+    return sf.FixSize(
+        polish(
+            sf.Power(
+                polish(
+                    sf.MakeTriangle(
+                        sf.SineWave(length,freq)
+                    ),
+                    freq
+                )
+               ,2.0
+            ),
+            freq
+        )
+    )
 
 def clarion(length,freq):
     s1=sf.MakeTriangle(sf.PhasedSineWave(length,freq,random.random()))
     s2=sf.MakeTriangle(sf.PhasedSineWave(length,freq*2.001,random.random()))
     s3=niceSaw(length,freq*4.002)
-    s1=sf.ButterworthHighPass(s1,freq*0.66,6)
-    s2=sf.ButterworthHighPass(s2,freq*0.66,6)
-    s3=sf.ButterworthHighPass(s3,freq*0.66,6)
-    s1=sf.Clean(s1)
-    s2=sf.Clean(s2)
-    s3=sf.Clean(s3)
+    s1=polish(s1,freq)
+    s2=polish(s2,freq)
+    s3=polish(s3,freq)
     
     sig=sf.Mix(
         sf.Pcnt70(s1),
@@ -185,8 +471,7 @@ def clarion(length,freq):
     )
 
     sig=sf.FixSize(sf.Power(sig,10.0))
-    sig=sf.ButterworthHighPass(sig,freq*0.66,6)
-    sig=sf.Clean(sig)
+    sig=polish(sig,freq)
     sig=sf.BesselLowPass(sig,freq*6.0,2)
     return sf.FixSize(sf.Clean(sig))
     
@@ -237,18 +522,13 @@ def simpleOboe(length,freq):
             1.5
         )
     )
-    sig=sf.ButterworthHighPass(sig,freq*0.66,6)
-    sig=sf.Clean(sig)
-    sig=sf.ButterworthHighPass(sig,freq*0.66,6)
+    sig=polish(sig,freq)
     sig=sf.FixSize(sf.Power(sig,1.5))
-    sig=sf.Clean(sig)
-    sig=sf.ButterworthHighPass(sig,freq*0.66,6)
+    sig=polish(sig,freq)
     sig=sf.FixSize(sf.Power(sig,1.5))
-    sig=sf.Clean(sig)
-    sig=sf.ButterworthHighPass(sig,freq*0.66,6)
+    sig=polish(sig,freq)
     sig=sf.FixSize(sig)
       
-
     sig=sf.RBJPeaking(sig,freq*5,0.5,5)
     sig=sf.RBJPeaking(sig,freq*7,1,5)
     sig=sf.RBJNotch  (sig,freq*2,0.5,1)
@@ -263,14 +543,112 @@ def simpleOboe(length,freq):
     )
 
     sig=sf.ButterworthLowPass (sig,freq*9,4)
-    sig=sf.ButterworthHighPass(sig,freq*0.66,6)
+    sig=polish(sig,freq)
+    return sf.FixSize(sig)
+
+def muteOboe(length,freq):
+    sig=sf.FixSize(
+        sf.Power(
+            sf.Clean(
+                sf.Mix(
+                    niceSaw(length,freq),
+                    sf.PhasedSineWave(length,freq,random.random())
+                )
+            )
+            ,
+            1.5
+        )
+    )
+    sig=polish(sig,freq)
+    sig=sf.FixSize(sf.Power(sig,1.5))
+    sig=polish(sig,freq)
+    sig=sf.FixSize(sf.Power(sig,1.5))
+    sig=polish(sig,freq)
+    sig=sf.FixSize(sig)      
+
+    sig=sf.RBJPeaking(sig,freq*5,0.5,5)
+    sig=sf.RBJPeaking(sig,freq*7,1,5)
+    sig=sf.RBJNotch  (sig,freq*2,0.5,1)
+    sig=sf.Clean(sig)
+    
+    sig=sf.Mix(
+        sf.FixSize(sig),
+        sf.Multiply(
+            cleanNoise(length,freq*9.0),
+            sf.SimpleShape((0,-60),(64,-16),(128,-20),(length,-20))
+        )
+    )
+
+    sig=polish(sig,freq)
+    sig=sf.BesselLowPass (sig,freq*4,1)
+    osig=+sig
+    osig=sf.BesselHighPass(sig,freq*4,2)
+    sig=sf.BesselLowPass (sig,freq*6,1)
+    sig=sf.BesselLowPass (sig,freq*8,4)
+    sig=sf.Mix(sig,osig)
     return sf.FixSize(sf.Clean(sig))
 
+def richReed(length,freq):
+    s1=bombardPulse(length,freq*1.000)
+    s2=nicePulse(length,freq+1)
+    s3=nicePulse(length,freq-1.5)
+    s1=polish(s1,freq)
+    s2=polish(s2,freq)
+    s3=polish(s3,freq)
+    
+    sig=sf.Mix(
+        sf.Pcnt70(s1),
+        sf.Pcnt20(s2),
+        sf.Pcnt10(s3),
+        sf.Multiply(
+            cleanNoise(length,freq*2.0),
+            sf.SimpleShape((0,-60),(64,-20),(128,-24),(length,-24))
+        )
+    )
+
+    sig=sf.FixSize(sig)
+    sig=polish(sig,freq)
+    return sf.FixSize(sig)
+
+def reed(length,freq):
+    s1=nicePulse(length,freq*1.000)
+    s1=polish(s1,freq)
+    
+    sig=sf.Mix(
+        s1,
+        sf.Multiply(
+            cleanNoise(length,freq*2.0),
+            sf.SimpleShape((0,-60),(64,-16),(128,-20),(length,-20))
+        )
+    )
+
+    sig=sf.FixSize(sig)
+    sig=polish(sig,freq)
+    return sf.FixSize(sig)
+
+def stoppedReed(length,freq):
+    s1=stoppedPulse(length,freq*1.000)
+    sig=polish(s1,freq)
+    
+    sig=sf.Mix(
+        s1,
+        sf.Multiply(
+            cleanNoise(length,freq*2.0),
+            sf.SimpleShape((0,-60),(64,-16),(128,-20),(length,-20))
+        )
+    )
+
+    sig=sf.FixSize(sig)
+    sig=sf.Mix(
+        sf.Pcnt10(sf.Clean(sf.Saturate(+sig))),
+        sig
+    )
+    sig=polish(sig,freq)
+    return sf.FixSize(sig)
 
 ###############################################################################
 # END VOICES
 ###############################################################################
-
 
 def safeEnv(sig,env):
     length=sf.Length(+sig)
@@ -286,7 +664,7 @@ def safeEnv(sig,env):
         raise "envelop failure"
     return sf.NumericShape(ne)
          
-def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor):
+def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor,subBass,flatEnv):
     def singInner():
         vCorrect=vCorrect_
         length=lengthIn
@@ -362,7 +740,7 @@ def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor):
             elif hint=="NN" and pitch>660:
                 shine=True
                 vCorrect*=0.5        
-        elif tp==1:
+        elif tp==1 or flatEnv:
             if pHint=="T":
                 q=48
             else:
@@ -396,22 +774,23 @@ def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor):
         sig=sf.FixSize(sig)
      
         if pitch<256:
-            if pitch < 128:
-                sig=sf.Mix(
-                    granularReverb(+sig,ratio=0.501 ,delay=256,density=32,length=256,stretch=1,vol=0.20),
-                    granularReverb(+sig,ratio=0.2495,delay=256,density=32,length=256,stretch=1,vol=0.10),
-                    sig
-                )
-            elif pitch < 192:
-                sig=sf.Mix(
-                    granularReverb(+sig,ratio=0.501,delay=256,density=32,length=256,stretch=1,vol=0.25),
-                    sig
-                )
-            else:
-                sig=sf.Mix(
-                    granularReverb(+sig,ratio=0.501,delay=256,density=32,length=256,stretch=1,vol=0.15),
-                    sig
-                )
+            if subBass:
+                if pitch < 128:
+                    sig=sf.Mix(
+                        granularReverb(+sig,ratio=0.501 ,delay=256,density=32,length=256,stretch=1,vol=0.20),
+                        granularReverb(+sig,ratio=0.2495,delay=256,density=32,length=256,stretch=1,vol=0.10),
+                        sig
+                    )
+                elif pitch < 192:
+                    sig=sf.Mix(
+                        granularReverb(+sig,ratio=0.501,delay=256,density=32,length=256,stretch=1,vol=0.25),
+                        sig
+                    )
+                else:
+                    sig=sf.Mix(
+                        granularReverb(+sig,ratio=0.501,delay=256,density=32,length=256,stretch=1,vol=0.15),
+                        sig
+                    )
             sig=sf.BesselLowPass(sig,pitch*8.0,2)
         if pitch<392:
             sig=sf.BesselLowPass(sig,pitch*6.0,2)
@@ -456,12 +835,14 @@ def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor):
         )
         
         note=sf.NumericVolume(sf.FixSize(sig),v)
+        sf.Check(note)
         notel=sf.Realise(sf.NumericVolume(+note,vl*vCorrect))
         noter=sf.Swap(sf.NumericVolume( note,vr*vCorrect))
         return (notel,noter)
     return sf_do(singInner)
 
-def doMidi(count,notesStart,notesEnd,notes,midi,voice,vCorrect,pitchShift=1.0,qFactor=1.0):
+def doMidi(count,notesStart,notesEnd,notes,midi,voice,vCorrect,pitchShift=1.0,qFactor=1.0,subBass=False,flatEnv=False):
+    print "Stop: ",voice
     for index in range(0,len(midi)):
         if index>0:
             prev=midi[index-1]
@@ -491,6 +872,29 @@ def doMidi(count,notesStart,notesEnd,notes,midi,voice,vCorrect,pitchShift=1.0,qF
 
         vCUse=vCorrect
         
+        # volume pitch correction to stop domination
+        # of high notes - not quite the same as 
+        # loudness correction due to the high dominating
+        # low perception issue.
+        pCorrect=1
+        if vCorrect>0.25 and pitch > 660 :
+            if length <256:
+                sCorrect=1.5
+            else:
+                sCorrect=1.0
+            pCorrect=1.0
+            if pitch>660:
+                if pitch<2000:
+                    pCorrect=float(2000-pitch)/1340.0
+                    pCorrect=0.40*(1.0-pCorrect)+pCorrect
+                elif pitch<4000:
+                    pCorrect=float(8000-pitch)/4000.0
+                    pCorrect=0.75*(1.0-pCorrect)+0.4*pCorrect
+            pCorrect*=sCorrect
+            if pCorrect>1:
+                pCorrect=1
+        vCUse*=pCorrect
+
         if pl<300:
             # low to the right ish
             if pl <100:
@@ -543,13 +947,90 @@ def doMidi(count,notesStart,notesEnd,notes,midi,voice,vCorrect,pitchShift=1.0,qF
                 hint+="N"
         else:
             hint+="E"
-        
-        print "H",hint,"C",count,"P",pitch,"@",at,"L",length,"V",velocity
-        note = sing(hint,pitch, length,beat,v,lr,rl,voice,vCUse,qFactor)
+ 
+        print "H",hint,"C",count,"P",pitch,"@",at,"L",length,"V",velocity,"VU",vCUse,"PC",pCorrect
+        note = sing(hint,pitch, length,beat,v,lr,rl,voice,vCUse,qFactor,subBass,flatEnv)
         dl=30*rl+1000
         dr=38*lr+1000
         notes.append((note,at+dl,at+dr))
         count+=1
+
+def unpackMidi(tup,beat):
+            tickOn,tickOff,note,key,velocity = tup
+            at  = tickOn*beat
+            llen = (tickOff-tickOn)*beat
+            if key==0:
+                pitch=base
+            else:
+                pitch= (sf.Semitone(0)**float(key)) * base
+            return tickOn,tickOff,note,key,velocity,at,llen,pitch
+
+def interpretMidiBombast(midi,beat):
+    change=True
+    while change:
+        change=False
+        print "Interpretation Pass"
+        endAt=len(midi)-1
+        index=0
+        midiOut=[]
+        while index<endAt:
+            this=midi[index]
+            next=midi[index+1]
+            ttickOn,ttickOff,tnote,tkey,tvelocity,tAt,tLen,tPitch = unpackMidi(this,beat)
+            ntickOn,ntickOff,nnote,nkey,nvelocity,nAt,nLen,nPitch = unpackMidi(next,beat)
+    
+            # Merge interpretation
+            finished=False
+            if tLen>512:
+                #print "Checking ",tPitch==nPitch, tvelocity==nvelocity,ntickOn-ttickOff,nLen>256,tPitch<256
+                if tPitch==nPitch and tvelocity==nvelocity and (ntickOn-ttickOff)<128 and (ntickOn-ttickOff)>-16:
+                    # go for a low pitch merge
+                    # below middle C
+                    if nLen>256 and tPitch<256:
+                        finished=True
+                        midiOut.append([ttickOn,ntickOff,tnote,tkey,tvelocity])
+                        print "Merging: ",this," & ",next
+                        index+=1
+                        change=True
+    
+            if not finished:
+                midiOut.append(this)
+                if index==endAt-1:
+                    midiOut.append(next)
+                
+            # iterate the loop
+            index+=1
+        midi=midiOut
+    return midi
+
+def interpretMidiStaccato(midi,beat):
+    print "Interpretation Pass"
+    endAt=len(midi)-1
+    index=0
+    midiOut=[]
+    while index<endAt:
+        this=midi[index]
+        next=midi[index+1]
+        ttickOn,ttickOff,tnote,tkey,tvelocity,tAt,tLen,tPitch = unpackMidi(this,beat)
+        ntickOn,ntickOff,nnote,nkey,nvelocity,nAt,nLen,nPitch = unpackMidi(next,beat)
+
+        # Merge interpretation
+        finished=False
+        if tLen>512:
+            if (ntickOn-ttickOff)<128:
+                ttickOff-=128
+                midiOut.append([ttickOn,ntickOff,tnote,tkey,tvelocity])
+                print "Staccato: ",this," & ",next
+                finished=True
+    
+        if not finished:
+            midiOut.append(this)
+            if index==endAt-1:
+                midiOut.append(next)
+            
+        # iterate the loop
+        index+=1
+    return midiOut
 
 def my_so(what):
     return what()
@@ -561,12 +1042,12 @@ def my_so(what):
 # Soft two manual settings:
 # =========================
 # First manual  = leadDiapason  ,2.0
-# Pedals manual = warmBass      ,1.5
+# Pedals manual = warmBass      ,1.5,subBass=True
 
 # Grand two manual settings:
 # ==========================
 # First manual  = secondDiapason,2.0
-# Pedals manual = warmBass      ,1.5
+# Pedals manual = warmBass      ,1.5,subBass=True
 # Pedals manual = upperAccent   ,0.2,x4
 
 # Standard two manual settings:
@@ -605,256 +1086,248 @@ def my_so(what):
 # Second manual = clarion        ,0.8
 # Third manual  = secondDiapason ,1.2
 # Third manual  = upperAccent    ,0.1,x2
-# Pedals        = warmBass       ,1.5
+# Pedals        = warmBass       ,1.5,subBass=True
 # Padels        = upperAccent    ,0.2,x4
 
 # Counterpoint 3 manual and pedals 
 # With more traditional lead on
 # first and accent. Accent pedals
 # with an oboe to give baroque 
-# feel
+# feel. Fast attach on lead if you
+# are playing very fast
 # ================================
-# First manual  = leadDiapason   ,1.5
+# First manual  = leadDiapason   ,1.5,0.5
 # Second manual = secondDiapaon  ,0.8
 # Second manual = upperAccent    ,0.1,x2
 # Third manual  = secondDiapason ,0.8
 # Third manual  = upperAccent    ,0.1,x2
-# Pedals        = warmBass       ,1.5
+# Pedals        = warmBass       ,1.5,subBass=True
 # Padels        = simpleOboe     ,0.1,x2
 # Padels        = simpleOboe     ,0.1,x4
 
 # Baroque 3 manual and pedals 
 # With clarion on the first to give
 # shining lead and a grand bass 
-# for a much more modern sound.
+# for a much more modern sound, but
+# maybe too much?
 # ================================
 # First manual  = clarion        ,1.4,0.5
-# First manual  = clarion        ,0.2,3.995,0.33
+# First manual  = clarion        ,0.2,1.995,0.33
 # Second manual = leadDiapason   ,0.8
 # Second manual = upperAccent    ,0.2,x2
 # Third manual  = leadDiapason   ,0.8
 # Third manual  = upperAccent    ,0.2,x2
 # Pedals        = grandBass      ,2.5
-# Pedals        = warmBass       ,1.5,x0.501
+# Pedals        = warmBass       ,1.5,x0.501,subBass=True
 # Padels        = upperAccent    ,0.2,x4
 # Padels        = upperAccent    ,0.1,x8
+
+# Counterpoint 3 manual and pedals 
+# Clean sound warm bass
+# ================================
+# First manual  = leadDiapason   ,0.5
+# First manual  = leadDiapason   ,0.5,1.001
+# Second manual = secondDiapaon  ,0.8
+# Third manual  = secondDiapason ,0.8
+# Pedals        = warmBass       ,1.5,subBass=True
+# Padels        = upperAccent    ,0.2,x4
+
+# 3 oboes manuals and pedals 
+# ================================
+# First manual  = muteOboe       ,1.0,0.5
+# Second manual = muteOboe       ,1.0,0.5
+# Third manual  = muteOboe       ,1.0,0.5
+# Pedals        = warmBass       ,1.5,subBass=True
+# Padels        = upperAccent    ,0.1,x4
+
+# 2 diapason manuals oboe instead 
+# of pedals 
+# ================================
+# First manual  = secondDiapaon  ,1.0
+# Second manual = secondDiapaon  ,1.0
+# Third manual  = muteOboe       ,1.5
+
+# Counterpoint 3 manual and pedals 
+# Controlled brass
+# ================================
+# First manual  = clarion        ,0.6
+# First manual  = leadDiapason   ,0.6,1.001
+# Second manual = secondDiapaon  ,0.8
+# Third manual  = secondDiapason ,0.8
+# Pedals        = warmBass       ,1.5,subBass=True
+# Padels        = upperAccent    ,0.2,x4
+
+# 2 Inverted diapason and read 3
+# manuals
+# ================================
+# First manual  = stoppedReed    ,1.0
+# Second manual = stoppedReed    ,1.0
+# Third manual  = leadDiapason   ,1.0
+# Third manual  = grandBass      ,0.5,x0.5
+
+
+# Counterpoint 3 manual and pedals 
+# Bass Heavy - very complex
+# ================================
+# First manual  = clarion        ,0.4
+# First manual  = leadDiapason   ,0.4,1.001
+# Second manual = secondDiapaon  ,0.8
+# Third manual  = secondDiapason ,0.8
+# Third manual  = upperAccent    ,0.2,x4,subBass=False,qFactor=0.5
+# Pedals        = warmBass       ,1.5,subBass=True
+# Padels        = stoppedReed    ,0.501,x0.5,subBass=True
+# Padels        = upperAccent    ,0.2,x4
+
+# Bombasic 5 parts (2 pedals)
+# ===========================
+# First manual  = string         ,1.2
+# First manual  = string         ,0.33,2.0
+# Second manual = richRead       ,1.0
+# Second manual = voice=upperAccent,vCorrect=0.25,pitchShift=2.0,qFactor=0.5,subBass=False
+# Third manual  = muteOboe       ,1.0
+# Third manual  = voice=upperAccent,vCorrect=0.25,pitchShift=2.0,qFactor=0.5,subBass=False
+# Fourth Pedals = voice=bombard,vCorrect=1.0,subBass=False,flatEnv=True
+# Fourth Padels = voice=ophicleide,pitchShift=0.5,vCorrect=0.5,subBass=False,flatEnv=True
+# Fith Pedals   = voice=bombard,vCorrect=1.0,subBass=False,flatEnv=True
+# Fourth Padels = voice=ophicleide,pitchShift=0.5,vCorrect=0.5,subBass=False,flatEnv=True
 
 #######################################
 # Timing configuration and running midi
 #######################################
 
-midis=sf.ReadMidiFile("temp/dou2.mid")
+midis=sf.ReadMidiFile("temp/064500b_c.mid")
 signature   =     4.0/4.0
-bpm         =     64 * signature
-adqf        =     0.9
+bpm         =     380 * signature
+adqf        =     1.0
 beat        =     (60000.0 / (bpm * 192.0)) * adqf
 base        =     8.1757989156
 notesl=[]
 notesr=[]
 notes=[]
 count       =     0.0
-notesStart  =     0.0
+notesStart  =     0.00
 notesEnd    =  9999.0
+
+def postProcess():
+    count=0
+    for note in notes:
+        nlr,atl,atr=note
+        print "Done: ",count,atl,atr
+        notel,noter=nlr
+        notesl.append([notel,atl])
+        notesr.append([noter,atr])
+        count+=1
 
 print "Channel 1A"
 midi=midis[1]
-doMidi(count,notesStart,notesEnd,notes,midi,clarion,1.4,0.5)
-
-count = 0.0
-for note in notes:
-    nlr,atl,atr=note
-    print "Done: ",count,atl,atr
-    notel,noter=nlr
-    notesl.append([notel,atl])
-    notesr.append([noter,atr])
-    count+=1
-
+doMidi(count,notesStart,notesEnd,notes,midi,sweetFlute,1.2)
+postProcess()
 
 notes=[]
 count = 0.0
-print "Channel 1b"
-midi=midis[1]
-doMidi(count,notesStart,notesEnd,notes,midi,clarion,0.2,3.995,0.33)
+print "Channel 1B"
+doMidi(count,notesStart,notesEnd,notes,midi,celestFlute,0.33,2.0)
+postProcess()
 
-count=0
-for note in notes:
-    nlr,atl,atr=note
-    print "Done: ",count,atl,atr
-    notel,noter=nlr
-    notesl.append([notel,atl])
-    notesr.append([noter,atr])
-    count+=1
+notes=[]
+count = 0.0
+print "Channel 1+A"
+midi=interpretMidiBombast(midis[2],beat)
+doMidi(count,notesStart,notesEnd,notes,midi,string,vCorrect=0.5,pitchShift=2.0)
+postProcess()
+
+notes=[]
+count = 0.0
+print "Channel 1+B"
+midi=interpretMidiBombast(midis[2],beat)
+doMidi(count,notesStart,notesEnd,notes,midi,upperAccent,vCorrect=0.2,pitchShift=4.0)
+postProcess()
 
 notes=[]
 count = 0.0
 print "Channel 2A"
-midi=midis[2]
-doMidi(count,notesStart,notesEnd,notes,midi,leadDiapason,0.8)
-count=0
-for note in notes:
-    nlr,atl,atr=note
-    print "Done: ",count,atl,atr
-    notel,noter=nlr
-    notesl.append([notel,atl])
-    notesr.append([noter,atr])
-    count+=1
+midi=interpretMidiStaccato(midis[3],beat)
+doMidi(count,notesStart,notesEnd,notes,midi,brightFlute,1.0)
+postProcess()
 
 notes=[]
 count = 0.0
 print "Channel 2B"
-midi=midis[2]
-doMidi(count,notesStart,notesEnd,notes,midi,upperAccent,0.2,2.0)
-count=0
-for note in notes:
-    nlr,atl,atr=note
-    print "Done: ",count,atl,atr
-    notel,noter=nlr
-    notesl.append([notel,atl])
-    notesr.append([noter,atr])
-    count+=1
-
-""""
-
-    notes=[]
-    count = 0.0
-    print "Channel 2C"
-    midi=midis[2]
-    doMidi(count,notesStart,notesEnd,notes,midi,warmBass,0.2,0.5)
-    count=0
-    for note in notes:
-        nlr,atl,atr=note
-        print "Done: ",count,atl,atr
-        notel,noter=nlr
-        notesl.append([notel,atl])
-        notesr.append([noter,atr])
-        count+=1
-"""
+doMidi(count,notesStart,notesEnd,notes,midi,voice=celestFlute,vCorrect=0.25,pitchShift=2.0,qFactor=0.5,subBass=False)
+postProcess()
 
 notes=[]
 count = 0.0
 print "Channel 3A"
-midi=midis[3]
-doMidi(count,notesStart,notesEnd,notes,midi,leadDiapason,0.8)
-
-count=0
-for note in notes:
-    nlr,atl,atr=note
-    print "Done: ",count,atl,atr
-    notel,noter=nlr
-    notesl.append([notel,atl])
-    notesr.append([noter,atr])
-    count+=1
+midi=interpretMidiBombast(midis[4],beat)
+doMidi(count,notesStart,notesEnd,notes,midi,brightFlute,1.0)
+postProcess()
 
 notes=[]
 count = 0.0
 print "Channel 3B"
-midi=midis[3]
-doMidi(count,notesStart,notesEnd,notes,midi,upperAccent,0.2,2.0)
-count=0
-for note in notes:
-    nlr,atl,atr=note
-    print "Done: ",count,atl,atr
-    notel,noter=nlr
-    notesl.append([notel,atl])
-    notesr.append([noter,atr])
-    count+=1
+doMidi(count,notesStart,notesEnd,notes,midi,voice=celestFlute,vCorrect=0.25,pitchShift=2.0,qFactor=0.5,subBass=False)
+postProcess()
 
 notes=[]
 count = 0.0
 print "Channel 4A"
-midi=midis[4]
-doMidi(count,notesStart,notesEnd,notes,midi,grandBass,2.5)
+midi=interpretMidiStaccato(midis[5],beat)
 
-count=0
-for note in notes:
-    nlr,atl,atr=note
-    print "Done: ",count,atl,atr
-    notel,noter=nlr
-    notesl.append([notel,atl])
-    notesr.append([noter,atr])
-    count+=1
+#count,notesStart,notesEnd,notes,midi,voice,vCorrect,pitchShift=1.0,qFactor=1.0
+doMidi(count,notesStart,notesEnd,notes,midi,secondDiapason,vCorrect=1.0,subBass=False,flatEnv=True)
+postProcess()
 
 notes=[]
 count = 0.0
 print "Channel 4B"
-midi=midis[4]
+doMidi(count,notesStart,notesEnd,notes,midi,secondDiapason,pitchShift=0.5,vCorrect=0.5,subBass=False,flatEnv=True)
+postProcess()
+    
+notes=[]
+count = 0.0
+print "Channel 4C"
 doMidi(count,notesStart,notesEnd,notes,midi,upperAccent,0.2,4.0)
-
-count=0
-for note in notes:
-    nlr,atl,atr=note
-    print "Done: ",count,atl,atr
-    notel,noter=nlr
-    notesl.append([notel,atl])
-    notesr.append([noter,atr])
-    count+=1
+postProcess()
 
 notes=[]
 count = 0.0
-print "Channel 4c"
-midi=midis[4]
-doMidi(count,notesStart,notesEnd,notes,midi,upperAccent,0.1,8.0)
-
-count=0
-for note in notes:
-    nlr,atl,atr=note
-    print "Done: ",count,atl,atr
-    notel,noter=nlr
-    notesl.append([notel,atl])
-    notesr.append([noter,atr])
-    count+=1
+print "Channel 5A"
+midi=interpretMidiStaccato(midis[6],beat)
+doMidi(count,notesStart,notesEnd,notes,midi,secondDiapason,pitchShift=0.5,vCorrect=1.0,subBass=False,flatEnv=True)
+postProcess()
 
 notes=[]
 count = 0.0
-print "Channel 4d"
-midi=midis[4]
-doMidi(count,notesStart,notesEnd,notes,midi,warmBass,1.5,0.501)
+print "Channel 5B"
+doMidi(count,notesStart,notesEnd,notes,midi,secondDiapason,pitchShift=0.5,vCorrect=0.5,subBass=False,flatEnv=True)
+postProcess()
 
-count=0
-for note in notes:
-    nlr,atl,atr=note
-    print "Done: ",count,atl,atr
-    notel,noter=nlr
-    notesl.append([notel,atl])
-    notesr.append([noter,atr])
-    count+=1
+notes=[]
+count = 0.0
+print "Channel 5C"
+doMidi(count,notesStart,notesEnd,notes,midi,upperAccent,0.2,4.0)
+postProcess()
 
-"""
-    notes=[]
-    count = 0.0
-    print "Channel 5A"
-    midi=midis[4]
-    doMidi(count,notesStart,notesEnd,notes,midi,clarion,0.8)
-    
-    count=0
-    for note in notes:
-        nlr,atl,atr=note
-        print "Done: ",count,atl,atr
-        notel,noter=nlr
-        notesl.append([notel,atl])
-        notesr.append([noter,atr])
-        count+=1
-    notes=[]
-    print "Channel 5B"
-    midi=midis[4]
-    count=0
-    doMidi(count,notesStart,notesEnd,notes,midi,upperAccent,0.1,6.0)
-    
-    count=0
-    for note in notes:
-        nlr,atl,atr=note
-        print "Done: ",count,atl,atr
-        notel,noter=nlr
-        notesl.append([notel,atl])
-        notesr.append([noter,atr])
-        count+=1
-"""
+notes=[]
+count = 0.0
+print "Channel 6"
+midi=interpretMidiStaccato(midis[7],beat)
+doMidi(count,notesStart,notesEnd,notes,midi,bombard,0.5,0.5)
+postProcess()
+
+notes=[]
+count = 0.0
+print "Channel 7"
+midi=interpretMidiBombast(midis[8],beat)
+doMidi(count,notesStart,notesEnd,notes,midi,clarion,0.5,0.5)
+postProcess()
+
 
 def mix(notes):
     def mixInner():
         return sf.Realise(sf.FixSize(sf.Clean(sf.MixAt(notes))))
     return sf_do(mixInner)
-
 print "Mix"
 left =mix(notesl)
 right=mix(notesr)
