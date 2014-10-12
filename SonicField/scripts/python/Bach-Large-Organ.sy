@@ -216,7 +216,20 @@ def stoppedPulse(length,frequency):
         )
     return sf.FixSize(sig)
 
-
+def doFormant(sig,f1,f2,f3,freq):
+    def doFormantInner(a,b,c,d):
+        def doFII():
+            return sf.RBJPeaking(a,b,c,d)
+        return sf_do(doFII)
+    sig1=doFormantInner(+sig,f1,1.5,80)
+    sig2=doFormantInner(+sig,f2,2.5,40)
+    sig3=doFormantInner( sig,f3,1.5,90)
+    x=sf.Mix(sig1,sig2,sig3)
+    x=polish(x,freq)
+    x=sf.BesselLowPass(x,f3*1.5,2)
+    x=sf.FixSize(x)
+    return x
+    
 def cleanNoise(length,freq):
     return sf.FixSize(
         sf.FixSize(
@@ -249,8 +262,10 @@ def pitchMove(sig):
     return sf.Clean(sf.Resample(move,sig))
     
 def polish(sig,freq):
-    if freq > 64:
+    if freq > 128:
         sig=sf.ButterworthHighPass(sig,freq*0.66,6)
+    elif freq > 64:
+        sig=sf.ButterworthHighPass(sig,freq*0.66,4)
     else:
         sig=sf.ButterworthHighPass(sig,freq*0.66,2)   
     return sf.Clean(sig)
@@ -260,6 +275,23 @@ def polish(sig,freq):
 # Voices
 #
 ###############################################################################
+
+def voxHumana_O(length,freq):
+    vox=sf.Mix(
+        violaBase(length,freq    ),
+        violaBase(length,freq+1.0)
+    )
+    vox=sf.Pcnt50(vox)
+    vox=polish(vox,freq)
+    noise=sf.Multiply(
+        cleanNoise(length,freq*0.5),
+        sf.SimpleShape((0,-60),(64,-28),(128,-40),(length,-40))
+    )
+    vox=sf.Mix(vox,noise)
+    vox=sf.FixSize(polish(vox,freq)) 
+    vox=polish(sf.Power(vox,1.5),freq)
+    vox=doFormant(vox,470,1150,2700,freq)
+    return sf.FixSize(vox)
 
 def celestFlute(length,freq):
     sig=sf.Mix(
@@ -314,7 +346,7 @@ def string(length,freq):
 
 def viola(length,freq):
     sig=sf.Mix(
-        roundedStringBase(length,freq),
+        violaBase(length,freq),
         sf.Multiply(
             cleanNoise(length,freq*0.5),
             sf.SimpleShape((0,-60),(64,-20),(128,-36),(length,-36))
@@ -365,14 +397,15 @@ def grandBass(length,freq):
     )
     sig=sf.BesselLowPass(sig,freq*3.0,1)
     sig=sf.FixSize(polish(sig,freq))
-    return pitchMove(sig)
+    sig=pitchMove(sig)
+    sig=sf.ButterworthLowPass(sig,freq*9.0,1)
+    return sf.FixSize(sf.Clean(sig))
 
 def doubleBombard(length,freq):
     sig=sf.Mix(
         sf.MixAt(
-            [sf.Pcnt33(bombardPulse(length,freq/1.5)),20],
-            [sf.Pcnt33(bombardPulse(length,freq)),0],
-            [sf.Pcnt33(bombardPulse(length,freq*1.5)),10],
+            [sf.Pcnt50(bombardPulse(length,freq)),0],
+            [sf.Pcnt50(bombardPulse(length,freq*1.5)),10],
         ),          
         sf.Multiply(
             cleanNoise(length,freq*0.5),
@@ -434,7 +467,6 @@ def ophicleide(length,freq):
         )
     )
     return sig
-
 
 def upperAccent(length,freq):
     return sf.FixSize(
@@ -628,7 +660,7 @@ def reed(length,freq):
 
 def stoppedReed(length,freq):
     s1=stoppedPulse(length,freq*1.000)
-    sig=polish(s1,freq)
+    s1=polish(s1,freq)
     
     sig=sf.Mix(
         s1,
@@ -661,7 +693,7 @@ def safeEnv(sig,env):
         op=p
         ne.append([p,m])
     if p>length:
-        raise "envelop failure"
+        print "***WARNING: envelop failure *** ",length," -> ",p," diff:", p-length
     return sf.NumericShape(ne)
          
 def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor,subBass,flatEnv):
@@ -770,7 +802,14 @@ def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor,subBass,flatEn
 
         mod=sf.NumericShape((0,0.995),(length,1.005))
         mod=sf.Mix(mod,sf.NumericVolume(+env,0.01))
-        sig=sf.FrequencyModulate(sig,mod)  
+        # if we have envelope extention then we don't do this as
+        # it get really hard to get the lengths correct and make 
+        # sense of what we are trying to do. KISS
+        if sf.Length(+sig)==sf.Length(+mod):
+            sig=sf.FrequencyModulate(sig,mod)  
+        else:
+            -mod
+
         sig=sf.FixSize(sig)
      
         if pitch<256:
@@ -841,7 +880,10 @@ def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor,subBass,flatEn
         return (notel,noter)
     return sf_do(singInner)
 
-def doMidi(count,notesStart,notesEnd,notes,midi,voice,vCorrect,pitchShift=1.0,qFactor=1.0,subBass=False,flatEnv=False):
+def doMidi(notesStart,notesEnd,notes,midi,voice,vCorrect,pitchShift=1.0,qFactor=1.0,subBass=False,flatEnv=False):
+    count=0.0
+    while len(notes)!=0:
+        notes.pop()
     print "Stop: ",voice
     for index in range(0,len(midi)):
         if index>0:
@@ -1032,6 +1074,73 @@ def interpretMidiStaccato(midi,beat):
         index+=1
     return midiOut
 
+def interpretMidiGrace(midi,beat):
+    print "Interpretation Pass"
+    endAt=len(midi)-1
+    index=0
+    midiOut=[]
+    while index<endAt:
+        this=midi[index]
+        next=midi[index+1]
+        ttickOn,ttickOff,tnote,tkey,tvelocity,tAt,tLen,tPitch = unpackMidi(this,beat)
+        ntickOn,ntickOff,nnote,nkey,nvelocity,nAt,nLen,nPitch = unpackMidi(next,beat)
+
+        # Merge interpretation
+        finished=False
+        if (tLen>1024 and nLen>512) or (tLen>512 and nLen>1024):
+            if (ntickOn-ttickOff)<128 and tkey-nkey>2:
+                midiOut.append(this)
+                midiOut.append([ttickOn-80,ntickOn+64,tnote,nkey+2,(nvelocity+tvelocity)/8.0])
+                print "Staccato: ",this," & ",next
+                finished=True
+            if (ntickOn-ttickOff)<128 and nkey-tkey>2:
+                midiOut.append(this)
+                midiOut.append([ntickOn-80,ntickOn+64,tnote,nkey+1,(nvelocity+tvelocity)/8.0])
+                print "Staccato: ",this," & ",next
+                finished=True
+    
+        if not finished:
+            midiOut.append(this)
+            if index==endAt-1:
+                midiOut.append(next)
+            
+        # iterate the loop
+        index+=1
+    return midiOut
+
+
+def delayMidi(midi,beat,millis):
+    print "Interpretation Pass"
+    endAt=len(midi)
+    index=0
+    midiOut=[]
+    while index<endAt:
+        ttickOn,ttickOff,tnote,tkey,tvelocity=midi[index]
+        millis=float(millis)
+        millis/=float(beat)
+        midiOut.append((ttickOn+millis,ttickOff+millis,tnote,tkey,tvelocity))
+        # iterate the loop
+        index+=1
+    return midiOut
+
+def legatoMidi(midi,beat,millis):
+    print "Interpretation Pass"
+    endAt=len(midi)
+    index=0
+    midiOut=[]
+    while index<endAt:
+        ttickOn,ttickOff,tnote,tkey,tvelocity=midi[index]
+        millis=float(millis)
+        millis/=float(beat)
+        l=ttickOff-ttickOn
+        if l<millis:
+            midiOut.append([ttickOn,ttickOff+l*0.5,tnote,tkey,tvelocity])
+        else:
+            midiOut.append([ttickOn,ttickOff+millis,tnote,tkey,tvelocity])
+        # iterate the loop
+        index+=1
+    return midiOut
+
 def my_so(what):
     return what()
 
@@ -1191,14 +1300,45 @@ def my_so(what):
 # Fith Pedals   = voice=bombard,vCorrect=1.0,subBass=False,flatEnv=True
 # Fourth Padels = voice=ophicleide,pitchShift=0.5,vCorrect=0.5,subBass=False,flatEnv=True
 
+# BWV 645 in 9 voices
+# ===================
+# 1: sweetFlute,1.2
+# 1: celestFlute,0.33,2.0
+# 2: string,vCorrect=0.5,pitchShift=2.0
+# 3: upperAccent,vCorrect=0.2,pitchShift=4.0
+# 4: brightFlute,1.0
+# 4: voice=celestFlute,vCorrect=0.25,pitchShift=2.0,qFactor=0.5,subBass=False
+# 5: brightFlute,1.0
+# 5: voice=celestFlute,vCorrect=0.25,pitchShift=2.0,qFactor=0.5,subBass=False
+# 6: secondDiapason,vCorrect=1.0,subBass=False,flatEnv=True
+# 6: secondDiapason,pitchShift=0.5,vCorrect=0.5,subBass=False,flatEnv=True
+# 6: upperAccent,0.2,4.0
+# 7: secondDiapason,pitchShift=0.5,vCorrect=1.0,subBass=False,flatEnv=True
+# 7: secondDiapason,pitchShift=0.5,vCorrect=0.5,subBass=False,flatEnv=True
+# 7: upperAccent,0.2,4.0
+# 8: bombard,0.5,0.5
+# 9: clarion,0.5,0.5
+
+# BWV 650 in 3 voices
+# ===================
+# 1:sweetFlute,1.2
+# 1:celestFlute,0.33,2.0
+# 1:celestFlute,0.25,4.0
+# 2:stoppedReed,0.8
+# 2:voice=celestFlute,vCorrect=0.25,pitchShift=2.0,qFactor=0.5,subBass=False
+# 2:voice=secondDiapason,vCorrect=0.25,pitchShift=0.5,qFactor=0.5,subBass=False
+# 3:muteOboe,0.75
+# 3:voice=celestFlute,vCorrect=0.25,pitchShift=2.0,subBass=False
+
+
 #######################################
 # Timing configuration and running midi
 #######################################
 
-midis=sf.ReadMidiFile("temp/064500b_c.mid")
+midis=sf.ReadMidiFile("temp/Come sweetest death.mid")
 signature   =     4.0/4.0
 bpm         =     380 * signature
-adqf        =     1.0
+adqf        =     2.25
 beat        =     (60000.0 / (bpm * 192.0)) * adqf
 base        =     8.1757989156
 notesl=[]
@@ -1218,111 +1358,51 @@ def postProcess():
         notesr.append([noter,atr])
         count+=1
 
-print "Channel 1A"
-midi=midis[1]
-doMidi(count,notesStart,notesEnd,notes,midi,sweetFlute,1.2)
+print "Channel 1"
+midi=delayMidi(midis[1],beat,32)
+midi=legatoMidi(midi,beat,256)
+doMidi(notesStart,notesEnd,notes,midi,leadDiapason,vCorrect=0.40,pitchShift=1.0,qFactor=4.0,subBass=False,flatEnv=False)
+postProcess()
+doMidi(notesStart,notesEnd,notes,midi,leadDiapason,vCorrect=0.10,pitchShift=2.0,qFactor=4.0,subBass=False,flatEnv=False)
+postProcess()
+midi=delayMidi(midis[1],beat,32)
+doMidi(notesStart,notesEnd,notes,midi,leadDiapason,vCorrect=0.40,pitchShift=1.001,qFactor=4.0,subBass=False,flatEnv=False)
+postProcess()
+doMidi(notesStart,notesEnd,notes,midi,leadDiapason,vCorrect=0.10,pitchShift=4.001,qFactor=6.0,subBass=False,flatEnv=False)
 postProcess()
 
-notes=[]
-count = 0.0
-print "Channel 1B"
-doMidi(count,notesStart,notesEnd,notes,midi,celestFlute,0.33,2.0)
+print "Channel 2"
+midi=midis[2]
+doMidi(notesStart,notesEnd,notes,midi,secondDiapason,1.2,flatEnv=True,qFactor=2.0)
+postProcess()
+midi=delayMidi(midis[2],beat,32)
+doMidi(notesStart,notesEnd,notes,midi,voice=celestFlute,vCorrect=0.25,pitchShift=2.0,qFactor=1.0,subBass=False)
+postProcess()
+doMidi(notesStart,notesEnd,notes,midi,voice=secondDiapason,vCorrect=0.25,pitchShift=0.5,qFactor=1.0,subBass=False)
 postProcess()
 
-notes=[]
-count = 0.0
-print "Channel 1+A"
-midi=interpretMidiBombast(midis[2],beat)
-doMidi(count,notesStart,notesEnd,notes,midi,string,vCorrect=0.5,pitchShift=2.0)
+print "Channel 3"
+midi=midis[3]
+doMidi(notesStart,notesEnd,notes,midi,muteOboe,0.6,flatEnv=True,qFactor=3.0)
+postProcess()
+doMidi(notesStart,notesEnd,notes,midi,muteOboe,0.6,flatEnv=False,pitchShift=1.0025,qFactor=3.0)
+postProcess()
+doMidi(notesStart,notesEnd,notes,midi,voice=celestFlute,vCorrect=0.25,pitchShift=2.0,qFactor=2.0,subBass=False)
+postProcess()
+doMidi(notesStart,notesEnd,notes,midi,voice=secondDiapason,vCorrect=0.25,pitchShift=0.5,qFactor=2.0,subBass=False)
 postProcess()
 
-notes=[]
-count = 0.0
-print "Channel 1+B"
-midi=interpretMidiBombast(midis[2],beat)
-doMidi(count,notesStart,notesEnd,notes,midi,upperAccent,vCorrect=0.2,pitchShift=4.0)
+print "Channel 4"
+midi=midis[4]
+#midi=interpretMidiGrace(midis[4],beat)
+doMidi(notesStart,notesEnd,notes,midi,warmBass,vCorrect=1.5,pitchShift=1.0,qFactor=2.0,subBass=False,flatEnv=True)
 postProcess()
-
-notes=[]
-count = 0.0
-print "Channel 2A"
-midi=interpretMidiStaccato(midis[3],beat)
-doMidi(count,notesStart,notesEnd,notes,midi,brightFlute,1.0)
+doMidi(notesStart,notesEnd,notes,midi,voice=viola,vCorrect=0.25,pitchShift=2.0,qFactor=2.0,subBass=False)
 postProcess()
-
-notes=[]
-count = 0.0
-print "Channel 2B"
-doMidi(count,notesStart,notesEnd,notes,midi,voice=celestFlute,vCorrect=0.25,pitchShift=2.0,qFactor=0.5,subBass=False)
+midi=delayMidi(midis[4],beat,64)
+midi=interpretMidiGrace(midi,beat)
+doMidi(notesStart,notesEnd,notes,midi,upperAccent,vCorrect=0.5,pitchShift=0.5,qFactor=4.0,subBass=False,flatEnv=False)
 postProcess()
-
-notes=[]
-count = 0.0
-print "Channel 3A"
-midi=interpretMidiBombast(midis[4],beat)
-doMidi(count,notesStart,notesEnd,notes,midi,brightFlute,1.0)
-postProcess()
-
-notes=[]
-count = 0.0
-print "Channel 3B"
-doMidi(count,notesStart,notesEnd,notes,midi,voice=celestFlute,vCorrect=0.25,pitchShift=2.0,qFactor=0.5,subBass=False)
-postProcess()
-
-notes=[]
-count = 0.0
-print "Channel 4A"
-midi=interpretMidiStaccato(midis[5],beat)
-
-#count,notesStart,notesEnd,notes,midi,voice,vCorrect,pitchShift=1.0,qFactor=1.0
-doMidi(count,notesStart,notesEnd,notes,midi,secondDiapason,vCorrect=1.0,subBass=False,flatEnv=True)
-postProcess()
-
-notes=[]
-count = 0.0
-print "Channel 4B"
-doMidi(count,notesStart,notesEnd,notes,midi,secondDiapason,pitchShift=0.5,vCorrect=0.5,subBass=False,flatEnv=True)
-postProcess()
-    
-notes=[]
-count = 0.0
-print "Channel 4C"
-doMidi(count,notesStart,notesEnd,notes,midi,upperAccent,0.2,4.0)
-postProcess()
-
-notes=[]
-count = 0.0
-print "Channel 5A"
-midi=interpretMidiStaccato(midis[6],beat)
-doMidi(count,notesStart,notesEnd,notes,midi,secondDiapason,pitchShift=0.5,vCorrect=1.0,subBass=False,flatEnv=True)
-postProcess()
-
-notes=[]
-count = 0.0
-print "Channel 5B"
-doMidi(count,notesStart,notesEnd,notes,midi,secondDiapason,pitchShift=0.5,vCorrect=0.5,subBass=False,flatEnv=True)
-postProcess()
-
-notes=[]
-count = 0.0
-print "Channel 5C"
-doMidi(count,notesStart,notesEnd,notes,midi,upperAccent,0.2,4.0)
-postProcess()
-
-notes=[]
-count = 0.0
-print "Channel 6"
-midi=interpretMidiStaccato(midis[7],beat)
-doMidi(count,notesStart,notesEnd,notes,midi,bombard,0.5,0.5)
-postProcess()
-
-notes=[]
-count = 0.0
-print "Channel 7"
-midi=interpretMidiBombast(midis[8],beat)
-doMidi(count,notesStart,notesEnd,notes,midi,clarion,0.5,0.5)
-postProcess()
-
 
 def mix(notes):
     def mixInner():
