@@ -1,0 +1,461 @@
+def safeEnv(sig,env):
+    length=sf.Length(+sig)
+    ne=[]
+    op=0
+    for p,m in env:
+        if p-op<16 and p>0:
+            print "Warning: envelope to tight: ", env
+            p=op+16
+        op=p
+        ne.append([p,m])
+    if p>length:
+        print "***WARNING: envelop failure *** ",length," -> ",p," diff:", p-length
+    return sf.NumericShape(ne)
+         
+def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor,subBass,flatEnv):
+    def singInner():
+        vCorrect=vCorrect_
+        length=lengthIn
+        tp=0
+        
+        # minimum play time
+        if length<192:
+            length=192
+            tp=0  
+        elif length<363:
+            length+=128
+            tp=1
+        elif length<512:
+            length+=256
+            tp=2
+        elif length<1024:
+            length+=128
+            tp=3
+        else:
+            tp=4
+    
+        sig=[]
+        if pitch<330:
+            x=5
+        elif pitch<880:
+            x=6
+        else:
+            x=3
+        for x in range(0,x):
+            vc=voice(length,pitch*(1.0+random.random()*0.005))
+            vc=sf.Multiply(
+                safeEnv(
+                    vc,
+                    [
+                        (0,0),
+                        (24,1),
+                        (sf.Length(+vc)-24,1),
+                        (sf.Length(+vc),0)
+                    ]
+                ),
+                vc
+            )
+            sig.append(
+                sf.NumericVolume(
+                    sf.Concatenate(
+                        sf.Silence(24*random.random()),
+                        vc
+                    )
+                    ,random.random()+0.25
+                )
+            )
+        sig=sf.Realise(sf.Mix(sig))
+        
+        sig = sf.FixSize(sig)
+        length=sf.Length(+sig)
+        
+        pHint=hint[0]
+        nHint=hint[1]
+        shine=False
+        if tp==0:
+            if pHint=="T":
+                q=32
+            else:
+                q=64
+            if nHint=="T":
+                p=32
+            else:
+                p=64
+            q*=qFactor
+            env=safeEnv(sig,[(0,0),(q,1),(192-p,0.5),(length,0)])
+            if hint=="TT":
+                vCorrect*=0.8
+            elif hint=="NN" and pitch>660:
+                shine=True
+                vCorrect*=0.5        
+        elif tp==1 or flatEnv:
+            if pHint=="T":
+                q=48
+            else:
+                q=96
+            if nHint=="T":
+                p=64
+            else:
+                p=128
+            q*=qFactor
+            env=safeEnv(sig,[(0,0),(q,0.75),(length-p,1.0),(length,0)])
+            if hint=="TT":
+                vCorrect*=0.8            
+            if hint=="TT":
+                vCorrect*=0.8
+            elif hint=="NN" and pitch>880:
+                shine=True
+                vCorrect*=0.6
+        elif tp==2:
+            env=safeEnv(sig,[(0,0),(96*qFactor,0.75),(length-256,1.0),(length,0)])
+        elif tp==3:
+            if length<1280:
+                env=safeEnv(sig,[(0,0),(64*qFactor,0.5),(256,1),(512,0.75),((length-512)/2.0+512,0.5),(length,0)])
+            else:
+                env=safeEnv(sig,[(0,0),(64*qFactor,0.5),(256,1),(512,0.75),(length-512,0.75),(length,0)])
+        else:
+            env=safeEnv(sig,[(0,0),(64*qFactor,0.25),(512,1),(length/2,0.75),(length,0)])
+
+        mod=sf.NumericShape((0,0.995),(length,1.005))
+        mod=sf.Mix(mod,sf.NumericVolume(+env,0.01))
+        # if we have envelope extention then we don't do this as
+        # it get really hard to get the lengths correct and make 
+        # sense of what we are trying to do. KISS
+        if sf.Length(+sig)==sf.Length(+mod):
+            sig=sf.FrequencyModulate(sig,mod)  
+        else:
+            -mod
+
+        sig=sf.FixSize(sig)
+     
+        if pitch<256:
+            if subBass:
+                if pitch < 128:
+                    sig=sf.Mix(
+                        granularReverb(+sig,ratio=0.501 ,delay=256,density=32,length=256,stretch=1,vol=0.20),
+                        granularReverb(+sig,ratio=0.2495,delay=256,density=32,length=256,stretch=1,vol=0.10),
+                        sig
+                    )
+                elif pitch < 192:
+                    sig=sf.Mix(
+                        granularReverb(+sig,ratio=0.501,delay=256,density=32,length=256,stretch=1,vol=0.25),
+                        sig
+                    )
+                else:
+                    sig=sf.Mix(
+                        granularReverb(+sig,ratio=0.501,delay=256,density=32,length=256,stretch=1,vol=0.15),
+                        sig
+                    )
+            sig=sf.BesselLowPass(sig,pitch*8.0,2)
+        if pitch<392:
+            sig=sf.BesselLowPass(sig,pitch*6.0,2)
+        elif pitch<512:
+            sig=sf.Mix(
+                sf.BesselLowPass(+sig,pitch*6.0, 2),
+                sf.BesselLowPass( sig,pitch*3.0, 2)
+            )                
+        elif pitch<640:
+            sig=sf.BesselLowPass(sig,pitch*3.5, 2)
+        elif pitch<1280:
+            sig=sf.Mix(
+                sf.BesselLowPass(+sig,pitch*3.5, 2),
+                sf.BesselLowPass( sig,pitch*5.0, 2)
+            )                
+        else:
+            sig=sf.Mix(
+                sf.BesselLowPass(+sig,pitch*5, 2),
+                sf.BesselLowPass( sig,5000,    1)
+            )
+
+        sig=sf.Multiply(sig,env)                     
+        sig=sf.FixSize(sig)
+        
+        cnv=sf.WhiteNoise(10240)
+        cnv=sf.ButterworthHighPass(cnv,32,4)
+        if shine:
+            q=640
+            print "Shine"
+        else:
+            q=256
+        cnv=sf.Cut(5000,5000+q,cnv)
+        cnv=sf.Multiply(cnv,sf.NumericShape((0,0),(32,1),(q,0)))
+        sigr=reverberate(+sig,cnv)
+        sigr=sf.Multiply(
+            safeEnv(sigr,[(0,0),(256,1),(sf.Length(+sigr),1.5)]),
+            sigr
+        )
+        sig=sf.Mix(
+            sf.Pcnt20(sigr),
+            sf.Pcnt80(sig)
+        )
+        
+        note=sf.NumericVolume(sf.FixSize(sig),v)
+        sf.Check(note)
+        notel=sf.Realise(sf.NumericVolume(+note,vl*vCorrect))
+        noter=sf.Swap(sf.NumericVolume( note,vr*vCorrect))
+        return (notel,noter)
+    return sf_do(singInner)
+
+def doMidi(notesStart,notesEnd,notes,midi,voice,vCorrect,pitchShift=1.0,qFactor=1.0,subBass=False,flatEnv=False):
+    count=0.0
+    while len(notes)!=0:
+        notes.pop()
+    print "Stop: ",voice
+    for index in range(0,len(midi)):
+        if index>0:
+            prev=midi[index-1]
+        else:
+            prev=()
+        if index<len(midi)-1:
+            next=midi[index+1]
+        else:
+            next=()
+        current=midi[index]
+        tickOn,tickOff,note,key,velocity = current
+        if count>notesEnd:
+            break
+        at=tickOn*beat
+        if count<notesStart:
+            count+=1
+            continue
+        length=(tickOff-tickOn)*beat
+        if key==0:
+            pitch=base
+        else:
+            key=float(key)
+            pitch= (sf.Semitone(0)**key) * base * pitchShift
+        velocity=velocity/100
+        v=velocity
+        pl=pitch
+
+        vCUse=vCorrect
+        
+        # volume pitch correction to stop domination
+        # of high notes - not quite the same as 
+        # loudness correction due to the high dominating
+        # low perception issue.
+        pCorrect=1
+        if vCorrect>0.25 and pitch > 660 :
+            if length <256:
+                sCorrect=1.5
+            else:
+                sCorrect=1.0
+            pCorrect=1.0
+            if pitch>660:
+                if pitch<2000:
+                    pCorrect=float(2000-pitch)/1340.0
+                    pCorrect=0.40*(1.0-pCorrect)+pCorrect
+                elif pitch<4000:
+                    pCorrect=float(8000-pitch)/4000.0
+                    pCorrect=0.75*(1.0-pCorrect)+0.4*pCorrect
+            pCorrect*=sCorrect
+            if pCorrect>1:
+                pCorrect=1
+        vCUse*=pCorrect
+
+        if pl<300:
+            # low to the right ish
+            if pl <100:
+                pl=100
+            pl=float(pl-100)/200.0
+            pl=pl*0.5+0.4
+            lr=pl
+        elif pl <880:
+            # middle across all
+            pl=float(pl-300)/580.0
+            pl=pl*0.8+0.1
+            lr=pl
+        else:
+            # high off to the left
+            pl=pl-880
+            pl=float(pl-880)/880.0
+            if pl>1:
+                pl=1
+            pl=0.05+pl*0.3
+            lr=pl
+        
+        rl=1.0-lr
+        
+        # Compute hint
+        # Two letters - first for previous note
+        # second for next note
+        # S=start
+        # T=trill
+        # N=normal
+        # E=end
+        hint=""
+        if len(prev):
+            to,tf,n,k,v=prev
+            lp=(tf-to)*beat
+            ep=tf*beat
+            # quick close previous note
+            if at-ep < 100 and lp<256:
+                hint+="T"
+            else:
+                hint+="N"
+        else:
+            hint+="S"
+        if len(next):
+            to,tf,n,k,v=next
+            sn=to*beat
+            # quick close previous note
+            if sn-at < 100+length and length<256:
+                hint+="T"
+            else:
+                hint+="N"
+        else:
+            hint+="E"
+ 
+        print "H",hint,"C",count,"P",pitch,"@",at,"L",length,"V",velocity,"VU",vCUse,"PC",pCorrect
+        note = sing(hint,pitch, length,beat,v,lr,rl,voice,vCUse,qFactor,subBass,flatEnv)
+        dl=30*rl+1000
+        dr=38*lr+1000
+        notes.append((note,at+dl,at+dr))
+        count+=1
+
+def unpackMidi(tup,beat):
+            tickOn,tickOff,note,key,velocity = tup
+            at  = tickOn*beat
+            llen = (tickOff-tickOn)*beat
+            if key==0:
+                pitch=base
+            else:
+                pitch= (sf.Semitone(0)**float(key)) * base
+            return tickOn,tickOff,note,key,velocity,at,llen,pitch
+
+def interpretMidiBombast(midi,beat):
+    change=True
+    while change:
+        change=False
+        print "Interpretation Pass"
+        endAt=len(midi)-1
+        index=0
+        midiOut=[]
+        while index<endAt:
+            this=midi[index]
+            next=midi[index+1]
+            ttickOn,ttickOff,tnote,tkey,tvelocity,tAt,tLen,tPitch = unpackMidi(this,beat)
+            ntickOn,ntickOff,nnote,nkey,nvelocity,nAt,nLen,nPitch = unpackMidi(next,beat)
+    
+            # Merge interpretation
+            finished=False
+            if tLen>512:
+                #print "Checking ",tPitch==nPitch, tvelocity==nvelocity,ntickOn-ttickOff,nLen>256,tPitch<256
+                if tPitch==nPitch and tvelocity==nvelocity and (ntickOn-ttickOff)<128 and (ntickOn-ttickOff)>-16:
+                    # go for a low pitch merge
+                    # below middle C
+                    if nLen>256 and tPitch<256:
+                        finished=True
+                        midiOut.append([ttickOn,ntickOff,tnote,tkey,tvelocity])
+                        print "Merging: ",this," & ",next
+                        index+=1
+                        change=True
+    
+            if not finished:
+                midiOut.append(this)
+                if index==endAt-1:
+                    midiOut.append(next)
+                
+            # iterate the loop
+            index+=1
+        midi=midiOut
+    return midi
+
+def interpretMidiStaccato(midi,beat):
+    print "Interpretation Pass"
+    endAt=len(midi)-1
+    index=0
+    midiOut=[]
+    while index<endAt:
+        this=midi[index]
+        next=midi[index+1]
+        ttickOn,ttickOff,tnote,tkey,tvelocity,tAt,tLen,tPitch = unpackMidi(this,beat)
+        ntickOn,ntickOff,nnote,nkey,nvelocity,nAt,nLen,nPitch = unpackMidi(next,beat)
+
+        # Merge interpretation
+        finished=False
+        if tLen>512:
+            if (ntickOn-ttickOff)<128:
+                ttickOff-=128
+                midiOut.append([ttickOn,ntickOff,tnote,tkey,tvelocity])
+                print "Staccato: ",this," & ",next
+                finished=True
+    
+        if not finished:
+            midiOut.append(this)
+            if index==endAt-1:
+                midiOut.append(next)
+            
+        # iterate the loop
+        index+=1
+    return midiOut
+
+def interpretMidiGrace(midi,beat):
+    print "Interpretation Pass"
+    endAt=len(midi)-1
+    index=0
+    midiOut=[]
+    while index<endAt:
+        this=midi[index]
+        next=midi[index+1]
+        ttickOn,ttickOff,tnote,tkey,tvelocity,tAt,tLen,tPitch = unpackMidi(this,beat)
+        ntickOn,ntickOff,nnote,nkey,nvelocity,nAt,nLen,nPitch = unpackMidi(next,beat)
+
+        # Merge interpretation
+        finished=False
+        if (tLen>1024 and nLen>512) or (tLen>512 and nLen>1024):
+            if (ntickOn-ttickOff)<128 and tkey-nkey>2:
+                midiOut.append(this)
+                midiOut.append([ttickOn-80,ntickOn+64,tnote,nkey+2,(nvelocity+tvelocity)/8.0])
+                print "Staccato: ",this," & ",next
+                finished=True
+            if (ntickOn-ttickOff)<128 and nkey-tkey>2:
+                midiOut.append(this)
+                midiOut.append([ntickOn-80,ntickOn+64,tnote,nkey+1,(nvelocity+tvelocity)/8.0])
+                print "Staccato: ",this," & ",next
+                finished=True
+    
+        if not finished:
+            midiOut.append(this)
+            if index==endAt-1:
+                midiOut.append(next)
+            
+        # iterate the loop
+        index+=1
+    return midiOut
+
+
+def delayMidi(midi,beat,millis):
+    print "Interpretation Pass"
+    endAt=len(midi)
+    index=0
+    midiOut=[]
+    while index<endAt:
+        ttickOn,ttickOff,tnote,tkey,tvelocity=midi[index]
+        millis=float(millis)
+        millis/=float(beat)
+        midiOut.append((ttickOn+millis,ttickOff+millis,tnote,tkey,tvelocity))
+        # iterate the loop
+        index+=1
+    return midiOut
+
+def legatoMidi(midi,beat,millis):
+    print "Interpretation Pass"
+    endAt=len(midi)
+    index=0
+    midiOut=[]
+    while index<endAt:
+        ttickOn,ttickOff,tnote,tkey,tvelocity=midi[index]
+        millis=float(millis)
+        millis/=float(beat)
+        l=ttickOff-ttickOn
+        if l<millis:
+            midiOut.append([ttickOn,ttickOff+l*0.5,tnote,tkey,tvelocity])
+        else:
+            midiOut.append([ttickOn,ttickOff+millis,tnote,tkey,tvelocity])
+        # iterate the loop
+        index+=1
+    return midiOut
+
+def my_so(what):
+    return what()

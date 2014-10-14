@@ -1,0 +1,249 @@
+import os
+path="scripts/python/Bach-Large-Organ"
+execfile(path+"/algorithms.sy")
+execfile(path+"/generators.sy")
+execfile(path+"/voices.sy")
+execfile(path+"/note-formation.sy")
+
+########################
+# Two manual stops
+########################
+
+# Soft two manual settings:
+# =========================
+# First manual  = leadDiapason  ,2.0
+# Pedals manual = warmBass      ,1.5,subBass=True
+
+# Grand two manual settings:
+# ==========================
+# First manual  = secondDiapason,2.0
+# Pedals manual = warmBass      ,1.5,subBass=True
+# Pedals manual = upperAccent   ,0.2,x4
+
+# Standard two manual settings:
+# =============================
+# First manual  = leadDiapason  ,2.0
+# Second manual = secondDiapason,0.8
+# Second manual = upperAccent,0.1,x4
+
+# Bright two manual settings:
+# ===========================
+# First manual  = leadDiapason  ,2.0
+# Second manual = secondDiapason,0.8
+# Second manual = upperAccent   ,0.1,x4
+# Second manual = clarion       ,0.2,x2
+
+# Warm two manual settings:
+# ===========================
+# First manual  = leadDiapason  ,2.0
+# Second manual = secondDiapason,0.8
+# Second manual = upperAccent   ,0.4,x2
+# Second manual = warmBass      ,0.2,x0.5
+
+# Oboe two manual settings:
+# ===========================
+# First manual  = simpleOboe    ,0.4
+# First manual  = secondDiapson ,1.2
+# Second manual = leadDiapason  ,1.0
+# Second manual = upperAccent   ,0.4,x2
+# Second manual = warmBass      ,0.2,x0.5
+
+# Counterpoint 3 manual and pedals 
+# With clarion on the second to give
+# shining inverted lead
+# ================================
+# First manual  = leadDiapason   ,1.2
+# Second manual = clarion        ,0.8
+# Third manual  = secondDiapason ,1.2
+# Third manual  = upperAccent    ,0.1,x2
+# Pedals        = warmBass       ,1.5,subBass=True
+# Padels        = upperAccent    ,0.2,x4
+
+# Counterpoint 3 manual and pedals 
+# With more traditional lead on
+# first and accent. Accent pedals
+# with an oboe to give baroque 
+# feel. Fast attach on lead if you
+# are playing very fast
+# ================================
+# First manual  = leadDiapason   ,1.5,0.5
+# Second manual = secondDiapaon  ,0.8
+# Second manual = upperAccent    ,0.1,x2
+# Third manual  = secondDiapason ,0.8
+# Third manual  = upperAccent    ,0.1,x2
+# Pedals        = warmBass       ,1.5,subBass=True
+# Padels        = simpleOboe     ,0.1,x2
+# Padels        = simpleOboe     ,0.1,x4
+
+# Baroque 3 manual and pedals 
+# With clarion on the first to give
+# shining lead and a grand bass 
+# for a much more modern sound, but
+# maybe too much?
+# ================================
+# First manual  = clarion        ,1.4,0.5
+# First manual  = clarion        ,0.2,1.995,0.33
+# Second manual = leadDiapason   ,0.8
+# Second manual = upperAccent    ,0.2,x2
+# Third manual  = leadDiapason   ,0.8
+# Third manual  = upperAccent    ,0.2,x2
+# Pedals        = grandBass      ,2.5
+# Pedals        = warmBass       ,1.5,x0.501,subBass=True
+# Padels        = upperAccent    ,0.2,x4
+# Padels        = upperAccent    ,0.1,x8
+
+# Counterpoint 3 manual and pedals 
+# Clean sound warm bass
+# ================================
+# First manual  = leadDiapason   ,0.5
+# First manual  = leadDiapason   ,0.5,1.001
+# Second manual = secondDiapaon  ,0.8
+# Third manual  = secondDiapason ,0.8
+# Pedals        = warmBass       ,1.5,subBass=True
+# Padels        = upperAccent    ,0.2,x4
+
+# 3 oboes manuals and pedals 
+# ================================
+# First manual  = muteOboe       ,1.0,0.5
+# Second manual = muteOboe       ,1.0,0.5
+# Third manual  = muteOboe       ,1.0,0.5
+# Pedals        = warmBass       ,1.5,subBass=True
+# Padels        = upperAccent    ,0.1,x4
+
+# 2 diapason manuals oboe instead 
+# of pedals 
+# ================================
+# First manual  = secondDiapaon  ,1.0
+# Second manual = secondDiapaon  ,1.0
+# Third manual  = muteOboe       ,1.5
+
+# Counterpoint 3 manual and pedals 
+# Controlled brass
+# ================================
+# First manual  = clarion        ,0.6
+# First manual  = leadDiapason   ,0.6,1.001
+# Second manual = secondDiapaon  ,0.8
+# Third manual  = secondDiapason ,0.8
+# Pedals        = warmBass       ,1.5,subBass=True
+# Padels        = upperAccent    ,0.2,x4
+
+# 2 Inverted diapason and read 3
+# manuals
+# ================================
+# First manual  = stoppedReed    ,1.0
+# Second manual = stoppedReed    ,1.0
+# Third manual  = leadDiapason   ,1.0
+# Third manual  = grandBass      ,0.5,x0.5
+
+
+# Counterpoint 3 manual and pedals 
+# Bass Heavy - very complex
+# ================================
+# First manual  = clarion        ,0.4
+# First manual  = leadDiapason   ,0.4,1.001
+# Second manual = secondDiapaon  ,0.8
+# Third manual  = secondDiapason ,0.8
+# Third manual  = upperAccent    ,0.2,x4,subBass=False,qFactor=0.5
+# Pedals        = warmBass       ,1.5,subBass=True
+# Padels        = stoppedReed    ,0.501,x0.5,subBass=True
+# Padels        = upperAccent    ,0.2,x4
+
+# Bombasic 5 parts (2 pedals)
+# ===========================
+# First manual  = string         ,1.2
+# First manual  = string         ,0.33,2.0
+# Second manual = richRead       ,1.0
+# Second manual = voice=upperAccent,vCorrect=0.25,pitchShift=2.0,qFactor=0.5,subBass=False
+# Third manual  = muteOboe       ,1.0
+# Third manual  = voice=upperAccent,vCorrect=0.25,pitchShift=2.0,qFactor=0.5,subBass=False
+# Fourth Pedals = voice=bombard,vCorrect=1.0,subBass=False,flatEnv=True
+# Fourth Padels = voice=ophicleide,pitchShift=0.5,vCorrect=0.5,subBass=False,flatEnv=True
+# Fith Pedals   = voice=bombard,vCorrect=1.0,subBass=False,flatEnv=True
+# Fourth Padels = voice=ophicleide,pitchShift=0.5,vCorrect=0.5,subBass=False,flatEnv=True
+
+# BWV 645 in 9 voices
+# ===================
+# 1: sweetFlute,1.2
+# 1: celestFlute,0.33,2.0
+# 2: string,vCorrect=0.5,pitchShift=2.0
+# 3: upperAccent,vCorrect=0.2,pitchShift=4.0
+# 4: brightFlute,1.0
+# 4: voice=celestFlute,vCorrect=0.25,pitchShift=2.0,qFactor=0.5,subBass=False
+# 5: brightFlute,1.0
+# 5: voice=celestFlute,vCorrect=0.25,pitchShift=2.0,qFactor=0.5,subBass=False
+# 6: secondDiapason,vCorrect=1.0,subBass=False,flatEnv=True
+# 6: secondDiapason,pitchShift=0.5,vCorrect=0.5,subBass=False,flatEnv=True
+# 6: upperAccent,0.2,4.0
+# 7: secondDiapason,pitchShift=0.5,vCorrect=1.0,subBass=False,flatEnv=True
+# 7: secondDiapason,pitchShift=0.5,vCorrect=0.5,subBass=False,flatEnv=True
+# 7: upperAccent,0.2,4.0
+# 8: bombard,0.5,0.5
+# 9: clarion,0.5,0.5
+
+# BWV 650 in 3 voices
+# ===================
+# 1:sweetFlute,1.2
+# 1:celestFlute,0.33,2.0
+# 1:celestFlute,0.25,4.0
+# 2:stoppedReed,0.8
+# 2:voice=celestFlute,vCorrect=0.25,pitchShift=2.0,qFactor=0.5,subBass=False
+# 2:voice=secondDiapason,vCorrect=0.25,pitchShift=0.5,qFactor=0.5,subBass=False
+# 3:muteOboe,0.75
+# 3:voice=celestFlute,vCorrect=0.25,pitchShift=2.0,subBass=False
+
+
+#######################################
+# Timing configuration and running midi
+#######################################
+
+midis=sf.ReadMidiFile("temp/Come sweetest death.mid")
+signature   =     4.0/4.0
+bpm         =     380 * signature
+adqf        =     2.25
+beat        =     (60000.0 / (bpm * 192.0)) * adqf
+base        =     8.1757989156
+notesl=[]
+notesr=[]
+notes=[]
+count       =     0.0
+notesStart  =     0.00
+notesEnd    =    19.0
+
+def postProcess():
+    count=0
+    for note in notes:
+        nlr,atl,atr=note
+        print "Done: ",count,atl,atr
+        notel,noter=nlr
+        notesl.append([notel,atl])
+        notesr.append([noter,atr])
+        count+=1
+
+print "Channel 1"
+
+midi=legatoMidi(midis[1],beat,256)
+doMidi(notesStart,notesEnd,notes,midi,voxCelestSoprano,vCorrect=0.70,pitchShift=1.0,qFactor=4.0,subBass=False,flatEnv=False)
+postProcess()
+
+"""
+print "Channel 2"
+midi=midis[2]
+doMidi(notesStart,notesEnd,notes,midi,voice=secondDiapason,vCorrect=0.5,pitchShift=1.0,qFactor=4.0,subBass=False)
+postProcess()
+postProcess()
+
+print "Channel 3"
+midi=midis[3]
+doMidi(notesStart,notesEnd,notes,midi,muteOboe,vCorrect=0.5,flatEnv=True,qFactor=3.0)
+postProcess()
+
+print "Channel 4"
+midi=midis[4]
+doMidi(notesStart,notesEnd,notes,midi,voice=bombard,vCorrect=1.0,pitchShift=0.5,qFactor=2.0,subBass=False,flatEnv=True)
+postProcess()
+"""
+print "Mixing"
+left =mix(notesl)
+right=mix(notesr)
+print "Writing"
+sf.WriteFile32((left,right),"temp/temp.wav")

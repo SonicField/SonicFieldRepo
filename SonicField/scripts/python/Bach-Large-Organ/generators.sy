@@ -1,0 +1,239 @@
+
+def bombardPulse(length,frequency):
+    p=random.random()
+    if frequency>4000:
+        sig=sf.Mix(
+            sf.PhasedSineWave(length,frequency,p),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*2.0,p),2.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*3.0,p),1.5),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*4.0,p),1.3),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*5.0,p),1.2),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*6.0,p),1.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*7.0,p),0.8),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*8.0,p),0.5)
+            )
+    else:
+        sig=sf.Mix(
+            sf.PhasedSineWave(length,frequency,p),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*2.0,p),2.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*3.0,p),1.5),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*4.0,p),1.3),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*5.0,p),1.2),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*6.0,p),1.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*7.0,p),0.8),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*8.0,p),0.6),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*9.0,p),0.4),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*10.0,p),0.2)
+        )
+    return sf.FixSize(sig)
+
+def ophicleidePulse(length,frequency):
+    p=random.random()
+    if frequency>4000:
+        sig=sf.Mix(
+            sf.PhasedSineWave(length,frequency,p),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*2.0,p),1.5),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*3.0,p),2.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*4.0,p),2.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*5.0,p),1.5),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*6.0,p),1.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*7.0,p),0.8),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*8.0,p),0.5)
+            )
+    elif frequency>1000:
+        sig=sf.Mix(
+            sf.PhasedSineWave(length,frequency,p),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*2.0,p),1.5),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*3.0,p),2.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*4.0,p),2.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*5.0,p),1.5),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*6.0,p),1.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*7.0,p),0.9),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*8.0,p),0.8),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*9.0,p),0.6),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*10.0,p),0.4)
+        )
+    else:
+        sig=sf.Mix(
+            sf.PhasedSineWave(length,frequency,p),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*2.0,p),1.5),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*3.0,p),2.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*4.0,p),2.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*5.0,p),1.8),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*6.0,p),1.6),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*7.0,p),1.4),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*8.0,p),1.2),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*9.0,p),1.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*10.0,p),0.8),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*11.0,p),0.5),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*12.0,p),0.3),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*13.0,p),0.2),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*14.0,p),0.1)
+       )   
+    return sf.FixSize(sig)
+    
+def nicePulse(length,frequency):
+    p=random.random()
+    if frequency>4000:
+        sig=sf.Mix(
+            sf.PhasedSineWave(length,frequency,p),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*2.0,p),1.0/1.5),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*3.0,p),1.0/1.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*4.0,p),1.0/1.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*5.0,p),1.0/1.5),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*6.0,p),1.0/2.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*7.0,p),1.0/3.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*8.0,p),1.0/4.0)
+            )
+    else:
+        sig=sf.Mix(
+            sf.PhasedSineWave(length,frequency,p),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*2.0,p),1.0/1.5),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*3.0,p),1.0/1.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*4.0,p),1.0/1.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*5.0,p),1.0/1.5),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*6.0,p),1.0/2.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*7.0,p),1.0/3.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*8.0,p),1.0/4.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*9.0,p),1.0/6.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*10.0,p),1.0/10.0)
+        )
+    return sf.FixSize(sig)
+
+def makeSimpleBase(length,frequency,z):
+    p=random.random()
+    if frequency>4000:
+        sig=sf.Mix(
+            sf.PhasedSineWave(length,frequency,p),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*2.0,p),(1.0/2.0)**z),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*3.0,p),(1.0/3.0)**z),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*4.0,p),(1.0/4.0)**z),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*5.0,p),(1.0/5.0)**z),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*6.0,p),(1.0/6.0)**z),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*7.0,p),(1.0/7.0)**z),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*8.0,p),(1.0/8.0)**z)
+            )
+    else:
+        sig=sf.Mix(
+            sf.PhasedSineWave(length,frequency,p),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*2.0,p),(1.0/2.0)**z),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*3.0,p),(1.0/3.0)**z),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*4.0,p),(1.0/4.0)**z),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*5.0,p),(1.0/5.0)**z),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*6.0,p),(1.0/6.0)**z),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*7.0,p),(1.0/7.0)**z),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*8.0,p),(1.0/8.0)**z),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*9.0,p),(1.0/9.0)**z),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*10.0,p),(1.0/10.0)**z)
+        )
+    return sf.FixSize(sig)
+
+def niceSaw(length,frequency):
+    return makeSimpleBase(length,frequency,1.0)
+
+def violaBase(length,frequency):
+    return makeSimpleBase(length,frequency,0.5)
+
+def sweetFluteBase(length,frequency):
+    return makeSimpleBase(length,frequency,8.0)
+    
+def brightFluteBase(length,frequency):
+    return makeSimpleBase(length,frequency,3.5)
+
+def stoppedPulse(length,frequency):
+    p=random.random()
+    if frequency>3000:
+        sig=sf.Mix(
+            sf.PhasedSineWave(length,frequency,p),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*3.0,p),1.0/1.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*5.0,p),1.0/1.5),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*7.0,p),1.0/2.0)
+            )
+    else:
+        sig=sf.Mix(
+            sf.PhasedSineWave(length,frequency,p),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*3.0,p),1.0/1.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*5.0,p),1.0/1.5),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*7.0,p),1.0/2.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*9.0,p),1.0/4.0),
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*11.0,p),1.0/8.0)
+        )
+    return sf.FixSize(sig)
+
+def doFormant(sig,f1,f2,f3,freq):
+    def doFormantInner(a,b,c,d):
+        def doFII():
+            return sf.RBJPeaking(a,b,c,d)
+        return sf_do(doFII)
+    sig1=doFormantInner(+sig,f1,0.5,20)
+    sig2=doFormantInner(+sig,f2,1.0,40)
+    sig3=doFormantInner( sig,f3,0.5,20)
+    x=sf.Mix(sig1,sig2,sig3)
+    x=polish(x,freq)
+    x=sf.BesselLowPass(x,f3*1.5,2)
+    x=sf.FixSize(x)
+    return x
+    
+def cleanNoise(length,freq):
+    return sf.FixSize(
+        sf.FixSize(
+            sf.BesselLowPass(
+                sf.ButterworthHighPass(
+                    sf.Clean(sf.WhiteNoise(length)),
+                    freq*0.25,
+                    4
+                ),
+                2000,
+                1
+            )       
+        )
+    )
+
+def pitchMove(sig):
+    l=sf.Length(+sig)
+    if l>1024:
+        move=sf.NumericShape(
+            (0,0.995+random.random()*0.01),
+            (l,0.995+random.random()*0.01)
+        )
+    elif l>512:
+        move=sf.NumericShape(
+            (0,0.9975+random.random()*0.005),
+            (l,0.9975+random.random()*0.005)
+        )
+    else:
+        return sig
+    return sf.Clean(sf.Resample(move,sig))
+    
+def polish(sig,freq):
+    if freq > 128:
+        sig=sf.ButterworthHighPass(sig,freq*0.66,6)
+    elif freq > 64:
+        sig=sf.ButterworthHighPass(sig,freq*0.66,4)
+    else:
+        sig=sf.ButterworthHighPass(sig,freq*0.66,2)   
+    return sf.Clean(sig)
+
+def singBase(length,freq,z=1.0):
+    vox=sf.WhiteNoise(length)
+    vox=sf.Clean(vox)
+    vox=sf.ButterworthBandPass(vox,freq,freq*8,4)
+    vox=sf.ButterworthLowPass(vox,freq  ,1)
+    vox=sf.FixSize(vox)
+    vox=sf.Mix(
+        sf.NumericVolume(sf.FixSize(sf.RBJPeaking(+vox,freq*1.0,0.05,80)),(1.0/1.0)**z),
+        sf.NumericVolume(sf.FixSize(sf.RBJPeaking(+vox,freq*2.0,0.05,80)),(1.0/2.0)**z),
+        sf.NumericVolume(sf.FixSize(sf.RBJPeaking(+vox,freq*3.0,0.05,80)),(1.0/3.0)**z),
+        sf.NumericVolume(sf.FixSize(sf.RBJPeaking(+vox,freq*4.0,0.05,80)),(1.0/4.0)**z),
+        sf.NumericVolume(sf.FixSize(sf.RBJPeaking(+vox,freq*5.0,0.05,80)),(1.0/5.0)**z),
+        sf.NumericVolume(sf.FixSize(sf.RBJPeaking(+vox,freq*6.0,0.05,80)),(1.0/6.0)**z),
+        sf.NumericVolume(sf.FixSize(sf.RBJPeaking(+vox,freq*7.0,0.05,80)),(1.0/7.0)**z),
+        sf.NumericVolume(sf.FixSize(sf.RBJPeaking(+vox,freq*8.0,0.05,80)),(1.0/9.0)**z),
+        sf.NumericVolume(sf.FixSize(sf.RBJPeaking( vox,freq*8.0,0.05,80)),(1.0/10.0)**z)
+    )
+    vox=sf.Clean(vox)
+    vox=sf.ButterworthLowPass(vox,freq  ,1)
+    vox=sf.ButterworthLowPass(vox,freq*4,1)
+    vox=polish(sf.FixSize(vox),freq)
+    return sf.FixSize(vox)
+

@@ -1,0 +1,424 @@
+###############################################################################
+#
+# Voices
+#
+###############################################################################
+
+def voxCelest_inner(length,freq,a,b,c):
+    vox=singBase(length,freq)
+    noise=sf.Multiply(
+        cleanNoise(length,freq*0.5),
+        sf.SimpleShape((0,-60),(64,-28),(128,-40),(length,-40))
+    )
+    vox=sf.Mix(vox,noise)
+    vox=sf.FixSize(polish(vox,freq)) 
+    vox=polish(sf.Power(vox,1.5),freq)
+    ev=sf.Pcnt25(sf.SineWave(length,4.5))
+    ev=sf.Multiply(
+        ev,
+        sf.NumericShape((0,0),(length*0.5,1),(length,1))
+    )
+    fv=sf.Pcnt10(+ev)
+    ev=sf.DirectMix(1.0,ev)
+    vox=sf.Multiply(ev,vox)
+    vox=sf.Power(vox,1.1)
+    vox=sf.FrequencyModulate(vox,fv)
+    vox=doFormant(vox,a,b,c,freq)
+    vox=excite(vox,0.5,1.5)
+    vox=polish(vox,freq)
+    return sf.FixSize(vox)
+
+def voxCelestAlto(length,freq):
+    return voxCelest_inner(length,freq,470,1150,2100)
+
+def voxCelestSoprano(length,freq):
+    return voxCelest_inner(length,freq,850,1200,2800)
+
+def celestFlute(length,freq):
+    sig=sf.Mix(
+        sf.Pcnt50(sweetFluteBase(length,freq)),
+        sf.Pcnt50(sweetFluteBase(length,freq+1.0)),
+        sf.Multiply(
+            cleanNoise(length,freq*0.5),
+            sf.SimpleShape((0,-60),(64,-28),(128,-40),(length,-40))
+        )
+    )
+    return pitchMove(sig)
+
+def sweetFlute(length,freq):
+    sig=sf.Mix(
+        sweetFluteBase(length,freq),
+        sf.Multiply(
+            cleanNoise(length,freq*0.5),
+            sf.SimpleShape((0,-60),(64,-30),(128,-40),(length,-40))
+        )
+    )
+    sig=sf.FixSize(polish(sig,freq))
+    return pitchMove(sig)
+
+def brightFlute(length,freq):
+    sig=sf.Mix(
+        brightFluteBase(length,freq),
+        sf.Multiply(
+            cleanNoise(length,freq*0.5),
+            sf.SimpleShape((0,-60),(64,-28),(128,-40),(length,-40))
+        )
+    )
+    sig=sf.FixSize(polish(sig,freq))
+    return pitchMove(sig)
+
+def string(length,freq):
+    def ms():
+        sig=sf.Mix(
+            sf.Pcnt45(sf.MakeTriangle(sf.PhasedSineWave(length,freq,random.random()))),
+            sf.Pcnt25(sf.MakeTriangle(sf.PhasedSineWave(length,freq*2.0,random.random()))),
+            sf.Pcnt15(sf.MakeTriangle(sf.PhasedSineWave(length,freq*4.0,random.random()))),
+            sf.Pcnt15(sf.PhasedSineWave(length,freq*6.0,random.random())),
+            sf.Multiply(
+                cleanNoise(length,freq),
+                sf.SimpleShape((0,-60),(64,-20),(128,-36),(length,-36))
+            )
+        )
+        sig=polish(sig,freq)
+        sig=sf.FixSize(polish(sf.Saturate(sig),freq))
+        return pitchMove(sig)
+        
+    return sf.FixSize(sf.Mix(ms(),ms()))
+
+def viola(length,freq):
+    sig=sf.Mix(
+        violaBase(length,freq),
+        sf.Multiply(
+            cleanNoise(length,freq*0.5),
+            sf.SimpleShape((0,-60),(64,-20),(128,-36),(length,-36))
+        )
+    )
+    sig=sf.FixSize(polish(sig,freq))
+    return pitchMove(sig)
+
+def leadDiapason(length,freq):
+    sig=sf.Mix(
+        sf.Pcnt65(sf.MakeTriangle(sf.PhasedSineWave(length,freq,random.random()))),
+        sf.Pcnt25(sf.MakeTriangle(sf.PhasedSineWave(length,freq*2.0,random.random()))),
+        sf.Pcnt15(sf.PhasedSineWave(length,freq*4.0,random.random())),
+        sf.Multiply(
+            cleanNoise(length,freq),
+            sf.SimpleShape((0,-60),(64,-20),(128,-36),(length,-36))
+        )
+    )
+    sig=sf.FixSize(polish(sig,freq))
+    return pitchMove(sig)
+
+def secondDiapason(length,freq):
+    sig=sf.Mix(
+        sf.MakeTriangle(sf.PhasedSineWave(length,freq,random.random())),
+        sf.Pcnt25(sf.MakeTriangle(sf.PhasedSineWave(length,freq*2.0,random.random()))),
+        sf.Pcnt15(sf.PhasedSineWave(length,freq*4.0,random.random())),
+        sf.Pcnt5(sf.PhasedSineWave(length,freq*8.0,random.random())),
+        sf.Multiply(
+            cleanNoise(length,freq),
+            sf.SimpleShape((0,-60),(64,-20),(128,-26),(length,-20))
+        )
+    )
+    sig=sf.FixSize(polish(sig,freq))
+    return pitchMove(sig)
+
+def grandBass(length,freq):
+    sig=sf.Mix(
+        sf.MixAt(
+            [sf.Pcnt25(niceSaw(length,freq)),0],
+            [sf.Pcnt50(sf.MakeTriangle(sf.PhasedSineWave(length,freq*0.501,random.random()))),32],
+            [sf.Pcnt25(sf.MakeTriangle(sf.PhasedSineWave(length,freq*0.252,random.random()))),64],
+            [sf.Pcnt25(sf.MakeTriangle(sf.PhasedSineWave(length,freq/8.01,random.random()))),64]
+        ),          
+        sf.Multiply(
+            cleanNoise(length,freq),
+            sf.SimpleShape((0,-60),(64,-12),(128,-24),(length,-20))
+        )
+    )
+    sig=sf.BesselLowPass(sig,freq*3.0,1)
+    sig=sf.FixSize(polish(sig,freq))
+    sig=pitchMove(sig)
+    sig=sf.ButterworthLowPass(sig,freq*9.0,1)
+    return sf.FixSize(sf.Clean(sig))
+
+def doubleBombard(length,freq):
+    sig=sf.Mix(
+        sf.MixAt(
+            [sf.Pcnt50(bombardPulse(length,freq)),0],
+            [sf.Pcnt50(bombardPulse(length,freq*1.5)),10]
+        ),          
+        sf.Multiply(
+            cleanNoise(length,freq*0.5),
+            sf.SimpleShape((0,-60),(64,-16),(128,-24),(length,-20))
+        )
+    )
+    return pitchMove(sig)
+
+def bombard(length,freq):
+    b=sf.MixAt(
+            [sf.Pcnt33(bombardPulse(length,freq)),0],
+            [sf.Pcnt33(bombardPulse(length,freq)),10],
+            [sf.Pcnt33(bombardPulse(length,freq)),20]
+    )
+    b=polish(b,freq)
+    sig=sf.Mix(
+        b
+        ,
+        sf.Pcnt10(sf.Multiply(+b,sf.WhiteNoise(length))),          
+        sf.Multiply(
+            cleanNoise(length,freq*0.5),
+            sf.SimpleShape((0,-60),(64,-20),(128,-28),(length,-24))
+        )
+    )
+    return pitchMove(sig)
+
+def singleBombard(length,freq):
+    sig=sf.Mix(
+        sf.Pcnt33(bombardPulse(length,freq))
+        ,          
+        sf.Multiply(
+            cleanNoise(length,freq*0.5),
+            sf.SimpleShape((0,-60),(64,-16),(128,-24),(length,-20))
+        )
+    )
+    return pitchMove(sig)
+
+def ophicleide(length,freq):
+    b=sf.MixAt(
+            [sf.Pcnt10(ophicleidePulse(length,freq*0.25-1)),0],
+            [sf.Pcnt20(ophicleidePulse(length,freq)),15],
+            [sf.Pcnt20(ophicleidePulse(length,freq)),10],
+            [sf.Pcnt20(ophicleidePulse(length,freq*2.0)),5],
+            [sf.Pcnt20(ophicleidePulse(length,freq*3.0)),0]
+    )
+    b=sf.Mix(
+        sf.Power(+b,2.0),
+        sf.Pcnt10(sf.Raise(+b,2.0)),
+        sf.Pcnt50(b)
+    )
+    b=polish(b,freq)
+    sig=sf.Mix(
+        sf.Pcnt90(b)
+        ,
+        sf.Pcnt10(sf.FixSize(sf.Multiply(+b,cleanNoise(length,freq*2.0)))),          
+        sf.Multiply(
+            cleanNoise(length,freq*0.5),
+            sf.SimpleShape((0,-60),(64,-16),(128,-20),(length,-22))
+        )
+    )
+    return sig
+
+def upperAccent(length,freq):
+    return sf.FixSize(
+        polish(
+            sf.Power(
+                polish(
+                    sf.MakeTriangle(
+                        sf.SineWave(length,freq)
+                    ),
+                    freq
+                )
+               ,2.0
+            ),
+            freq
+        )
+    )
+
+def clarion(length,freq):
+    s1=sf.MakeTriangle(sf.PhasedSineWave(length,freq,random.random()))
+    s2=sf.MakeTriangle(sf.PhasedSineWave(length,freq*2.001,random.random()))
+    s3=niceSaw(length,freq*4.002)
+    s1=polish(s1,freq)
+    s2=polish(s2,freq)
+    s3=polish(s3,freq)
+    
+    sig=sf.Mix(
+        sf.Pcnt70(s1),
+        sf.Pcnt20(s2),
+        sf.Pcnt10(s3),
+        sf.Multiply(
+            cleanNoise(length,freq*2.0),
+            sf.SimpleShape((0,-60),(64,-20),(128,-36),(length,-36))
+        )
+    )
+
+    sig=sf.FixSize(sf.Power(sig,10.0))
+    sig=polish(sig,freq)
+    sig=sf.BesselLowPass(sig,freq*6.0,2)
+    return sf.FixSize(sf.Clean(sig))
+    
+def warmBass(length,freq):
+    sig=sf.Mix(
+        sf.FixSize(
+            sf.Power(
+                sf.Clean(
+                    sf.MixAt(
+                        [sf.Pcnt25(sf.MakeSquare  (sf.PhasedSineWave(length,freq      ,random.random()))),0],
+                        [sf.Pcnt50(sf.MakeTriangle(sf.PhasedSineWave(length,freq*0.501,random.random()))),32],
+                        [sf.Pcnt25(sf.MakeTriangle(sf.PhasedSineWave(length,freq*0.252,random.random()))),64],
+                        [sf.Pcnt25(sf.MakeTriangle(sf.PhasedSineWave(length,freq/8.01,random.random()))),64]
+                    )
+                )
+                ,1.25
+            )
+        ),      
+        sf.Multiply(
+            cleanNoise(length,freq),
+            sf.SimpleShape((0,-60),(64,-12),(128,-24),(length,-24))
+        )
+    )
+    sh=sf.WhiteNoise(length)
+    sh=sf.Multiply(sh,+sig)
+    sig=sf.Mix(sig,sf.Pcnt5(sh))
+
+    if freq<128:
+        q=freq*6.0
+    elif freq<256:
+        q=freq*5
+    else:
+        q=freq*4.0
+    sig=sf.BesselLowPass(sig,q,1)
+    return pitchMove(sig)
+
+
+def simpleOboe(length,freq):
+    sig=sf.FixSize(
+        sf.Power(
+            sf.Clean(
+                sf.Mix(
+                    niceSaw(length,freq),
+                    sf.PhasedSineWave(length,freq,random.random())
+                )
+            )
+            ,
+            1.5
+        )
+    )
+    sig=polish(sig,freq)
+    sig=sf.FixSize(sf.Power(sig,1.5))
+    sig=polish(sig,freq)
+    sig=sf.FixSize(sf.Power(sig,1.5))
+    sig=polish(sig,freq)
+    sig=sf.FixSize(sig)
+      
+    sig=sf.RBJPeaking(sig,freq*5,0.5,5)
+    sig=sf.RBJPeaking(sig,freq*7,1,5)
+    sig=sf.RBJNotch  (sig,freq*2,0.5,1)
+    sig=sf.Clean(sig)
+    
+    sig=sf.Mix(
+        sf.FixSize(sig),
+        sf.Multiply(
+            cleanNoise(length,freq*9.0),
+            sf.SimpleShape((0,-60),(64,-20),(128,-24),(length,-24))
+        )
+    )
+
+    sig=sf.ButterworthLowPass (sig,freq*9,4)
+    sig=polish(sig,freq)
+    return sf.FixSize(sig)
+
+def muteOboe(length,freq):
+    sig=sf.FixSize(
+        sf.Power(
+            sf.Clean(
+                sf.Mix(
+                    niceSaw(length,freq),
+                    sf.PhasedSineWave(length,freq,random.random())
+                )
+            )
+            ,
+            1.5
+        )
+    )
+    sig=polish(sig,freq)
+    sig=sf.FixSize(sf.Power(sig,1.5))
+    sig=polish(sig,freq)
+    sig=sf.FixSize(sf.Power(sig,1.5))
+    sig=polish(sig,freq)
+    sig=sf.FixSize(sig)      
+
+    sig=sf.RBJPeaking(sig,freq*5,0.5,5)
+    sig=sf.RBJPeaking(sig,freq*7,1,5)
+    sig=sf.RBJNotch  (sig,freq*2,0.5,1)
+    sig=sf.Clean(sig)
+    
+    sig=sf.Mix(
+        sf.FixSize(sig),
+        sf.Multiply(
+            cleanNoise(length,freq*9.0),
+            sf.SimpleShape((0,-60),(64,-16),(128,-20),(length,-20))
+        )
+    )
+
+    sig=polish(sig,freq)
+    sig=sf.BesselLowPass (sig,freq*4,1)
+    osig=+sig
+    osig=sf.BesselHighPass(sig,freq*4,2)
+    sig=sf.BesselLowPass (sig,freq*6,1)
+    sig=sf.BesselLowPass (sig,freq*8,4)
+    sig=sf.Mix(sig,osig)
+    return sf.FixSize(sf.Clean(sig))
+
+def richReed(length,freq):
+    s1=bombardPulse(length,freq*1.000)
+    s2=nicePulse(length,freq+1)
+    s3=nicePulse(length,freq-1.5)
+    s1=polish(s1,freq)
+    s2=polish(s2,freq)
+    s3=polish(s3,freq)
+    
+    sig=sf.Mix(
+        sf.Pcnt70(s1),
+        sf.Pcnt20(s2),
+        sf.Pcnt10(s3),
+        sf.Multiply(
+            cleanNoise(length,freq*2.0),
+            sf.SimpleShape((0,-60),(64,-20),(128,-24),(length,-24))
+        )
+    )
+
+    sig=sf.FixSize(sig)
+    sig=polish(sig,freq)
+    return sf.FixSize(sig)
+
+def reed(length,freq):
+    s1=nicePulse(length,freq*1.000)
+    s1=polish(s1,freq)
+    
+    sig=sf.Mix(
+        s1,
+        sf.Multiply(
+            cleanNoise(length,freq*2.0),
+            sf.SimpleShape((0,-60),(64,-16),(128,-20),(length,-20))
+        )
+    )
+
+    sig=sf.FixSize(sig)
+    sig=polish(sig,freq)
+    return sf.FixSize(sig)
+
+def stoppedReed(length,freq):
+    s1=stoppedPulse(length,freq*1.000)
+    s1=polish(s1,freq)
+    
+    sig=sf.Mix(
+        s1,
+        sf.Multiply(
+            cleanNoise(length,freq*2.0),
+            sf.SimpleShape((0,-60),(64,-16),(128,-20),(length,-20))
+        )
+    )
+
+    sig=sf.FixSize(sig)
+    sig=sf.Mix(
+        sf.Pcnt10(sf.Clean(sf.Saturate(+sig))),
+        sig
+    )
+    sig=polish(sig,freq)
+    return sf.FixSize(sig)
+
+###############################################################################
+# END VOICES
+###############################################################################

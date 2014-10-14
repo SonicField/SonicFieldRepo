@@ -1,0 +1,76 @@
+import math
+import random
+import sys
+def excite(sig_,mix,power):
+    def exciteInner():
+        sig=sig_
+        m=sf.Magnitude(+sig)
+        sigh=sf.BesselHighPass(+sig,500,2)
+        mh=sf.Magnitude(+sigh)
+        sigh=sf.Power(sigh,power)
+        sigh=sf.BesselHighPass(sigh,1000,2)
+        nh=sf.Magnitude(+sigh)
+        sigh=sf.NumericVolume(sigh,mh/nh)
+        sig=sf.Mix(sf.NumericVolume(sigh,mix),sf.NumericVolume(sig,1.0-mix))
+        n=sf.Magnitude(+sig)
+        return sf.Realise(sf.NumericVolume(sig,m/n))
+    return sf_do(exciteInner)
+    
+def granularReverb(signal,ratio,delay,density,length=50,stretch=1,vol=1):
+    out=[]
+    for grain in sf.Granulate(signal,length,10):
+        (signal_i,at)=grain
+        signal_i=sf.Realise(signal_i)
+        signal_i=sf.DirectRelength(signal_i,ratio)
+        for x in range(0,density):
+            out.append(
+                (
+                    +signal_i,
+                    int((at + (random.random()+random.random())*delay)*stretch)
+                )
+            )
+        -signal_i
+  
+    out=sf.Collapse(out)
+    out=sf.Realise(sf.FixSize(sf.MixAt(out)))
+    out=sf.Clean(sf.NumericVolume(out,vol))
+    return out
+
+def reverbInner(signal,convol,grainLength):
+    mag=sf.Magnitude(+signal)
+    if mag>0:
+        signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+        signal_=sf.FrequencyDomain(signal_)
+        signal_=sf.CrossMultiply(convol,signal_)
+        signal_=sf.TimeDomain(signal_)
+        newMag=sf.Magnitude(+signal_)
+        signal_=sf.NumericVolume(signal_,mag/newMag)        
+        # tail out clicks due to amplitude at end of signal 
+        return signal_
+    else:
+        -convol
+        -signal
+        return sf.Silence(0)
+
+def reverberate(signal,convol):
+    def reverbI():
+        grainLength = sf.Length(+convol)
+        convol_=sf.FrequencyDomain(sf.Concatenate(convol,sf.Silence(grainLength)))
+        signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+        out=[]
+        for grain in sf.Granulate(signal_,grainLength):
+            (signal_i,at)=grain
+            inp=reverbInner(signal_i,+convol_,grainLength)
+            if sf.Length(+inp)>0:
+                out.append((inp,at))
+            else:
+                -inp
+        -convol_
+        return sf.Clean(sf.FixSize(sf.MixAt(out)))
+    return sf_do(reverbI)
+
+def mix(notes):
+    def mixInner():
+        return sf.Realise(sf.FixSize(sf.Clean(sf.MixAt(notes))))
+    return sf_do(mixInner)
+print "Mix"

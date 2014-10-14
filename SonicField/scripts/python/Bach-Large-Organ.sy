@@ -221,9 +221,9 @@ def doFormant(sig,f1,f2,f3,freq):
         def doFII():
             return sf.RBJPeaking(a,b,c,d)
         return sf_do(doFII)
-    sig1=doFormantInner(+sig,f1,1.5,80)
-    sig2=doFormantInner(+sig,f2,2.5,40)
-    sig3=doFormantInner( sig,f3,1.5,90)
+    sig1=doFormantInner(+sig,f1,0.5,20)
+    sig2=doFormantInner(+sig,f2,1.0,40)
+    sig3=doFormantInner( sig,f3,0.5,20)
     x=sf.Mix(sig1,sig2,sig3)
     x=polish(x,freq)
     x=sf.BesselLowPass(x,f3*1.5,2)
@@ -270,19 +270,37 @@ def polish(sig,freq):
         sig=sf.ButterworthHighPass(sig,freq*0.66,2)   
     return sf.Clean(sig)
 
+def singBase(length,freq,z=1.0):
+    vox=sf.WhiteNoise(length)
+    vox=sf.Clean(vox)
+    vox=sf.ButterworthBandPass(vox,freq,freq*8,4)
+    vox=sf.ButterworthLowPass(vox,freq  ,1)
+    vox=sf.FixSize(vox)
+    vox=sf.Mix(
+        sf.NumericVolume(sf.FixSize(sf.RBJPeaking(+vox,freq*1.0,0.05,80)),(1.0/1.0)**z),
+        sf.NumericVolume(sf.FixSize(sf.RBJPeaking(+vox,freq*2.0,0.05,80)),(1.0/2.0)**z),
+        sf.NumericVolume(sf.FixSize(sf.RBJPeaking(+vox,freq*3.0,0.05,80)),(1.0/3.0)**z),
+        sf.NumericVolume(sf.FixSize(sf.RBJPeaking(+vox,freq*4.0,0.05,80)),(1.0/4.0)**z),
+        sf.NumericVolume(sf.FixSize(sf.RBJPeaking(+vox,freq*5.0,0.05,80)),(1.0/5.0)**z),
+        sf.NumericVolume(sf.FixSize(sf.RBJPeaking(+vox,freq*6.0,0.05,80)),(1.0/6.0)**z),
+        sf.NumericVolume(sf.FixSize(sf.RBJPeaking(+vox,freq*7.0,0.05,80)),(1.0/7.0)**z),
+        sf.NumericVolume(sf.FixSize(sf.RBJPeaking(+vox,freq*8.0,0.05,80)),(1.0/9.0)**z),
+        sf.NumericVolume(sf.FixSize(sf.RBJPeaking( vox,freq*8.0,0.05,80)),(1.0/10.0)**z)
+    )
+    vox=sf.Clean(vox)
+    vox=sf.ButterworthLowPass(vox,freq  ,1)
+    vox=sf.ButterworthLowPass(vox,freq*4,1)
+    vox=polish(sf.FixSize(vox),freq)
+    return sf.FixSize(vox)
+
 ###############################################################################
 #
 # Voices
 #
 ###############################################################################
 
-def voxHumana_O(length,freq):
-    vox=sf.Mix(
-        violaBase(length,freq    ),
-        violaBase(length,freq+1.0)
-    )
-    vox=sf.Pcnt50(vox)
-    vox=polish(vox,freq)
+def voxCelest(length,freq):
+    vox=singBase(length,freq)
     noise=sf.Multiply(
         cleanNoise(length,freq*0.5),
         sf.SimpleShape((0,-60),(64,-28),(128,-40),(length,-40))
@@ -290,7 +308,28 @@ def voxHumana_O(length,freq):
     vox=sf.Mix(vox,noise)
     vox=sf.FixSize(polish(vox,freq)) 
     vox=polish(sf.Power(vox,1.5),freq)
-    vox=doFormant(vox,470,1150,2700,freq)
+    ev=sf.Pcnt25(sf.SineWave(length,4.5))
+    ev=sf.Multiply(
+        ev,
+        sf.NumericShape((0,0),(length*0.5,1),(length,1))
+    )
+    fv=sf.Pcnt10(+ev)
+    ev=sf.DirectMix(1.0,ev)
+    vox=sf.Multiply(ev,vox)
+    vox=sf.FrequencyModulate(vox,fv)
+    vox=sf.Power(vox,1.5)
+    vox=doFormant(vox,850,1200,2800,freq)
+    vox=polish(vox,freq)
+    return sf.FixSize(vox)
+
+def voxEtherial(length,freq):
+    vox=voxCelest(length,freq)
+    voxb=granularReverb(+vox,ratio=1.0 ,delay=512,density=64,length=128,stretch=1.5,vol=0.20)
+    vox=sf.Mix(
+        vox,
+        voxb
+    )
+    vox=polish(vox,freq)
     return sf.FixSize(vox)
 
 def celestFlute(length,freq):
@@ -405,7 +444,7 @@ def doubleBombard(length,freq):
     sig=sf.Mix(
         sf.MixAt(
             [sf.Pcnt50(bombardPulse(length,freq)),0],
-            [sf.Pcnt50(bombardPulse(length,freq*1.5)),10],
+            [sf.Pcnt50(bombardPulse(length,freq*1.5)),10]
         ),          
         sf.Multiply(
             cleanNoise(length,freq*0.5),
@@ -747,7 +786,7 @@ def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor,subBass,flatEn
                     )
                     ,random.random()+0.25
                 )
-             )
+            )
         sig=sf.Realise(sf.Mix(sig))
         
         sig = sf.FixSize(sig)
@@ -1346,7 +1385,7 @@ notesr=[]
 notes=[]
 count       =     0.0
 notesStart  =     0.00
-notesEnd    =  9999.0
+notesEnd    =     9.0
 
 def postProcess():
     count=0
@@ -1359,26 +1398,22 @@ def postProcess():
         count+=1
 
 print "Channel 1"
-midi=delayMidi(midis[1],beat,32)
-midi=legatoMidi(midi,beat,256)
-doMidi(notesStart,notesEnd,notes,midi,leadDiapason,vCorrect=0.40,pitchShift=1.0,qFactor=4.0,subBass=False,flatEnv=False)
+
+midi=legatoMidi(midis[1],beat,256)
+doMidi(notesStart,notesEnd,notes,midi,voxCelest,vCorrect=0.75,pitchShift=1.0,qFactor=4.0,subBass=False,flatEnv=False)
 postProcess()
-doMidi(notesStart,notesEnd,notes,midi,leadDiapason,vCorrect=0.10,pitchShift=2.0,qFactor=4.0,subBass=False,flatEnv=False)
+doMidi(notesStart,notesEnd,notes,midi,voxEtherial,vCorrect=0.25,pitchShift=2.0,qFactor=4.0,subBass=False,flatEnv=False)
 postProcess()
-midi=delayMidi(midis[1],beat,32)
-doMidi(notesStart,notesEnd,notes,midi,leadDiapason,vCorrect=0.40,pitchShift=1.001,qFactor=4.0,subBass=False,flatEnv=False)
-postProcess()
-doMidi(notesStart,notesEnd,notes,midi,leadDiapason,vCorrect=0.10,pitchShift=4.001,qFactor=6.0,subBass=False,flatEnv=False)
+midi=delayMidi(midis[1],beat,128)
+doMidi(notesStart,notesEnd,notes,midi,voxCelest,vCorrect=0.50,pitchShift=1.001,qFactor=4.0,subBass=False,flatEnv=False)
 postProcess()
 
 print "Channel 2"
 midi=midis[2]
-doMidi(notesStart,notesEnd,notes,midi,secondDiapason,1.2,flatEnv=True,qFactor=2.0)
+doMidi(notesStart,notesEnd,notes,midi,clarion,0.15,flatEnv=False,qFactor=2.0)
 postProcess()
-midi=delayMidi(midis[2],beat,32)
-doMidi(notesStart,notesEnd,notes,midi,voice=celestFlute,vCorrect=0.25,pitchShift=2.0,qFactor=1.0,subBass=False)
-postProcess()
-doMidi(notesStart,notesEnd,notes,midi,voice=secondDiapason,vCorrect=0.25,pitchShift=0.5,qFactor=1.0,subBass=False)
+midi=delayMidi(midis[2],beat,64)
+doMidi(notesStart,notesEnd,notes,midi,voice=voxCelest,vCorrect=1.0,pitchShift=1.0,qFactor=4.0,subBass=False)
 postProcess()
 
 print "Channel 3"
@@ -1394,14 +1429,10 @@ postProcess()
 
 print "Channel 4"
 midi=midis[4]
-#midi=interpretMidiGrace(midis[4],beat)
-doMidi(notesStart,notesEnd,notes,midi,warmBass,vCorrect=1.5,pitchShift=1.0,qFactor=2.0,subBass=False,flatEnv=True)
-postProcess()
-doMidi(notesStart,notesEnd,notes,midi,voice=viola,vCorrect=0.25,pitchShift=2.0,qFactor=2.0,subBass=False)
+doMidi(notesStart,notesEnd,notes,midi,doubleBombard,vCorrect=1.5,pitchShift=0.5,qFactor=2.0,subBass=True,flatEnv=True)
 postProcess()
 midi=delayMidi(midis[4],beat,64)
-midi=interpretMidiGrace(midi,beat)
-doMidi(notesStart,notesEnd,notes,midi,upperAccent,vCorrect=0.5,pitchShift=0.5,qFactor=4.0,subBass=False,flatEnv=False)
+doMidi(notesStart,notesEnd,notes,midi,voice=viola,vCorrect=0.25,pitchShift=1.0,qFactor=2.0,subBass=False)
 postProcess()
 
 def mix(notes):
