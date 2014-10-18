@@ -12,7 +12,7 @@ def safeEnv(sig,env):
         print "***WARNING: envelop failure *** ",length," -> ",p," diff:", p-length
     return sf.NumericShape(ne)
          
-def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor,subBass,flatEnv):
+def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor,subBass,flatEnv,pure,rawBass):
     def singInner():
         vCorrect=vCorrect_
         length=lengthIn
@@ -35,12 +35,15 @@ def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor,subBass,flatEn
             tp=4
     
         sig=[]
-        if pitch<330:
-            x=5
-        elif pitch<880:
-            x=6
+        if pure:
+            x=1
         else:
-            x=3
+            if pitch<330:
+                x=5
+            elif pitch<880:
+                x=6
+            else:
+                x=3
         for x in range(0,x):
             vc=voice(length,pitch*(1.0+random.random()*0.005))
             vc=sf.Multiply(
@@ -146,7 +149,10 @@ def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor,subBass,flatEn
                         granularReverb(+sig,ratio=0.501,delay=256,density=32,length=256,stretch=1,vol=0.15),
                         sig
                     )
-            sig=sf.BesselLowPass(sig,pitch*8.0,2)
+            if rawBass:
+                sig=sf.BesselLowPass(sig,pitch*8.0,1)
+            else:        
+                sig=sf.BesselLowPass(sig,pitch*8.0,2)
         if pitch<392:
             sig=sf.BesselLowPass(sig,pitch*6.0,2)
         elif pitch<512:
@@ -196,7 +202,7 @@ def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor,subBass,flatEn
         return (notel,noter)
     return sf_do(singInner)
 
-def doMidi(notesStart,notesEnd,notes,midi,voice,vCorrect,pitchShift=1.0,qFactor=1.0,subBass=False,flatEnv=False):
+def doMidi(notesStart,notesEnd,notes,midi,voice,vCorrect,pitchShift=1.0,qFactor=1.0,subBass=False,flatEnv=False,pure=False,pan=-1,rawBass=False):
     count=0.0
     while len(notes)!=0:
         notes.pop()
@@ -253,27 +259,30 @@ def doMidi(notesStart,notesEnd,notes,midi,voice,vCorrect,pitchShift=1.0,qFactor=
                 pCorrect=1
         vCUse*=pCorrect
 
-        if pl<300:
-            # low to the right ish
-            if pl <100:
-                pl=100
-            pl=float(pl-100)/200.0
-            pl=pl*0.5+0.4
-            lr=pl
-        elif pl <880:
-            # middle across all
-            pl=float(pl-300)/580.0
-            pl=pl*0.8+0.1
-            lr=pl
+        if pan==-1:
+            if pl<300:
+                # low to the right ish
+                if pl <100:
+                    pl=100
+                pl=float(pl-100)/200.0
+                pl=pl*0.5+0.4
+                lr=pl
+            elif pl <880:
+                # middle across all
+                pl=float(pl-300)/580.0
+                pl=pl*0.8+0.1
+                lr=pl
+            else:
+                # high off to the left
+                pl=pl-880
+                pl=float(pl-880)/880.0
+                if pl>1:
+                    pl=1
+                pl=0.05+pl*0.3
+                lr=pl
         else:
-            # high off to the left
-            pl=pl-880
-            pl=float(pl-880)/880.0
-            if pl>1:
-                pl=1
-            pl=0.05+pl*0.3
-            lr=pl
-        
+            lr=1.0-pan
+                    
         rl=1.0-lr
         
         # Compute hint
@@ -307,7 +316,7 @@ def doMidi(notesStart,notesEnd,notes,midi,voice,vCorrect,pitchShift=1.0,qFactor=
             hint+="E"
  
         print "H",hint,"C",count,"P",pitch,"@",at,"L",length,"V",velocity,"VU",vCUse,"PC",pCorrect
-        note = sing(hint,pitch, length,beat,v,lr,rl,voice,vCUse,qFactor,subBass,flatEnv)
+        note = sing(hint,pitch, length,beat,v,lr,rl,voice,vCUse,qFactor,subBass,flatEnv,pure,rawBass)
         dl=30*rl+1000
         dr=38*lr+1000
         notes.append((note,at+dl,at+dr))
@@ -361,11 +370,12 @@ def interpretMidiBombast(midi,beat):
         midi=midiOut
     return midi
 
-def interpretMidiStaccato(midi,beat):
+def interpretMidiStaccato(midi,beat,gap=256):
     print "Interpretation Pass"
     endAt=len(midi)-1
     index=0
     midiOut=[]
+    beat=float(beat)
     while index<endAt:
         this=midi[index]
         next=midi[index+1]
@@ -374,12 +384,42 @@ def interpretMidiStaccato(midi,beat):
 
         # Merge interpretation
         finished=False
-        if tLen>512:
-            if (ntickOn-ttickOff)<128:
-                ttickOff-=128
+        if tLen>(gap*2.0/beat):
+            if (ntickOn-ttickOff)<(gap/beat):
+                ttickOff-=gap/beat
                 midiOut.append([ttickOn,ntickOff,tnote,tkey,tvelocity])
                 print "Staccato: ",this," & ",next
                 finished=True
+    
+        if not finished:
+            midiOut.append(this)
+            if index==endAt-1:
+                midiOut.append(next)
+            
+        # iterate the loop
+        index+=1
+    return midiOut
+
+def interpretMidiJoin(midi,beat,joinAt,overlap):
+    print "Interpretation Pass"
+    endAt=len(midi)-1
+    index=0
+    midiOut=[]
+    beat=float(beat)
+    joinAt=float(joinAt)
+    while index<endAt:
+        this=midi[index]
+        next=midi[index+1]
+        ttickOn,ttickOff,tnote,tkey,tvelocity,tAt,tLen,tPitch = unpackMidi(this,beat)
+        ntickOn,ntickOff,nnote,nkey,nvelocity,nAt,nLen,nPitch = unpackMidi(next,beat)
+
+        # Merge interpretation
+        finished=False
+        if (ntickOn-ttickOff)<(joinAt/beat) and ntickOn>ttickOff:
+            ttickOff=ttickOn+(overlap/beat)
+            midiOut.append([ttickOn,ntickOff,tnote,tkey,tvelocity])
+            print "Join: ",this," & ",next
+            finished=True
     
         if not finished:
             midiOut.append(this)
@@ -439,6 +479,17 @@ def delayMidi(midi,beat,millis):
         index+=1
     return midiOut
 
+def fixVelocityMidi(midi,v):
+    print "Interpretation Pass"
+    endAt=len(midi)
+    index=0
+    midiOut=[]
+    while index<endAt:
+        ttickOn,ttickOff,tnote,tkey,tvelocity=midi[index]
+        midiOut.append((ttickOn,ttickOff,tnote,tkey,v))
+        index+=1
+    return midiOut
+
 def legatoMidi(midi,beat,millis):
     print "Interpretation Pass"
     endAt=len(midi)
@@ -456,6 +507,15 @@ def legatoMidi(midi,beat,millis):
         # iterate the loop
         index+=1
     return midiOut
+
+def findLengthMidi(midi,beat):
+    print "Interpretation Pass"
+    endAt=len(midi)
+    index=0
+    midiOut=[]
+    ttickOn,ttickOff,tnote,tkey,tvelocity=midi[len(midi)-1]
+    print "End of last note is: ", (ttickOff*beat)/60000.0
+    sys.exit(0)
 
 def my_so(what):
     return what()

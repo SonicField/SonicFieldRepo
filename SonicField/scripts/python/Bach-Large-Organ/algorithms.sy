@@ -73,4 +73,61 @@ def mix(notes):
     def mixInner():
         return sf.Realise(sf.FixSize(sf.Clean(sf.MixAt(notes))))
     return sf_do(mixInner)
-print "Mix"
+    
+def findNearestOvertone(fMatch,freq):
+    q=float(fMatch)/float(freq)
+    q=int(q)
+    return freq*q
+    #return fMatch
+
+def doFormant(sig,f1,f2,f3,freq,intensity=4):
+    f1b=f1
+    f2b=findNearestOvertone(f2,freq)
+    f3b=findNearestOvertone(f3,freq)
+    print "Match: ",freq,f1,f2,f3,f1b,f2b,f3b
+    for x in range(1,intensity):
+        s1=sf.RBJBandPass(+sig,f1b,0.25)
+        s2=sf.RBJBandPass(+sig,f2b,0.5)
+        s3=sf.RBJBandPass(+sig,f3b,0.5)
+        sig=sf.FixSize(
+            sf.Mix(
+                sf.Pcnt10(sig),
+                sf.Pcnt50(sf.FixSize(s1)),
+                sf.Pcnt20(sf.FixSize(s2)),
+                sf.Pcnt30(sf.FixSize(s3))
+            )
+        )
+        s1=sf.RBJPeaking(+sig,f1b,1.0,5)
+        s2=sf.RBJPeaking(+sig,f2b,2.0,5)
+        s3=sf.RBJPeaking( sig,f3b,2.0,5)
+        sig=sf.FixSize(
+            sf.Mix(
+                sf.Pcnt50(sf.FixSize(s1)),
+                sf.Pcnt20(sf.FixSize(s2)),
+                sf.Pcnt30(sf.FixSize(s3))
+            )
+        )
+
+    x=polish(sig,freq)
+    x=sf.FixSize(x)
+    sf.Check(x)
+    return x
+  
+def tremolate(vox_,rate,mag):
+    def tremolateInner():
+        vox=vox_
+        length=sf.Length(+vox)
+        m1=sf.Magnitude(+vox)
+        ev=sf.NumericVolume(sf.MakeTriangle(sf.PhasedSineWave(length+64,rate,random.random())),mag)
+        ev=sf.Cut(0,length,ev)
+        fv=sf.Pcnt2(+ev)
+        ev=sf.DirectMix(1.0,ev)
+        vox=sf.FrequencyModulate(vox,fv)
+        vox=sf.Multiply(ev,vox)
+        convol=sf.ReadFile("temp/swell.wav")
+        voxW=reverberate(+vox ,convol[0])
+        vox=sf.Mix(vox,voxW)
+        m2=sf.Magnitude(+vox)
+        vox=sf.NumericVolume(vox,m1/m2)
+        return vox
+    return sf_do(tremolateInner)

@@ -191,15 +191,53 @@ execfile(path+"/note-formation.sy")
 # 3:muteOboe,0.75
 # 3:voice=celestFlute,vCorrect=0.25,pitchShift=2.0,subBass=False
 
+# BWV 478 sung in 4 voices
+# ========================
+# midi=legatoMidi(midis[1],beat,256)
+# doMidi(notesStart,notesEnd,notes,midi,voxCelestSoprano,vCorrect=0.70,pitchShift=1.000,qFactor=2.0,subBass=False,flatEnv=False,pure=True,pan=0.75)
+# midi=delayMidi(midis[1],beat,128)
+# doMidi(notesStart,notesEnd,notes,midi,voxCelestSoprano,vCorrect=0.70,pitchShift=1.005,qFactor=2.0,subBass=False,flatEnv=False,pure=True,pan=0.25)
+# midi=midis[2]
+# doMidi(notesStart,notesEnd,notes,midi,voice=secondDiapason,vCorrect=0.5,pitchShift=1.0,qFactor=4.0,subBass=False)
+# midi=midis[3]
+# doMidi(notesStart,notesEnd,notes,midi,muteOboe,vCorrect=0.5,flatEnv=True,qFactor=3.0)
+# midi=midis[4]
+# doMidi(notesStart,notesEnd,notes,midi,voice=secondDiapason,vCorrect=0.5,pitchShift=1.0,qFactor=2.0,subBass=False,flatEnv=True)
+# doMidi(notesStart,notesEnd,notes,midi,voice=bombard       ,vCorrect=1.0,pitchShift=0.5 ,qFactor=2.0,subBass=False,flatEnv=True,pure=True)
+# doMidi(notesStart,notesEnd,notes,midi,voice=doubleBombard ,vCorrect=0.5,pitchShift=0.25,qFactor=2.0,subBass=False,flatEnv=True,pure=True)
+
+
+# Trost Organ Reed MASSIVE
+#########################
+# midi=legatoMidi(midis[1],beat,256)
+# doMidi(notesStart,notesEnd,notes,midi,orchestralOboe,vCorrect=0.35,pitchShift=1.000,qFactor=1.0,subBass=False,flatEnv=True,pure=False)
+# postProcessTremolate()
+# midi=delayMidi(midi,beat,32)
+# doMidi(notesStart,notesEnd,notes,midi,orchestralOboe,vCorrect=0.10,pitchShift=2.000,qFactor=1.0,subBass=False,flatEnv=True,pure=False)
+# postProcessTremolate(rate=4.5)
+# midi=legatoMidi(midis[2],beat,256)
+# doMidi(notesStart,notesEnd,notes,midi,voice=trostLeadDiapason,vCorrect=0.6,pitchShift=0.5,qFactor=1.0,subBass=False,flatEnv=True)
+# postProcess() 
+# doMidi(notesStart,notesEnd,notes,midi,voice=trostLeadDiapason,vCorrect=0.6,pitchShift=1.0,qFactor=1.0,subBass=False,flatEnv=True)
+# postProcess()
+# doMidi(notesStart,notesEnd,notes,midi,voice=upperAccent,vCorrect=0.2,pitchShift=2.0,qFactor=1.0,subBass=False,flatEnv=False)
+# postProcess()
+# midi=legatoMidi(midis[4],beat,512)
+# doMidi(notesStart,notesEnd,notes,midi,voice=trostPosaune, vCorrect=0.4,pitchShift=1.0,  qFactor=1.0,subBass=False,flatEnv=True,pure=True,pan=0.75)
+# postProcess()
+# doMidi(notesStart,notesEnd,notes,midi,voice=trostPosaune, vCorrect=0.4,pitchShift=0.5,  qFactor=1.0,subBass=False,flatEnv=True,pure=True,pan=0.25)
+# postProcess()
+# doMidi(notesStart,notesEnd,notes,midi,voice=trostPosaune, vCorrect=0.6,pitchShift=0.25, qFactor=1.0,subBass=False,flatEnv=True,pure=True,pan=0.50)
+# postProcess()
 
 #######################################
 # Timing configuration and running midi
 #######################################
 
-midis=sf.ReadMidiFile("temp/Come sweetest death.mid")
+midis=sf.ReadMidiFile("temp/toccata1.mid")
 signature   =     4.0/4.0
-bpm         =     380 * signature
-adqf        =     2.25
+bpm         =     50 * signature
+adqf        =     1.2
 beat        =     (60000.0 / (bpm * 192.0)) * adqf
 base        =     8.1757989156
 notesl=[]
@@ -207,7 +245,7 @@ notesr=[]
 notes=[]
 count       =     0.0
 notesStart  =     0.00
-notesEnd    =    19.0
+notesEnd    =  9999.0
 
 def postProcess():
     count=0
@@ -219,31 +257,60 @@ def postProcess():
         notesr.append([noter,atr])
         count+=1
 
+def postProcessTremolate(rate=3.5,magnitude=0.25):
+    count=0
+    tnsl=[]
+    tnsr=[]
+    
+    for note in notes:
+        nlr,atl,atr=note
+        print "Trem phase 1 done: ",count,atl,atr
+        notel,noter=nlr
+        tnsl.append([notel,atl])
+        tnsr.append([noter,atr])
+        count+=1
+    tnl=sf.MixAt(tnsl)
+    tnr=sf.MixAt(tnsr)
+    tnl=tremolate(tnl,rate,magnitude)
+    tnr=tremolate(tnr,rate,magnitude)
+    print "Trem phase 2 done"
+    notesl.append([tnl,0])
+    notesr.append([tnr,0])
+
+#findLengthMidi(midis[2],beat)
+
 print "Channel 1"
 
-midi=legatoMidi(midis[1],beat,256)
-doMidi(notesStart,notesEnd,notes,midi,voxCelestSoprano,vCorrect=0.70,pitchShift=1.0,qFactor=4.0,subBass=False,flatEnv=False)
-postProcess()
+midi=legatoMidi(midis[1],beat,32)
+midi=fixVelocityMidi(midi,1)
+doMidi(notesStart,notesEnd,notes,midi,orchestralOboe,vCorrect=0.35,pitchShift=1.000,qFactor=1.0,subBass=False,flatEnv=True,pure=False)
+postProcessTremolate()
+midi=delayMidi(midi,beat,32)
+midi=fixVelocityMidi(midi,1)
+doMidi(notesStart,notesEnd,notes,midi,orchestralOboe,vCorrect=0.10,pitchShift=2.000,qFactor=1.0,subBass=False,flatEnv=True,pure=False)
+postProcessTremolate(rate=4.5)
 
-"""
 print "Channel 2"
-midi=midis[2]
-doMidi(notesStart,notesEnd,notes,midi,voice=secondDiapason,vCorrect=0.5,pitchShift=1.0,qFactor=4.0,subBass=False)
+midi=legatoMidi(midis[2],beat,32)
+midi=fixVelocityMidi(midi,1)
+doMidi(notesStart,notesEnd,notes,midi,voice=trostLeadDiapason,vCorrect=0.6,pitchShift=0.5,qFactor=1.0,subBass=False,flatEnv=True)
+postProcess() 
+doMidi(notesStart,notesEnd,notes,midi,voice=trostLeadDiapason,vCorrect=0.6,pitchShift=1.0,qFactor=1.0,subBass=False,flatEnv=True)
 postProcess()
+doMidi(notesStart,notesEnd,notes,midi,voice=upperAccent,vCorrect=0.2,pitchShift=2.0,qFactor=1.0,subBass=False,flatEnv=False)
 postProcess()
 
 print "Channel 3"
-midi=midis[3]
-doMidi(notesStart,notesEnd,notes,midi,muteOboe,vCorrect=0.5,flatEnv=True,qFactor=3.0)
+midi=legatoMidi(midis[3],beat,64)
+midi=fixVelocityMidi(midi,1)
+doMidi(notesStart,notesEnd,notes,midi,voice=trostPosaune, vCorrect=0.4,pitchShift=1.0,  qFactor=1.0,subBass=False,flatEnv=True,pure=True,pan=0.75)
+postProcess()
+doMidi(notesStart,notesEnd,notes,midi,voice=trostPosaune, vCorrect=0.4,pitchShift=0.5,  qFactor=1.0,subBass=False,flatEnv=True,pure=True,pan=0.25,rawBass=True)
+postProcess()
+doMidi(notesStart,notesEnd,notes,midi,voice=trostPosaune, vCorrect=0.6,pitchShift=0.75, qFactor=1.0,subBass=False,flatEnv=True,pure=True,pan=0.50,rawBass=True)
 postProcess()
 
-print "Channel 4"
-midi=midis[4]
-doMidi(notesStart,notesEnd,notes,midi,voice=bombard,vCorrect=1.0,pitchShift=0.5,qFactor=2.0,subBass=False,flatEnv=True)
-postProcess()
-"""
 print "Mixing"
 left =mix(notesl)
 right=mix(notesr)
-print "Writing"
 sf.WriteFile32((left,right),"temp/temp.wav")

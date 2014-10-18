@@ -5,26 +5,30 @@
 ###############################################################################
 
 def voxCelest_inner(length,freq,a,b,c):
-    vox=singBase(length,freq)
-    noise=sf.Multiply(
-        cleanNoise(length,freq*0.5),
-        sf.SimpleShape((0,-60),(64,-28),(128,-40),(length,-40))
+    vox=sf.Mix(
+        sf.Pcnt75(singBase(length,freq,1.0)),
+        sf.Pcnt25(singBase(length,freq*2.0,1.25))
     )
-    vox=sf.Mix(vox,noise)
     vox=sf.FixSize(polish(vox,freq)) 
-    vox=polish(sf.Power(vox,1.5),freq)
-    ev=sf.Pcnt25(sf.SineWave(length,4.5))
+    ev=sf.Pcnt20(sf.SineWave(length,4.5))
     ev=sf.Multiply(
         ev,
         sf.NumericShape((0,0),(length*0.5,1),(length,1))
     )
-    fv=sf.Pcnt10(+ev)
+    fv=sf.Pcnt12(+ev)
     ev=sf.DirectMix(1.0,ev)
-    vox=sf.Multiply(ev,vox)
-    vox=sf.Power(vox,1.1)
     vox=sf.FrequencyModulate(vox,fv)
+    vox=sf.Multiply(ev,vox)
     vox=doFormant(vox,a,b,c,freq)
-    vox=excite(vox,0.5,1.5)
+    vox=excite(vox,0.2,2.0)
+    vox=sf.Mix(
+        sf.Multiply(
+            cleanNoise(length,freq*0.5),
+            sf.SimpleShape((0,-60),(64,-28),(128,-40),(length,-40))
+        ),
+        vox
+    )
+    vox=sf.RBJPeaking(vox,freq,3,4)
     vox=polish(vox,freq)
     return sf.FixSize(vox)
 
@@ -96,6 +100,28 @@ def viola(length,freq):
     sig=sf.FixSize(polish(sig,freq))
     return pitchMove(sig)
 
+def trostLeadDiapason(length,freq):
+    sig=sf.Mix(
+        sf.Multiply(
+            sf.Mix(
+                sf.Pcnt65(sf.MakeTriangle(sf.PhasedSineWave(length,freq,random.random()))),
+                sf.Pcnt25(sf.MakeTriangle(sf.PhasedSineWave(length,freq*2.0,random.random()))),
+                sf.Pcnt15(sf.PhasedSineWave(length,freq*4.0,random.random()))
+            ),
+            sf.NumericShape((0,0),(48,1),(length,1))
+        ),       
+        sf.Multiply(
+            sf.MakeSquare(sf.SineWave(length,freq*0.5)),
+            sf.NumericShape((0,0.5),(48,0),(length,0))            
+        ),
+        sf.Multiply(
+            cleanNoise(length,freq),
+            sf.SimpleShape((0,-60),(64,-20),(128,-36),(length,-36))
+        )
+    )
+    sig=sf.FixSize(polish(sig,freq))
+    return pitchMove(sig)
+
 def leadDiapason(length,freq):
     sig=sf.Mix(
         sf.Pcnt65(sf.MakeTriangle(sf.PhasedSineWave(length,freq,random.random()))),
@@ -150,7 +176,34 @@ def doubleBombard(length,freq):
         ),          
         sf.Multiply(
             cleanNoise(length,freq*0.5),
-            sf.SimpleShape((0,-60),(64,-16),(128,-24),(length,-20))
+            sf.SimpleShape((0,-60),(64,-10),(128,-24),(length,-20))
+        )
+    )
+    return pitchMove(sig)
+
+def trostPosaune(length,freq):
+    b=posaunePulse(length,freq)
+    b=sf.MixAt(
+        [b,12],
+        [
+        sf.NumericShape(
+            (0, -2.0),
+            (4,  2.0),
+            (12,-1.00),
+            (20, 1.00),
+            (28,-1.00),
+            (length,0)
+        ),0]
+    )
+    b=sf.RBJPeaking(b,freq*2,2,2)
+    b=polish(b,freq)
+    sig=sf.Mix(
+        b
+        ,
+        sf.Pcnt20(sf.Multiply(+b,sf.WhiteNoise(length))),          
+        sf.Multiply(
+            cleanNoise(length,freq*0.5),
+            sf.SimpleShape((0,-60),(64,-14),(128,-28),(length,-24))
         )
     )
     return pitchMove(sig)
@@ -168,7 +221,7 @@ def bombard(length,freq):
         sf.Pcnt10(sf.Multiply(+b,sf.WhiteNoise(length))),          
         sf.Multiply(
             cleanNoise(length,freq*0.5),
-            sf.SimpleShape((0,-60),(64,-20),(128,-28),(length,-24))
+            sf.SimpleShape((0,-60),(64,-14),(128,-28),(length,-24))
         )
     )
     return pitchMove(sig)
@@ -360,6 +413,38 @@ def muteOboe(length,freq):
     sig=sf.BesselLowPass (sig,freq*8,4)
     sig=sf.Mix(sig,osig)
     return sf.FixSize(sf.Clean(sig))
+    
+def orchestralOboe(length,freq):
+    vox=makeSimpleBase(length,freq,0.25)
+    vox=polish(vox,freq)
+    vox=sf.FixSize(sf.Power(vox,1.5))
+    vox=polish(vox,freq)
+    vox=sf.FixSize(sf.Power(vox,1.5))
+    vox=polish(vox,freq)
+    vox=sf.RBJPeaking(vox,freq*5,0.5,5)
+    vox=sf.RBJPeaking(vox,freq*7,1,5)
+    vox=sf.RBJNotch  (vox,freq*2,0.5,1)
+    vox=sf.FixSize(vox) 
+    res=512*math.ceil(float(freq)/256.0)
+    vox=sf.Mix(
+        sf.RBJPeaking(+vox,res    ,1,8),
+        sf.RBJPeaking( vox,res*4.0,1,8),
+    )
+    vox=sf.ButterworthLowPass(vox,freq*4,4) 
+    vox=sf.FixSize(vox)
+    nos=sf.Multiply(
+        +vox,
+        sf.Multiply(
+            cleanNoise(length,freq),
+            sf.SimpleShape((0,-60),(64,0),(128,-9),(length,-9))
+        )
+    )
+    vox=sf.Mix(
+        vox,
+        sf.Pcnt10(sf.FixSize(nos))
+    )
+    vox=polish(vox,freq)
+    return sf.FixSize(vox)
 
 def richReed(length,freq):
     s1=bombardPulse(length,freq*1.000)
