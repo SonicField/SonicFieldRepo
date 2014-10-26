@@ -38,7 +38,7 @@ def posaunePulse(length,frequency):
             sf.NumericVolume(sf.PhasedSineWave(length,frequency*16.0,p2),0.05),
             sf.NumericVolume(sf.PhasedSineWave(length,frequency*17.0,p1),0.05),
             sf.NumericVolume(sf.PhasedSineWave(length,frequency*18.0,p2),0.05),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*10.0,p1),0.01)
+            sf.NumericVolume(sf.PhasedSineWave(length,frequency*19.0,p1),0.01)
         )
     sig=sf.Multiply(
         sf.NumericShape((0,0),(32,1),(length,1)),

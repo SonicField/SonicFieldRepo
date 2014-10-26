@@ -1,4 +1,4 @@
-sf.SetSampleRate(64000)
+#sf.SetSampleRate(64000)
 
 def reverbInner(signal,convol,grainLength):
     mag=sf.Magnitude(+signal)
@@ -63,8 +63,10 @@ def excite(sig_,mix,power):
         return sf.Realise(sf.NumericVolume(sig,m/n))
     return sf_do(exciteInner)
     
-(convoll,convolr)=sf.ReadFile("temp/bh-l.wav")
-(convorl,convorr)=sf.ReadFile("temp/bh-r.wav")
+#(convoll,convolr)=sf.ReadFile("temp/bh-l.wav")
+#(convorl,convorr)=sf.ReadFile("temp/bh-r.wav")
+(convoll,convolr)=sf.ReadFile("temp/Vocal-Chamber-L.wav")
+(convorl,convorr)=sf.ReadFile("temp/Vocal-Chamber-R.wav")
 
 convoll=excite(convoll,0.75,2.0)
 convolr=excite(convolr,0.75,2.0)
@@ -90,8 +92,11 @@ wright =sf.FixSize(sf.Mix(sf.Pcnt15(+right),sf.Pcnt85(wright)))
 
 sf.WriteFile32((+wleft,+wright),"temp/mix.wav")
 
-(convoll,convolr)=sf.ReadFile("temp/v-grand-l.wav")
-(convorl,convorr)=sf.ReadFile("temp/v-grand-r.wav")
+#(convoll,convolr)=sf.ReadFile("temp/v-grand-l.wav")
+#(convorl,convorr)=sf.ReadFile("temp/v-grand-r.wav")
+(convoll,convolr)=sf.ReadFile("temp/bh-l.wav")
+(convorl,convorr)=sf.ReadFile("temp/bh-r.wav")
+
 left  = sf.BesselLowPass(left  ,392,1)
 right = sf.BesselLowPass(right,392,1)
 ll  = reverberate(+left ,convoll)

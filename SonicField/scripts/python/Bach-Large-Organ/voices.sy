@@ -60,6 +60,28 @@ def sweetFlute(length,freq):
     sig=sf.FixSize(polish(sig,freq))
     return pitchMove(sig)
 
+def trostSweetFlute(length,freq):
+    sig  = sweetFluteBase(length,freq)
+    wind = sf.Multiply(
+            cleanNoise(length,freq),
+            sf.SimpleShape((0,-60),(64,-16),(128,-20),(length,-20))
+    )
+    sig  = sf.Multiply(
+        sf.NumericShape((0,0),(32,1),(length,1)),
+        sig
+    )
+    start=sf.Multiply(
+            sf.Mix(
+                sf.FixSize(sf.Power(sf.MakeSawTooth(sf.SineWave(length,freq*0.500)),2.0)),
+                sf.FixSize(sf.Power(sf.MakeSawTooth(sf.SineWave(length,freq*0.123)),2.0))
+            ),
+            sf.NumericShape((0,3.0),(32,0),(length,0))            
+    )
+    start=polish(start,freq*0.5)
+    sig=sf.Mix(sig,start,wind)
+    sig=sf.FixSize(polish(sig,freq))
+    return pitchMove(sig)
+
 def brightFlute(length,freq):
     sig=sf.Mix(
         brightFluteBase(length,freq),

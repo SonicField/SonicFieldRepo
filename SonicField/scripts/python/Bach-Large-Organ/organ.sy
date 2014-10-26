@@ -230,14 +230,45 @@ execfile(path+"/note-formation.sy")
 # doMidi(notesStart,notesEnd,notes,midi,voice=trostPosaune, vCorrect=0.6,pitchShift=0.25, qFactor=1.0,subBass=False,flatEnv=True,pure=True,pan=0.50)
 # postProcess()
 
+# BWV 590
+#########
+# midi=legatoMidi(midis[1],beat,92)
+# midi=fixVelocityMidi(midi,1)
+# doMidi(notesStart,notesEnd,notes,midi,trostSweetFlute,vCorrect=0.5,pitchShift=1.000,qFactor=1.0,subBass=False,flatEnv=True,pure=False)
+# postProcessTremolate()
+# midi=delayMidi(midis,beat,32) # this was supposed to be based on midi[1] but this is how I did it in the end due to typo
+# midi=fixVelocityMidi(midi,1)
+# doMidi(notesStart,notesEnd,notes,midi,trostSweetFlute,vCorrect=0.5,pitchShift=2.000,qFactor=1.0,subBass=False,flatEnv=False,pure=False,pitchAdd=2.0)
+# postProcessTremolate(rate=4.5)
+# doMidi(notesStart,notesEnd,notes,midi,sweetFlute,vCorrect=0.2,pitchShift=3.000,qFactor=1.0,subBass=False,flatEnv=False,pure=False,pitchAdd=0.0)
+# postProcessTremolate(rate=3.5)
+# doMidi(notesStart,notesEnd,notes,midi,sweetFlute,vCorrect=0.4,pitchShift=6.000,qFactor=0.3,subBass=False,flatEnv=False,pure=False,pitchAdd=3.0)
+# postProcessTremolate(rate=4.0)
+#
+# print "Channel 2"
+# midi=legatoMidi(midis[2],beat,0)
+# midi=fixVelocityMidi(midi,1)
+# doMidi(notesStart,notesEnd,notes,midi,voice=secondDiapason,vCorrect=0.4,pitchShift=1.0,qFactor=1.0,subBass=False,flatEnv=True)
+# postProcess() 
+# doMidi(notesStart,notesEnd,notes,midi,voice=brightFlute,   vCorrect=0.6,pitchShift=2.0,qFactor=1.0,subBass=False,flatEnv=True,pitchAdd=2.5)
+# postProcess()
+# 
+# print "Channel 3"
+# midi=legatoMidi(midis[3],beat,0)
+# midi=fixVelocityMidi(midi,1)
+# doMidi(notesStart,notesEnd,notes,midi,voice=secondDiapason, vCorrect=0.8,pitchShift=1.0,qFactor=1.0,subBass=False,flatEnv=True,pure=False)
+# postProcess()
+# doMidi(notesStart,notesEnd,notes,midi,voice=warmBass      , vCorrect=0.8,pitchShift=0.5,qFactor=1.0,subBass=False,flatEnv=True,pure=False)
+# postProcess()
+
 #######################################
 # Timing configuration and running midi
 #######################################
 
-midis=sf.ReadMidiFile("temp/toccata1.mid")
+midis=sf.ReadMidiFile("temp/winter_no1_allegro_non_molto_gp.mid")
 signature   =     4.0/4.0
-bpm         =     50 * signature
-adqf        =     1.2
+bpm         =     150 * signature
+adqf        =     0.75
 beat        =     (60000.0 / (bpm * 192.0)) * adqf
 base        =     8.1757989156
 notesl=[]
@@ -246,16 +277,25 @@ notes=[]
 count       =     0.0
 notesStart  =     0.00
 notesEnd    =  9999.0
+swapAll     =   False
 
 def postProcess():
     count=0
+    tnsl=[]
+    tnsr=[]
+    
     for note in notes:
         nlr,atl,atr=note
-        print "Done: ",count,atl,atr
+        print "Mix phase 1 done: ",count,atl,atr
         notel,noter=nlr
-        notesl.append([notel,atl])
-        notesr.append([noter,atr])
+        tnsl.append([notel,atl])
+        tnsr.append([noter,atr])
         count+=1
+    tnl=mix(tnsl)
+    tnr=mix(tnsr)
+    print "Mix phase 2 done"
+    notesl.append([tnl,0])
+    notesr.append([tnr,0])
 
 def postProcessTremolate(rate=3.5,magnitude=0.25):
     count=0
@@ -269,8 +309,8 @@ def postProcessTremolate(rate=3.5,magnitude=0.25):
         tnsl.append([notel,atl])
         tnsr.append([noter,atr])
         count+=1
-    tnl=sf.MixAt(tnsl)
-    tnr=sf.MixAt(tnsr)
+    tnl=mix(tnsl)
+    tnr=mix(tnsr)
     tnl=tremolate(tnl,rate,magnitude)
     tnr=tremolate(tnr,rate,magnitude)
     print "Trem phase 2 done"
@@ -281,36 +321,136 @@ def postProcessTremolate(rate=3.5,magnitude=0.25):
 
 print "Channel 1"
 
-midi=legatoMidi(midis[1],beat,32)
-midi=fixVelocityMidi(midi,1)
-doMidi(notesStart,notesEnd,notes,midi,orchestralOboe,vCorrect=0.35,pitchShift=1.000,qFactor=1.0,subBass=False,flatEnv=True,pure=False)
-postProcessTremolate()
-midi=delayMidi(midi,beat,32)
-midi=fixVelocityMidi(midi,1)
-doMidi(notesStart,notesEnd,notes,midi,orchestralOboe,vCorrect=0.10,pitchShift=2.000,qFactor=1.0,subBass=False,flatEnv=True,pure=False)
-postProcessTremolate(rate=4.5)
+midi=midis[1]
+doMidi(notesStart,notesEnd,notes,midi,orchestralOboe,
+    vCorrect=1.0,
+    pitchShift=1.000,
+    qFactor=0.5,
+    subBass=False,
+    flatEnv=False,
+    pure=False
+)
+postProcess()
+doMidi(notesStart,notesEnd,notes,midi,upperAccent,
+    vCorrect=0.3,
+    pitchShift=2.000,
+    qFactor=0.5,
+    subBass=False,
+    flatEnv=False,
+    pure=False,
+    pitchAdd=2.5
+)
+postProcess()
 
 print "Channel 2"
-midi=legatoMidi(midis[2],beat,32)
-midi=fixVelocityMidi(midi,1)
-doMidi(notesStart,notesEnd,notes,midi,voice=trostLeadDiapason,vCorrect=0.6,pitchShift=0.5,qFactor=1.0,subBass=False,flatEnv=True)
-postProcess() 
-doMidi(notesStart,notesEnd,notes,midi,voice=trostLeadDiapason,vCorrect=0.6,pitchShift=1.0,qFactor=1.0,subBass=False,flatEnv=True)
-postProcess()
-doMidi(notesStart,notesEnd,notes,midi,voice=upperAccent,vCorrect=0.2,pitchShift=2.0,qFactor=1.0,subBass=False,flatEnv=False)
+midi=midis[1]
+doMidi(notesStart,notesEnd,notes,midi,clarion,
+    vCorrect=0.5,
+    pitchShift=1.000,
+    qFactor=1.0,
+    subBass=False,
+    flatEnv=False,
+    pure=False,
+    pan=0.6
+)
+postProcessTremolate(rate=4.5)
+
+midi=delayMidi(midis[1],beat,64)
+doMidi(notesStart,notesEnd,notes,midi,clarion,
+    vCorrect=0.5,
+    pitchShift=2.000,
+    qFactor=1.0,
+    subBass=False,
+    flatEnv=False,
+    pure=False,
+    pan=0.4,
+    pitchAdd=2.5
+)
+postProcessTremolate(rate=3.5)
+
+for chan in range(3,10):
+    print "Channel "+str(chan)
+    midi=midis[chan]
+    doMidi(notesStart,notesEnd,notes,midi,
+        voice=viola,
+        vCorrect=0.5,
+        pitchShift=1.0,
+        qFactor=0.5,
+        subBass=False,
+        flatEnv=True,
+        pan=(float(12-chan)/9.0)
+    )
+    postProcess() 
+
+print "Channel 10"
+midi=midis[10]
+midi=legatoMidi(midi,beat,128)
+doMidi(notesStart,notesEnd,notes,midi,voice=orchestralOboe,  
+    vCorrect=0.75,
+    pitchShift=1.0,
+    qFactor=0.5,
+    subBass=False,
+    flatEnv=False,
+    pure=False,
+    pitchAdd=0.0
+)
 postProcess()
 
-print "Channel 3"
-midi=legatoMidi(midis[3],beat,64)
-midi=fixVelocityMidi(midi,1)
-doMidi(notesStart,notesEnd,notes,midi,voice=trostPosaune, vCorrect=0.4,pitchShift=1.0,  qFactor=1.0,subBass=False,flatEnv=True,pure=True,pan=0.75)
+print "Channel 11"
+midi=midis[11]
+midi=legatoMidi(midi,beat,128)
+doMidi(notesStart,notesEnd,notes,midi,voice=clarion,  
+    vCorrect=0.75,
+    pitchShift=1.0,
+    qFactor=0.5,
+    subBass=False,
+    flatEnv=True,
+    pure=False,
+    pitchAdd=3.5
+)
 postProcess()
-doMidi(notesStart,notesEnd,notes,midi,voice=trostPosaune, vCorrect=0.4,pitchShift=0.5,  qFactor=1.0,subBass=False,flatEnv=True,pure=True,pan=0.25,rawBass=True)
+
+print "Channel 12"
+midi=midis[12]
+doMidi(notesStart,notesEnd,notes,midi,voice=clarion,  
+    vCorrect=1.0,
+    pitchShift=1.0,
+    qFactor=0.5,
+    subBass=False,
+    flatEnv=True,
+    pure=False,
+    pitchAdd=0.0
+)
 postProcess()
-doMidi(notesStart,notesEnd,notes,midi,voice=trostPosaune, vCorrect=0.6,pitchShift=0.75, qFactor=1.0,subBass=False,flatEnv=True,pure=True,pan=0.50,rawBass=True)
+
+print "Channel 13"
+midi=midis[13]
+midi=legatoMidi(midis[13],beat,96)
+doMidi(notesStart,notesEnd,notes,midi,voice=leadDiapason,  
+    vCorrect=1.5,
+    pitchShift=1.0,
+    qFactor=1.0,
+    subBass=False,
+    flatEnv=True,
+    pure=True,
+    pitchAdd=0.0,
+    pan=1.0
+)
+postProcess()
+midi=delayMidi(midis[13],beat,128)
+doMidi(notesStart,notesEnd,notes,midi,voice=trostPosaune,  
+    vCorrect=2.0,
+    pitchShift=0.5,
+    qFactor=1.0,
+    subBass=False,
+    flatEnv=True,
+    pure=True,
+    pitchAdd=1.0,
+    pan=0.0
+)
 postProcess()
 
 print "Mixing"
-left =mix(notesl)
-right=mix(notesr)
+left =finalMix(notesl)
+right=finalMix(notesr)
 sf.WriteFile32((left,right),"temp/temp.wav")

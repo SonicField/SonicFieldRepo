@@ -197,12 +197,16 @@ def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor,subBass,flatEn
         
         note=sf.NumericVolume(sf.FixSize(sig),v)
         sf.Check(note)
-        notel=sf.Realise(sf.NumericVolume(+note,vl*vCorrect))
-        noter=sf.Swap(sf.NumericVolume( note,vr*vCorrect))
+        if swapAll:
+            notel=sf.Swap(sf.NumericVolume(+note,vl*vCorrect))
+            noter=sf.Swap(sf.NumericVolume( note,vr*vCorrect))
+        else:
+            notel=sf.Realise(sf.NumericVolume(+note,vl*vCorrect))
+            noter=sf.Realise(sf.NumericVolume( note,vr*vCorrect))
         return (notel,noter)
     return sf_do(singInner)
 
-def doMidi(notesStart,notesEnd,notes,midi,voice,vCorrect,pitchShift=1.0,qFactor=1.0,subBass=False,flatEnv=False,pure=False,pan=-1,rawBass=False):
+def doMidi(notesStart,notesEnd,notes,midi,voice,vCorrect,pitchShift=1.0,qFactor=1.0,subBass=False,flatEnv=False,pure=False,pan=-1,rawBass=False,pitchAdd=0.0):
     count=0.0
     while len(notes)!=0:
         notes.pop()
@@ -232,6 +236,7 @@ def doMidi(notesStart,notesEnd,notes,midi,voice,vCorrect,pitchShift=1.0,qFactor=
             pitch= (sf.Semitone(0)**key) * base * pitchShift
         velocity=velocity/100
         v=velocity
+        pitch+=pitchAdd
         pl=pitch
 
         vCUse=vCorrect
@@ -435,6 +440,7 @@ def interpretMidiGrace(midi,beat):
     endAt=len(midi)-1
     index=0
     midiOut=[]
+    beat=float(beat)
     while index<endAt:
         this=midi[index]
         next=midi[index+1]
@@ -443,16 +449,19 @@ def interpretMidiGrace(midi,beat):
 
         # Merge interpretation
         finished=False
+        three2=32/beat
+        if three2 < 1:
+            three2=1
         if (tLen>1024 and nLen>512) or (tLen>512 and nLen>1024):
-            if (ntickOn-ttickOff)<128 and tkey-nkey>2:
+            if (ntickOn-ttickOff)<128/beat and tkey-nkey>2:
                 midiOut.append(this)
-                midiOut.append([ttickOn-80,ntickOn+64,tnote,nkey+2,(nvelocity+tvelocity)/8.0])
-                print "Staccato: ",this," & ",next
+                midiOut.append([ntickOn-three2,ntickOn+three2,tnote,nkey+2,(nvelocity+tvelocity)/8.0])
+                print "Grace: ",this," & ",next
                 finished=True
-            if (ntickOn-ttickOff)<128 and nkey-tkey>2:
+            elif (ntickOn-ttickOff)<128 and nkey-tkey>2:
                 midiOut.append(this)
-                midiOut.append([ntickOn-80,ntickOn+64,tnote,nkey+1,(nvelocity+tvelocity)/8.0])
-                print "Staccato: ",this," & ",next
+                midiOut.append([ntickOn-three2,ntickOn+three2,tnote,nkey+1,(nvelocity+tvelocity)/8.0])
+                print "Grace: ",this," & ",next
                 finished=True
     
         if not finished:
@@ -464,6 +473,46 @@ def interpretMidiGrace(midi,beat):
         index+=1
     return midiOut
 
+def interpretMidiTrill(midi,beat,length=128,doFour=False,down=False,cutFactor=1.0):
+    print "Interpretation Pass"
+    endAt=len(midi)-1
+    index=0
+    midiOut=[]
+    beat=float(beat)
+    while index<endAt:
+        this=midi[index]
+        next=midi[index+1]
+        ttickOn,ttickOff,tnote,tkey,tvelocity,tAt,tLen,tPitch = unpackMidi(this,beat)
+        ntickOn,ntickOff,nnote,nkey,nvelocity,nAt,nLen,nPitch = unpackMidi(next,beat)
+
+        # Merge interpretation
+        finished=False
+        three2=length/beat
+        if doFour and (tLen>6*length*cutFactor and nLen>2*length*cutFactor ) and (down or nnote>tnote):
+            if (ntickOn-ttickOff)<128.0/beat:
+                midiOut.append([ttickOn,ttickOff-three2*4.0,tnote,tkey,tvelocity])
+                midiOut.append([ttickOff-three2*4.0,ttickOff-three2*3.0,tnote,nkey,tvelocity])
+                midiOut.append([ttickOff-three2*3.0,ttickOff-three2*2.0,tnote,tkey,tvelocity])
+                midiOut.append([ttickOff-three2*2.0,ttickOff-three2*1.0,tnote,nkey,tvelocity])
+                midiOut.append([ttickOff-three2*1.0,ttickOff           ,tnote,tkey,tvelocity])
+                print "4 Trill: ",tLen,nLen,length,three2
+                finished=True
+        elif  tLen>4*length*cutFactor  and nLen>length and (down or nnote>tnote):
+            if (ntickOn-ttickOff)<128.0/beat:
+                midiOut.append([ttickOn,ttickOff-three2*2.0,tnote,tkey,tvelocity])
+                midiOut.append([ttickOff-three2*2.0,ttickOff-three2*1.0,tnote,nkey,tvelocity])
+                midiOut.append([ttickOff-three2*1.0,ttickOff           ,tnote,tkey,tvelocity])
+                print "2 Trill: ",tLen,nLen,length,three2
+                finished=True
+        
+        if not finished:
+            midiOut.append(this)
+            if index==endAt-1:
+                midiOut.append(next)
+            
+        # iterate the loop
+        index+=1
+    return midiOut
 
 def delayMidi(midi,beat,millis):
     print "Interpretation Pass"

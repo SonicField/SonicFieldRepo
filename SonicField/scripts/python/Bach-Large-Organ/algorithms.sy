@@ -69,9 +69,14 @@ def reverberate(signal,convol):
         return sf.Clean(sf.FixSize(sf.MixAt(out)))
     return sf_do(reverbI)
 
+def finalMix(notes):
+    def mixInner():
+        return sf.Swap(sf.FixSize(sf.Clean(sf.MixAt(notes))))
+    return sf_do(mixInner)
+
 def mix(notes):
     def mixInner():
-        return sf.Realise(sf.FixSize(sf.Clean(sf.MixAt(notes))))
+        return sf.Swap(sf.MixAt(notes))
     return sf_do(mixInner)
     
 def findNearestOvertone(fMatch,freq):
@@ -126,8 +131,8 @@ def tremolate(vox_,rate,mag):
         vox=sf.Multiply(ev,vox)
         convol=sf.ReadFile("temp/swell.wav")
         voxW=reverberate(+vox ,convol[0])
-        vox=sf.Mix(vox,voxW)
+        vox=sf.Realise(sf.Mix(vox,voxW))
         m2=sf.Magnitude(+vox)
-        vox=sf.NumericVolume(vox,m1/m2)
+        vox=sf.Swap(sf.NumericVolume(vox,m1/m2))
         return vox
     return sf_do(tremolateInner)
