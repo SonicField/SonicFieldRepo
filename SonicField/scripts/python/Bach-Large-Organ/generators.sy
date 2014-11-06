@@ -254,3 +254,16 @@ def singBase(length,freq,z=1.0):
     vox=polish(sf.FixSize(vox),freq)
     return sf.FixSize(vox)
 
+def trumpetBase(length,freq,z=1.0):
+    voxA=[]
+    hc=1.0
+    freq=float(freq)
+    while hc*freq<20000:
+        hf=hc*freq
+        voxA.append(sf.NumericVolume(sf.PhasedSineWave(length,hf,random.random()),(1.0/hc)**z))
+        hc+=1
+        
+    vox=sf.Mix(voxA)
+    vox=sf.Clean(vox)
+    vox=polish(sf.FixSize(vox),freq)
+    return sf.FixSize(vox)

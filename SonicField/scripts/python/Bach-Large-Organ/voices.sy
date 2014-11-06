@@ -526,6 +526,33 @@ def stoppedReed(length,freq):
     sig=polish(sig,freq)
     return sf.FixSize(sig)
 
+def trumpet(length,freq):
+    if length>256:
+        sig1=trumpetBase(length,freq,-0.25)
+        sig2=trumpetBase(length,freq, 0.25)
+        env1=sf.NumericShape((0,0),(256,1),(length,1))
+        env2=sf.NumericShape((0,1),(256,0),(length,0))
+        sig1=sf.Multiply(sig1,env1)
+        sig2=sf.Multiply(sig2,env2)
+        sig=sf.Mix(sig1,sig2)
+    else:
+        sig=trumpetBase(length,freq,-0.25)
+    
+    sig=sf.FixSize(sig)
+    sig=polish(sig,freq)
+
+    sig=sf.Mix(
+        sig,
+        sf.Multiply(
+            cleanNoise(length,freq*1.0),
+            sf.SimpleShape((0,-60),(32,-22),(64,-60),(length,-90))
+        )
+    )
+        
+    sig=sf.FixSize(sig)
+    sig=polish(sig,freq)
+    return sf.FixSize(sig)
+
 ###############################################################################
 # END VOICES
 ###############################################################################

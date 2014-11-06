@@ -117,6 +117,19 @@ def doFormant(sig,f1,f2,f3,freq,intensity=4):
     x=sf.FixSize(x)
     sf.Check(x)
     return x
+
+def echoDivision(vox_):
+    def echoInner():
+        vox=vox_
+        length=sf.Length(+vox)
+        m1=sf.Magnitude(+vox)
+        convol=sf.ReadFile("temp/swell.wav")
+        voxW=reverberate(+vox ,convol[0])
+        vox=sf.Realise(sf.Mix(vox,voxW))
+        m2=sf.Magnitude(+vox)
+        vox=sf.Swap(sf.NumericVolume(vox,m1/m2))
+        return vox
+    return sf_do(echoInner)
   
 def tremolate(vox_,rate,mag):
     def tremolateInner():
