@@ -435,7 +435,7 @@ def delayMidi(midi,beat,millis):
         index+=1
     return midiOut
 
-def fixVelocityMidi(midi,v):
+def fixVelocityMidi(midi,v=100):
     print "Interpretation Pass"
     endAt=len(midi)
     index=0

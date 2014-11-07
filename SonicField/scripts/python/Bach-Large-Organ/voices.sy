@@ -60,6 +60,28 @@ def sweetFlute(length,freq):
     sig=sf.FixSize(polish(sig,freq))
     return pitchMove(sig)
 
+def trostBrightFlute(length,freq):
+    sig  = brightFluteBase(length,freq)
+    wind = sf.Multiply(
+            cleanNoise(length,freq),
+            sf.SimpleShape((0,-60),(64,-16),(128,-20),(length,-20))
+    )
+    sig  = sf.Multiply(
+        sf.NumericShape((0,0),(32,1),(length,1)),
+        sig
+    )
+    start=sf.Multiply(
+            sf.Mix(
+                sf.FixSize(sf.Power(sf.MakeSawTooth(sf.SineWave(length,freq*0.500)),2.0)),
+                sf.FixSize(sf.Power(sf.MakeSawTooth(sf.SineWave(length,freq*0.123)),2.0))
+            ),
+            sf.NumericShape((0,3.0),(32,0),(length,0))            
+    )
+    start=polish(start,freq*0.5)
+    sig=sf.Mix(sig,start,wind)
+    sig=sf.FixSize(polish(sig,freq))
+    return pitchMove(sig)
+
 def trostSweetFlute(length,freq):
     sig  = sweetFluteBase(length,freq)
     wind = sf.Multiply(
@@ -299,6 +321,24 @@ def upperAccent(length,freq):
             freq
         )
     )
+
+def trostUpperAccent(length,freq):
+    sig=sf.Mix(
+        sf.Multiply(
+            upperAccent(length,freq),
+            sf.NumericShape((0,0),(48,1),(length,1))
+        ),       
+        sf.Multiply(
+            sf.MakeSquare(sf.SineWave(length,freq*0.5)),
+            sf.NumericShape((0,0.5),(48,0),(length,0))            
+        ),
+        sf.Multiply(
+            cleanNoise(length,freq),
+            sf.SimpleShape((0,-60),(64,-20),(128,-36),(length,-36))
+        )
+    )
+    sig=sf.FixSize(polish(sig,freq))
+    return pitchMove(sig)
 
 def clarion(length,freq):
     s1=sf.MakeTriangle(sf.PhasedSineWave(length,freq,random.random()))

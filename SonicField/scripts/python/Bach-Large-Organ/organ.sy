@@ -1,4 +1,5 @@
 import os
+#sf.SetSampleRate(64000)
 path="scripts/python/Bach-Large-Organ"
 execfile(path+"/algorithms.sy")
 execfile(path+"/generators.sy")
@@ -71,7 +72,7 @@ def postProcessEcho():
 # Timing configuration and running midi
 #######################################
 
-midis=sf.ReadMidiFile("temp/Come sweetest death - intro.mid")
+midis=sf.ReadMidiFile("temp/gold/aria.mid")
 signature   =     4.0/4.0
 bpm         =     150 * signature
 adqf        =     1.0
@@ -81,40 +82,65 @@ base        =     8.1757989156
 temperament =     Equal
 count       =      0.0
 timeStart   =      0.0
-timeEnd     =   1000.0 * 600.0
+timeEnd     =   1000.0 * 60.0 * 5.00
 swapAll     =    False
 
 #findLengthMidi(midis[2],beat)
 
-midi=legatoMidi(midis[1],beat,256)
-midi=delayMidi(midi,beat,16)
-doMidi(voice=orchestralOboe,vCorrect=0.9,pitchShift=1.000,qFactor=2.0,subBass=False,flatEnv=False,pure=False)
-postProcess()
-midi=delayMidi(midis[1],beat,128)
-doMidi(voice=orchestralOboe, vCorrect=0.1,pitchShift=2.000,qFactor=2.0,subBass=False,flatEnv=False,pure=False)
+midi=midis[1]
+midi=fixVelocityMidi(midi)
+doMidi(voice=trostSweetFlute,vCorrect=0.1)
 postProcessEcho()
+
+midi=midis[1]
+midi=fixVelocityMidi(midi)
+midi=scatterMidi(midi,beat, 6)
+midi=scatterMidi(midi,beat,-6)
+doMidi(voice=orchestralOboe,vCorrect=0.25,qFactor=1.0,pan=0.75)
+postProcessEcho()
+
+midi=fixVelocityMidi(midi)
+midi=scatterMidi(midi,beat, 6)
+midi=scatterMidi(midi,beat,-6)
+doMidi(voice=orchestralOboe,vCorrect=0.25,qFactor=1.0,pan=0.25)
+postProcessEcho()
+
 
 midi=midis[2]
-midi=delayMidi(midi,beat,24)
-doMidi(voice=secondDiapason,vCorrect=0.5,pitchShift=1.0,qFactor=4.0,subBass=False)
-postProcess()
-midi=midis[3]
-midi=delayMidi(midi,beat,48)
-doMidi(voice=secondDiapason,vCorrect=0.5,flatEnv=True,qFactor=3.0)
+midi=fixVelocityMidi(midi)
+midi=scatterMidi(midi,beat, 12)
+midi=scatterMidi(midi,beat,-12)
+doMidi(voice=trostUpperAccent,vCorrect=0.75)
 postProcess()
 
-midi=legatoMidi(midis[4],beat,256)
-doMidi(voice=muteOboe,vCorrect=0.5,pitchShift=1.0,qFactor=2.0,subBass=False,flatEnv=True)
-postProcess()
-midi=delayMidi(midi,beat,32)
-doMidi(voice=trostPosaune   ,vCorrect=1.0,pitchShift=0.5 ,qFactor=2.0,subBass=False,flatEnv=True,pure=False)
-postProcess()
-midi=delayMidi(midi,beat,32)
-doMidi(voice=doubleBombard ,vCorrect=0.5,pitchShift=0.25,qFactor=2.0,subBass=False,flatEnv=True,pure=False)
-postProcess()
-midi=delayMidi(midis[4],beat,64)
-doMidi(voice=upperAccent,vCorrect=0.15,pitchShift=4.0,qFactor=2.0,subBass=False,flatEnv=True,pure=False)
+midi=staccatoMidi(midi,beat,64)
+doMidi(voice=upperAccent,vCorrect=0.25,pitchAdd=2.0)
 postProcessEcho()
+
+midi=midis[3]
+midi=fixVelocityMidi(midi)
+midi=scatterMidi(midi,beat, 12)
+midi=scatterMidi(midi,beat,-12)
+doMidi(voice=trostUpperAccent,vCorrect=0.75)
+postProcess()
+
+midi=staccatoMidi(midi,beat,64)
+doMidi(voice=upperAccent,vCorrect=0.25,pitchAdd=2.0)
+postProcessEcho()
+
+
+midi=legatoMidi(midis[4],beat,128)
+midi=fixVelocityMidi(midi)
+midi=scatterMidi(midi,beat, 12)
+midi=scatterMidi(midi,beat,-12)
+doMidi(voice=trostUpperAccent,vCorrect=1.0)
+postProcess()
+
+midi=legatoMidi(midis[4],beat,128)
+midi=fixVelocityMidi(midi)
+midi=scatterMidi(midi,beat,48)
+doMidi(voice=bombard,vCorrect=1.25,pitchShift=0.25,qFactor=2.0,flatEnv=True,rawBass=True)
+postProcess()
 
 print "Mixing"
 left =finalMix(notesl)
