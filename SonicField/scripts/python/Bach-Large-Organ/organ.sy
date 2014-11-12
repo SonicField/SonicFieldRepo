@@ -72,74 +72,46 @@ def postProcessEcho():
 # Timing configuration and running midi
 #######################################
 
-midis=sf.ReadMidiFile("temp/gold/aria.mid")
+#midis=sf.ReadMidiFile("temp/bwv605gm.mid")
+midis=sf.ReadMidiFile("temp/Little Book Of Organ/bwv606gm.mid")
+
 signature   =     4.0/4.0
-bpm         =     150 * signature
-adqf        =     1.0
-beat        =     (60000.0 / (bpm * 192.0)) * adqf
+bpm         =     100 * signature
+beat        =     (60000.0 / (bpm * 192.0))
+length      =     1.25
 base        =     8.1757989156
-#temperament =     WerckmeisterIII
-temperament =     Equal
+temperament =     WerckmeisterIII
+#temperament =     Equal
 count       =      0.0
 timeStart   =      0.0
-timeEnd     =   1000.0 * 60.0 * 5.00
+timeEnd     =   1000.0 * 60.0 * 5.0
 swapAll     =    False
 
-#findLengthMidi(midis[2],beat)
+print "Initial  Beat: ",beat
+beat=setLengthMidi(midis,beat,length)
+print "Computed Beat: ",beat
 
-midi=midis[1]
+midi=longAsMidi(midis[1],beat,512)
 midi=fixVelocityMidi(midi)
-doMidi(voice=trostSweetFlute,vCorrect=0.1)
-postProcessEcho()
-
-midi=midis[1]
-midi=fixVelocityMidi(midi)
-midi=scatterMidi(midi,beat, 6)
-midi=scatterMidi(midi,beat,-6)
-doMidi(voice=orchestralOboe,vCorrect=0.25,qFactor=1.0,pan=0.75)
-postProcessEcho()
-
-midi=fixVelocityMidi(midi)
-midi=scatterMidi(midi,beat, 6)
-midi=scatterMidi(midi,beat,-6)
-doMidi(voice=orchestralOboe,vCorrect=0.25,qFactor=1.0,pan=0.25)
-postProcessEcho()
-
+midi=dampVelocity(midi,80,0.75)
+doMidi(voice=orchestralOboe,vCorrect=0.50,flatEnv=True)
+postProcessTremolate(rate=4.5,magnitude=0.1)
+doMidi(voice=orchestralOboe,vCorrect=0.25,pitchAdd=2.5,flatEnv=True,pitchShift=3.0)
+postProcessTremolate(rate=3.0,magnitude=0.1)
 
 midi=midis[2]
 midi=fixVelocityMidi(midi)
-midi=scatterMidi(midi,beat, 12)
-midi=scatterMidi(midi,beat,-12)
-doMidi(voice=trostUpperAccent,vCorrect=0.75)
+midi=dampVelocity(midi,80,0.75)
+doMidi(voice=string,vCorrect=1.0,flatEnv=True)
 postProcess()
 
-midi=staccatoMidi(midi,beat,64)
-doMidi(voice=upperAccent,vCorrect=0.25,pitchAdd=2.0)
-postProcessEcho()
-
-midi=midis[3]
+midi=legatoMidi(midis[3],beat,128)
 midi=fixVelocityMidi(midi)
-midi=scatterMidi(midi,beat, 12)
-midi=scatterMidi(midi,beat,-12)
-doMidi(voice=trostUpperAccent,vCorrect=0.75)
+doMidi(voice=trostPosaune,vCorrect=1.0,pitchShift=0.5,flatEnv=True,rawBass=True)
 postProcess()
-
-midi=staccatoMidi(midi,beat,64)
-doMidi(voice=upperAccent,vCorrect=0.25,pitchAdd=2.0)
-postProcessEcho()
-
-
-midi=legatoMidi(midis[4],beat,128)
+midi=delayMidi(midis[3],beat,64)
 midi=fixVelocityMidi(midi)
-midi=scatterMidi(midi,beat, 12)
-midi=scatterMidi(midi,beat,-12)
-doMidi(voice=trostUpperAccent,vCorrect=1.0)
-postProcess()
-
-midi=legatoMidi(midis[4],beat,128)
-midi=fixVelocityMidi(midi)
-midi=scatterMidi(midi,beat,48)
-doMidi(voice=bombard,vCorrect=1.25,pitchShift=0.25,qFactor=2.0,flatEnv=True,rawBass=True)
+doMidi(voice=secondDiapason, vCorrect=0.5,flatEnv=True)
 postProcess()
 
 print "Mixing"

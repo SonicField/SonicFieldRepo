@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Stack;
 
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MidiDevice;
@@ -43,7 +44,6 @@ public class MidiFunctions
         }
 
         List<Object> table = new ArrayList<>();
-
         int trackNumber = 0;
         for (Track track : sequence.getTracks())
         {
@@ -52,7 +52,7 @@ public class MidiFunctions
             table.add(column);
             System.out.println("Track " + trackNumber + ": size = " + track.size()); //$NON-NLS-1$ //$NON-NLS-2$
             System.out.println();
-            HashMap<Integer, ArrayList<Object>> onMap = new HashMap<>();
+            HashMap<Integer, Stack<ArrayList<Object>>> onMap = new HashMap<>();
             for (int i = 0; i < track.size(); i++)
             {
                 MidiEvent event = track.get(i);
@@ -77,17 +77,29 @@ public class MidiFunctions
                             row.add((double) note);
                             row.add((double) key);
                             row.add((double) velocity);
-                            onMap.put(key, row);
+                            if (!onMap.containsKey(key))
+                            {
+                                onMap.put(key, new Stack<ArrayList<Object>>());
+                            }
+                            Stack<ArrayList<Object>> st = onMap.get(key);
+                            if (st.size() > 0)
+                            {
+                                System.err.println("Warning: Overlapping Notes Merged \r\n    Note on, " + noteName + octave + " key=" + key + " velocity: " + velocity); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                            }
+                            else
+                            {
+                                System.out.println("Note on, " + noteName + octave + " key=" + key + " velocity: " + velocity); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                            }
+                            st.push(row);
                             // System.out.println(onMap);
-                            System.out.println("Note on, " + noteName + octave + " key=" + key + " velocity: " + velocity); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                         }
                         else
                         {
                             System.out.println("Note Zero, " + noteName + octave + " key=" + key + " velocity: " + velocity); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-                            ArrayList<Object> row = onMap.get(key);
+                            ArrayList<Object> row = onMap.get(key).pop();
                             row.set(1, (double) event.getTick());
                             column.add(row);
-                            onMap.remove(noteName);
+                            // onMap.remove(noteName);
                         }
                     }
                     else if (sm.getCommand() == NOTE_OFF)
@@ -98,10 +110,11 @@ public class MidiFunctions
                         String noteName = NOTE_NAMES[note];
                         int velocity = sm.getData2();
                         System.out.println("Note off, " + noteName + octave + " key=" + key + " velocity: " + velocity); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-                        ArrayList<Object> row = onMap.get(key);
+                        ArrayList<Object> row = onMap.get(key).pop();
+                        // ArrayList<Object> row = onMap.get(key);
                         row.set(1, (double) event.getTick());
                         column.add(row);
-                        onMap.remove(noteName);
+                        // onMap.remove(noteName);
                     }
                     else
                     {

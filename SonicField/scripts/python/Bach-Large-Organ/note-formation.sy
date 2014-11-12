@@ -446,6 +446,23 @@ def fixVelocityMidi(midi,v=100):
         index+=1
     return midiOut
 
+def dampVelocity(midi,key=80,amount=0.75):
+    print "Interpretation Pass"
+    endAt=len(midi)
+    index=0
+    midiOut=[]
+    while index<endAt:
+        ttickOn,ttickOff,tnote,tkey,tvelocity=midi[index]
+        if tkey<key:
+            v=tvelocity
+        else:
+            print "Damping: ",midi[index]
+            v=tvelocity*amount
+        midiOut.append((ttickOn,ttickOff,tnote,tkey,v))
+        index+=1
+    return midiOut
+
+
 def legatoMidi(midi,beat,millis):
     print "Interpretation Pass"
     endAt=len(midi)
@@ -455,7 +472,7 @@ def legatoMidi(midi,beat,millis):
         ttickOn,ttickOff,tnote,tkey,tvelocity=midi[index]
         millis=float(millis)
         millis/=float(beat)
-        l=ttickOff-ttickOn
+        l=float(ttickOff-ttickOn)
         if l<millis:
             midiOut.append([ttickOn,ttickOff+l*0.5,tnote,tkey,tvelocity])
         else:
@@ -473,7 +490,7 @@ def staccatoMidi(midi,beat,millis):
         ttickOn,ttickOff,tnote,tkey,tvelocity=midi[index]
         millis=float(millis)
         millis/=float(beat)
-        l=ttickOff-ttickOn
+        l=flost(ttickOff-ttickOn)
         if l*2.0<millis:
             midiOut.append([ttickOn,ttickOn+l*0.5,tnote,tkey,tvelocity])
         else:
@@ -481,6 +498,40 @@ def staccatoMidi(midi,beat,millis):
         # iterate the loop
         index+=1
     return midiOut
+
+def longAsMidi(midi,beat,millis):
+    print "Interpretation Pass"
+    endAt=len(midi)
+    index=0
+    midiOut=[]
+    while index<endAt:
+        ttickOn,ttickOff,tnote,tkey,tvelocity=midi[index]
+        millis=float(millis)
+        l=ttickOff-ttickOn
+        l*=beat
+        if l>=millis:
+            midiOut.append([ttickOn,ttickOff,tnote,tkey,tvelocity])
+        else:
+            print "Skipping ",l
+        index+=1
+    return midiOut
+
+def shorterThanMidi(midi,beat,millis):
+    print "Interpretation Pass"
+    endAt=len(midi)
+    index=0
+    midiOut=[]
+    while index<endAt:
+        ttickOn,ttickOff,tnote,tkey,tvelocity=midi[index]
+        millis=float(millis)
+        l=(ttickOff-ttickOn)*beat
+        if l<millis:
+            midiOut.append([ttickOn,ttickOff,tnote,tkey,tvelocity])
+        else:
+            print "Skipping ",l
+        index+=1
+    return midiOut
+
 
 def scatterMidi(midi,beat,millis):
     print "Interpretation Pass"
@@ -504,6 +555,23 @@ def findLengthMidi(midi,beat):
     ttickOn,ttickOff,tnote,tkey,tvelocity=midi[len(midi)-1]
     print "End of last note is: ", (ttickOff*beat)/60000.0
     sys.exit(0)
+
+def setLengthMidi(midis,beat,length):
+    length=float(length)
+    beat=float(beat)
+    max=0
+    for midi in midis:
+        if not len(midi):
+            continue
+        endAt=len(midi)
+        index=0
+        midiOut=[]
+        ttickOn,ttickOff,tnote,tkey,tvelocity=midi[len(midi)-1]
+        lNow=float((ttickOff*beat)/60000.0)
+        maybe=int(beat*length/lNow)
+        if maybe>max:
+            max=maybe
+    return max
 
 def my_so(what):
     return what()

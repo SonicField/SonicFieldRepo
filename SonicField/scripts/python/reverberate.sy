@@ -47,6 +47,7 @@ right=r1
 wleft =reverberate(left,convoll)
 wright=reverberate(right,convolr)
 """
+church=True
 
 def excite(sig_,mix,power):
     def exciteInner():
@@ -63,10 +64,12 @@ def excite(sig_,mix,power):
         return sf.Realise(sf.NumericVolume(sig,m/n))
     return sf_do(exciteInner)
     
-#(convoll,convolr)=sf.ReadFile("temp/bh-l.wav")
-#(convorl,convorr)=sf.ReadFile("temp/bh-r.wav")
-(convoll,convolr)=sf.ReadFile("temp/Vocal-Chamber-L.wav")
-(convorl,convorr)=sf.ReadFile("temp/Vocal-Chamber-R.wav")
+if church:    
+    (convoll,convolr)=sf.ReadFile("temp/bh-l.wav")
+    (convorl,convorr)=sf.ReadFile("temp/bh-r.wav")
+else:
+    (convoll,convolr)=sf.ReadFile("temp/Vocal-Chamber-L.wav")
+    (convorl,convorr)=sf.ReadFile("temp/Vocal-Chamber-R.wav")
 
 convoll=excite(convoll,0.75,2.0)
 convolr=excite(convolr,0.75,2.0)
@@ -82,8 +85,10 @@ wright=sf.FixSize(sf.Mix(rr,lr))
 
 wright = excite(wright,0.15,1.11)
 wleft  = excite(wleft ,0.15,1.11)
-#right  = excite(right,0.15,1.05)
-#left   = excite(left ,0.15,1.05)
+
+if church:
+    right  = excite(right,0.15,1.05)
+    left   = excite(left ,0.15,1.05)
 
 sf.WriteFile32((sf.FixSize(+wleft),sf.FixSize(+wright)),"temp/wet.wav")
 
@@ -92,10 +97,12 @@ wright =sf.FixSize(sf.Mix(sf.Pcnt15(+right),sf.Pcnt85(wright)))
 
 sf.WriteFile32((+wleft,+wright),"temp/mix.wav")
 
-(convoll,convolr)=sf.ReadFile("temp/bh-l.wav")
-(convorl,convorr)=sf.ReadFile("temp/bh-r.wav")
-#(convoll,convolr)=sf.ReadFile("temp/v-grand-l.wav")
-#(convorl,convorr)=sf.ReadFile("temp/v-grand-r.wav")
+if church:
+    (convoll,convolr)=sf.ReadFile("temp/v-grand-l.wav")
+    (convorl,convorr)=sf.ReadFile("temp/v-grand-r.wav")
+else:
+    (convoll,convolr)=sf.ReadFile("temp/bh-l.wav")
+    (convorl,convorr)=sf.ReadFile("temp/bh-r.wav")
 
 left  = sf.BesselLowPass(left  ,392,1)
 right = sf.BesselLowPass(right,392,1)

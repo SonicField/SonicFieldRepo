@@ -267,3 +267,25 @@ def trumpetBase(length,freq,z=1.0):
     vox=sf.Clean(vox)
     vox=polish(sf.FixSize(vox),freq)
     return sf.FixSize(vox)
+
+def stretchedBass(length,freq,z=1.0,s=1.0,d=0.0):
+    voxA=[]
+    freq=float(freq)
+    hf=freq
+    hc=1.0
+    while hf<20000:
+        v=(1.0/hc)**z
+        env=st.NumericShape((0,v),(length,v-(d**hc-1.0)))
+        voxA.append(
+            sf.Multiply(
+                sf.PhasedSineWave(length,hf,random.random()),
+                env
+            )
+        )
+        hf+=freq*s
+        hc+=1
+        
+    vox=sf.Mix(voxA)
+    vox=sf.Clean(vox)
+    vox=polish(sf.FixSize(vox),freq)
+    return sf.FixSize(vox)
