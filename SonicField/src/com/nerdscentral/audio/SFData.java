@@ -395,6 +395,8 @@ public class SFData extends SFSignal implements Serializable
         if (referenceCount.get() != 0)
         {
             System.err.println(Messages.getString("SFData.13")); //$NON-NLS-1$
+            System.err.println(pythonCreated);
+            javaCreated.printStackTrace();
         }
     }
 

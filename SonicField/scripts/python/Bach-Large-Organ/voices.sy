@@ -144,6 +144,46 @@ def viola(length,freq):
     sig=sf.FixSize(polish(sig,freq))
     return pitchMove(sig)
 
+def pluckedGlass(length,freq):
+    sig=sf.Mix(
+        stretchedBass(length,freq,z=3.0,s=1.005,d=1.0,at=2000),
+        sf.Multiply(
+            cleanNoise(length,freq*2.0),
+            sf.SimpleShape((0,-60),(64,-20),(128,-36),(length,-36))
+        )
+    )
+    sig=sf.RBJPeaking(sig,freq*5,0.5,5)
+    start=sf.Multiply(
+            sf.Mix(
+                sf.FixSize(sf.MakeSawTooth(sf.SineWave(length,freq*0.75))),
+                sf.FixSize(sf.MakeSawTooth(sf.SineWave(length,freq**0.5)))
+            ),
+            sf.SimpleShape((0,1.0),(16,-30),(16,-60),(length,-99))            
+    )
+    start=sf.Clean(start)
+    sig=sf.Mix(sf.FixSize(sig),sf.FixSize(start))
+    return sf.FixSize(sf.Clean(sig))
+    
+def brightPluckedGlass(length,freq):
+    sig=sf.Mix(
+        stretchedBass(length,freq,z=1.5,s=1.020,d=1.0,at=4000),
+        sf.Multiply(
+            cleanNoise(length,freq*2.0),
+            sf.SimpleShape((0,-60),(64,-20),(128,-36),(length,-36))
+        )
+    )
+    sig=sf.RBJPeaking(sig,freq*5,0.5,5)
+    start=sf.Multiply(
+            sf.Mix(
+                sf.FixSize(sf.MakeSawTooth(sf.SineWave(length,freq*0.75))),
+                sf.FixSize(sf.MakeSawTooth(sf.SineWave(length,freq**0.5)))
+            ),
+            sf.SimpleShape((0,1.0),(16,-30),(16,-60),(length,-99))            
+    )
+    start=sf.Clean(start)
+    sig=sf.Mix(sf.FixSize(sig),sf.FixSize(start))
+    return sf.FixSize(sf.Clean(sig))
+
 def trostLeadDiapason(length,freq):
     sig=sf.Mix(
         sf.Multiply(
@@ -507,6 +547,18 @@ def orchestralOboe(length,freq):
     )
     vox=polish(vox,freq)
     return sf.FixSize(vox)
+
+def trostOrchestralOboe(length,freq):
+    start=sf.Multiply(
+            sf.Mix(
+                sf.FixSize(sf.Power(sf.MakeSawTooth(sf.SineWave(length,freq*0.500)),2.0)),
+                sf.FixSize(sf.Power(sf.MakeSawTooth(sf.SineWave(length,freq*0.123)),2.0))
+            ),
+            sf.NumericShape((0,3.0),(32,0),(length,0))            
+    )
+    start=polish(start,freq*0.5)
+    sig=sf.Mix(orchestralOboe(length,freq),sf.FixSize(start))
+    return sf.FixSize(polish(sig,freq))
 
 def richReed(length,freq):
     s1=bombardPulse(length,freq*1.000)

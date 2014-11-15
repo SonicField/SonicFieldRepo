@@ -121,8 +121,10 @@ def doFormant(sig,f1,f2,f3,freq,intensity=4):
 def echoDivision(vox_):
     def echoInner():
         vox=vox_
-        length=sf.Length(+vox)
         m1=sf.Magnitude(+vox)
+        if m1==0.0:
+            return vox
+        length=sf.Length(+vox)
         convol=sf.ReadFile("temp/swell.wav")
         voxW=reverberate(+vox ,convol[0])
         vox=sf.Realise(sf.Mix(vox,voxW))
@@ -134,8 +136,10 @@ def echoDivision(vox_):
 def tremolate(vox_,rate,mag):
     def tremolateInner():
         vox=vox_
-        length=sf.Length(+vox)
         m1=sf.Magnitude(+vox)
+        if m1==0.0:
+            return vox
+        length=sf.Length(+vox)
         ev=sf.NumericVolume(sf.MakeTriangle(sf.PhasedSineWave(length+64,rate,random.random())),mag)
         ev=sf.Cut(0,length,ev)
         fv=sf.Pcnt2(+ev)

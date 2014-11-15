@@ -28,7 +28,7 @@ def safeEnv(sig,env):
         print "***WARNING: envelop failure *** ",length," -> ",p," diff:", p-length
     return sf.NumericShape(ne)
          
-def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor,subBass,flatEnv,pure,rawBass):
+def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor,subBass,flatEnv,pure,rawBass,decay):
     def singInner():
         vCorrect=vCorrect_
         length=lengthIn
@@ -88,6 +88,12 @@ def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor,subBass,flatEn
         sig = sf.FixSize(sig)
         length=sf.Length(+sig)
         
+        if decay:
+            # -60 db at 1 minute
+            dbs=-60.0*float(length)/float(decay)
+            env=sf.SimpleShape((0,0),(length,dbs))
+            sig=sf.Multiply(sig,env)
+        
         pHint=hint[0]
         nHint=hint[1]
         shine=False
@@ -137,7 +143,7 @@ def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor,subBass,flatEn
 
         mod=sf.NumericShape((0,0.995),(length,1.005))
         mod=sf.Mix(mod,sf.NumericVolume(+env,0.01))
-        # if we have envelope extention then we don't do this as
+        # if we have envelope extension then we don't do this as
         # it get really hard to get the lengths correct and make 
         # sense of what we are trying to do. KISS
         if sf.Length(+sig)==sf.Length(+mod):
@@ -222,7 +228,7 @@ def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor,subBass,flatEn
         return (notel,noter)
     return sf_do(singInner)
 
-def doMidi(voice,vCorrect,pitchShift=1.0,qFactor=1.0,subBass=False,flatEnv=False,pure=False,pan=-1,rawBass=False,pitchAdd=0.0):
+def doMidi(voice,vCorrect,pitchShift=1.0,qFactor=1.0,subBass=False,flatEnv=False,pure=False,pan=-1,rawBass=False,pitchAdd=0.0,decay=False):
     count=0.0
     while len(notes)!=0:
         notes.pop()
@@ -337,7 +343,7 @@ def doMidi(voice,vCorrect,pitchShift=1.0,qFactor=1.0,subBass=False,flatEnv=False
             hint+="E"
  
         print "H",hint,"C",count,"P",pitch,"@",at,"L",length,"V",velocity,"VU",vCUse,"PC",pCorrect
-        note = sing(hint,pitch, length,beat,v,lr,rl,voice,vCUse,qFactor,subBass,flatEnv,pure,rawBass)
+        note = sing(hint,pitch, length,beat,v,lr,rl,voice,vCUse,qFactor,subBass,flatEnv,pure,rawBass,decay)
         dl=30*rl+1000
         dr=38*lr+1000
         notes.append((note,at+dl,at+dr))
@@ -559,7 +565,7 @@ def findLengthMidi(midi,beat):
 def setLengthMidi(midis,beat,length):
     length=float(length)
     beat=float(beat)
-    max=0
+    max=0.0
     for midi in midis:
         if not len(midi):
             continue
@@ -568,10 +574,10 @@ def setLengthMidi(midis,beat,length):
         midiOut=[]
         ttickOn,ttickOff,tnote,tkey,tvelocity=midi[len(midi)-1]
         lNow=float((ttickOff*beat)/60000.0)
-        maybe=int(beat*length/lNow)
-        if maybe>max:
-            max=maybe
-    return max
+        if lNow>max:
+            max=lNow
+            print "Max " ,lNow
+    return beat*length/max
 
 def my_so(what):
     return what()

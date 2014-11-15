@@ -1,0 +1,26 @@
+(left,right)=sf.ReadFile("temp/grand.wav")
+def filter(sig_):
+    def filterInner():
+        sig=sig_
+        q=0.5
+        sig=sf.Mix(
+            sf.Pcnt10(sf.FixSize(sf.WaveShaper(-0.03*q,0.2*q,0,-1.0*q,0.2*q,2.0*q,+sig))),
+            sig
+        )
+        sig=sf.RBJPeaking(sig,64,2,2)
+        damp=sf.BesselLowPass(+sig,2000,1)
+        sig=sf.FixSize(sf.Mix(damp,sig))
+        low=sf.BesselLowPass(+sig,256,4)
+        m1=sf.Magnitude(+low)
+        low=sf.FixSize(low)
+        low=sf.Saturate(low)
+        m2=sf.Magnitude(+low)
+        low=sf.NumericVolume(low,m1/m2)
+        sig=sf.BesselHighPass(sig,256,4)
+        sig=sf.Mix(low,sig)
+        return sf.FixSize(sf.Clean(sig))
+    return sf_do(filterInner)
+
+left  = filter(left)
+right = filter(right)
+sf.WriteFile32((left,right),"temp/proc.wav")

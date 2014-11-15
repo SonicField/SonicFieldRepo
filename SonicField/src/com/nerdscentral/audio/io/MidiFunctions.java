@@ -84,7 +84,7 @@ public class MidiFunctions
                             Stack<ArrayList<Object>> st = onMap.get(key);
                             if (st.size() > 0)
                             {
-                                System.err.println("Warning: Overlapping Notes Merged \r\n    Note on, " + noteName + octave + " key=" + key + " velocity: " + velocity); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                                System.err.println("Warning: Overlapping Notes Detected \r\n    Note on, " + noteName + octave + " key=" + key + " velocity: " + velocity); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
                             }
                             else
                             {

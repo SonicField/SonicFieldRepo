@@ -72,46 +72,81 @@ def postProcessEcho():
 # Timing configuration and running midi
 #######################################
 
-#midis=sf.ReadMidiFile("temp/bwv605gm.mid")
-midis=sf.ReadMidiFile("temp/Little Book Of Organ/bwv606gm.mid")
+#midis=sf.ReadMidiFile("temp/bwv607gm.mid")
+#midis=sf.ReadMidiFile("temp/Little Book Of Organ/bwv608gm.mid")
+midis=sf.ReadMidiFile("temp/aria.mid")
 
 signature   =     4.0/4.0
 bpm         =     100 * signature
 beat        =     (60000.0 / (bpm * 192.0))
-length      =     1.25
+length      =     5.0
 base        =     8.1757989156
 temperament =     WerckmeisterIII
 #temperament =     Equal
 count       =      0.0
 timeStart   =      0.0
-timeEnd     =   1000.0 * 60.0 * 5.0
-swapAll     =    False
+timeEnd     =   1000.0 * 60.0 * 10.0
+swapAll     =   False
 
 print "Initial  Beat: ",beat
 beat=setLengthMidi(midis,beat,length)
 print "Computed Beat: ",beat
+#findLengthMidi(midis[1],beat)
 
-midi=longAsMidi(midis[1],beat,512)
-midi=fixVelocityMidi(midi)
+midi=shorterThanMidi(midis[1],beat,1024)
 midi=dampVelocity(midi,80,0.75)
-doMidi(voice=orchestralOboe,vCorrect=0.50,flatEnv=True)
-postProcessTremolate(rate=4.5,magnitude=0.1)
-doMidi(voice=orchestralOboe,vCorrect=0.25,pitchAdd=2.5,flatEnv=True,pitchShift=3.0)
-postProcessTremolate(rate=3.0,magnitude=0.1)
-
-midi=midis[2]
-midi=fixVelocityMidi(midi)
-midi=dampVelocity(midi,80,0.75)
-doMidi(voice=string,vCorrect=1.0,flatEnv=True)
+doMidi(voice=pluckedGlass,vCorrect=0.5,flatEnv=False,qFactor=1.0,decay=2500,pan=0.4)
+postProcess()
+doMidi(voice=brightPluckedGlass,vCorrect=0.05,flatEnv=True,pitchShift=4.0,decay=500,pan=0.6)
 postProcess()
 
-midi=legatoMidi(midis[3],beat,128)
-midi=fixVelocityMidi(midi)
-doMidi(voice=trostPosaune,vCorrect=1.0,pitchShift=0.5,flatEnv=True,rawBass=True)
+midi=longAsMidi(midis[1],beat,1024)
+midi=dampVelocity(midi,80,0.75)
+doMidi(voice=pluckedGlass,vCorrect=0.75,flatEnv=False,qFactor=1.0,decay=15000,pan=0.7)
+postProcessTremolate()
+doMidi(voice=pluckedGlass,vCorrect=0.1,flatEnv=False,qFactor=1.0,decay=15000,pitchShift=4.0,pan=0.45)
+postProcessTremolate(rate=4.5)
+
+midi=shorterThanMidi(midis[2],beat,512)
+midi=dampVelocity(midi,80,0.75)
+doMidi(voice=pluckedGlass,vCorrect=0.75,flatEnv=False,qFactor=2.0,pan=0.75,decay=5000)
 postProcess()
-midi=delayMidi(midis[3],beat,64)
-midi=fixVelocityMidi(midi)
-doMidi(voice=secondDiapason, vCorrect=0.5,flatEnv=True)
+doMidi(voice=pluckedGlass,vCorrect=0.5,flatEnv=False,qFactor=1.0,pan=0.50,decay=5000)
+postProcess()
+
+# Reed
+doMidi(voice=muteOboe,vCorrect=0.2,flatEnv=False,qFactor=1.0,decay=1500,pan=0.55)
+postProcessTremolate(rate=5.0)
+
+midi=longAsMidi(midis[2],beat,512)
+midi=dampVelocity(midi,80,0.75)
+doMidi(voice=pluckedGlass,vCorrect=0.75,flatEnv=False,qFactor=2.0,decay=5000,pan=0.65)
+postProcess()
+doMidi(voice=pluckedGlass,vCorrect=0.50,flatEnv=False,qFactor=1.0,decay=5000,pitchAdd=4.25,pan=0.55)
+postProcessEcho()
+
+# Reed
+doMidi(voice=muteOboe,vCorrect=0.2,flatEnv=True,qFactor=1.0,decay=2500,pan=0.425)
+postProcessTremolate(rate=1.5)
+
+midi=legatoMidi(midis[4],beat,128)
+doMidi(voice=pluckedGlass,vCorrect=0.5,flatEnv=True,decay=15000)
+postProcess()
+doMidi(voice=pluckedGlass,vCorrect=0.5,flatEnv=True,pitchAdd=2.5,decay=15000)
+postProcess()
+# Reed
+doMidi(voice=muteOboe,vCorrect=0.2,flatEnv=True,qFactor=1.0,decay=2500,pan=0.5)
+postProcessTremolate(rate=1.5)
+
+
+midi=legatoMidi(midis[5],beat,128)
+doMidi(voice=muteOboe,vCorrect=0.6,pitchShift=0.25,flatEnv=True,pure=True,qFactor=1.0)
+postProcess()
+
+midi=legatoMidi(midis[5],beat,128)
+doMidi(voice=brightPluckedGlass,vCorrect=0.5)
+postProcess()
+doMidi(voice=brightPluckedGlass,vCorrect=0.5,pitchShift=0.995)
 postProcess()
 
 print "Mixing"
