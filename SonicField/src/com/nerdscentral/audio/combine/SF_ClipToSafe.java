@@ -43,6 +43,10 @@ public class SF_ClipToSafe implements SFPL_Operator
             }
             return Caster.prep4Ret(out);
         }
+        finally
+        {
+            data.__neg__();
+        }
     }
 
     @Override

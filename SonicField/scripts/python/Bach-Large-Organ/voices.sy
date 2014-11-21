@@ -145,28 +145,55 @@ def viola(length,freq):
     return pitchMove(sig)
 
 def pluckedGlass(length,freq):
-    sig=sf.Mix(
-        stretchedBass(length,freq,z=3.0,s=1.005,d=1.0,at=2000),
-        sf.Multiply(
-            cleanNoise(length,freq*2.0),
-            sf.SimpleShape((0,-60),(64,-20),(128,-36),(length,-36))
+    sig=sf.Mix(        
+            sf.Pcnt50(stretchedBass(length,freq,z=3.5,s=1.005,d=1.00,at=3000)),
+            sf.Pcnt50(stretchedBass(length,freq,z=3.5,s=1.005, d=1.00,at=1500))
         )
+    sig=sf.Multiply(
+        sig,
+        sf.NumericShape((0,0.5),(16,1),(length,1))
+    )
+    sig=sf.BesselLowPass(sig,freq*5,1)
+    sig=sf.Multiply(
+        sig,
+        sf.DirectMix(1,sf.Pcnt5(sf.SineWave(length,16+random.random()*8.0)))
     )
     sig=sf.RBJPeaking(sig,freq*5,0.5,5)
+    
     start=sf.Multiply(
             sf.Mix(
+                sf.FixSize(sf.MakeSawTooth(sf.SineWave(length,120))),
                 sf.FixSize(sf.MakeSawTooth(sf.SineWave(length,freq*0.75))),
                 sf.FixSize(sf.MakeSawTooth(sf.SineWave(length,freq**0.5)))
             ),
-            sf.SimpleShape((0,1.0),(16,-30),(16,-60),(length,-99))            
+            sf.SimpleShape((0,1.0),(16,-30),(32,-60),(length,-99))            
     )
+    start=sf.Multiply(
+        start,
+        sf.NumericShape((0,0),(16,1),(length,0),(length*0.5,0))
+    )            
     start=sf.Clean(start)
-    sig=sf.Mix(sf.FixSize(sig),sf.FixSize(start))
-    return sf.FixSize(sf.Clean(sig))
+    conv =cleanNoise(64,32)
+    conv =sf.Multiply(
+        sf.SimpleShape((0,-12),(60,-60),(66,-60)),
+        conv
+    )
+    conv=sf.Multiply(
+        conv,
+        sf.NumericShape((0,0),(60,1),(66,0))
+    ) 
+    conv=reverberate(start,conv)
+    conv=sf.Multiply(
+        conv,
+        sf.SimpleShape((0,1.0),(16,-30),(32,-60),(length,-99))
+    )
+    sig=sf.Mix(sf.FixSize(sig),sf.Pcnt50(sf.FixSize(conv)))
+    sig=sf.Cut(0,length,sig)
+    return sf.FixSize(polish(sig,64))
     
 def brightPluckedGlass(length,freq):
     sig=sf.Mix(
-        stretchedBass(length,freq,z=1.5,s=1.020,d=1.0,at=4000),
+        stretchedBass(length,freq,z=1.5,s=1.02,d=1.0,at=4000),
         sf.Multiply(
             cleanNoise(length,freq*2.0),
             sf.SimpleShape((0,-60),(64,-20),(128,-36),(length,-36))

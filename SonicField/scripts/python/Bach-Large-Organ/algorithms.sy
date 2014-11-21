@@ -71,7 +71,7 @@ def reverberate(signal,convol):
 
 def finalMix(notes):
     def mixInner():
-        return sf.Swap(sf.FixSize(sf.Clean(sf.MixAt(notes))))
+        return sf.Swap(sf.FixSize(sf.Clean(sf.ClipToSafe(sf.MixAt(notes)))))
     return sf_do(mixInner)
 
 def mix(notes):

@@ -1,0 +1,62 @@
+######################
+# Channel By Channel #
+# Mix mix/prcessing  #
+######################
+
+def postProcess():
+    count=0
+    tnsl=[]
+    tnsr=[]
+    
+    for note in notes:
+        nlr,atl,atr=note
+        print "Mix phase 1 done: ",count,atl,atr
+        notel,noter=nlr
+        tnsl.append([notel,atl])
+        tnsr.append([noter,atr])
+        count+=1
+    tnl=mix(tnsl)
+    tnr=mix(tnsr)
+    print "Mix phase 2 done"
+    notesl.append([tnl,0])
+    notesr.append([tnr,0])
+
+def postProcessTremolate(rate=3.5,magnitude=0.25):
+    count=0
+    tnsl=[]
+    tnsr=[]
+    
+    for note in notes:
+        nlr,atl,atr=note
+        print "Trem phase 1 done: ",count,atl,atr
+        notel,noter=nlr
+        tnsl.append([notel,atl])
+        tnsr.append([noter,atr])
+        count+=1
+    tnl=mix(tnsl)
+    tnr=mix(tnsr)
+    tnl=tremolate(tnl,rate,magnitude)
+    tnr=tremolate(tnr,rate,magnitude)
+    print "Trem phase 2 done"
+    notesl.append([tnl,0])
+    notesr.append([tnr,0])
+
+def postProcessEcho():
+    count=0
+    tnsl=[]
+    tnsr=[]
+    
+    for note in notes:
+        nlr,atl,atr=note
+        print "Echo phase 1 done: ",count,atl,atr
+        notel,noter=nlr
+        tnsl.append([notel,atl])
+        tnsr.append([noter,atr])
+        count+=1
+    tnl=mix(tnsl)
+    tnr=mix(tnsr)
+    tnl=echoDivision(tnl)
+    tnr=echoDivision(tnr)
+    print "Echo phase 2 done"
+    notesl.append([tnl,0])
+    notesr.append([tnr,0])

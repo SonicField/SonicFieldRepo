@@ -43,7 +43,7 @@ public class SF_WriteSignal implements SFPL_Operator, SFPL_RefPassThrough
             {
                 throw new SFPL_RuntimeException(Messages.getString("SF_WriteSignal.1"), e);  //$NON-NLS-1$
             }
-            return Caster.prep4Ret(data);
+            return data;
         }
     }
 
