@@ -559,3 +559,23 @@ def chE():
     postProcess()
     doMidi(voice=pluckedGlass,vCorrect=0.1,pitchShift=4.0, flatEnv=False,pure=False,qFactor=1.0,decay=1000,pitchAdd=4.0)
     postProcessTremolate()
+
+##################
+# Which Channels #
+##################
+
+doChannels=['a','b','d']
+while len(doChannels):    
+    ch=doChannels.pop(0)
+    if ch == 'a':
+        chA()
+    if ch == 'p':
+        chP()
+    if ch == 'b':
+        chB()
+    if ch == 'c':
+        chC()
+    if ch == 'd':
+        chD()
+    if ch == 'e':
+        chE()

@@ -28,7 +28,7 @@ def safeEnv(sig,env):
         print "***WARNING: envelop failure *** ",length," -> ",p," diff:", p-length
     return sf.NumericShape(ne)
          
-def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor,subBass,flatEnv,pure,rawBass,decay):
+def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor,subBass,flatEnv,pure,rawBass,decay,bend):
     def singInner():
         vCorrect=vCorrect_
         length=lengthIn
@@ -141,15 +141,16 @@ def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor,subBass,flatEn
         else:
             env=safeEnv(sig,[(0,0),(64*qFactor,0.25),(512,1),(length/2,0.75),(length,0)])
 
-        mod=sf.NumericShape((0,0.995),(length,1.005))
-        mod=sf.Mix(mod,sf.NumericVolume(+env,0.01))
-        # if we have envelope extension then we don't do this as
-        # it get really hard to get the lengths correct and make 
-        # sense of what we are trying to do. KISS
-        if sf.Length(+sig)==sf.Length(+mod):
-            sig=sf.FrequencyModulate(sig,mod)  
-        else:
-            -mod
+        if bend:
+            mod=sf.NumericShape((0,0.995),(length,1.005))
+            mod=sf.Mix(mod,sf.NumericVolume(+env,0.01))
+            # if we have envelope extension then we don't do this as
+            # it get really hard to get the lengths correct and make 
+            # sense of what we are trying to do. KISS
+            if sf.Length(+sig)==sf.Length(+mod):
+                sig=sf.FrequencyModulate(sig,mod)  
+            else:
+                -mod
 
         sig=sf.FixSize(sig)
      
@@ -228,7 +229,7 @@ def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor,subBass,flatEn
         return (notel,noter)
     return sf_do(singInner)
 
-def doMidi(voice,vCorrect,pitchShift=1.0,qFactor=1.0,subBass=False,flatEnv=False,pure=False,pan=-1,rawBass=False,pitchAdd=0.0,decay=False):
+def doMidi(voice,vCorrect,pitchShift=1.0,qFactor=1.0,subBass=False,flatEnv=False,pure=False,pan=-1,rawBass=False,pitchAdd=0.0,decay=False,bend=True):
     count=0.0
     while len(notes)!=0:
         notes.pop()
@@ -343,7 +344,7 @@ def doMidi(voice,vCorrect,pitchShift=1.0,qFactor=1.0,subBass=False,flatEnv=False
             hint+="E"
  
         print "H",hint,"C",count,"P",pitch,"@",at,"L",length,"V",velocity,"VU",vCUse,"PC",pCorrect
-        note = sing(hint,pitch, length,beat,v,lr,rl,voice,vCUse,qFactor,subBass,flatEnv,pure,rawBass,decay)
+        note = sing(hint,pitch, length,beat,v,lr,rl,voice,vCUse,qFactor,subBass,flatEnv,pure,rawBass,decay,bend)
         dl=30*rl+1000
         dr=38*lr+1000
         notes.append((note,at+dl,at+dr))
@@ -362,6 +363,8 @@ def unpackMidi(tup,beat):
 def interpretMidiBombast(midi,beat):
     change=True
     while change:
+        midi=sorted(midi, key=lambda tup: tup[0])
+        midi=sorted(midi, key=lambda tup: tup[3])
         change=False
         print "Interpretation Pass"
         endAt=len(midi)-1
@@ -397,35 +400,94 @@ def interpretMidiBombast(midi,beat):
         midi=midiOut
     return midi
 
-def interpretMidiStaccato(midi,beat,gap=256):
+def repareOverlapMidi(midi,blip=5):
     print "Interpretation Pass"
-    endAt=len(midi)-1
-    index=0
-    midiOut=[]
-    beat=float(beat)
-    while index<endAt:
-        this=midi[index]
-        next=midi[index+1]
-        ttickOn,ttickOff,tnote,tkey,tvelocity,tAt,tLen,tPitch = unpackMidi(this,beat)
-        ntickOn,ntickOff,nnote,nkey,nvelocity,nAt,nLen,nPitch = unpackMidi(next,beat)
-
-        # Merge interpretation
-        finished=False
-        if tLen>(gap*2.0/beat):
-            if (ntickOn-ttickOff)<(gap/beat):
-                ttickOff-=gap/beat
-                midiOut.append([ttickOn,ntickOff,tnote,tkey,tvelocity])
-                print "Staccato: ",this," & ",next
-                finished=True
+    mute=True
+    while mute:
+        endAt=len(midi)-1
+        mute=False
+        index=0
+        midiOut=[]
+        this=[]
+        next=[]
+        print "Demerge pass:",endAt
+        midi=sorted(midi, key=lambda tup: tup[0])
+        midi=sorted(midi, key=lambda tup: tup[3])
+        while index<endAt:
+            this=midi[index]
+            next=midi[index+1]
+            ttickOn,ttickOff,tnote,tkey,tvelocity=this
+            ntickOn,ntickOff,nnote,nkey,nvelocity=next
     
-        if not finished:
-            midiOut.append(this)
-            if index==endAt-1:
-                midiOut.append(next)
-            
-        # iterate the loop
-        index+=1
-    return midiOut
+            # Merge interpretation
+            finished=False
+            dif=(ttickOff-ttickOn)
+            if dif<blip and tkey==nkey and ttickOff>=ntickOn and ttickOff<=ntickOff:
+                print "Separating: ",this,next," Diff: ",(ttickOff-ntickOn)
+                midiOut.append([ttickOn ,ntickOn ,tnote,tkey,tvelocity])
+                midiOut.append([ttickOff,ntickOff,nnote,nkey,nvelocity])
+                index+=1
+                mute=True     
+            elif  dif<blip:
+                print "Removing blip: ",(ttickOff-ttickOn)
+                index+=1
+                mute=True     
+                continue
+            else:
+                midiOut.append(this)       
+            # iterate the loop
+            index+=1
+        if index==endAt:
+            midiOut.append(next)
+        if not mute:
+            return midiOut
+        midi=midiOut
+
+def repareOverlapMidis(midis,blip=5):
+    midisOut=[]
+    for midi in midis:
+        midisOut.append(repareOverlapMidi(midi,blip))
+    return midisOut
+
+def interpretMidiStaccato(midi,beat,gap=256):
+    change=True
+    while change:
+        midi=sorted(midi, key=lambda tup: tup[0])
+        midi=sorted(midi, key=lambda tup: tup[3])
+        change=False
+        print "Interpretation Pass"
+        endAt=len(midi)-1
+        index=0
+        midiOut=[]
+        while index<endAt:
+            this=midi[index]
+            next=midi[index+1]
+            ttickOn,ttickOff,tnote,tkey,tvelocity,tAt,tLen,tPitch = unpackMidi(this,beat)
+            ntickOn,ntickOff,nnote,nkey,nvelocity,nAt,nLen,nPitch = unpackMidi(next,beat)
+    
+            # Merge interpretation
+            finished=False
+            if tLen>512:
+                #print "Checking ",tPitch==nPitch, tvelocity==nvelocity,ntickOn-ttickOff,nLen>256,tPitch<256
+                if tPitch==nPitch and tvelocity==nvelocity and (ntickOn-ttickOff)<128 and (ntickOn-ttickOff)>-16:
+                    # go for a low pitch merge
+                    # below middle C
+                    if nLen>256 and tPitch<256:
+                        finished=True
+                        midiOut.append([ttickOn,ntickOff,tnote,tkey,tvelocity])
+                        print "Merging: ",this," & ",next
+                        index+=1
+                        change=True
+    
+            if not finished:
+                midiOut.append(this)
+                if index==endAt-1:
+                    midiOut.append(next)
+                
+            # iterate the loop
+            index+=1
+        midi=midiOut
+    return midi
 
 def delayMidi(midi,beat,millis):
     print "Interpretation Pass"
@@ -467,7 +529,6 @@ def dampVelocity(midi,key=80,amount=0.75):
         midiOut.append((ttickOn,ttickOff,tnote,tkey,v))
         index+=1
     return midiOut
-
 
 def legatoMidi(midi,beat,millis):
     print "Interpretation Pass"
@@ -537,7 +598,6 @@ def shorterThanMidi(midi,beat,millis):
             print "Skipping ",l
         index+=1
     return midiOut
-
 
 def scatterMidi(midi,beat,millis):
     print "Interpretation Pass"
