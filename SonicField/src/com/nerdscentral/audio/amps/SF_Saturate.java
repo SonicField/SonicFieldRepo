@@ -19,7 +19,7 @@ public class SF_Saturate implements SFPL_Operator
         return Messages.getString("SF_Saturate.0"); //$NON-NLS-1$
     }
 
-    public class Translator extends SFSingleTranslator
+    public static class Translator extends SFSingleTranslator
     {
 
         protected Translator(SFSignal input)

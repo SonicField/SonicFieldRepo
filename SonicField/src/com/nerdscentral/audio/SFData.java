@@ -8,14 +8,17 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
+import java.lang.management.ManagementFactory;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import com.nerdscentral.sython.SFPL_RuntimeException;
 
@@ -32,24 +35,25 @@ public class SFData extends SFSignal implements Serializable
     }
 
     // Swap limit in samples beyond which signals are send to swap
-    private static final String         SOMIC_FIELD_SWAP_LIMIT = "sonicFieldSwapLimit";    //$NON-NLS-1$
+    private static final String                      SONIC_FIELD_SWAP_LIMIT = "sonicFieldSwapLimit";        //$NON-NLS-1$
     // Directory to send swap files to
-    private static final String         SONIC_FIELD_TEMP       = "sonicFieldTemp";     //$NON-NLS-1$
+    private static final String                      SONIC_FIELD_TEMP       = "sonicFieldTemp";             //$NON-NLS-1$
     // Default swap limit
-    private static final int            MAX_IN_RAM             = 8192 * 1024;
-    private static final long           serialVersionUID       = 1L;
-    private double[]                    data;
-    private final int                   length;
-    private volatile boolean            killed                 = false;
-    private File                        coreFile;
-    private RandomAccessFile            coreFileAccessor;
-    private final long                  TWOGIG                 = 1073741824;
-    private List<ByteBuffer>            chunks                 = new ArrayList<>();
-    private final static long           swapLimit;
-    private final static File           tempDir;
-    private FileChannel                 channelMapper;
-    private final NotCollectedException javaCreated;
-    private final String                pythonCreated;
+    private static final int                         MAX_IN_RAM             = 8192 * 1024;
+    private static final long                        serialVersionUID       = 1L;
+    private double[]                                 data;
+    private final int                                length;
+    private volatile boolean                         killed                 = false;
+    private static File                              coreFile;
+    private static RandomAccessFile                  coreFileAccessor;
+    private final long                               CHUNK_LEN              = 2 * 1024 * 1024;
+    private List<ByteBuffer>                         chunks                 = new ArrayList<>();
+    private final static long                        swapLimit;
+    private final static File                        tempDir;
+    private static FileChannel                       channelMapper;
+    private final NotCollectedException              javaCreated;
+    private final String                             pythonCreated;
+    private static ConcurrentLinkedQueue<ByteBuffer> freeChunks             = new ConcurrentLinkedQueue<>();
 
     private static class ResTracker
     {
@@ -68,7 +72,7 @@ public class SFData extends SFSignal implements Serializable
     static
     {
         tempDir = new File(System.getProperty(SONIC_FIELD_TEMP));
-        String swapLimitraw = System.getProperty(SOMIC_FIELD_SWAP_LIMIT);
+        String swapLimitraw = System.getProperty(SONIC_FIELD_SWAP_LIMIT);
         if (swapLimitraw == null)
         {
             swapLimit = MAX_IN_RAM; // 64 megabytes or 87 seconds at 96000
@@ -77,6 +81,27 @@ public class SFData extends SFSignal implements Serializable
         {
             swapLimit = Long.parseLong(swapLimitraw);
         }
+
+        String pid = ManagementFactory.getRuntimeMXBean().getName();
+        try
+        {
+            if (tempDir != null)
+            {
+                coreFile = File.createTempFile("SonicFieldSwap" + pid, ".mem", tempDir); //$NON-NLS-1$ //$NON-NLS-2$
+            }
+            else
+            {
+                coreFile = File.createTempFile("SonicFieldSwap" + pid, ".mem");  //$NON-NLS-1$//$NON-NLS-2$            
+            }
+            coreFile.deleteOnExit();
+            // Now create the actual file
+            coreFileAccessor = new RandomAccessFile(coreFile, "rw"); //$NON-NLS-1$
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+        channelMapper = coreFileAccessor.getChannel();
     }
 
     public static void dumpNotCollected()
@@ -94,52 +119,40 @@ public class SFData extends SFSignal implements Serializable
 
     private void makeMap(long size) throws IOException
     {
-        if (tempDir != null)
-        {
-            coreFile = File.createTempFile("SonicFieldSwap" + getUniqueId(), ".mem", tempDir);  //$NON-NLS-1$//$NON-NLS-2$
-        }
-        else
-        {
-            coreFile = File.createTempFile("SonicFieldSwap" + getUniqueId(), ".mem");  //$NON-NLS-1$//$NON-NLS-2$            
-        }
-        // This is a for testing - to avoid the disk filling up
-        coreFile.deleteOnExit();
-        // Now create the actual file
-        coreFileAccessor = new RandomAccessFile(coreFile, "rw"); //$NON-NLS-1$
-        channelMapper = coreFileAccessor.getChannel();
         long countDown = size;
-        long from = 0;
         while (countDown > 0)
         {
-            long len = Math.min(TWOGIG, countDown);
-            ByteBuffer chunk = channelMapper.map(MapMode.READ_WRITE, from, len);
+            ByteBuffer chunk = freeChunks.poll();
+            if (chunk == null) break;
             chunks.add(chunk);
-            from += len;
-            countDown -= len;
+            countDown -= CHUNK_LEN;
         }
-        System.gc();
+        if (countDown > 0)
+        {
+            synchronized (coreFile)
+            {
+                long from = coreFile.length();
+                while (countDown > 0)
+                {
+                    ByteBuffer chunk = channelMapper.map(MapMode.READ_WRITE, from, CHUNK_LEN);
+                    chunk.order(ByteOrder.nativeOrder());
+                    chunks.add(chunk);
+                    from += CHUNK_LEN;
+                    countDown -= CHUNK_LEN;
+                }
+            }
+        }
     }
 
     @Override
     public void release()
     {
+        for (ByteBuffer chunk : chunks)
+        {
+            freeChunks.add(chunk);
+        }
         data = null;
         chunks = null;
-        if (coreFileAccessor != null)
-        {
-            try
-            {
-                coreFileAccessor.close();
-            }
-            catch (IOException e)
-            {
-                e.printStackTrace();
-            }
-        }
-        if (coreFile != null)
-        {
-            coreFile.delete();
-        }
         resourceTracker.remove(this);
     }
 
@@ -240,8 +253,8 @@ public class SFData extends SFSignal implements Serializable
     private ByteBuffer setUpBuffer(int index)
     {
         long bytePos = index * 8l;
-        long pos = bytePos % TWOGIG;
-        long bufPos = (bytePos - pos) / TWOGIG;
+        long pos = bytePos % CHUNK_LEN;
+        long bufPos = (bytePos - pos) / CHUNK_LEN;
         ByteBuffer byteBuffer = chunks.get((int) bufPos);
         byteBuffer.position((int) pos);
         return byteBuffer;

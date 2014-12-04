@@ -18,20 +18,20 @@ execfile(path+"/post.sy")
 # Timing configuration and temperament #
 ########################################
 
-#midis=sf.ReadMidiFile("temp/Little Book Of Organ/bwv612gm.mid")
-midis=sf.ReadMidiFile("temp/bwv615.mid")
+midis=sf.ReadMidiFile("temp/Little Book Of Organ/bwv618gm.mid")
+#midis=sf.ReadMidiFile("temp/bwv615.mid")
 
 # Length of full piece
 #======================
-length      =    4.0
+length      =    3.0
 
 # How much to play
 #==================
-minutes     =    10.0
+minutes     =   100.0
 
 # Set to True if run out of memory
 #==================================
-swapAll     =   False
+swapAll     =   True
 
 # Temperament
 #=============
@@ -52,6 +52,11 @@ beat        =  setLengthMidi(midis,beat,length)
 
 # Repair overlaps?
 midis=repareOverlapMidis(midis)
+newMidis=[]
+for m in midis:
+    newMidis.append(fixVelocityMidi(m))
+midis=newMidis
+
 global midi,index
 index=0
 
@@ -157,16 +162,16 @@ def chAST():
     midi=shorterThanMidi(midis[index],beat,512)
     midi=dampVelocity(midi,68,0.86)
     midi=dampVelocity(midi,80,0.75)
-    doMidi(voice=stoppedRead,vCorrect=1.0,flatEnv=False,bend=True)
+    doMidi(voice=stoppedReed,vCorrect=1.0,flatEnv=False,bend=True)
     postProcess()
     
     midi=longAsMidi(midis[index],beat,512)
     midi=legatoMidi(midi,beat,128)
     midi=dampVelocity(midi,68,0.86)
     midi=dampVelocity(midi,80,0.75)
-    doMidi(voice=stoppedRead,vCorrect=0.5,flatEnv=False,bend=True,pitchAdd=2.0)
+    doMidi(voice=stoppedReed,vCorrect=0.5,flatEnv=False,bend=True,pitchAdd=2.0)
     postProcess()
-    doMidi(voice=stoppedRead,vCorrect=0.5,flatEnv=True,bend=True)
+    doMidi(voice=stoppedReed,vCorrect=0.5,flatEnv=True,bend=True)
     postProcess()
 
 def chB():
@@ -208,6 +213,28 @@ def chP():
     postProcessEcho() 
     doMidi(voice=secondDiapason,vCorrect=0.3,flatEnv=True,pan=0.25,pitchAdd=2.0)
     postProcessEcho() 
+
+def chT():
+    global midi,index
+    print "##### Channel T #####"
+    index+=1
+    midi=shorterThanMidi(midis[index],beat,512)
+    midi=dampVelocity(midi,32,1.25)
+    midi=dampVelocity(midi,68,0.86)
+    midi=dampVelocity(midi,80,0.86)
+    midi=legatoMidi(midis[index],beat,64)
+    doMidi(voice=stoppedReed,vCorrect=1.0,flatEnv=True)
+    postProcess() 
+
+    midi=longAsMidi(midis[index],beat,512)
+    midi=dampVelocity(midi,32,1.25)
+    midi=dampVelocity(midi,68,0.86)
+    midi=dampVelocity(midi,80,0.75)
+    midi=legatoMidi(midis[index],beat,256)
+    doMidi(voice=stoppedReed,vCorrect=0.5,flatEnv=True,pan=0.75)
+    postProcessEcho() 
+    doMidi(voice=stoppedReed,vCorrect=0.5,flatEnv=True,pan=0.25,pitchAdd=2.0)
+    postProcessEcho() 
     
 def chD():
     global midi,index
@@ -229,6 +256,28 @@ def chD():
     doMidi(voice=trostPosaune,vCorrect=0.9,flatEnv=True,pure=True,pan=0.7,pitchShift=0.5)
     postProcess()
     doMidi(voice=upperAccent,vCorrect=0.2,flatEnv=True,pure=False,pitchShift=4.0)
+    postProcess()
+
+def chDR():
+    global midi,index
+    print "##### Channel D #####"
+    index+=1
+    midi=shorterThanMidi(midis[index],beat,512)
+    midi=legatoMidi(midi,beat,128)
+    doMidi(voice=trostPosaune,vCorrect=0.9,flatEnv=True,pure=True,pan=0.3,pitchShift=0.5,rawBass=True)
+    postProcess()
+    doMidi(voice=trostPosaune,vCorrect=0.5,flatEnv=True,pure=True,pan=0.7,pitchAdd=3.0,rawBass=True)
+    postProcess()
+    doMidi(voice=upperAccent,vCorrect=0.2,flatEnv=True,pure=False,pitchShift=4.0,rawBass=True)
+    postProcess()
+    
+    midi=longAsMidi(midis[index],beat,512)
+    midi=legatoMidi(midi,beat,256)
+    doMidi(voice=trostPosaune,vCorrect=0.5,flatEnv=True,pure=True,pan=0.3,pitchAdd=2.0,rawBass=True)
+    postProcess()
+    doMidi(voice=trostPosaune,vCorrect=0.9,flatEnv=True,pure=True,pan=0.7,pitchShift=0.5,rawBass=True)
+    postProcess()
+    doMidi(voice=upperAccent,vCorrect=0.2,flatEnv=True,pure=False,pitchShift=4.0,rawBass=True)
     postProcess()
 
 def chDB():
@@ -261,14 +310,17 @@ def chDW():
 
 def chDST():
     global midi,index
-    print "##### Channel DW #####"
+    print "##### Channel DST #####"
     index+=1
     midi=legatoMidi(midis[index],beat,128)
-    doMidi(voice=stoppedRead,vCorrect=1.2,flatEnv=True)
+    doMidi(voice=stoppedReed,vCorrect=0.6,flatEnv=True)
+    postProcess()
+    doMidi(voice=stoppedReed,vCorrect=0.6,flatEnv=True,pitchShift=0.5)
     postProcess()
     doMidi(voice=upperAccent,vCorrect=0.2,flatEnv=True,pitchShift=4.0)
     postProcess()
 
+##### Non Incrementing Accent Voices #####
 
 def chS():
     global midi,index
@@ -280,11 +332,28 @@ def chS():
     postProcess()
 
 
+def chUT():
+    global midi,index
+    print "##### Channel UT #####"
+    doMidi(voice=stoppedReed,vCorrect=0.05,flatEnv=True,pitchShift=3.0,pan=0.0)
+    postProcessTremolate(rate=3.7) 
+    doMidi(voice=stoppedReed,vCorrect=0.05,flatEnv=True,pitchShift=3.0,pan=1.0)
+    postProcessTremolate(rate=3.3) 
+
+def chST():
+    global midi,index
+    print "##### Channel SS #####"
+    midi=legatoMidi(midis[index],beat,192)
+    doMidi(voice=stoppedReed,vCorrect=0.25,flatEnv=True,pitchShift=0.25,pitchAdd=2.5,pan=0.25,pure=True)
+    postProcess()
+    doMidi(voice=stoppedReed,vCorrect=0.25,flatEnv=True,pitchShift=0.25,pan=0.75,pure=True)
+    postProcess()
+
 ##################
 # Which Channels #
 ##################
 
-doChannels=['as','p','d','s']
+doChannels=['o','p','dw','s']
 while len(doChannels):    
     ch=doChannels.pop(0)
     if ch == 'a':
@@ -301,16 +370,26 @@ while len(doChannels):
         chB()
     if ch == 'c':
         chC()
+    if ch == 't':
+        chT()
     if ch == 'p':
         chP()
     if ch == 'd':
         chD()
     if ch == 'db':
         chDB()
+    if ch == 'dr':
+        chDR()
     if ch == 'dw':
         chDW()
+    if ch == 'dst':
+        chDST()
+    if ch == 'ut':
+        chUT()
     if ch == 's':
         chS()
+    if ch == 'st':
+        chST()
 
 #######################
 # Final mix and write #
