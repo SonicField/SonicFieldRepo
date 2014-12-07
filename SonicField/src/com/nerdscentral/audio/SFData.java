@@ -9,13 +9,10 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
-import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -39,15 +36,14 @@ public class SFData extends SFSignal implements Serializable
     // Directory to send swap files to
     private static final String                      SONIC_FIELD_TEMP       = "sonicFieldTemp";             //$NON-NLS-1$
     // Default swap limit
-    private static final int                         MAX_IN_RAM             = 8192 * 1024;
+    private static final int                         MAX_IN_RAM             = 2048 * 1024;
     private static final long                        serialVersionUID       = 1L;
-    private double[]                                 data;
     private final int                                length;
     private volatile boolean                         killed                 = false;
     private static File                              coreFile;
     private static RandomAccessFile                  coreFileAccessor;
-    private final long                               CHUNK_LEN              = 2 * 1024 * 1024;
-    private List<ByteBuffer>                         chunks                 = new ArrayList<>();
+    private static long                              chunkLen;
+    private ByteBuffer[]                             chunks;
     private final static long                        swapLimit;
     private final static File                        tempDir;
     private static FileChannel                       channelMapper;
@@ -81,6 +77,7 @@ public class SFData extends SFSignal implements Serializable
         {
             swapLimit = Long.parseLong(swapLimitraw);
         }
+        chunkLen = swapLimit / 2;
 
         String pid = ManagementFactory.getRuntimeMXBean().getName();
         try
@@ -120,12 +117,23 @@ public class SFData extends SFSignal implements Serializable
     private void makeMap(long size) throws IOException
     {
         long countDown = size;
+        int chunkCount = 0;
+        while (countDown > 0)
+        {
+            ++chunkCount;
+            countDown -= chunkLen;
+        }
+
+        countDown = size;
+        chunks = new ByteBuffer[chunkCount];
+        chunkCount = 0;
         while (countDown > 0)
         {
             ByteBuffer chunk = freeChunks.poll();
             if (chunk == null) break;
-            chunks.add(chunk);
-            countDown -= CHUNK_LEN;
+            chunks[chunkCount] = chunk;
+            ++chunkCount;
+            countDown -= chunkLen;
         }
         if (countDown > 0)
         {
@@ -134,12 +142,27 @@ public class SFData extends SFSignal implements Serializable
                 long from = coreFile.length();
                 while (countDown > 0)
                 {
-                    ByteBuffer chunk = channelMapper.map(MapMode.READ_WRITE, from, CHUNK_LEN);
+                    ByteBuffer chunk = channelMapper.map(MapMode.READ_WRITE, from, chunkLen);
                     chunk.order(ByteOrder.nativeOrder());
-                    chunks.add(chunk);
-                    from += CHUNK_LEN;
-                    countDown -= CHUNK_LEN;
+                    chunks[chunkCount] = chunk;
+                    ++chunkCount;
+                    from += chunkLen;
+                    countDown -= chunkLen;
                 }
+            }
+        }
+    }
+
+    @Override
+    public void clear()
+    {
+        assert (chunkLen % 8 == 0);
+        long ll = chunkLen / 8;
+        for (ByteBuffer chunk : chunks)
+        {
+            for (int l = 0; l < chunkLen; l += 8)
+            {
+                chunk.putLong(l, 0);
             }
         }
     }
@@ -151,42 +174,29 @@ public class SFData extends SFSignal implements Serializable
         {
             freeChunks.add(chunk);
         }
-        data = null;
         chunks = null;
         resourceTracker.remove(this);
     }
 
-    private SFData(int lengthIn, boolean forceSwap)
+    private SFData(int lengthIn)
     {
-        if (!forceSwap && lengthIn <= swapLimit)
+        try
         {
-            data = new double[lengthIn];
-        }
-        else
-        {
-            data = null;
-            try
-            {
-                if (lengthIn > Integer.MAX_VALUE) throw new RuntimeException(Messages.getString("SFData.12") + ": " + lengthIn); //$NON-NLS-1$ //$NON-NLS-2$
+            if (lengthIn > Integer.MAX_VALUE) throw new RuntimeException(Messages.getString("SFData.12") + ": " + lengthIn); //$NON-NLS-1$ //$NON-NLS-2$
 
-                makeMap(lengthIn * 8l);
-            }
-            catch (IOException e)
-            {
-                throw new RuntimeException(e);
-            }
+            makeMap(lengthIn * 8l);
         }
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+        // }
         this.length = lengthIn;
         NotCollectedException nc = new NotCollectedException();
         nc.fillInStackTrace();
         pythonCreated = getPythonStack();
         resourceTracker.put(this, new ResTracker(nc, pythonCreated));
         javaCreated = nc;
-    }
-
-    public SFData(int length2)
-    {
-        this(length2, false);
     }
 
     /* (non-Javadoc)
@@ -200,12 +210,7 @@ public class SFData extends SFSignal implements Serializable
 
     public final static SFData build(int size)
     {
-        return new SFData(size, false);
-    }
-
-    public final static SFData build(int size, boolean forceSwap)
-    {
-        return new SFData(size, forceSwap);
+        return new SFData(size);
     }
 
     /* (non-Javadoc)
@@ -228,36 +233,10 @@ public class SFData extends SFSignal implements Serializable
     @Override
     public final double getSample(int index)
     {
-        if (data != null)
-        {
-            return this.data[index];
-        }
-        while (true)
-        {
-            ByteBuffer byteBuffer = null;
-            try
-            {
-                byteBuffer = setUpBuffer(index);
-                return byteBuffer.getDouble();
-            }
-            catch (BufferUnderflowException b)
-            {
-                if (byteBuffer != null)
-                {
-                    System.err.println(Messages.getString("SFData.20") + index + Messages.getString("SFData.21") + byteBuffer.capacity() + " : " + byteBuffer.position()); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-                }
-            }
-        }
-    }
-
-    private ByteBuffer setUpBuffer(int index)
-    {
         long bytePos = index * 8l;
-        long pos = bytePos % CHUNK_LEN;
-        long bufPos = (bytePos - pos) / CHUNK_LEN;
-        ByteBuffer byteBuffer = chunks.get((int) bufPos);
-        byteBuffer.position((int) pos);
-        return byteBuffer;
+        long pos = bytePos % chunkLen;
+        long bufPos = (bytePos - pos) / chunkLen;
+        return chunks[(int) bufPos].getDouble((int) pos);
     }
 
     /* (non-Javadoc)
@@ -266,12 +245,10 @@ public class SFData extends SFSignal implements Serializable
     @Override
     public final double setSample(int index, double value)
     {
-        if (data != null)
-        {
-            return this.data[index] = value;
-        }
-        ByteBuffer byteBuffer = setUpBuffer(index);
-        byteBuffer.putDouble(value);
+        long bytePos = index * 8l;
+        long pos = bytePos % chunkLen;
+        long bufPos = (bytePos - pos) / chunkLen;
+        chunks[(int) bufPos].putDouble((int) pos, value);
         return value;
     }
 
@@ -312,18 +289,6 @@ public class SFData extends SFSignal implements Serializable
             data.setSample(i, input[i]);
         }
         return data;
-    }
-
-    public double[] getData()
-    {
-        if (data != null) return data;
-        System.err.println(Messages.getString("SFData.22")); //$NON-NLS-1$
-        double[] ret = new double[length];
-        for (int i = 0; i < length; ++i)
-        {
-            ret[i] = getSample(i);
-        }
-        return ret;
     }
 
     /* (non-Javadoc)
@@ -369,20 +334,11 @@ public class SFData extends SFSignal implements Serializable
         return Messages.getString("SFData.2") + length + Messages.getString("SFData.3"); //$NON-NLS-1$ //$NON-NLS-2$
     }
 
-    /* (non-Javadoc)
-     * @see com.nerdscentral.audio.SFSignal#getDataInternalOnly()
-     */
-    @Override
-    public double[] getDataInternalOnly()
-    {
-        return data;
-    }
-
     public static SFData realiseSwap(SFSignal in)
     {
-        if (in instanceof SFData && ((SFData) in).data == null) return (SFData) in;
+        if (in instanceof SFData) return (SFData) in;
         int len = in.getLength();
-        SFData output = SFData.build(len, true);
+        SFData output = SFData.build(len);
         for (int i = 0; i < len; ++i)
         {
             output.setSample(i, in.getSample(i));
@@ -441,5 +397,17 @@ public class SFData extends SFSignal implements Serializable
         }
         System.out.println(Messages.getString("SFData.18")); //$NON-NLS-1$
         System.out.println(data.p);
+    }
+
+    @Override
+    public double[] getDataInternalOnly()
+    {
+        double[] ret = new double[getLength()];
+        int len = getLength();
+        for (int index = 0; index < len; ++len)
+        {
+            ret[index] = getSample(index);
+        }
+        return ret;
     }
 }

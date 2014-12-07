@@ -34,7 +34,7 @@ public class SF_Divide implements SFPL_Operator
             {
                 div = div < 0 ? -Double.MIN_NORMAL : Double.MIN_NORMAL;
             }
-            return getInputSample(0, index);
+            return getInputSample(0, index) / div;
         }
     }
 
@@ -51,6 +51,11 @@ public class SF_Divide implements SFPL_Operator
         List<SFSignal> list = new ArrayList<>(2);
         list.add(Caster.makeSFSignal(l.get(0)));
         list.add(Caster.makeSFSignal(l.get(1)));
-        return new Translator(list);
+        Translator ret = new Translator(list);
+        for (SFSignal s : list)
+        {
+            s.close();
+        }
+        return ret;
     }
 }

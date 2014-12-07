@@ -18,20 +18,16 @@ execfile(path+"/post.sy")
 # Timing configuration and temperament #
 ########################################
 
-midis=sf.ReadMidiFile("temp/Little Book Of Organ/bwv618gm.mid")
+midis=sf.ReadMidiFile("temp/Little Book Of Organ/bwv619gm.mid")
 #midis=sf.ReadMidiFile("temp/bwv615.mid")
 
 # Length of full piece
 #======================
-length      =    3.0
+length      =    20.0
 
 # How much to play
 #==================
-minutes     =   100.0
-
-# Set to True if run out of memory
-#==================================
-swapAll     =   True
+minutes     =    40.0
 
 # Temperament
 #=============
@@ -331,7 +327,6 @@ def chS():
     doMidi(voice=trostUpperAccent,vCorrect=0.25,flatEnv=True,pitchShift=0.25,pan=0.75,pure=True)
     postProcess()
 
-
 def chUT():
     global midi,index
     print "##### Channel UT #####"
@@ -353,7 +348,7 @@ def chST():
 # Which Channels #
 ##################
 
-doChannels=['o','p','dw','s']
+doChannels=['o','p','db','s']
 while len(doChannels):    
     ch=doChannels.pop(0)
     if ch == 'a':
@@ -395,10 +390,7 @@ while len(doChannels):
 # Final mix and write #
 #######################
 print "Mixing"
-left =finalMix(notesl)
-right=finalMix(notesr)
+left,right=doFinalMix()
 sf.WriteSignal(+left, "temp/dry-l.sig")
 sf.WriteSignal(+right,"temp/dry-r.sig")
-left  = sf.Normalise(left)
-right = sf.Normalise(right)
 sf.WriteFile32((left,right),"temp/temp.wav")

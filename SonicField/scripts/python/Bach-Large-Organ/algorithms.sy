@@ -1,6 +1,7 @@
 import math
 import random
 import sys
+    
 def excite(sig_,mix,power):
     def exciteInner():
         sig=sig_
@@ -37,47 +38,40 @@ def granularReverb(signal,ratio,delay,density,length=50,stretch=1,vol=1):
     return out
 
 def reverbInner(signal,convol,grainLength):
-    mag=sf.Magnitude(+signal)
-    if mag>0:
-        signal_=sf.Concatenate(signal,sf.Silence(grainLength))
-        signal_=sf.FrequencyDomain(signal_)
-        signal_=sf.CrossMultiply(convol,signal_)
-        signal_=sf.TimeDomain(signal_)
-        newMag=sf.Magnitude(+signal_)
-        signal_=sf.NumericVolume(signal_,mag/newMag)        
-        # tail out clicks due to amplitude at end of signal 
-        return signal_
-    else:
-        -convol
-        -signal
-        return sf.Silence(0)
-
+    def rii:
+        mag=sf.Magnitude(+signal)
+        if mag>0:
+            signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+            signal_=sf.FrequencyDomain(signal_)
+            signal_=sf.CrossMultiply(convol,signal_)
+            signal_=sf.TimeDomain(signal_)
+            newMag=sf.Magnitude(+signal_)
+            signal_=sf.NumericVolume(signal_,mag/newMag)        
+            # tail out clicks due to amplitude at end of signal 
+            return sf.Realise(signal_)
+        else:
+            -convol
+            return signal
+    return sf_do(rii)
+            
 def reverberate(signal,convol):
-    def reverbI():
+    def revi():
         grainLength = sf.Length(+convol)
         convol_=sf.FrequencyDomain(sf.Concatenate(convol,sf.Silence(grainLength)))
         signal_=sf.Concatenate(signal,sf.Silence(grainLength))
         out=[]
         for grain in sf.Granulate(signal_,grainLength):
             (signal_i,at)=grain
-            inp=reverbInner(signal_i,+convol_,grainLength)
-            if sf.Length(+inp)>0:
-                out.append((inp,at))
-            else:
-                -inp
+            out.append((reverbInner(signal_i,+convol_,grainLength),at))
         -convol_
         return sf.Clean(sf.FixSize(sf.MixAt(out)))
-    return sf_do(reverbI)
-
-def finalMix(notes):
-    def mixInner():
-        return sf.Swap(sf.FixSize(sf.Clean(sf.ClipToSafe(sf.MixAt(notes)))))
-    return sf_do(mixInner)
+    return sf_do(revi)
 
 def mix(notes):
-    def mixInner():
-        return sf.Swap(sf.MixAt(notes))
-    return sf_do(mixInner)
+    #def mixInner():
+    #    return sf.Realise(sf.MixAt(notes))
+    #return sf_do(mixInner)
+    return sf.MixAt(notes)
     
 def findNearestOvertone(fMatch,freq):
     q=float(fMatch)/float(freq)
@@ -129,7 +123,8 @@ def echoDivision(vox_):
         voxW=reverberate(+vox ,convol[0])
         vox=sf.Realise(sf.Mix(vox,voxW))
         m2=sf.Magnitude(+vox)
-        vox=sf.Swap(sf.NumericVolume(vox,m1/m2))
+        vox=sf.Realise(sf.NumericVolume(vox,m1/m2))
+        print "Returning From Echo: ",m2
         return vox
     return sf_do(echoInner)
   
@@ -150,6 +145,6 @@ def tremolate(vox_,rate,mag):
         voxW=reverberate(+vox ,convol[0])
         vox=sf.Realise(sf.Mix(vox,voxW))
         m2=sf.Magnitude(+vox)
-        vox=sf.Swap(sf.NumericVolume(vox,m1/m2))
+        vox=sf.Realise(sf.NumericVolume(vox,m1/m2))
         return vox
     return sf_do(tremolateInner)

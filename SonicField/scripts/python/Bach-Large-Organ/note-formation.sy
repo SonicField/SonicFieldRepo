@@ -219,14 +219,9 @@ def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor,subBass,flatEn
         )
         
         note=sf.NumericVolume(sf.FixSize(sig),v)
-        sf.Check(note)
-        if swapAll:
-            notel=sf.Swap(sf.NumericVolume(+note,vl*vCorrect))
-            noter=sf.Swap(sf.NumericVolume( note,vr*vCorrect))
-        else:
-            notel=sf.Realise(sf.NumericVolume(+note,vl*vCorrect))
-            noter=sf.Realise(sf.NumericVolume( note,vr*vCorrect))
-        return (notel,noter)
+        notel=sf.Realise(sf.NumericVolume(+note,vl*vCorrect))
+        noter=sf.Realise(sf.NumericVolume( note,vr*vCorrect))
+        return notel,noter
     return sf_do(singInner)
 
 def doMidi(voice,vCorrect,pitchShift=1.0,qFactor=1.0,subBass=False,flatEnv=False,pure=False,pan=-1,rawBass=False,pitchAdd=0.0,decay=False,bend=True):
@@ -246,9 +241,7 @@ def doMidi(voice,vCorrect,pitchShift=1.0,qFactor=1.0,subBass=False,flatEnv=False
         current=midi[index]
         tickOn,tickOff,note,key,velocity = current
         at=tickOn*beat
-        if at>timeEnd:
-            break
-        if at<timeStart:
+        if at>timeEnd or at<timeStart:
             count+=1
             continue
         length=(tickOff-tickOn)*beat
@@ -636,7 +629,6 @@ def setLengthMidi(midis,beat,length):
         lNow=float((ttickOff*beat)/60000.0)
         if lNow>max:
             max=lNow
-            print "Max " ,lNow
     return beat*length/max
 
 def my_so(what):

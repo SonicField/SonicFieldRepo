@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.nerdscentral.audio.SFConstants;
+import com.nerdscentral.audio.SFData;
 import com.nerdscentral.audio.SFMultipleTranslator;
 import com.nerdscentral.audio.SFSignal;
 import com.nerdscentral.sython.Caster;
@@ -21,6 +22,8 @@ import com.nerdscentral.sython.SFPL_RuntimeException;
  */
 public class SF_MixAt implements SFPL_Operator
 {
+
+    private static final int TRANS_CUTTOFF = 16;
 
     static class Translator extends SFMultipleTranslator
     {
@@ -80,6 +83,32 @@ public class SF_MixAt implements SFPL_Operator
             double offset = Caster.makeDouble(dataList.get(1)) * SFConstants.SAMPLE_RATE_MS;
             offsets.add((int) SFMaths.floor(offset));
             signals.add(Caster.makeSFSignal(dataList.get(0)));
+        }
+        int count = signals.size();
+        if (count > TRANS_CUTTOFF)
+        {
+            int length = 0;
+            for (int i = 0; i < count; ++i)
+            {
+                int tl = offsets.get(i);
+                tl += signals.get(i).getLength();
+                if (tl > length) length = tl;
+            }
+            SFSignal out = SFData.build(length);
+            out.clear();
+            for (int i = 0; i < count; ++i)
+            {
+                int at = offsets.get(i);
+                SFSignal in = signals.get(i);
+                int len = in.getLength();
+                for (int j = 0; j < len; ++j)
+                {
+                    int p = j + at;
+                    out.setSample(p, out.getSample(p) + in.getSample(j));
+                }
+                in.close();
+            }
+            return out;
         }
         Translator ret = new Translator(signals, offsets);
         for (SFSignal s : signals)

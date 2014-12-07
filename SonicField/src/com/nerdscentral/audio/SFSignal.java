@@ -146,4 +146,9 @@ public abstract class SFSignal implements AutoCloseable
     {
         SFSignal.pythonStack.set(ps);
     }
+
+    public void clear()
+    {
+        // NOOP on root class
+    }
 }

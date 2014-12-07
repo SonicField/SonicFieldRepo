@@ -1,9 +1,10 @@
 /* For Copyright and License see LICENSE.txt and COPYING.txt in the root directory */
 package com.nerdscentral.audio.combine;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import com.nerdscentral.audio.SFData;
+import com.nerdscentral.audio.SFMultipleTranslator;
 import com.nerdscentral.audio.SFSignal;
 import com.nerdscentral.sython.Caster;
 import com.nerdscentral.sython.SFPL_Context;
@@ -15,6 +16,21 @@ public class SF_Multiply implements SFPL_Operator
 
     private static final long serialVersionUID = 1L;
 
+    class Translator extends SFMultipleTranslator
+    {
+
+        protected Translator(List<SFSignal> input)
+        {
+            super(input);
+        }
+
+        @Override
+        public double getSample(int index)
+        {
+            return getInputSample(0, index) * getInputSample(1, index, 1);
+        }
+    }
+
     @Override
     public String Word()
     {
@@ -25,22 +41,15 @@ public class SF_Multiply implements SFPL_Operator
     public Object Interpret(Object input, SFPL_Context context) throws SFPL_RuntimeException
     {
         List<Object> l = Caster.makeBunch(input);
-        try (SFSignal sampleA = Caster.makeSFSignal(l.get(0)); SFSignal sampleB = Caster.makeSFSignal(l.get(1)))
+        List<SFSignal> list = new ArrayList<>(2);
+        list.add(Caster.makeSFSignal(l.get(0)));
+        list.add(Caster.makeSFSignal(l.get(1)));
+        Translator ret = new Translator(list);
+        for (SFSignal s : list)
         {
-            int lenA = sampleA.getLength();
-            int lenB = sampleB.getLength();
-            int len = lenA > lenB ? lenA : lenB;
-            try (SFData out = SFData.build(len))
-            {
-                for (int i = 0; i < len; ++i)
-                {
-                    double reA = i >= lenA ? 0 : sampleA.getSample(i);
-                    double reB = i >= lenB ? 0 : sampleB.getSample(i);
-                    out.setSample(i, reA * reB);
-                }
-                return Caster.prep4Ret(out);
-            }
+            s.close();
         }
+        return ret;
     }
 
 }

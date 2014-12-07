@@ -13,7 +13,6 @@ com.nerdscentral.audio.SF_Semitone
 com.nerdscentral.audio.SF_SetSampleRate
 com.nerdscentral.audio.SF_SpeedOfSound
 com.nerdscentral.audio.SF_StereoMonitor
-com.nerdscentral.audio.SF_Swap
 com.nerdscentral.audio.SF_WriteFile16
 com.nerdscentral.audio.SF_WriteFile32
 com.nerdscentral.audio.SF_WriteFileString
@@ -143,6 +142,7 @@ com.nerdscentral.audio.volume.SF_DirectMix
 com.nerdscentral.audio.volume.SF_ErrorsToSilence
 com.nerdscentral.audio.volume.SF_Follow
 com.nerdscentral.audio.volume.SF_FixSize
+com.nerdscentral.audio.volume.SF_CleanFix
 com.nerdscentral.audio.volume.SF_Invert
 com.nerdscentral.audio.volume.SF_Normalise
 com.nerdscentral.audio.volume.SF_NormaliseArea
