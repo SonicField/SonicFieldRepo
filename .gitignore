@@ -4,12 +4,10 @@
 *.jar
 *.wav
 *.midi
-SonicField/bin/*
-SonicField/patches
+SonicField/bin
 SonicField/impulses
+SonicField/temp
 
-SonicField/bin/com/nerdscentral/sython/Sython.py
+SonicField/fft-10.csv
 
-SonicField/bin/com/nerdscentral/audio/messages.properties
-
-SonicField/bin/com/nerdscentral/audio/messages.properties
+SonicField/fft-10ms.csv

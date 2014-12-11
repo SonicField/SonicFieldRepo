@@ -1,0 +1,50 @@
+import math
+import random
+import sys
+
+left  = sf.ReadSignal("temp/dry-l.sig")
+right = sf.ReadSignal("temp/dry-r.sig")
+
+left  = sf.Concatenate(left ,sf.Silence(120000))
+right = sf.Concatenate(right,sf.Silence(120000))
+
+leftA  = sf.Mix(
+    sf.Pcnt90(sf.Finalise(sf.ResonantFilter(+left  ,0.9,0.5,1000))),
+    sf.Pcnt10(sf.Finalise(sf.ResonantFilter(+right ,0.9,0.5,3000))),
+)
+rightA = sf.Mix(
+    sf.Pcnt90(sf.Finalise(sf.ResonantFilter(right ,0.9,0.5,1100))),
+    sf.Pcnt10(sf.Finalise(sf.ResonantFilter(left  ,0.9,0.5,2900))),
+)
+
+print "Resonated"
+def doLow(sig):
+    def doLowInner():
+        +sig
+        out=[]
+        q=0
+        for grain in sf.Granulate(sig,1024,10):
+            if q==1:
+                q=0
+                (signal_i,at)=grain
+                signal_i=sf.Realise(signal_i)
+                signal_i=sf.DirectRelength(signal_i,0.25)
+                out.append((signal_i,at))
+            else:
+               (signal_i,at)=grain
+               -signal_i
+               q=1
+        newSig=sf.MixAt(out)
+        newSig=sf.Saturate(sf.FixSize(sf.NumericVolume(newSig,2)))
+        print "Shift part 1 Done"
+        return sf.Realise(sf.Finalise(sf.Mix(
+            sig,
+            sf.Pcnt25(newSig)
+        )))
+    return sf_do(doLowInner)
+    
+left  = doLow(leftA)    
+right = doLow(rightA)
+sf.WriteSignal(+left, "temp/sdry-l.sig")
+sf.WriteSignal(+right,"temp/sdry-r.sig")
+sf.WriteFile32((left,right),"temp/space.wav")
