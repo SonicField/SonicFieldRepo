@@ -15,7 +15,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 import com.nerdscentral.sython.SFPL_RuntimeException;
 
@@ -49,7 +49,7 @@ public class SFData extends SFSignal implements Serializable
     private static FileChannel                       channelMapper;
     private final NotCollectedException              javaCreated;
     private final String                             pythonCreated;
-    private static ConcurrentLinkedQueue<ByteBuffer> freeChunks             = new ConcurrentLinkedQueue<>();
+    private static ConcurrentLinkedDeque<ByteBuffer> freeChunks             = new ConcurrentLinkedDeque<>();
 
     private static class ResTracker
     {
@@ -157,7 +157,6 @@ public class SFData extends SFSignal implements Serializable
     public void clear()
     {
         assert (chunkLen % 8 == 0);
-        long ll = chunkLen / 8;
         for (ByteBuffer chunk : chunks)
         {
             for (int l = 0; l < chunkLen; l += 8)
@@ -172,7 +171,7 @@ public class SFData extends SFSignal implements Serializable
     {
         for (ByteBuffer chunk : chunks)
         {
-            freeChunks.add(chunk);
+            freeChunks.push(chunk);
         }
         chunks = null;
         resourceTracker.remove(this);

@@ -146,7 +146,8 @@ public class SFConstants
 
     public static double fromDBs(double dbs)
     {
-        return internalDBS[(computeDBSOffset(dbs))];
+        int x = computeDBSOffset(dbs);
+        return x < 0 ? 0 : internalDBS[x];
     }
 
     private static int computeDBSOffset(double dbs)

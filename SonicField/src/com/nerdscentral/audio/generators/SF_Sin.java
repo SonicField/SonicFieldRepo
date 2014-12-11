@@ -18,19 +18,19 @@ public class SF_Sin implements SFPL_Operator
     public static class Generator extends SFSimpleGenerator
     {
 
-        final double        frequency;
         final static double PI2 = SFMaths.PI * 2.0d;
+        final double        mult;
 
         protected Generator(int len, double frequ)
         {
             super(len);
-            frequency = frequ;
+            mult = PI2 * frequ / SFConstants.SAMPLE_RATE;
         }
 
         @Override
         public double getSample(int index)
         {
-            return SFMaths.sin(index * PI2 * frequency / SFConstants.SAMPLE_RATE);
+            return SFMaths.sin(index * mult);
         }
 
     }

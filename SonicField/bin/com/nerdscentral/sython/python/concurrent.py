@@ -10,7 +10,6 @@ from java.util.concurrent.locks import ReentrantLock
 
 SF_MAX_CONCURRENT = int(System.getProperty("synthon.threads"))
 SF_MAX_CONQUEUE   = SF_MAX_CONCURRENT
-#SF_MAX_CONQUEUE   = -1
 
 print "Concurrent Threads: " + SF_MAX_CONCURRENT.__str__()
 SF_POOL = Executors.newCachedThreadPool()
@@ -31,7 +30,7 @@ class sf_futureWrapper(Future):
         return iter(self.get())
         
     def get(self):
-        if(self.gotten):
+        if self.gotten:
             return self.result
         else:
             self.result=self.toDo.get()
@@ -77,12 +76,12 @@ class sf_superFuture(Future):
         self.toDo=toDo
         queue=SF_TASK_QUEUE.get()
         queue.append(self)
-        if(len(queue)>SF_MAX_CONQUEUE):
+        if len(queue)>SF_MAX_CONQUEUE:
             self.submitAll()
 
     def submit(self):
         count=SF_POOL.getActiveCount()
-        if(count<SF_MAX_CONCURRENT):
+        if count<SF_MAX_CONCURRENT:
             task=sf_callable(self.toDo)
             self.future=sf_futureWrapper(SF_POOL.submit(task))
         else:
@@ -120,7 +119,7 @@ def shutdown_and_await_termination(pool, timeout):
     try:
         if not pool.awaitTermination(timeout, TimeUnit.SECONDS):
             pool.shutdownNow()
-            if (not pool.awaitTermination(timeout, TimeUnit.SECONDS)):
+            if not pool.awaitTermination(timeout, TimeUnit.SECONDS):
                 print >> sys.stderr, "Pool did not terminate"
     except InterruptedException, ex:
         pool.shutdownNow()

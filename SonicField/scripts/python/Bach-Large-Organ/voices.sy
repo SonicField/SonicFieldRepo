@@ -190,7 +190,7 @@ def pluckedGlass(length,freq):
     sig=sf.Mix(sf.FixSize(sig),sf.Pcnt50(sf.FixSize(conv)))
     sig=sf.Cut(0,length,sig)
     return sf.FixSize(polish(sig,64))
-    
+  
 def brightPluckedGlass(length,freq):
     sig=sf.Mix(
         stretchedBass(length,freq,z=1.5,s=1.02,d=1.0,at=4000),

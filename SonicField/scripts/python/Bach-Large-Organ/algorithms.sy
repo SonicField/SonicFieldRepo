@@ -38,7 +38,7 @@ def granularReverb(signal,ratio,delay,density,length=50,stretch=1,vol=1):
     return out
 
 def reverbInner(signal,convol,grainLength):
-    def rii:
+    def rii():
         mag=sf.Magnitude(+signal)
         if mag>0:
             signal_=sf.Concatenate(signal,sf.Silence(grainLength))
@@ -46,9 +46,12 @@ def reverbInner(signal,convol,grainLength):
             signal_=sf.CrossMultiply(convol,signal_)
             signal_=sf.TimeDomain(signal_)
             newMag=sf.Magnitude(+signal_)
-            signal_=sf.NumericVolume(signal_,mag/newMag)        
-            # tail out clicks due to amplitude at end of signal 
-            return sf.Realise(signal_)
+            if newMag>0:
+                signal_=sf.NumericVolume(signal_,mag/newMag)        
+                # tail out clicks due to amplitude at end of signal 
+                return sf.Realise(signal_)
+            else:
+                return sf.Silence(sf.Length(signal_))
         else:
             -convol
             return signal
@@ -124,7 +127,6 @@ def echoDivision(vox_):
         vox=sf.Realise(sf.Mix(vox,voxW))
         m2=sf.Magnitude(+vox)
         vox=sf.Realise(sf.NumericVolume(vox,m1/m2))
-        print "Returning From Echo: ",m2
         return vox
     return sf_do(echoInner)
   

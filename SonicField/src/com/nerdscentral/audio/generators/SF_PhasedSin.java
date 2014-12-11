@@ -21,18 +21,20 @@ public class SF_PhasedSin implements SFPL_Operator
         final double        frequency;
         final double        phase;
         final static double PI2 = SFMaths.PI * 2.0d;
+        final double        mult;
 
         protected Generator(int len, double frequ, double ph)
         {
             super(len);
             frequency = frequ;
             phase = ph;
+            mult = PI2 * frequ / SFConstants.SAMPLE_RATE;
         }
 
         @Override
         public double getSample(int index)
         {
-            return SFMaths.sin(index * PI2 * frequency / SFConstants.SAMPLE_RATE + phase);
+            return SFMaths.sin(index * mult + phase);
         }
     }
 

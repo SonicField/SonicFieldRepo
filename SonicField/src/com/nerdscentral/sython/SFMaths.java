@@ -86,7 +86,7 @@ public final class SFMaths
     final public static double sin(double ang)
     {
         double t = ang % pi2;
-        int indexA = (int) (t / step);
+        int indexA = (int) (t * invStep);
         int indexB = indexA + 1;
         if (indexB >= size) return table[indexA];
         double a = table[indexA];
