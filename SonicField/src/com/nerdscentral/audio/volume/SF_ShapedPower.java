@@ -37,11 +37,11 @@ public class SF_ShapedPower implements SFPL_Operator
                     double q = in.getSample(i);
                     if (q < 0)
                     {
-                        out.setSample(i, -SFMaths.pow(-q, pw));
+                        out.setSample(i, -SFMaths.fastPow(-q, pw));
                     }
                     else
                     {
-                        out.setSample(i, SFMaths.pow(q, pw));
+                        out.setSample(i, SFMaths.fastPow(q, pw));
                     }
                 }
                 return Caster.prep4Ret(out);

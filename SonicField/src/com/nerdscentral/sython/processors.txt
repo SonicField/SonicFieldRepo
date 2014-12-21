@@ -143,6 +143,8 @@ com.nerdscentral.audio.volume.SF_ErrorsToSilence
 com.nerdscentral.audio.volume.SF_Follow
 com.nerdscentral.audio.volume.SF_FixSize
 com.nerdscentral.audio.volume.SF_CleanFix
+com.nerdscentral.audio.volume.SF_DirtyPower
+com.nerdscentral.audio.volume.SF_DirtyRaise
 com.nerdscentral.audio.volume.SF_Invert
 com.nerdscentral.audio.volume.SF_Normalise
 com.nerdscentral.audio.volume.SF_NormaliseArea

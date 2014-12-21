@@ -9,8 +9,33 @@ def WerckmeisterIII(key):
     note=int(key-octave*12)
     pitch*=cent**cents[note]
     return pitch
+
+def JustIntonation(key):
+    key=float(key)
+    ratios = (
+        (1,1),    #C
+        (16,15),  #C+
+        (9,8),    #D
+        (6,5),    #D+
+        (5,4),    #E
+        (4,3),    #F
+        (10,7),   #F+
+        (3,2),    #G
+        (32,21),  #G+
+        (5,3),    #A
+        (9,5),    #A+
+        (15,8)    #B
+    )
+    octave=math.floor(key/12.0)
+    pitch=base*2.0**octave
+    note=int(key-octave*12)
+    ratio=ratios[note]
+    ratio=float(ratio[0])/float(ratio[1])
+    pitch*=ratio
+    return pitch
     
-def Equal(key):
+ 
+def EqualTemperament(key):
     key=float(key)
     return(sf.Semitone(0)**key) * base
 

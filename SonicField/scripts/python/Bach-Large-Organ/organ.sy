@@ -16,20 +16,22 @@ execfile(path+"/post.sy")
 # Timing configuration and temperament #
 ########################################
 
-midis=sf.ReadMidiFile("temp/Little Book Of Organ/bwv620gm.mid")
-#midis=sf.ReadMidiFile("temp/bwv615.mid")
+#midis=sf.ReadMidiFile("temp/bwv988x/988-v15.mid")
+midis=sf.ReadMidiFile("temp/Little Book Of Organ/bwv621gm.mid")
 
 # Length of full piece
 #======================
-length      =    30.0
+length      =     1.1
 
 # How much to play
 #==================
-minutes     =    40.0
+minutes     =    10.0
 
 # Temperament
 #=============
 temperament =     WerckmeisterIII
+#temperament =     JustIntonation
+
 
 # Do Not Change
 #===============
@@ -48,7 +50,9 @@ beat        =  setLengthMidi(midis,beat,length)
 midis=repareOverlapMidis(midis)
 newMidis=[]
 for m in midis:
-    newMidis.append(fixVelocityMidi(m))
+    m = legatoMidi(m,beat,512)
+    m = fixVelocityMidi(m)
+    newMidis.append(m)
 midis=newMidis
 
 global midi,index
@@ -148,6 +152,18 @@ def chAC():
     postProcess()
     doMidi(voice=clarion,vCorrect=0.5,flatEnv=True,bend=True)
     postProcess()
+
+def chACP():
+    global midi,index
+    print "##### Channel AS #####"
+    index+=1
+    
+    midi=legatoMidi(midis[index],beat,128)
+    midi=dampVelocity(midi,68,0.86)
+    midi=dampVelocity(midi,80,0.75)
+    doMidi(voice=clarion,vCorrect=0.5,flatEnv=True,bend=True)
+    postProcess()
+
 
 def chAST():
     global midi,index
@@ -382,9 +398,9 @@ def chVLO():
     midi=dampVelocity(midi,68,0.86)
     midi=dampVelocity(midi,80,0.75)
     midi=legatoMidi(midis[index],beat,1000)
-    doMidi(voice=orchetralOboe,vCorrect=0.3,flatEnv=False,decay=30000)
+    doMidi(voice=orchestralOboe,vCorrect=0.3,flatEnv=False,decay=30000)
     postProcess() 
-    doMidi(voice=orchetralOboe,vCorrect=0.3,flatEnv=False,pitchAdd=2.3,decay=30000)
+    doMidi(voice=orchestralOboe,vCorrect=0.3,flatEnv=False,pitchAdd=2.3,decay=30000)
     postProcess()
 
 def chVLB():
@@ -402,6 +418,44 @@ def chVLB():
     postProcessEcho() 
     doMidi(voice=secondDiapason,vCorrect=0.3,flatEnv=True,pitchAdd=2.0,decay=30000,pan=0.1)
     postProcessEcho()
+
+##### Voices #####
+
+def chVC_S():
+    global midi,index
+    print "##### Channel VC_S #####"
+    index+=1
+    midi=legatoMidi(midis[index],beat,128)
+    midi=dampVelocity(midi,80,0.75)
+    doMidi(voice=voxCelestSoprano,vCorrect=1.0,flatEnv=False)
+    postProcess() 
+
+def chVC_A():
+    global midi,index
+    print "##### Channel VC_S #####"
+    index+=1
+    midi=legatoMidi(midis[index],beat,128)
+    midi=dampVelocity(midi,80,0.75)
+    doMidi(voice=voxCelestAlto,vCorrect=1.0,flatEnv=False)
+    postProcess() 
+
+def chVC_AS():
+    global midi,index
+    print "##### Channel VC_AS #####"
+    index+=1
+    midi=shorterThanMidi(midis[index],beat,2048)
+    midi=legatoMidi(midi,beat,64)
+    midi=dampVelocity(midi,70,0.75)
+    doMidi(voice=voxCelestAlto,vCorrect=1.0,flatEnv=False,qFactor=1.5)
+    postProcess()
+    
+    midi=longAsMidi(midis[index],beat,2048)
+    midi=legatoMidi(midi,beat,128)
+    midi=dampVelocity(midi,68,0.86)
+    midi=dampVelocity(midi,80,0.75)
+    doMidi(voice=voxCelestSoprano,vCorrect=1.0,flatEnv=False,qFactor=2.5)
+    postProcessEcho()
+    
 
 ##### Non Incrementing Accent Voices #####
 
@@ -422,6 +476,14 @@ def chUT():
     doMidi(voice=stoppedReed,vCorrect=0.05,flatEnv=True,pitchShift=3.0,pan=1.0)
     postProcessTremolate(rate=3.3) 
 
+def chUA():
+    global midi,index
+    print "##### Channel UA #####"
+    doMidi(voice=trostUpperAccent,vCorrect=0.05,pitchShift=4.0,pan=0.6,decay=5000)
+    postProcess() 
+    doMidi(voice=trostUpperAccent,vCorrect=0.05,pitchShift=4.0,pan=0.4,decay=5000)
+    postProcess() 
+
 def chST():
     global midi,index
     print "##### Channel SS #####"
@@ -435,49 +497,66 @@ def chST():
 # Which Channels #
 ##################
 
-doChannels=['vl','ut','vl','vlb','s']
+doChannels=['vc_s','c','db','s']
 while len(doChannels):    
     ch=doChannels.pop(0)
     if ch == 'a':
         chA()
-    if ch == 'o':
+    elif ch == 'o':
         chO()
-    if ch == 'as':
+    elif ch == 'as':
         chAS()
-    if ch == 'ac':
+    elif ch == 'ac':
         chAC()
-    if ch == 'ast':
+    elif ch == 'acp':
+        chACP()
+    elif ch == 'ast':
         chAST()
-    if ch == 'b':
+    elif ch == 'b':
         chB()
-    if ch == 'c':
+    elif ch == 'c':
         chC()
-    if ch == 't':
+    elif ch == 't':
         chT()
-    if ch == 'p':
+    elif ch == 'p':
         chP()
-    if ch == 'pg':
+    elif ch == 'pg':
         chPG()
-    if ch == 'd':
+    elif ch == 'd':
         chD()
-    if ch == 'db':
+    elif ch == 'db':
         chDB()
-    if ch == 'dr':
+    elif ch == 'dr':
         chDR()
-    if ch == 'dw':
+    elif ch == 'dw':
         chDW()
-    if ch == 'pgb':
+    elif ch == 'pgb':
         chPGB()
-    if ch == 'dst':
+    elif ch == 'dst':
         chDST()
-    if ch == 'ut':
+    elif ch == 'ut':
         chUT()
-    if ch == 's':
+    elif ch == 'ua':
+        chUA()
+    elif ch == 's':
         chS()
-    if ch == 'st':
+    elif ch == 'st':
         chST()
-    if ch == 'vl':
+    elif ch == 'vl':
         chVL()
+    elif ch == 'vlo':
+        chVLO()
+    elif ch == 'vlb':
+        chVLB()
+    elif ch == 'vc_s':
+        chVC_S()
+    elif ch == 'vc_a':
+        chVC_a()
+    elif ch == 'vc_as':
+        chVC_AS()
+    else:
+        print "Unknown channel: " + ch
+        exit(1)
 
 #######################
 # Final mix and write #

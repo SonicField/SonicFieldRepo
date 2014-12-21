@@ -27,8 +27,8 @@ def reverberate(signal,convol):
     return sf_do(revi)
 
 #(left,right)=sf.ReadFile("temp/dry.wav")
-left =sf.ReadSignal("temp/sdry-l.sig")
-right=sf.ReadSignal("temp/sdry-r.sig")
+left =sf.ReadSignal("temp/dry-l.sig")
+right=sf.ReadSignal("temp/dry-r.sig")
 l    = sf.Length(+left)
 left = sf.Multiply(left ,sf.NumericShape((0,1),(l-256,1),(l,0)))
 r    = sf.Length(+right)
@@ -48,6 +48,7 @@ def excite(sig_,mix,power):
         sigh=sf.BesselHighPass(+sig,500,2)
         mh=sf.Magnitude(+sigh)
         sigh=sf.Power(sigh,power)
+        sigh=sf.Clean(sigh)
         sigh=sf.BesselHighPass(sigh,1000,2)
         nh=sf.Magnitude(+sigh)
         sigh=sf.NumericVolume(sigh,mh/nh)
@@ -64,8 +65,8 @@ def excite(sig_,mix,power):
 
 bright  = True
 vBright = False
-church  = False
-ambient = True
+church  = True
+ambient = False
 post    = True
   
 if ambient:  

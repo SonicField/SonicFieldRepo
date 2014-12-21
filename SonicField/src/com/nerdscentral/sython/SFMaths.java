@@ -46,6 +46,12 @@ public final class SFMaths
         return Math.pow(a, b);
     }
 
+    public final static double fastPow(final double a, final double b)
+    {
+        return a == 0 ? 0
+                        : Double.longBitsToDouble((long) (b * (Double.doubleToLongBits(a) - 4606921280493453312L)) + 4606921280493453312L);
+    }
+
     public static double floor(final double d)
     {
         return Math.floor(d);
@@ -92,5 +98,35 @@ public final class SFMaths
         double a = table[indexA];
         return a + (table[indexB] - a) * (t - (indexA * step)) * invStep;
 
+    }
+
+    final public static double fastSin(double ang)
+    {
+        double t = ang % pi2;
+        int indexA = (int) (t * invStep);
+        return table[indexA];
+    }
+
+    public static void main(String[] args)
+    {
+        System.out.println("Pow vs FastPow"); //$NON-NLS-1$
+        for (int i = 0; i < 20; ++i)
+        {
+            double resultF = 0;
+            double resultS = 0;
+            long t0 = System.nanoTime();
+            for (double j = i; j < 1000 + i; j += 1.01)
+            {
+                resultS += SFMaths.pow(j, 2);
+            }
+            long t1 = System.nanoTime();
+            for (double j = i; j < 1000 + i; j += 1.01)
+            {
+                resultF += SFMaths.fastPow(j, 2);
+            }
+            long t2 = System.nanoTime();
+            System.out.println("Slow: " + resultS + ", " + (t1 - t0) + " Fast: " + resultF + ", " + (t2 - t1) + " Ratio: " //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
+                            + (resultS / resultF) + " Speedup: " + ((double) (t1 - t0) / (t2 - t1))); //$NON-NLS-1$
+        }
     }
 }

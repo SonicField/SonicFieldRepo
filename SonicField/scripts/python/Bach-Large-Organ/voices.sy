@@ -9,8 +9,14 @@ def voxCelest_inner(length,freq,a,b,c):
         sf.Pcnt75(singBase(length,freq,1.0)),
         sf.Pcnt25(singBase(length,freq*2.0,1.25))
     )
+    length=sf.Length(+vox)
     vox=sf.FixSize(polish(vox,freq)) 
-    ev=sf.Pcnt20(sf.SineWave(length,4.5))
+    ev=sf.Pcnt20(
+        sf.SineWave(
+            length,
+            4.5
+        )
+    )
     ev=sf.Multiply(
         ev,
         sf.NumericShape((0,0),(length*0.5,1),(length,1))
@@ -18,9 +24,17 @@ def voxCelest_inner(length,freq,a,b,c):
     fv=sf.Pcnt12(+ev)
     ev=sf.DirectMix(1.0,ev)
     vox=sf.FrequencyModulate(vox,fv)
+    vox=polish(vox,freq)
     vox=sf.Multiply(ev,vox)
     vox=doFormant(vox,a,b,c,freq)
+    vox=polish(vox,freq)        
     vox=excite(vox,0.2,2.0)
+    vox=polish(vox,freq)
+    notch=(freq+a)/2.0      
+    vox=sf.Mix(
+        sf.Pcnt75(sf.RBJNotch(+vox,notch,0.25)),
+        sf.Pcnt50(vox)
+    )
     vox=sf.Mix(
         sf.Multiply(
             cleanNoise(length,freq*0.5),
@@ -28,6 +42,7 @@ def voxCelest_inner(length,freq,a,b,c):
         ),
         vox
     )
+    vox=polish(vox,freq)
     vox=sf.RBJPeaking(vox,freq,3,4)
     vox=polish(vox,freq)
     return sf.FixSize(vox)

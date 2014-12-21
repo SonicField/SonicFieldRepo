@@ -3,11 +3,11 @@
 # Mix mix/prcessing  #
 ######################
 
-global signalName
-signalName=0
+all_left  = []
+all_right = []
 
 def postProcess():
-    global signalName
+    global all_left,all_right
     count=0
     tnsl=[]
     tnsr=[]
@@ -21,13 +21,12 @@ def postProcess():
         count+=1
     tnl=mix(tnsl)
     tnr=mix(tnsr)
-    sf.WriteSignal(tnl,"temp/l-"+str(signalName));
-    sf.WriteSignal(tnr,"temp/r-"+str(signalName));
+    all_left.append(tnl)
+    all_right.append(tnr)
     print "Mix phase 2 done"
-    signalName+=1
 
 def postProcessTremolate(rate=3.5,magnitude=0.25):
-    global signalName
+    global all_left,all_right
     count=0
     tnsl=[]
     tnsr=[]
@@ -44,13 +43,12 @@ def postProcessTremolate(rate=3.5,magnitude=0.25):
     tnl=tremolate(tnl,rate,magnitude)
     tnr=tremolate(tnr,rate,magnitude)
     print "Trem phase 2 done"
-    sf.WriteSignal(tnl,"temp/l-"+str(signalName));
-    sf.WriteSignal(tnr,"temp/r-"+str(signalName));
+    all_left.append(tnl)
+    all_right.append(tnr)
     print "Trem phase 3 done"
-    signalName+=1
 
 def postProcessEcho():
-    global signalName
+    global all_left,all_right
     count=0
     tnsl=[]
     tnsr=[]
@@ -67,19 +65,16 @@ def postProcessEcho():
     print "Echo phase 2 done"
     tnl=echoDivision(tnl)
     tnr=echoDivision(tnr)
-    sf.WriteSignal(tnl,"temp/l-"+str(signalName));
-    sf.WriteSignal(tnr,"temp/r-"+str(signalName));
+    all_left.append(tnl)
+    all_right.append(tnr)
     print "Echo phase 3 done"
-    signalName+=1
 
 def doFinalMix():
-    global signalName
+    global all_left,all_right
     left =sf.Silence(1)
     right=sf.Silence(1)
-    for x in range(0,signalName):
-        left =sf.Mix(left ,sf.ReadSignal("temp/l-"+str(x)))
-        right=sf.Mix(right,sf.ReadSignal("temp/r-"+str(x)))
-    left =sf.Finalise(left)
-    right=sf.Finalise(right)
+    left =sf.Finalise(mixF(all_left))
+    right=sf.Finalise(mixF(all_right))
+    left  = sf.Cut(1,sf.Length(+left ),left)
+    right = sf.Cut(1,sf.Length(+right),right)
     return left,right
-    

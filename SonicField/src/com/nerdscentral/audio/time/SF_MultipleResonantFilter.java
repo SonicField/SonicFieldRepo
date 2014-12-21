@@ -85,6 +85,11 @@ public class SF_MultipleResonantFilter implements SFPL_Operator
                         double volume = descriptor.getVolume();
                         int delay = descriptor.getDelaySamples();
                         int index = n + delay;
+                        if (n < delay)
+                        {
+                            q = q * volume;
+                            out.setSample(n, q);
+                        }
                         if (index < r)
                         {
                             out.setSample(index, out.getSample(index) * forward + q * volume);

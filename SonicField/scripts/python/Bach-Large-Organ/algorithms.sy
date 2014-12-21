@@ -9,6 +9,7 @@ def excite(sig_,mix,power):
         sigh=sf.BesselHighPass(+sig,500,2)
         mh=sf.Magnitude(+sigh)
         sigh=sf.Power(sigh,power)
+        sigh=sf.Clean(sigh)
         sigh=sf.BesselHighPass(sigh,1000,2)
         nh=sf.Magnitude(+sigh)
         sigh=sf.NumericVolume(sigh,mh/nh)
@@ -71,10 +72,15 @@ def reverberate(signal,convol):
     return sf_do(revi)
 
 def mix(notes):
-    #def mixInner():
-    #    return sf.Realise(sf.MixAt(notes))
-    #return sf_do(mixInner)
-    return sf.MixAt(notes)
+    def mixInner():
+        return sf.Realise(sf.MixAt(notes))
+    return sf_do(mixInner)
+
+
+def mixF(notes):
+    def mixInner():
+        return sf.Realise(sf.Mix(notes))
+    return sf_do(mixInner)
     
 def findNearestOvertone(fMatch,freq):
     q=float(fMatch)/float(freq)
@@ -86,7 +92,6 @@ def doFormant(sig,f1,f2,f3,freq,intensity=4):
     f1b=f1
     f2b=findNearestOvertone(f2,freq)
     f3b=findNearestOvertone(f3,freq)
-    print "Match: ",freq,f1,f2,f3,f1b,f2b,f3b
     for x in range(1,intensity):
         s1=sf.RBJBandPass(+sig,f1b,0.25)
         s2=sf.RBJBandPass(+sig,f2b,0.5)

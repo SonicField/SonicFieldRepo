@@ -39,6 +39,11 @@ public class SF_ShapedResonateFilter implements SFPL_Operator
                 {
                     double r = in.getLength();
                     int delaySamples = (int) (delay * SFConstants.SAMPLE_RATE_MS);
+                    double initDelay = delaySamples / delayShape.getSample(0);
+                    for (int n = 0; n < initDelay; ++n)
+                    {
+                        out.setSample(n, out.getSample(n) * vOriginal);
+                    }
                     for (int n = 0; n < r; ++n)
                     {
                         double q = out.getSample(n);

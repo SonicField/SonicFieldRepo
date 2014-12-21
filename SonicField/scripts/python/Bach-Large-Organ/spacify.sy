@@ -2,22 +2,21 @@ import math
 import random
 import sys
 
-left  = sf.ReadSignal("temp/dry-l.sig")
-right = sf.ReadSignal("temp/dry-r.sig")
+def resonate(left,right,del1,del2):
+    left  = sf.Concatenate(left ,sf.Silence(120000))
+    right = sf.Concatenate(right,sf.Silence(120000))
+    
+    leftA  = sf.Mix(
+        sf.Pcnt90(sf.Finalise(sf.ResonantFilter(+left  ,0.9,0.5,del1[0]))),
+        sf.Pcnt10(sf.Finalise(sf.ResonantFilter(+right ,0.9,0.5,del1[1])))
+    )
+    
+    rightA = sf.Mix(
+        sf.Pcnt90(sf.Finalise(sf.ResonantFilter(right ,0.9,0.5,del2[0]))),
+        sf.Pcnt10(sf.Finalise(sf.ResonantFilter(left  ,0.9,0.5,del2[1])))
+    )
+    return leftA,rightA
 
-left  = sf.Concatenate(left ,sf.Silence(120000))
-right = sf.Concatenate(right,sf.Silence(120000))
-
-leftA  = sf.Mix(
-    sf.Pcnt90(sf.Finalise(sf.ResonantFilter(+left  ,0.9,0.5,1000))),
-    sf.Pcnt10(sf.Finalise(sf.ResonantFilter(+right ,0.9,0.5,3000))),
-)
-rightA = sf.Mix(
-    sf.Pcnt90(sf.Finalise(sf.ResonantFilter(right ,0.9,0.5,1100))),
-    sf.Pcnt10(sf.Finalise(sf.ResonantFilter(left  ,0.9,0.5,2900))),
-)
-
-print "Resonated"
 def doLow(sig):
     def doLowInner():
         +sig
@@ -42,9 +41,15 @@ def doLow(sig):
             sf.Pcnt25(newSig)
         )))
     return sf_do(doLowInner)
-    
-left  = doLow(leftA)    
-right = doLow(rightA)
+
+left  = sf.ReadSignal("temp/dry-l.sig")
+right = sf.ReadSignal("temp/dry-r.sig")
+
+left,right  = resonate((left,right),(1000,3000),(1100,2900))   
+
+left  = doLow(left)    
+right = doLow(right)
+
 sf.WriteSignal(+left, "temp/sdry-l.sig")
 sf.WriteSignal(+right,"temp/sdry-r.sig")
 sf.WriteFile32((left,right),"temp/space.wav")
