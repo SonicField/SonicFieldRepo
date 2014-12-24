@@ -4,9 +4,17 @@
 
 import os
 path="scripts/python/Bach-Large-Organ"
+
+# Set this for voice (voxHumana)
+# ------------------------------
+sf.SetSampleRate(192000)
+
+# Import the other parts of the script
+# ------------------------------------
 execfile(path+"/algorithms.sy")
 execfile(path+"/generators.sy")
 execfile(path+"/voices.sy")
+execfile(path+"/percussion.sy")
 execfile(path+"/note-formation.sy")
 
 notes  = []
@@ -17,15 +25,15 @@ execfile(path+"/post.sy")
 ########################################
 
 #midis=sf.ReadMidiFile("temp/bwv988x/988-v15.mid")
-midis=sf.ReadMidiFile("temp/Little Book Of Organ/bwv621gm.mid")
+midis=sf.ReadMidiFile("temp/Little Book Of Organ/bwv620gm.mid")
 
 # Length of full piece
 #======================
-length      =     1.1
+length      =     3.0
 
 # How much to play
 #==================
-minutes     =    10.0
+minutes     =   120.0
 
 # Temperament
 #=============
@@ -50,7 +58,7 @@ beat        =  setLengthMidi(midis,beat,length)
 midis=repareOverlapMidis(midis)
 newMidis=[]
 for m in midis:
-    m = legatoMidi(m,beat,512)
+    #m = legatoMidi(m,beat,512)
     m = fixVelocityMidi(m)
     newMidis.append(m)
 midis=newMidis
@@ -66,12 +74,13 @@ def chA():
     midi=dampVelocity(midi,80,0.75)
     doMidi(voice=leadDiapason,vCorrect=1.0,flatEnv=False,bend=True)
     postProcess()
-    
+ 
     midi=longAsMidi(midis[index],beat,512)
     midi=legatoMidi(midi,beat,128)
     midi=dampVelocity(midi,68,0.75)
     midi=dampVelocity(midi,80,0.75)
     doMidi(voice=orchestralOboe,vCorrect=0.35,flatEnv=True,bend=True,pan=0.2)
+    postProcess()
     postProcessTremolate(rate=3.5)
     doMidi(voice=orchestralOboe,vCorrect=0.35,flatEnv=True,bend=True,pan=0.8)
     postProcessTremolate(rate=4.5)
@@ -89,9 +98,9 @@ def chL():
     midi=legatoMidi(midi,beat,128)
     midi=dampVelocity(midi,68,0.86)
     midi=dampVelocity(midi,80,0.86)
-    doMidi(voice=orchestralOboe,vCorrect=0.50,flatEnv=True,bend=True,pan=0.2)
+    doMidi(voice=leadDiapason,vCorrect=0.50,flatEnv=True,bend=True,pan=0.2)
     postProcess()
-    doMidi(voice=orchestralOboe,vCorrect=0.50,flatEnv=True,bend=True,pan=0.8,pitchAdd=2.0)
+    doMidi(voice=leadDiapason,vCorrect=0.50,flatEnv=True,bend=True,pan=0.8,pitchAdd=2.0)
     postProcess()
 
 def chO():
@@ -163,7 +172,6 @@ def chACP():
     midi=dampVelocity(midi,80,0.75)
     doMidi(voice=clarion,vCorrect=0.5,flatEnv=True,bend=True)
     postProcess()
-
 
 def chAST():
     global midi,index
@@ -286,7 +294,7 @@ def chD():
 
 def chDR():
     global midi,index
-    print "##### Channel D #####"
+    print "##### Channel DR #####"
     index+=1
     midi=shorterThanMidi(midis[index],beat,512)
     midi=legatoMidi(midi,beat,128)
@@ -421,41 +429,84 @@ def chVLB():
 
 ##### Voices #####
 
-def chVC_S():
+def chVC_SM():
     global midi,index
-    print "##### Channel VC_S #####"
+    print "##### Channel VC_SM #####"
     index+=1
     midi=legatoMidi(midis[index],beat,128)
     midi=dampVelocity(midi,80,0.75)
-    doMidi(voice=voxCelestSoprano,vCorrect=1.0,flatEnv=False)
+    doMidi(voice=voxHumanaMSoprano,vCorrect=1.0,flatEnv=False)
     postProcess() 
 
-def chVC_A():
+def chVC_SMR():
     global midi,index
-    print "##### Channel VC_S #####"
+    print "##### Channel VC_SMF #####"
     index+=1
-    midi=legatoMidi(midis[index],beat,128)
-    midi=dampVelocity(midi,80,0.75)
-    doMidi(voice=voxCelestAlto,vCorrect=1.0,flatEnv=False)
-    postProcess() 
-
-def chVC_AS():
-    global midi,index
-    print "##### Channel VC_AS #####"
-    index+=1
-    midi=shorterThanMidi(midis[index],beat,2048)
+    midi=shorterThanMidi(midis[index],beat,512)
     midi=legatoMidi(midi,beat,64)
     midi=dampVelocity(midi,70,0.75)
-    doMidi(voice=voxCelestAlto,vCorrect=1.0,flatEnv=False,qFactor=1.5)
+    doMidi(voice=voxHumanaMSoprano,vCorrect=1.0,flatEnv=False,qFactor=1.5,pan=0.5)
     postProcess()
+    midi=delayMidi(midi,beat,128)
+    doMidi(voice=voxHumanaMSoprano,vCorrect=0.1,flatEnv=False,qFactor=1.5,pan=0.6,pitchAdd=2.0)
+    postProcessEcho()
     
-    midi=longAsMidi(midis[index],beat,2048)
+    midi=longAsMidi(midis[index],beat,512)
     midi=legatoMidi(midi,beat,128)
     midi=dampVelocity(midi,68,0.86)
     midi=dampVelocity(midi,80,0.75)
-    doMidi(voice=voxCelestSoprano,vCorrect=1.0,flatEnv=False,qFactor=2.5)
+    doMidi(voice=voxHumanaMSoprano,vCorrect=0.5,flatEnv=False,qFactor=2.5,pan=0.25)
+    postProcessEcho()
+    doMidi(voice=voxHumanaMSoprano,vCorrect=0.5,flatEnv=False,qFactor=2.5,pan=0.75)
+    postProcessEcho()
+    midi=delayMidi(midi,beat,256)
+    doMidi(voice=voxHumanaMSoprano,vCorrect=0.1,flatEnv=False,qFactor=2.5,pan=0.5, pitchAdd=2.0)
+    postProcessEcho()
+
+def chVC_SF():
+    global midi,index
+    print "##### Channel VC_SF #####"
+    index+=1
+    midi=legatoMidi(midis[index],beat,128)
+    midi=dampVelocity(midi,80,0.75)
+    doMidi(voice=voxHumanaFSoprano,vCorrect=1.0,flatEnv=False,bend=False)
+    postProcess() 
+
+def chVC_SFR():
+    global midi,index
+    print "##### Channel VC_SFR #####"
+    index+=1
+    midi=shorterThanMidi(midis[index],beat,512)
+    midi=legatoMidi(midi,beat,64)
+    midi=dampVelocity(midi,70,0.75)
+    doMidi(voice=voxHumanaFSoprano,vCorrect=1.0,flatEnv=False,qFactor=1.5,pan=0.5,bend=False)
+    postProcess()
+    midi=delayMidi(midi,beat,128)
+    doMidi(voice=voxHumanaFSoprano,vCorrect=0.1,flatEnv=False,qFactor=1.5,pan=0.6,pitchAdd=2.0,bend=False)
     postProcessEcho()
     
+    midi=longAsMidi(midis[index],beat,512)
+    midi=legatoMidi(midi,beat,128)
+    midi=dampVelocity(midi,68,0.86)
+    midi=dampVelocity(midi,80,0.75)
+    doMidi(voice=voxHumanaFSoprano,vCorrect=0.5,flatEnv=False,qFactor=2.5,pan=0.25,bend=False)
+    postProcessEcho()
+    doMidi(voice=voxHumanaFSoprano,vCorrect=0.5,flatEnv=False,qFactor=2.5,pan=0.75,bend=False)
+    postProcessEcho()
+    midi=delayMidi(midi,beat,256)
+    doMidi(voice=voxHumanaFSoprano,vCorrect=0.1,flatEnv=False,qFactor=2.5,pan=0.5, pitchAdd=2.0,bend=False)
+    postProcessEcho()
+
+##### Percussion #####
+
+def chPR_B():
+    global midi,index
+    print "##### Channel PR_B #####"
+    index+=1
+    midi=legatoMidi(midis[index],beat,128)
+    midi=dampVelocity(midi,80,0.75)
+    doMidi(voice=clear_bell,vCorrect=1.0,flatEnv=False,bend=False)
+    postProcess()
 
 ##### Non Incrementing Accent Voices #####
 
@@ -486,7 +537,7 @@ def chUA():
 
 def chST():
     global midi,index
-    print "##### Channel SS #####"
+    print "##### Channel ST #####"
     midi=legatoMidi(midis[index],beat,192)
     doMidi(voice=stoppedReed,vCorrect=0.25,flatEnv=True,pitchShift=0.25,pitchAdd=2.5,pan=0.25,pure=True)
     postProcess()
@@ -497,28 +548,42 @@ def chST():
 # Which Channels #
 ##################
 
-doChannels=['vc_s','c','db','s']
+doChannels=['vc_sfr','pg','pgb','st']
+#doChannels=['pr_b']
 while len(doChannels):    
     ch=doChannels.pop(0)
     if ch == 'a':
+        # Leeds and Orchestral Oboes
         chA()
     elif ch == 'o':
+        # Pure Orchestral Oboes
         chO()
+    elif ch == 'l':
+        # Pure Leads
+        chL()
     elif ch == 'as':
+        # Leeds ands Strings
         chAS()
     elif ch == 'ac':
+        # Clarions, two types
         chAC()
     elif ch == 'acp':
+        # Pure simple clarions
         chACP()
     elif ch == 'ast':
+        # Stopped reed in leed formation
         chAST()
     elif ch == 'b':
+        # Violas in simple formation
         chB()
     elif ch == 'c':
+        # Second diapasons in simple formation
         chC()
     elif ch == 't':
+        # Stopped reed in general purpose formation (flat envs)
         chT()
     elif ch == 'p':
+        # Seconds diapasons in  general purpose formation  (flat envs)
         chP()
     elif ch == 'pg':
         chPG()
@@ -548,12 +613,16 @@ while len(doChannels):
         chVLO()
     elif ch == 'vlb':
         chVLB()
-    elif ch == 'vc_s':
-        chVC_S()
-    elif ch == 'vc_a':
-        chVC_a()
-    elif ch == 'vc_as':
-        chVC_AS()
+    elif ch == 'vc_sm':
+        chVC_SM()
+    elif ch == 'vc_smr':
+        chVC_SMR()
+    elif ch == 'vc_sf':
+        chVC_SF()
+    elif ch == 'vc_sfr':
+        chVC_SFR()
+    elif ch == 'pr_b':
+        chPR_B()
     else:
         print "Unknown channel: " + ch
         exit(1)

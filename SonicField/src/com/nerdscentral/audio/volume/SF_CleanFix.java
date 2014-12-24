@@ -5,7 +5,6 @@ import com.nerdscentral.audio.SFData;
 import com.nerdscentral.audio.SFSignal;
 import com.nerdscentral.audio.SFSingleTranslator;
 import com.nerdscentral.sython.Caster;
-import com.nerdscentral.sython.SFMaths;
 import com.nerdscentral.sython.SFPL_Context;
 import com.nerdscentral.sython.SFPL_Operator;
 import com.nerdscentral.sython.SFPL_RuntimeException;
@@ -26,10 +25,6 @@ public class SF_CleanFix implements SFPL_Operator
         public double getSample(int index)
         {
             double r = getInputSample(index) * scale;
-            if (SFMaths.abs(r) > 1.0)
-            {
-                // System.err.println("Err " + r + "," + scale);
-            }
             return r;
         }
     }

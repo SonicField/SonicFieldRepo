@@ -51,7 +51,7 @@ public class SF_DirtyRaise implements SFPL_Operator
     @Override
     public String Word()
     {
-        return "DirtyRaise";
+        return Messages.getString("SF_DirtyRaise.0"); //$NON-NLS-1$
     }
 
 }

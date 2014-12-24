@@ -1,17 +1,22 @@
 def reverbInner(signal,convol,grainLength):
-    mag=sf.Magnitude(+signal)
-    if mag>0:
-        signal_=sf.Concatenate(signal,sf.Silence(grainLength))
-        signal_=sf.FrequencyDomain(signal_)
-        signal_=sf.CrossMultiply(convol,signal_)
-        signal_=sf.TimeDomain(signal_)
-        newMag=sf.Magnitude(+signal_)
-        signal_=sf.NumericVolume(signal_,mag/newMag)        
-        # tail out clicks due to amplitude at end of signal 
-        return sf.Realise(signal_)
-    else:
-        -convol
-        return signal
+    def rii():
+        mag=sf.Magnitude(+signal)
+        if mag>0:
+            signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+            signal_=sf.FrequencyDomain(signal_)
+            signal_=sf.CrossMultiply(convol,signal_)
+            signal_=sf.TimeDomain(signal_)
+            newMag=sf.Magnitude(+signal_)
+            if newMag>0:
+                signal_=sf.NumericVolume(signal_,mag/newMag)        
+                # tail out clicks due to amplitude at end of signal 
+                return sf.Realise(signal_)
+            else:
+                return sf.Silence(sf.Length(signal_))
+        else:
+            -convol
+            return signal
+    return sf_do(rii)
             
 def reverberate(signal,convol):
     def revi():
@@ -23,7 +28,7 @@ def reverberate(signal,convol):
             (signal_i,at)=grain
             out.append((reverbInner(signal_i,+convol_,grainLength),at))
         -convol_
-        return sf.Realise(sf.Clean(sf.FixSize(sf.MixAt(out))))
+        return sf.Clean(sf.FixSize(sf.MixAt(out)))
     return sf_do(revi)
 
 #(left,right)=sf.ReadFile("temp/dry.wav")
@@ -63,8 +68,8 @@ def excite(sig_,mix,power):
 #
 ####################################
 
-bright  = True
-vBright = False
+bright  = False
+vBright = True
 church  = True
 ambient = False
 post    = True

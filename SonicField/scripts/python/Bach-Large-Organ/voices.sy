@@ -4,10 +4,10 @@
 #
 ###############################################################################
 
-def voxCelest_inner(length,freq,a,b,c):
+def voxHumana_inner(length,freq,a,b,c,z1=1.0,z2=1.25):
     vox=sf.Mix(
-        sf.Pcnt75(singBase(length,freq,1.0)),
-        sf.Pcnt25(singBase(length,freq*2.0,1.25))
+        sf.Pcnt75(singBase(length,freq,z1)),
+        sf.Pcnt25(singBase(length,freq*2.0,z1))
     )
     length=sf.Length(+vox)
     vox=sf.FixSize(polish(vox,freq)) 
@@ -32,8 +32,8 @@ def voxCelest_inner(length,freq,a,b,c):
     vox=polish(vox,freq)
     notch=(freq+a)/2.0      
     vox=sf.Mix(
-        sf.Pcnt75(sf.RBJNotch(+vox,notch,0.25)),
-        sf.Pcnt50(vox)
+        sf.Pcnt75(sf.RBJNotch(+vox,notch,0.5)),
+        sf.Pcnt25(vox)
     )
     vox=sf.Mix(
         sf.Multiply(
@@ -47,11 +47,17 @@ def voxCelest_inner(length,freq,a,b,c):
     vox=polish(vox,freq)
     return sf.FixSize(vox)
 
-def voxCelestAlto(length,freq):
-    return voxCelest_inner(length,freq,470,1150,2100)
+def voxHumanaFSoprano(length,freq):
+    vox = voxHumana_inner(length,freq,850,1200,2800,2.0,3.0)
+    a = sf.BesselLowPass(+vox,freq    ,2)
+    b = sf.Power(sf.BesselHighPass(vox,freq*4.0,2),1.25)
+    b = sf.Clean(b)
+    b = sf.ButterworthHighPass(b,freq*1.5 ,6)
+    a = sf.ButterworthHighPass(a,freq*0.75,6)
+    return sf.Mix(sf.Pcnt75(a),sf.Pcnt25(b))
 
-def voxCelestSoprano(length,freq):
-    return voxCelest_inner(length,freq,850,1200,2800)
+def voxHumanaMSoprano(length,freq):
+    return voxHumana_inner(length,freq,850,1200,2800)
 
 def celestFlute(length,freq):
     sig=sf.Mix(
@@ -560,10 +566,14 @@ def muteOboe(length,freq):
     
 def orchestralOboe(length,freq):
     vox=makeSimpleBase(length,freq,0.25)
+    vox=sf.Multiply(
+        sf.NumericShape((0,0),(sf.Period(freq)/2.0,1),(length,1)),
+        vox
+    )
     vox=polish(vox,freq)
-    vox=sf.FixSize(sf.Power(vox,1.5))
+    vox=sf.Finalise(sf.Power(vox,1.5))
     vox=polish(vox,freq)
-    vox=sf.FixSize(sf.Power(vox,1.5))
+    vox=sf.Finalise(sf.Power(vox,1.5))
     vox=polish(vox,freq)
     vox=sf.RBJPeaking(vox,freq*5,0.5,5)
     vox=sf.RBJPeaking(vox,freq*7,1,5)

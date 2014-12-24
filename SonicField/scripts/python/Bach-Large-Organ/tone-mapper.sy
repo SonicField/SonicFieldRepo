@@ -1,0 +1,37 @@
+"""
+interval name           size (steps)    size (cents)    just ratio  just (cents)    error
+octave                  24              1200            2:1         1200.00         0.00
+semidiminished octave   23              1150            2:1         1200.00         −50.00
+supermajor seventh      23              1150            35:18       1151.23         −1.23
+major seventh   22  1100     15:8    1088.27  +11.73
+neutral seventh 21  1050     11:6    1049.36  +0.64
+large just minor seventh    20  1000     9:5 1017.60  -17.60
+small just minor seventh    20  1000     16:9    996.09   +3.91
+supermajor sixth/subminor seventh   19  950  7:4 968.83   −18.83
+major sixth 18  900  5:3 884.36   +15.64
+neutral sixth   17  850  18:11   852.59   −2.59
+minor sixth 16  800  8:5 813.69   −13.69
+subminor sixth  15  750  14:9    764.92   −14.92
+perfect fifth   14  700  3:2 701.95   −1.95
+minor fifth 13  650  16:11   648.68   +1.32
+lesser septimal tritone 12  600  7:5 582.51   +17.49
+major fourth    11  550  11:8    551.32   −1.32
+perfect fourth  10  500  4:3 498.05   +1.95
+tridecimal major third  9   450  13:10   454.21   −4.21
+septimal major third    9   450  9:7 435.08   +14.92
+major third 8   400  5:4 386.31   +13.69
+undecimal neutral third 7   350  11:9    347.41   +2.59
+minor third 6   300  6:5 315.64   −15.64
+septimal minor third    5   250  7:6 266.88   −16.88
+tridecimal minor third  5   250  15:13   247.74   +2.26
+septimal whole tone 5   250  8:7 231.17   +18.83
+whole tone, major tone  4   200  9:8 203.91   −3.91
+whole tone, minor tone  4   200     10:9    182.40      +17.60
+neutral second, greater undecimal   3   150  11:10   165.00   −15.00
+neutral second, lesser undecimal    3   150  12:11   150.64   −0.64
+15:14 semitone  2   100  15:14   119.44      −19.44
+diatonic semitone, just 2   100  16:15   111.73   −11.73
+21:20 semitone  2   100  21:20   84.47    +15.53
+28:27 semitone  1   50   28:27   62.96    −12.96
+septimal quarter tone   1   50   36:35   48.77    +1.23
+"""

@@ -117,7 +117,7 @@ def doFormant(sig,f1,f2,f3,freq,intensity=4):
 
     x=polish(sig,freq)
     x=sf.FixSize(x)
-    sf.Check(x)
+    x=sf.Check(x)
     return x
 
 def echoDivision(vox_):
