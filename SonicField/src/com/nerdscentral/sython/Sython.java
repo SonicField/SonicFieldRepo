@@ -34,6 +34,7 @@ public class Sython
         try
         {
             // Launch Thread Watchdog
+            // Checks for deadlocks
             new Thread(new Runnable()
             {
 
@@ -60,22 +61,6 @@ public class Sython
                             }
                             System.exit(1);
                         }
-                        /*
-                        ThreadInfo[] tis = bean.dumpAllThreads(true, true);
-                        for (ThreadInfo ti : tis)
-                        {
-                            LockInfo li = ti.getLockInfo();
-                            if (li != null)
-                            {
-                                System.out.println(li.toString());
-                            }
-                            StackTraceElement[] stack = ti.getStackTrace();
-                            for (StackTraceElement x : stack)
-                            {
-                                System.out.println("    " + x);
-                            }
-                        }
-                         */
                         try
                         {
                             Thread.sleep(1000);
@@ -187,6 +172,8 @@ public class Sython
                 interp.exec("__builtin__.sf=sf");
                 interp.exec("__builtin__.sf_do=sf_do");
 
+                interp.exec("print 'Using Class Path: " + System.getProperty("java.class.path"));
+                interp.exec("print");
                 interp.exec("print \"Switching To Python Mode\"");
                 interp.exec("print \"========================\"");
                 for (String f : args)

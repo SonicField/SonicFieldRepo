@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- WARNING: Eclipse auto-generated file.
+              Any modifications will be overwritten.
+              To include a user specific buildfile here, simply create one in the same
+              directory with the processing instruction <?eclipse.ant.import?>
+              as the first entry and export the buildfile again. --><project basedir="." default="build" name="SonicField">
+    <property environment="env"/>
+    <property name="ECLIPSE_HOME" value="../../eclipse/eclipse"/>
+    <property name="debuglevel" value="source,lines,vars"/>
+    <property name="target" value="1.7"/>
+    <property name="source" value="1.7"/>
+    <path id="JUnit 4.libraryclasspath">
+        <pathelement location="${ECLIPSE_HOME}/plugins/org.junit_4.11.0.v201303080030/junit.jar"/>
+        <pathelement location="${ECLIPSE_HOME}/plugins/org.hamcrest.core_1.3.0.v201303031735.jar"/>
+    </path>
+    <path id="SonicField.classpath">
+        <pathelement location="bin"/>
+        <path refid="JUnit 4.libraryclasspath"/>
+        <pathelement location="jars/jython-standalone-2.5.3.jar"/>
+    </path>
+    <target name="init">
+        <mkdir dir="bin"/>
+        <copy includeemptydirs="false" todir="bin">
+            <fileset dir="src">
+                <exclude name="**/*.launch"/>
+                <exclude name="**/*.java"/>
+            </fileset>
+        </copy>
+    </target>
+    <target name="clean">
+        <delete dir="bin"/>
+    </target>
+    <target depends="clean" name="cleanall"/>
+    <target depends="build-subprojects,build-project" name="build"/>
+    <target name="build-subprojects"/>
+    <target depends="init" name="build-project">
+        <echo message="${ant.project.name}: ${ant.file}"/>
+        <javac debug="true" debuglevel="${debuglevel}" destdir="bin" includeantruntime="false" source="${source}" target="${target}">
+            <src path="src"/>
+            <classpath refid="SonicField.classpath"/>
+        </javac>
+    </target>
+    <target description="Build all projects which reference this project. Useful to propagate changes." name="build-refprojects"/>
+    <target description="copy Eclipse compiler jars to ant lib directory" name="init-eclipse-compiler">
+        <copy todir="${ant.library.dir}">
+            <fileset dir="${ECLIPSE_HOME}/plugins" includes="org.eclipse.jdt.core_*.jar"/>
+        </copy>
+        <unzip dest="${ant.library.dir}">
+            <patternset includes="jdtCompilerAdapter.jar"/>
+            <fileset dir="${ECLIPSE_HOME}/plugins" includes="org.eclipse.jdt.core_*.jar"/>
+        </unzip>
+    </target>
+    <target description="compile project with Eclipse compiler" name="build-eclipse-compiler">
+        <property name="build.compiler" value="org.eclipse.jdt.core.JDTCompilerAdapter"/>
+        <antcall target="build"/>
+    </target>
+    <target name="aliasing">
+        <java classname="com.nerdscentral.sython.Sython" failonerror="true" fork="yes">
+            <jvmarg line="-Xmx12G -Xms6G  -XX:+UseConcMarkSweepGC  -XX:+UseCompressedOops  -XX:ParallelGCThreads=4  -XX:+CMSParallelRemarkEnabled   -Dsynthon.threads=32 -XX:CMSInitiatingOccupancyFraction=60  -XX:+UseCMSInitiatingOccupancyOnly -DsonicFieldSwapLimit=8000000 -DsonicFieldTemp=/tmp"/>
+            <arg line="scripts/python/aliasing-explained.sy"/>
+            <classpath refid="SonicField.classpath"/>
+        </java>
+    </target>
+    <target name="Ambient-Organ">
+        <java classname="com.nerdscentral.sython.Sython" failonerror="true" fork="yes">
+            <jvmarg line="-Xmx12G -Xms5G  -XX:+UseConcMarkSweepGC  -XX:+UseCompressedOops  -XX:ParallelGCThreads=8  -XX:+CMSParallelRemarkEnabled   -Dsynthon.threads=4 -XX:CMSInitiatingOccupancyFraction=20  -XX:+UseCMSInitiatingOccupancyOnly -DsonicFieldSwapLimit=1000000 -DsonicFieldTemp=/Volumes/Swap"/>
+            <arg line="scripts/python/Bach-Large-Organ/ambient-organ.sy"/>
+            <classpath refid="SonicField.classpath"/>
+        </java>
+    </target>
+    <target name="ambient-stretch">
+        <java classname="com.nerdscentral.sython.Sython" failonerror="true" fork="yes">
+            <jvmarg line="-Xmx12G -Xms6G  -XX:+UseConcMarkSweepGC  -XX:+UseCompressedOops  -XX:ParallelGCThreads=4  -XX:+CMSParallelRemarkEnabled   -Dsynthon.threads=16 -XX:CMSInitiatingOccupancyFraction=60  -XX:+UseCMSInitiatingOccupancyOnly -DsonicFieldSwapLimit=1000000 -DsonicFieldTemp=/tmp"/>
+            <arg line="scripts/python/ambient-stretch.sy"/>
+            <classpath refid="SonicField.classpath"/>
+        </java>
+    </target>
+    <target name="Bach-Large-Organ">
+        <java classname="com.nerdscentral.sython.Sython" failonerror="true" fork="yes">
+            <jvmarg line="-DsonicFieldTemp=/Volumes/Swap,/Volumes/Seagate-1/temp -Dsynthon.threads=16  -XX:+UseCompressedOops  -Xmx2G"/>
+            <arg line="scripts/python/Bach-Large-Organ/organ.sy"/>
+            <classpath refid="SonicField.classpath"/>
+        </java>
+    </target>
+    <target name="bell ring">
+        <java classname="com.nerdscentral.sython.Sython" failonerror="true" fork="yes">
+            <jvmarg line="-Xmx12G -Xms6G  -XX:+UseConcMarkSweepGC  -XX:+UseCompressedOops  -XX:ParallelGCThreads=12  -XX:+CMSParallelRemarkEnabled   -Dsynthon.threads=8 -XX:CMSInitiatingOccupancyFraction=30  -XX:+UseCMSInitiatingOccupancyOnly -DsonicFieldSwapLimit=2000000  -DsonicFieldTemp=/users/alexanderturner/temp -DsonicFieldTemp=/Volumes/Seagate-1/temp"/>
+            <arg line="scripts/python/bell-ring.sy"/>
+            <classpath refid="SonicField.classpath"/>
+        </java>
+    </target>
+    <target name="bells-of-mediation">
+        <java classname="com.nerdscentral.sython.Sython" failonerror="true" fork="yes">
+            <jvmarg line="-Xmx12G -Xms6G  -XX:+UseConcMarkSweepGC  -XX:+UseCompressedOops  -XX:ParallelGCThreads=4  -XX:+CMSParallelRemarkEnabled   -Dsynthon.threads=32 -XX:CMSInitiatingOccupancyFraction=60  -XX:+UseCMSInitiatingOccupancyOnly -DsonicFieldSwapLimit=800000 -DsonicFieldTemp=/Volumes/Swap"/>
+            <arg line="scripts/python/bells-of-meditation.sy"/>
+            <classpath refid="SonicField.classpath"/>
+        </java>
+    </target>
+    <target name="bells">
+        <java classname="com.nerdscentral.sython.Sython" failonerror="true" fork="yes">
+            <jvmarg line="-DsonicFieldTemp=/Volumes/Swap -Dsynthon.threads=16  -XX:+UseCompressedOops  -Xmx2G"/>
+            <arg line="scripts/python/Bach-Large-Organ/percussion.sy"/>
+            <classpath refid="SonicField.classpath"/>
+        </java>
+    </target>
+    <target name="Black-Knight">
+        <java classname="com.nerdscentral.sython.Sython" failonerror="true" fork="yes">
+            <jvmarg line="-Xmx12G -Xms6G  -XX:+UseConcMarkSweepGC  -XX:+UseCompressedOops  -XX:ParallelGCThreads=4  -XX:+CMSParallelRemarkEnabled   -Dsynthon.threads=16 -XX:CMSInitiatingOccupancyFraction=60  -XX:+UseCMSInitiatingOccupancyOnly -DsonicFieldSwapLimit=800000 -DsonicFieldTemp=/Volumes/Swap"/>
+            <arg line="scripts/python/black-knight.sy"/>
+            <classpath refid="SonicField.classpath"/>
+        </java>
+    </target>
+    <target name="Cold">
+        <java classname="com.nerdscentral.sython.Sython" failonerror="true" fork="yes">
+            <jvmarg line="-Xmx12G -Xms6G  -XX:+UseConcMarkSweepGC  -XX:+UseCompressedOops  -XX:ParallelGCThreads=12  -XX:+CMSParallelRemarkEnabled   -Dsynthon.threads=256 -XX:CMSInitiatingOccupancyFraction=30  -XX:+UseCMSInitiatingOccupancyOnly -DsonicFieldSwapLimit=2000000 -DsonicFieldTemp=/Users/alexanderturner/temp"/>
+            <arg line="scripts/python/Cold.sy"/>
+            <classpath refid="SonicField.classpath"/>
+        </java>
+    </target>
+    <target name="compress">
+        <java classname="com.nerdscentral.sython.Sython" failonerror="true" fork="yes">
+            <jvmarg line="-Xmx12G -Xms6G  -XX:+UseConcMarkSweepGC  -XX:+UseCompressedOops  -XX:ParallelGCThreads=4  -XX:+CMSParallelRemarkEnabled   -Dsynthon.threads=16 -XX:CMSInitiatingOccupancyFraction=60  -XX:+UseCMSInitiatingOccupancyOnly -DsonicFieldSwapLimit=80000 -DsonicFieldTemp=/Volumes/Swap"/>
+            <arg line="scripts/python/compressor.sy"/>
+            <classpath refid="SonicField.classpath"/>
+        </java>
+    </target>
+    <target name="Contrapunctus-1">
+        <java classname="com.nerdscentral.sython.Sython" failonerror="true" fork="yes">
+            <jvmarg line="-Xmx12G -Xms6G  -XX:+UseConcMarkSweepGC  -XX:+UseCompressedOops  -XX:ParallelGCThreads=4  -XX:+CMSParallelRemarkEnabled   -Dsynthon.threads=4 -XX:CMSInitiatingOccupancyFraction=60  -XX:+UseCMSInitiatingOccupancyOnly -DsonicFieldSwapLimit=1000000 -DsonicFieldTemp=/Volumes/Swap"/>
+            <arg line="scripts/python/Bach-Contrapunctus-1.sy"/>
+            <classpath refid="SonicField.classpath"/>
+        </java>
+    </target>
+    <target name="feedback">
+        <java classname="com.nerdscentral.sython.Sython" failonerror="true" fork="yes">
+            <jvmarg line="-Xmx12G -Xms6G  -XX:+UseConcMarkSweepGC  -XX:+UseCompressedOops  -XX:ParallelGCThreads=4  -XX:+CMSParallelRemarkEnabled   -Dsynthon.threads=16 -XX:CMSInitiatingOccupancyFraction=60  -XX:+UseCMSInitiatingOccupancyOnly -DsonicFieldSwapLimit=2000000 -DsonicFieldTemp=/Volumes/Swap"/>
+            <arg line="scripts/python/feedback.sy"/>
+            <classpath refid="SonicField.classpath"/>
+        </java>
+    </target>
+    <target name="ice flows">
+        <java classname="com.nerdscentral.sython.Sython" failonerror="true" fork="yes">
+            <jvmarg line="-Xmx12G -Xms6G  -XX:+UseConcMarkSweepGC  -XX:+UseCompressedOops  -XX:ParallelGCThreads=12  -XX:+CMSParallelRemarkEnabled   -Dsynthon.threads=256 -XX:CMSInitiatingOccupancyFraction=30  -XX:+UseCMSInitiatingOccupancyOnly -DsonicFieldSwapLimit=2000000 -DsonicFieldTemp=/Volumes/Seagate-1/temp"/>
+            <arg line="scripts/python/Oresund-Ice-Flows.sy"/>
+            <classpath refid="SonicField.classpath"/>
+        </java>
+    </target>
+    <target name="Killing For Coffee">
+        <java classname="com.nerdscentral.sython.Sython" failonerror="true" fork="yes">
+            <jvmarg line="-Xmx12G -Xms6G  -XX:+UseConcMarkSweepGC  -XX:+UseCompressedOops  -XX:ParallelGCThreads=12  -XX:+CMSParallelRemarkEnabled   -Dsynthon.threads=256 -XX:CMSInitiatingOccupancyFraction=30  -XX:+UseCMSInitiatingOccupancyOnly -DsonicFieldSwapLimit=2000000 -DsonicFieldTemp=/Users/alexanderturner/temp"/>
+            <arg line="scripts/python/Killing-For-Coffee.sy"/>
+            <classpath refid="SonicField.classpath"/>
+        </java>
+    </target>
+    <target name="me">
+        <java classname="com.nerdscentral.sython.Sython" failonerror="true" fork="yes">
+            <jvmarg line="-Xmx12G -Xms6G  -XX:+UseConcMarkSweepGC  -XX:+UseCompressedOops  -XX:ParallelGCThreads=12  -XX:+CMSParallelRemarkEnabled   -Dsynthon.threads=64 -XX:CMSInitiatingOccupancyFraction=30  -XX:+UseCMSInitiatingOccupancyOnly -DsonicFieldSwapLimit=2000000 -DsonicFieldTemp=/Users/alexanderturner/temp"/>
+            <arg line="scripts/python/me.sy"/>
+            <classpath refid="SonicField.classpath"/>
+        </java>
+    </target>
+    <target name="Northern-Lights-2">
+        <java classname="com.nerdscentral.sython.Sython" failonerror="true" fork="yes">
+            <jvmarg line="-Xmx12G -Xms6G  -XX:+UseConcMarkSweepGC  -XX:+UseCompressedOops  -XX:ParallelGCThreads=4  -XX:+CMSParallelRemarkEnabled   -Dsynthon.threads=8 -XX:CMSInitiatingOccupancyFraction=60  -XX:+UseCMSInitiatingOccupancyOnly -DsonicFieldSwapLimit=8000000 -DsonicFieldTemp=/Volumes/Tichy/temp"/>
+            <arg line="scripts/python/Northern-Lights2.sy"/>
+            <classpath refid="SonicField.classpath"/>
+        </java>
+    </target>
+    <target name="Northern-Lights">
+        <java classname="com.nerdscentral.sython.Sython" failonerror="true" fork="yes">
+            <jvmarg line="-Xmx12G -Xms6G  -XX:+UseConcMarkSweepGC  -XX:+UseCompressedOops  -XX:ParallelGCThreads=4  -XX:+CMSParallelRemarkEnabled   -Dsynthon.threads=8 -XX:CMSInitiatingOccupancyFraction=60  -XX:+UseCMSInitiatingOccupancyOnly -DsonicFieldSwapLimit=8000000 -DsonicFieldTemp=/Volumes/Seagate-1/temp"/>
+            <arg line="scripts/python/Northern-Lights.sy"/>
+            <classpath refid="SonicField.classpath"/>
+        </java>
+    </target>
+    <target name="rev-stretch">
+        <java classname="com.nerdscentral.sython.Sython" failonerror="true" fork="yes">
+            <jvmarg line="-Xmx12G -Xms6G  -XX:+UseConcMarkSweepGC  -XX:+UseCompressedOops  -XX:ParallelGCThreads=4  -XX:+CMSParallelRemarkEnabled   -Dsynthon.threads=16 -XX:CMSInitiatingOccupancyFraction=60  -XX:+UseCMSInitiatingOccupancyOnly -DsonicFieldSwapLimit=8000000 -DsonicFieldTemp=/Volumes/Swap"/>
+            <arg line="scripts/python/rev-stretch.sy"/>
+            <classpath refid="SonicField.classpath"/>
+        </java>
+    </target>
+    <target name="reverberate">
+        <java classname="com.nerdscentral.sython.Sython" failonerror="true" fork="yes">
+            <jvmarg line="-DsonicFieldTemp=/Volumes/Swap,/Volumes/Seagate-1/temp -Dsynthon.threads=16 -Xmx2G"/>
+            <arg line="scripts/python/Bach-Large-Organ/reverberate.sy"/>
+            <classpath refid="SonicField.classpath"/>
+        </java>
+    </target>
+    <target name="Sawing-High">
+        <java classname="com.nerdscentral.sython.Sython" failonerror="true" fork="yes">
+            <jvmarg line="-Xmx12G -Xms6G  -XX:+UseConcMarkSweepGC  -XX:+UseCompressedOops  -XX:ParallelGCThreads=4  -XX:+CMSParallelRemarkEnabled   -Dsynthon.threads=16 -XX:CMSInitiatingOccupancyFraction=60  -XX:+UseCMSInitiatingOccupancyOnly -DsonicFieldSwapLimit=8000000 -DsonicFieldTemp=/tmp"/>
+            <arg line="scripts/python/Sawing-High.sy"/>
+            <classpath refid="SonicField.classpath"/>
+        </java>
+    </target>
+    <target name="sea-of-sounds-2">
+        <java classname="com.nerdscentral.sython.Sython" failonerror="true" fork="yes">
+            <jvmarg line="-Xmx12G -Xms6G  -XX:+UseConcMarkSweepGC  -XX:+UseCompressedOops  -XX:ParallelGCThreads=4  -XX:+CMSParallelRemarkEnabled   -Dsynthon.threads=16 -XX:CMSInitiatingOccupancyFraction=60  -XX:+UseCMSInitiatingOccupancyOnly -DsonicFieldSwapLimit=8000000 -DsonicFieldTemp=/Volumes/Seagate-1/temp/"/>
+            <arg line="scripts/python/sea-of-sounds.sy"/>
+            <classpath refid="SonicField.classpath"/>
+        </java>
+    </target>
+    <target name="sea-of-sounds-b">
+        <java classname="com.nerdscentral.sython.Sython" failonerror="true" fork="yes">
+            <jvmarg line="-Xmx12G -Xms6G  -XX:+UseConcMarkSweepGC  -XX:+UseCompressedOops  -XX:ParallelGCThreads=4  -XX:+CMSParallelRemarkEnabled   -Dsynthon.threads=16 -XX:CMSInitiatingOccupancyFraction=60  -XX:+UseCMSInitiatingOccupancyOnly -DsonicFieldSwapLimit=8000000 -DsonicFieldTemp=/Volumes/Seagate-1/temp/"/>
+            <arg line="scripts/python/sea-of-sounds-b.sy"/>
+            <classpath refid="SonicField.classpath"/>
+        </java>
+    </target>
+    <target name="sea-of-sounds">
+        <java classname="com.nerdscentral.sython.Sython" failonerror="true" fork="yes">
+            <jvmarg line="-Xmx12G -Xms6G  -XX:+UseConcMarkSweepGC  -XX:+UseCompressedOops  -XX:ParallelGCThreads=4  -XX:+CMSParallelRemarkEnabled   -Dsynthon.threads=32 -XX:CMSInitiatingOccupancyFraction=60  -XX:+UseCMSInitiatingOccupancyOnly -DsonicFieldSwapLimit=800000 -DsonicFieldTemp=/Volumes/Swap"/>
+            <arg line="scripts/python/sea-of-sounds.sy"/>
+            <classpath refid="SonicField.classpath"/>
+        </java>
+    </target>
+    <target name="SFMaths">
+        <java classname="com.nerdscentral.sython.SFMaths" failonerror="true" fork="yes">
+            <classpath refid="SonicField.classpath"/>
+        </java>
+    </target>
+    <target name="spacify">
+        <java classname="com.nerdscentral.sython.Sython" failonerror="true" fork="yes">
+            <jvmarg line="-DsonicFieldTemp=/Volumes/Seagate-1/temp  -Dsynthon.threads=16 -Xmx2G"/>
+            <arg line="scripts/python/Bach-Large-Organ/spacify.sy"/>
+            <classpath refid="SonicField.classpath"/>
+        </java>
+    </target>
+    <target name="string-piano">
+        <java classname="com.nerdscentral.sython.Sython" failonerror="true" fork="yes">
+            <jvmarg line="-Xmx12G -Xms6G  -XX:+UseConcMarkSweepGC  -XX:+UseCompressedOops  -XX:ParallelGCThreads=12  -XX:+CMSParallelRemarkEnabled   -Dsynthon.threads=64 -XX:CMSInitiatingOccupancyFraction=30  -XX:+UseCMSInitiatingOccupancyOnly -DsonicFieldSwapLimit=2000000 -DsonicFieldTemp=/Volumes/Seagate-1/temp"/>
+            <arg line="scripts/python/string-piano.sy"/>
+            <classpath refid="SonicField.classpath"/>
+        </java>
+    </target>
+    <target name="swap">
+        <java classname="com.nerdscentral.sython.Sython" failonerror="true" fork="yes">
+            <jvmarg line="-Xmx20G -Xms6G  -XX:+UseConcMarkSweepGC  -XX:+UseCompressedOops  -XX:ParallelGCThreads=4  -XX:+CMSParallelRemarkEnabled   -Dsynthon.threads=16 -XX:CMSInitiatingOccupancyFraction=60  -XX:+UseCMSInitiatingOccupancyOnly -DsonicFieldSwapLimit=1000000 -DsonicFieldTemp=/tmp"/>
+            <arg line="scripts/python/swap.sy"/>
+            <classpath refid="SonicField.classpath"/>
+        </java>
+    </target>
+    <target name="talk">
+        <java classname="com.nerdscentral.sython.Sython" failonerror="true" fork="yes">
+            <jvmarg line="-Xmx12G -Xms6G  -XX:+UseConcMarkSweepGC  -XX:+UseCompressedOops  -XX:ParallelGCThreads=4  -XX:+CMSParallelRemarkEnabled   -Dsynthon.threads=4 -XX:CMSInitiatingOccupancyFraction=60  -XX:+UseCMSInitiatingOccupancyOnly -DsonicFieldSwapLimit=1000000 -DsonicFieldTemp=/tmp"/>
+            <arg line="scripts/python/talk.sy"/>
+            <classpath refid="SonicField.classpath"/>
+        </java>
+    </target>
+    <target name="Thames-Water-Music">
+        <java classname="com.nerdscentral.sython.Sython" failonerror="true" fork="yes">
+            <jvmarg line="-Xmx12G -Xms6G  -XX:+UseConcMarkSweepGC  -XX:+UseCompressedOops  -XX:ParallelGCThreads=4  -XX:+CMSParallelRemarkEnabled   -Dsynthon.threads=16 -XX:CMSInitiatingOccupancyFraction=60  -XX:+UseCMSInitiatingOccupancyOnly -DsonicFieldSwapLimit=8000000 -DsonicFieldTemp=/tmp"/>
+            <arg line="scripts/python/Thames-Water-Music.sy"/>
+            <classpath refid="SonicField.classpath"/>
+        </java>
+    </target>
+    <target name="TheChase">
+        <java classname="com.nerdscentral.sython.Sython" failonerror="true" fork="yes">
+            <jvmarg line="-Xmx12G -Xms6G  -XX:+UseConcMarkSweepGC  -XX:+UseCompressedOops  -XX:ParallelGCThreads=12  -XX:+CMSParallelRemarkEnabled   -Dsynthon.threads=256 -XX:CMSInitiatingOccupancyFraction=30  -XX:+UseCMSInitiatingOccupancyOnly -DsonicFieldSwapLimit=2000000 -DsonicFieldTemp=/Users/alexanderturner/temp"/>
+            <arg line="scripts/python/TheChase.sy"/>
+            <classpath refid="SonicField.classpath"/>
+        </java>
+    </target>
+    <target name="time">
+        <java classname="com.nerdscentral.sython.Sython" failonerror="true" fork="yes">
+            <jvmarg line="-Xmx12G -Xms6G  -XX:+UseConcMarkSweepGC  -XX:+UseCompressedOops  -XX:ParallelGCThreads=12  -XX:+CMSParallelRemarkEnabled   -Dsynthon.threads=256 -XX:CMSInitiatingOccupancyFraction=30  -XX:+UseCMSInitiatingOccupancyOnly -DsonicFieldSwapLimit=2000000 -DsonicFieldTemp=/Users/alexanderturner/temp"/>
+            <arg line="scripts/python/time.sy"/>
+            <classpath refid="SonicField.classpath"/>
+        </java>
+    </target>
+    <target name="warm">
+        <java classname="com.nerdscentral.sython.Sython" failonerror="true" fork="yes">
+            <jvmarg line="-Xmx20G -Xms6G  -XX:+UseConcMarkSweepGC  -XX:+UseCompressedOops  -XX:ParallelGCThreads=4  -XX:+CMSParallelRemarkEnabled   -Dsynthon.threads=16 -XX:CMSInitiatingOccupancyFraction=60  -XX:+UseCMSInitiatingOccupancyOnly -DsonicFieldSwapLimit=100000 -DsonicFieldTemp=/tmp"/>
+            <arg line="scripts/python/Bach-Large-Organ/warm.sy"/>
+            <classpath refid="SonicField.classpath"/>
+        </java>
+    </target>
+</project>
