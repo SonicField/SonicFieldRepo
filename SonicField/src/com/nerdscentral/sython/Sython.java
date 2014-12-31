@@ -171,11 +171,9 @@ public class Sython
                 interp.exec("import __builtin__");
                 interp.exec("__builtin__.sf=sf");
                 interp.exec("__builtin__.sf_do=sf_do");
-
-                interp.exec("print 'Using Class Path: " + System.getProperty("java.class.path"));
-                interp.exec("print");
                 interp.exec("print \"Switching To Python Mode\"");
                 interp.exec("print \"========================\"");
+                long t0 = System.currentTimeMillis();
                 for (String f : args)
                 {
                     interp.execfile(f);
@@ -183,6 +181,8 @@ public class Sython
                 interp.exec("shutdownConcurrnt()");
                 interp.exec("print \"========================\"");
                 interp.exec("print \"------- All DONE -------\"");
+                long t1 = System.currentTimeMillis();
+                System.out.println("Total Processing Took: " + ((t1 - t0) / 1000) + " seconds");
                 SFData.dumpNotCollected();
             }
         }

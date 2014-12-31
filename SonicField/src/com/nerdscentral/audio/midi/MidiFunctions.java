@@ -1,4 +1,4 @@
-package com.nerdscentral.audio.io;
+package com.nerdscentral.audio.midi;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -30,6 +30,11 @@ public class MidiFunctions
     public static final int      NOTE_ON    = 0x90;
     public static final int      NOTE_OFF   = 0x80;
     public static final String[] NOTE_NAMES = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };  //$NON-NLS-1$//$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$ //$NON-NLS-9$ //$NON-NLS-10$ //$NON-NLS-11$ //$NON-NLS-12$
+
+    public Sequence preProcessChannels(Sequence seqIn)
+    {
+        return null;
+    }
 
     public static List<Object> readMidiFile(String fileName) throws SFPL_RuntimeException
     {

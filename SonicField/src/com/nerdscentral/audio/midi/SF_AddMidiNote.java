@@ -1,4 +1,4 @@
-package com.nerdscentral.audio.io;
+package com.nerdscentral.audio.midi;
 
 import java.util.List;
 

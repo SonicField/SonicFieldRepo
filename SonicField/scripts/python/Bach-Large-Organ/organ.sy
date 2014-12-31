@@ -7,7 +7,7 @@ path="scripts/python/Bach-Large-Organ"
 
 # Set this for voice (voxHumana)
 # ------------------------------
-sf.SetSampleRate(192000)
+#sf.SetSampleRate(192000)
 
 # Import the other parts of the script
 # ------------------------------------
@@ -24,12 +24,12 @@ execfile(path+"/post.sy")
 # Timing configuration and temperament #
 ########################################
 
-#midis=sf.ReadMidiFile("temp/bwv988x/988-v15.mid")
-midis=sf.ReadMidiFile("temp/Little Book Of Organ/bwv620gm.mid")
+midis=sf.ReadMidiFile("temp/passac.mid")
+#midis=sf.ReadMidiFile("temp/Little Book Of Organ/bwv644gm.mid")
 
 # Length of full piece
 #======================
-length      =     3.0
+length      =    12.0
 
 # How much to play
 #==================
@@ -66,103 +66,173 @@ midis=newMidis
 global midi,index
 index=0
 
-def chA():
+def chA(vel):
     global midi,index
     print "##### Channel A #####"
     index+=1
     midi=shorterThanMidi(midis[index],beat,512)
     midi=dampVelocity(midi,80,0.75)
-    doMidi(voice=leadDiapason,vCorrect=1.0,flatEnv=False,bend=True)
+    doMidi(voice=leadDiapason,vCorrect=vel*1.0,flatEnv=False)
     postProcess()
  
     midi=longAsMidi(midis[index],beat,512)
     midi=legatoMidi(midi,beat,128)
     midi=dampVelocity(midi,68,0.75)
     midi=dampVelocity(midi,80,0.75)
-    doMidi(voice=orchestralOboe,vCorrect=0.35,flatEnv=True,bend=True,pan=0.2)
+    doMidi(voice=orchestralOboe,vCorrect=vel*0.35,flatEnv=True,pan=0.2)
     postProcess()
     postProcessTremolate(rate=3.5)
-    doMidi(voice=orchestralOboe,vCorrect=0.35,flatEnv=True,bend=True,pan=0.8)
+    doMidi(voice=orchestralOboe,vCorrect=vel*0.35,flatEnv=True,pan=0.8)
     postProcessTremolate(rate=4.5)
 
-def chL():
+def chL(vel):
     global midi,index
     print "##### Channel O #####"
     index+=1
     midi=shorterThanMidi(midis[index],beat,512)
+    midi=dampVelocity(midi,68,0.75)
     midi=dampVelocity(midi,80,0.75)
-    doMidi(voice=leadDiapason,vCorrect=1.0,flatEnv=False,bend=True)
+    doMidi(voice=leadDiapason,vCorrect=vel*1.0,flatEnv=False)
     postProcess()
 
     midi=longAsMidi(midis[index],beat,512)
     midi=legatoMidi(midi,beat,128)
-    midi=dampVelocity(midi,68,0.86)
-    midi=dampVelocity(midi,80,0.86)
-    doMidi(voice=leadDiapason,vCorrect=0.50,flatEnv=True,bend=True,pan=0.2)
+    midi=dampVelocity(midi,68,0.75)
+    midi=dampVelocity(midi,80,0.75)
+    doMidi(voice=leadDiapason,vCorrect=vel*0.50,flatEnv=True,pan=0.2)
     postProcess()
-    doMidi(voice=leadDiapason,vCorrect=0.50,flatEnv=True,bend=True,pan=0.8,pitchAdd=2.0)
+    doMidi(voice=leadDiapason,vCorrect=vel*0.50,flatEnv=True,pan=0.8,pitchAdd=2.0)
     postProcess()
 
-def chO():
+def chO(vel):
     global midi,index
     print "##### Channel O #####"
     index+=1
     midi=shorterThanMidi(midis[index],beat,512)
     midi=dampVelocity(midi,80,0.75)
-    doMidi(voice=orchestralOboe,vCorrect=0.50,flatEnv=False,bend=True)
+    doMidi(voice=orchestralOboe,vCorrect=vel*0.50)
     postProcessEcho()
-    doMidi(voice=orchestralOboe,vCorrect=0.50,flatEnv=False,bend=True,pitchAdd=2.0)
+    doMidi(voice=orchestralOboe,vCorrect=vel*0.50)
     postProcessEcho()
     
     midi=longAsMidi(midis[index],beat,512)
     midi=legatoMidi(midi,beat,128)
     midi=dampVelocity(midi,68,0.86)
     midi=dampVelocity(midi,80,0.86)
-    doMidi(voice=orchestralOboe,vCorrect=0.33,flatEnv=True,bend=True,pan=0.5,pitchAdd=2.0)
+    doMidi(voice=orchestralOboe,vCorrect=vel*0.33,flatEnv=True,pan=0.5,pitchAdd=2.0)
     postProcessEcho()
-    doMidi(voice=orchestralOboe,vCorrect=0.33,flatEnv=True,bend=True,pan=0.2)
+    doMidi(voice=orchestralOboe,vCorrect=vel*0.33,flatEnv=True,pan=0.2)
     postProcessTremolate(rate=3.5)
-    doMidi(voice=orchestralOboe,vCorrect=0.33,flatEnv=True,bend=True,pan=0.8)
+    doMidi(voice=orchestralOboe,vCorrect=vel*0.33,flatEnv=True,pan=0.8)
     postProcessTremolate(rate=4.5)
 
-def chAS():
+def chOS(vel):
+    global midi,index
+    print "##### Channel O #####"
+    index+=1
+    midi=shorterThanMidi(midis[index],beat,512)
+    midi=dampVelocity(midi,80,0.75)
+    doMidi(voice=orchestralOboe,vCorrect=vel*1.0)
+    postProcess()
+    
+    midi=longAsMidi(midis[index],beat,512)
+    midi=legatoMidi(midi,beat,128)
+    midi=dampVelocity(midi,68,0.86)
+    midi=dampVelocity(midi,80,0.86)
+    doMidi(voice=orchestralOboe,vCorrect=vel*0.33,flatEnv=True,pan=0.5)
+    postProcess()
+    doMidi(voice=orchestralOboe,vCorrect=vel*0.33,flatEnv=True,pan=0.2)
+    postProcess()
+    doMidi(voice=orchestralOboe,vCorrect=vel*0.33,flatEnv=True,pan=0.8)
+    postProcess()
+
+def chAS(vel):
     global midi,index
     print "##### Channel AS #####"
     index+=1
     midi=shorterThanMidi(midis[index],beat,512)
     midi=dampVelocity(midi,80,0.75)
-    doMidi(voice=leadDiapason,vCorrect=1.0,flatEnv=False,bend=True)
+    doMidi(voice=string,vCorrect=vel*1.0,flatEnv=False)
     postProcess()
     
     midi=longAsMidi(midis[index],beat,512)
     midi=legatoMidi(midi,beat,128)
     midi=dampVelocity(midi,68,0.75)
     midi=dampVelocity(midi,80,0.75)
-    doMidi(voice=string,vCorrect=0.35,flatEnv=True,bend=True,pitchAdd=2.0)
+    doMidi(voice=string,vCorrect=vel*0.35,flatEnv=True,pitchAdd=2.0)
     postProcess()
-    doMidi(voice=string,vCorrect=0.35,flatEnv=True,bend=True)
+    doMidi(voice=string,vCorrect=vel*0.35,flatEnv=True)
     postProcess()
 
-def chAC():
+def chAC(vel):
     global midi,index
     print "##### Channel AS #####"
     index+=1
     midi=shorterThanMidi(midis[index],beat,512)
     midi=dampVelocity(midi,68,0.86)
     midi=dampVelocity(midi,80,0.75)
-    doMidi(voice=clarion,vCorrect=1.0,flatEnv=False,bend=True)
+    doMidi(voice=clarion,vCorrect=vel*1.0,flatEnv=False)
     postProcess()
     
     midi=longAsMidi(midis[index],beat,512)
     midi=legatoMidi(midi,beat,128)
     midi=dampVelocity(midi,68,0.86)
     midi=dampVelocity(midi,80,0.75)
-    doMidi(voice=clarion,vCorrect=0.5,flatEnv=False,bend=True,pitchAdd=2.0)
+    doMidi(voice=clarion,vCorrect=vel*0.5,flatEnv=False,pitchAdd=2.0)
     postProcess()
-    doMidi(voice=clarion,vCorrect=0.5,flatEnv=True,bend=True)
+    doMidi(voice=clarion,vCorrect=vel*0.5,flatEnv=True)
     postProcess()
 
-def chACP():
+def chATR(vel):
+    global midi,index
+    print "##### Channel AS #####"
+    index+=1
+    midi=shorterThanMidi(midis[index],beat,512)
+    midi=dampVelocity(midi,68,0.86)
+    midi=dampVelocity(midi,80,0.75)
+    doMidi(voice=trumpet,vCorrect=vel*1.0,flatEnv=False)
+    postProcess()
+    
+    midi=longAsMidi(midis[index],beat,512)
+    midi=legatoMidi(midi,beat,128)
+    midi=dampVelocity(midi,68,0.86)
+    midi=dampVelocity(midi,80,0.75)
+    doMidi(voice=trumpet,vCorrect=vel*0.5,flatEnv=False)
+    postProcessTremolate(rate=3.5)
+    doMidi(voice=trumpet,vCorrect=vel*0.5,flatEnv=True)
+    postProcessTremolate(rate=3.5)
+
+def chACP(vel):
+    global midi,index
+    print "##### Channel AC #####"
+    index+=1
+    
+    midi=legatoMidi(midis[index],beat,128)
+    midi=dampVelocity(midi,68,0.86)
+    midi=dampVelocity(midi,80,0.75)
+    doMidi(voice=clarion,vCorrect=vel*1.0,flatEnv=True)
+    postProcess()
+
+def chAST(vel):
+    global midi,index
+    print "##### Channel AS #####"
+    index+=1
+    midi=shorterThanMidi(midis[index],beat,512)
+    midi=dampVelocity(midi,68,0.86)
+    midi=dampVelocity(midi,80,0.75)
+    doMidi(voice=stoppedReed,vCorrect=vel*1.0,flatEnv=False)
+    postProcess()
+    
+    midi=longAsMidi(midis[index],beat,512)
+    midi=legatoMidi(midi,beat,128)
+    midi=dampVelocity(midi,68,0.86)
+    midi=dampVelocity(midi,80,0.75)
+    doMidi(voice=stoppedReed,vCorrect=vel*0.5,flatEnv=False,pitchAdd=2.0)
+    postProcess()
+    doMidi(voice=stoppedReed,vCorrect=vel*0.5,flatEnv=True)
+    postProcess()
+
+def chA_PS(vel):
     global midi,index
     print "##### Channel AS #####"
     index+=1
@@ -170,47 +240,106 @@ def chACP():
     midi=legatoMidi(midis[index],beat,128)
     midi=dampVelocity(midi,68,0.86)
     midi=dampVelocity(midi,80,0.75)
-    doMidi(voice=clarion,vCorrect=0.5,flatEnv=True,bend=True)
+    doMidi(voice=string,vCorrect=vel*1.0)
     postProcess()
 
-def chAST():
+def chPS(vel):
     global midi,index
     print "##### Channel AS #####"
     index+=1
-    midi=shorterThanMidi(midis[index],beat,512)
-    midi=dampVelocity(midi,68,0.86)
-    midi=dampVelocity(midi,80,0.75)
-    doMidi(voice=stoppedReed,vCorrect=1.0,flatEnv=False,bend=True)
-    postProcess()
     
-    midi=longAsMidi(midis[index],beat,512)
-    midi=legatoMidi(midi,beat,128)
+    midi=legatoMidi(midis[index],beat,128)
     midi=dampVelocity(midi,68,0.86)
     midi=dampVelocity(midi,80,0.75)
-    doMidi(voice=stoppedReed,vCorrect=0.5,flatEnv=False,bend=True,pitchAdd=2.0)
-    postProcess()
-    doMidi(voice=stoppedReed,vCorrect=0.5,flatEnv=True,bend=True)
+    doMidi(voice=string,vCorrect=vel*1.0,flatEnv=True)
     postProcess()
 
-def chB():
+def chV(vel):
     global midi,index
     print "##### Channel B #####"
     index+=1
     midi=legatoMidi(midis[index],beat,128)
     midi=dampVelocity(midi,80,0.75)
-    doMidi(voice=viola,vCorrect=1.0,flatEnv=False)
+    doMidi(voice=viola,vCorrect=vel*1.0,flatEnv=False)
     postProcess()
 
-def chC():
+def chC(vel):
     global midi,index
     print "##### Channel C #####"
     index+=1
     midi=legatoMidi(midis[index],beat,128)
     midi=dampVelocity(midi,80,0.75)
-    doMidi(voice=secondDiapason,vCorrect=1.0,flatEnv=True)
+    doMidi(voice=secondDiapason,vCorrect=vel*1.0,flatEnv=True)
     postProcess() 
 
-def chP():
+def chA_TBF(vel):
+    global midi,index
+    print "##### Channel AS #####"
+    index+=1
+    
+    midi=legatoMidi(midis[index],beat,128)
+    midi=dampVelocity(midi,68,0.86)
+    midi=dampVelocity(midi,80,0.75)
+    doMidi(voice=trostBrightFlute,vCorrect=vel*1.0)
+    postProcess()
+
+def chA_BF(vel):
+    global midi,index
+    print "##### Channel AS #####"
+    index+=1
+    
+    midi=legatoMidi(midis[index],beat,128)
+    midi=dampVelocity(midi,68,0.86)
+    midi=dampVelocity(midi,80,0.75)
+    doMidi(voice=brightFlute,vCorrect=vel*1.0)
+    postProcess()
+
+def chA_SF(vel):
+    global midi,index
+    print "##### Channel AS #####"
+    index+=1
+    
+    midi=legatoMidi(midis[index],beat,128)
+    midi=dampVelocity(midi,68,0.86)
+    midi=dampVelocity(midi,80,0.75)
+    doMidi(voice=sweetFlute,vCorrect=vel*1.0)
+    postProcess()
+
+
+def chTBF(vel):
+    global midi,index
+    print "##### Channel AS #####"
+    index+=1
+    
+    midi=legatoMidi(midis[index],beat,128)
+    midi=dampVelocity(midi,68,0.86)
+    midi=dampVelocity(midi,80,0.75)
+    doMidi(voice=trostBrightFlute,vCorrect=vel*1.0,flatEnv=True)
+    postProcess()
+
+def chBF(vel):
+    global midi,index
+    print "##### Channel AS #####"
+    index+=1
+    
+    midi=legatoMidi(midis[index],beat,128)
+    midi=dampVelocity(midi,68,0.86)
+    midi=dampVelocity(midi,80,0.75)
+    doMidi(voice=brightFlute,vCorrect=vel*1.0,flatEnv=True)
+    postProcess()
+
+def chSF(vel):
+    global midi,index
+    print "##### Channel SF #####"
+    index+=1
+    
+    midi=legatoMidi(midis[index],beat,128)
+    midi=dampVelocity(midi,68,0.86)
+    midi=dampVelocity(midi,80,0.75)
+    doMidi(voice=sweetFlute,vCorrect=vel*1.0,flatEnv=True)
+    postProcess()
+
+def chP(vel):
     global midi,index
     print "##### Channel P #####"
     index+=1
@@ -219,7 +348,7 @@ def chP():
     midi=dampVelocity(midi,68,0.86)
     midi=dampVelocity(midi,80,0.86)
     midi=legatoMidi(midis[index],beat,64)
-    doMidi(voice=secondDiapason,vCorrect=0.6,flatEnv=True)
+    doMidi(voice=secondDiapason,vCorrect=vel*0.6,flatEnv=True)
     postProcess() 
 
     midi=longAsMidi(midis[index],beat,512)
@@ -227,12 +356,12 @@ def chP():
     midi=dampVelocity(midi,68,0.86)
     midi=dampVelocity(midi,80,0.75)
     midi=legatoMidi(midis[index],beat,256)
-    doMidi(voice=secondDiapason,vCorrect=0.3,flatEnv=True,pan=0.75)
+    doMidi(voice=secondDiapason,vCorrect=vel*0.3,flatEnv=True,pan=0.75)
     postProcessEcho() 
-    doMidi(voice=secondDiapason,vCorrect=0.3,flatEnv=True,pan=0.25,pitchAdd=2.0)
+    doMidi(voice=secondDiapason,vCorrect=vel*0.3,flatEnv=True,pan=0.25,pitchAdd=2.0)
     postProcessEcho() 
 
-def chT():
+def chT(vel):
     global midi,index
     print "##### Channel T #####"
     index+=1
@@ -241,7 +370,7 @@ def chT():
     midi=dampVelocity(midi,68,0.86)
     midi=dampVelocity(midi,80,0.86)
     midi=legatoMidi(midis[index],beat,64)
-    doMidi(voice=stoppedReed,vCorrect=1.0,flatEnv=True)
+    doMidi(voice=stoppedReed,vCorrect=vel*1.0,flatEnv=True)
     postProcess() 
 
     midi=longAsMidi(midis[index],beat,512)
@@ -249,141 +378,177 @@ def chT():
     midi=dampVelocity(midi,68,0.86)
     midi=dampVelocity(midi,80,0.75)
     midi=legatoMidi(midis[index],beat,256)
-    doMidi(voice=stoppedReed,vCorrect=0.5,flatEnv=True,pan=0.75)
+    doMidi(voice=stoppedReed,vCorrect=vel*0.5,flatEnv=True,pan=0.75)
     postProcessEcho() 
-    doMidi(voice=stoppedReed,vCorrect=0.5,flatEnv=True,pan=0.25,pitchAdd=2.0)
+    doMidi(voice=stoppedReed,vCorrect=vel*0.5,flatEnv=True,pan=0.25,pitchAdd=2.0)
     postProcessEcho() 
 
-def chPG():
+def chPG(vel):
     global midi,index
     print "##### Channel PG #####"
     index+=1
     midi=midis[index]
     midi=dampVelocity(midi,68,0.75)
     midi=dampVelocity(midi,80,0.75)
-    doMidi(voice=pluckedGlass,vCorrect=0.375,flatEnv=False,qFactor=1.0,decay=15000,pan=0.9,pitchAdd=4.0)
+    doMidi(voice=pluckedGlass,vCorrect=vel*0.375,flatEnv=False,qFactor=1.0,decay=15000,pan=0.9,pitchAdd=4.0)
     postProcessEcho()
-    doMidi(voice=pluckedGlass,vCorrect=0.05,flatEnv=False,qFactor=1.0,decay=15000,pitchShift=4.0,pan=0.1,pitchAdd=3.0)
+    doMidi(voice=pluckedGlass,vCorrect=vel*0.05,flatEnv=False,qFactor=1.0,decay=15000,pitchShift=4.0,pan=0.1,pitchAdd=3.0)
     postProcessEcho()
-    doMidi(voice=pluckedGlass,vCorrect=0.375,flatEnv=False,qFactor=1.0,decay=15000,pan=0.7)
+    doMidi(voice=pluckedGlass,vCorrect=vel*0.375,flatEnv=False,qFactor=1.0,decay=15000,pan=0.7)
     postProcess()
-    doMidi(voice=pluckedGlass,vCorrect=0.05,flatEnv=False,qFactor=1.0,decay=15000,pitchShift=4.0,pan=0.45)
+    doMidi(voice=pluckedGlass,vCorrect=vel*0.05,flatEnv=False,qFactor=1.0,decay=15000,pitchShift=4.0,pan=0.45)
     postProcess()
     
-def chD():
+def chD(vel):
     global midi,index
     print "##### Channel D #####"
     index+=1
     midi=shorterThanMidi(midis[index],beat,512)
     midi=legatoMidi(midi,beat,128)
-    doMidi(voice=trostPosaune,vCorrect=0.9,flatEnv=True,pure=True,pan=0.3,pitchShift=0.5)
+    doMidi(voice=trostPosaune,vCorrect=vel*0.9,flatEnv=True,pure=True,pan=0.3,pitchShift=0.5)
     postProcess()
-    doMidi(voice=trostPosaune,vCorrect=0.5,flatEnv=True,pure=True,pan=0.7,pitchAdd=3.0)
+    doMidi(voice=trostPosaune,vCorrect=vel*0.5,flatEnv=True,pure=True,pan=0.7,pitchAdd=3.0)
     postProcess()
-    doMidi(voice=upperAccent,vCorrect=0.2,flatEnv=True,pure=False,pitchShift=4.0)
+    doMidi(voice=upperAccent,vCorrect=vel*0.2,flatEnv=True,pure=False,pitchShift=4.0)
     postProcess()
     
     midi=longAsMidi(midis[index],beat,512)
     midi=legatoMidi(midi,beat,256)
-    doMidi(voice=trostPosaune,vCorrect=0.5,flatEnv=True,pure=True,pan=0.3,pitchAdd=2.0)
+    doMidi(voice=trostPosaune,vCorrect=vel*0.5,flatEnv=True,pure=True,pan=0.3,pitchAdd=2.0)
     postProcess()
-    doMidi(voice=trostPosaune,vCorrect=0.9,flatEnv=True,pure=True,pan=0.7,pitchShift=0.5)
+    doMidi(voice=trostPosaune,vCorrect=vel*0.9,flatEnv=True,pure=True,pan=0.7,pitchShift=0.5)
     postProcess()
-    doMidi(voice=upperAccent,vCorrect=0.2,flatEnv=True,pure=False,pitchShift=4.0)
+    doMidi(voice=upperAccent,vCorrect=vel*0.2,flatEnv=True,pure=False,pitchShift=4.0)
     postProcess()
 
-def chDR():
+def chDR(vel):
     global midi,index
     print "##### Channel DR #####"
     index+=1
     midi=shorterThanMidi(midis[index],beat,512)
     midi=legatoMidi(midi,beat,128)
-    doMidi(voice=trostPosaune,vCorrect=0.9,flatEnv=True,pure=True,pan=0.3,pitchShift=0.5,rawBass=True)
+    doMidi(voice=trostPosaune,vCorrect=vel*0.9,flatEnv=True,pure=True,pan=0.3,pitchShift=0.5,rawBass=True)
     postProcess()
-    doMidi(voice=trostPosaune,vCorrect=0.5,flatEnv=True,pure=True,pan=0.7,pitchAdd=3.0,rawBass=True)
+    doMidi(voice=trostPosaune,vCorrect=vel*0.5,flatEnv=True,pure=True,pan=0.7,pitchAdd=3.0,rawBass=True)
     postProcess()
-    doMidi(voice=upperAccent,vCorrect=0.2,flatEnv=True,pure=False,pitchShift=4.0,rawBass=True)
+    doMidi(voice=upperAccent,vCorrect=vel*0.2,flatEnv=True,pure=False,pitchShift=4.0,rawBass=True)
     postProcess()
     
     midi=longAsMidi(midis[index],beat,512)
     midi=legatoMidi(midi,beat,256)
-    doMidi(voice=trostPosaune,vCorrect=0.5,flatEnv=True,pure=True,pan=0.3,pitchAdd=2.0,rawBass=True)
+    doMidi(voice=trostPosaune,vCorrect=vel*0.5,flatEnv=True,pure=True,pan=0.3,pitchAdd=2.0,rawBass=True)
     postProcess()
-    doMidi(voice=trostPosaune,vCorrect=0.9,flatEnv=True,pure=True,pan=0.7,pitchShift=0.5,rawBass=True)
+    doMidi(voice=trostPosaune,vCorrect=vel*0.9,flatEnv=True,pure=True,pan=0.7,pitchShift=0.5,rawBass=True)
     postProcess()
-    doMidi(voice=upperAccent,vCorrect=0.2,flatEnv=True,pure=False,pitchShift=4.0,rawBass=True)
+    doMidi(voice=upperAccent,vCorrect=vel*0.2,flatEnv=True,pure=False,pitchShift=4.0,rawBass=True)
     postProcess()
 
-def chDB():
+def chDB(vel):
     global midi,index
     print "##### Channel DB #####"
     index+=1
     midi=shorterThanMidi(midis[index],beat,512)
     midi=legatoMidi(midi,beat,128)
-    doMidi(voice=bombard,vCorrect=1.2,flatEnv=True,pure=True,pan=0.3,pitchShift=0.5,rawBass=True)
+    doMidi(voice=bombard,vCorrect=vel*1.2,flatEnv=True,pure=True,pan=0.3,pitchShift=0.5,rawBass=True)
     postProcess()
-    doMidi(voice=bombard,vCorrect=0.7,flatEnv=True,pure=True,pan=0.7,pitchAdd=3.0)
+    doMidi(voice=bombard,vCorrect=vel*0.7,flatEnv=True,pure=True,pan=0.7,pitchAdd=3.0)
     postProcess()
     
     midi=longAsMidi(midis[index],beat,512)
     midi=legatoMidi(midi,beat,256)
-    doMidi(voice=bombard,vCorrect=0.7,flatEnv=True,pure=True,pan=0.3,pitchAdd=2.0,rawBass=True)
+    doMidi(voice=bombard,vCorrect=vel*0.7,flatEnv=True,pure=True,pan=0.3,pitchAdd=2.0,rawBass=True)
     postProcess()
-    doMidi(voice=bombard,vCorrect=1.2,flatEnv=True,pure=True,pan=0.7,pitchShift=0.5)
+    doMidi(voice=bombard,vCorrect=vel*1.2,flatEnv=True,pure=True,pan=0.7,pitchShift=0.5)
+    postProcess()
+    
+def chDTP(vel):
+    global midi,index
+    print "##### Channel DB #####"
+    index+=1
+    midi=shorterThanMidi(midis[index],beat,512)
+    midi=legatoMidi(midi,beat,128)
+    doMidi(voice=trostPosaune,vCorrect=vel*1.2,flatEnv=True,pure=True,pan=0.3,pitchShift=0.5,rawBass=True)
+    postProcess()
+    doMidi(voice=trostPosaune,vCorrect=vel*0.7,flatEnv=True,pure=True,pan=0.7,pitchAdd=3.0)
+    postProcess()
+    
+    midi=longAsMidi(midis[index],beat,512)
+    midi=legatoMidi(midi,beat,256)
+    doMidi(voice=trostPosaune,vCorrect=vel*0.7,flatEnv=True,pure=True,pan=0.3,pitchAdd=2.0,rawBass=True)
+    postProcess()
+    doMidi(voice=trostPosaune,vCorrect=vel*1.2,flatEnv=True,pure=True,pan=0.7,pitchShift=0.5)
     postProcess()
 
-def chDW():
+def chDOPH(vel):
+    global midi,index
+    print "##### Channel DB #####"
+    index+=1
+    midi=shorterThanMidi(midis[index],beat,512)
+    midi=legatoMidi(midi,beat,128)
+    doMidi(voice=ophicleide,vCorrect=vel*1.2,flatEnv=True,pure=True,pan=0.3,pitchShift=0.25,rawBass=True)
+    postProcess()
+    doMidi(voice=ophicleide,vCorrect=vel*0.7,flatEnv=True,pure=True,pan=0.7,pitchAdd=3.0,pitchShift=0.5)
+    postProcess()
+    
+    midi=longAsMidi(midis[index],beat,512)
+    midi=legatoMidi(midi,beat,256)
+    doMidi(voice=ophicleide,vCorrect=vel*0.7,flatEnv=True,pure=True,pan=0.3,pitchAdd=2.0,rawBass=True,pitchShift=0.5)
+    postProcess()
+    doMidi(voice=ophicleide,vCorrect=vel*1.2,flatEnv=True,pure=True,pan=0.7,pitchShift=0.25)
+    postProcess()
+
+def chDW(vel):
     global midi,index
     print "##### Channel DW #####"
     index+=1
     midi=legatoMidi(midis[index],beat,128)
-    doMidi(voice=warmBass,vCorrect=1.2,flatEnv=True)
+    doMidi(voice=warmBass,vCorrect=vel*1.2,flatEnv=True)
     postProcess()
-    doMidi(voice=upperAccent,vCorrect=0.2,flatEnv=True,pitchShift=4.0)
+    doMidi(voice=upperAccent,vCorrect=vel*0.2,flatEnv=True,pitchShift=4.0)
     postProcess()
 
-def chDST():
+def chDST(vel):
     global midi,index
     print "##### Channel DST #####"
     index+=1
     midi=legatoMidi(midis[index],beat,128)
-    doMidi(voice=stoppedReed,vCorrect=0.6,flatEnv=True)
+    doMidi(voice=stoppedReed,vCorrect=vel*0.6,flatEnv=True)
     postProcess()
-    doMidi(voice=stoppedReed,vCorrect=0.6,flatEnv=True,pitchShift=0.5)
+    doMidi(voice=stoppedReed,vCorrect=vel*0.6,flatEnv=True,pitchShift=0.5)
     postProcess()
-    doMidi(voice=upperAccent,vCorrect=0.2,flatEnv=True,pitchShift=4.0)
+    doMidi(voice=upperAccent,vCorrect=vel*0.2,flatEnv=True,pitchShift=4.0)
     postProcess()
 
-def chPGB():
+def chPGB(vel):
     global midi,index
     print "##### Channel PGB #####"
     index+=1
     midi=shorterThanMidi(midis[index],beat,512)
     midi=legatoMidi(midi,beat,64)
     midi=dampVelocity(midi,70,0.75)
-    doMidi(voice=pluckedGlass,vCorrect=0.6,pitchShift=0.25,flatEnv=False,pure=True,qFactor=0.5,decay=500)
+    doMidi(voice=pluckedGlass,vCorrect=vel*0.6,pitchShift=0.25,flatEnv=False,pure=True,qFactor=0.5,decay=500)
     postProcess()    
-    doMidi(voice=pluckedGlass,vCorrect=0.5,pitchShift=0.5, flatEnv=False,pure=True,qFactor=0.5,decay=500)
+    doMidi(voice=pluckedGlass,vCorrect=vel*0.5,pitchShift=0.5, flatEnv=False,pure=True,qFactor=0.5,decay=500)
     postProcess()    
-    doMidi(voice=pluckedGlass,vCorrect=0.5,pitchShift=1.0, flatEnv=False,pure=True,qFactor=0.5,decay=500)
+    doMidi(voice=pluckedGlass,vCorrect=vel*0.5,pitchShift=1.0, flatEnv=False,pure=True,qFactor=0.5,decay=500)
     postProcess()
-    doMidi(voice=pluckedGlass,vCorrect=0.1,pitchShift=4.0, flatEnv=False,pure=True,qFactor=0.5,decay=500)
+    doMidi(voice=pluckedGlass,vCorrect=vel*0.1,pitchShift=4.0, flatEnv=False,pure=True,qFactor=0.5,decay=500)
     postProcess()
     
     midi=longAsMidi(midis[index],beat,512)
     midi=legatoMidi(midi,beat,512)
     midi=dampVelocity(midi,60,0.75)
     midi=dampVelocity(midi,70,0.75)
-    doMidi(voice=pluckedGlass,vCorrect=0.6,pitchShift=0.25,flatEnv=True, pure=False,qFactor=1.0,decay=2500)
+    doMidi(voice=pluckedGlass,vCorrect=vel*0.6,pitchShift=0.25,flatEnv=True, pure=False,qFactor=1.0,decay=2500)
     postProcess()    
-    doMidi(voice=pluckedGlass,vCorrect=0.5,pitchShift=0.5, flatEnv=True, pure=False,qFactor=1.0,decay=2500,pitchAdd=2.5)
+    doMidi(voice=pluckedGlass,vCorrect=vel*0.5,pitchShift=0.5, flatEnv=True, pure=False,qFactor=1.0,decay=2500,pitchAdd=2.5)
     postProcess()    
-    doMidi(voice=pluckedGlass,vCorrect=0.5,pitchShift=1.0, flatEnv=True, pure=False,qFactor=1.0,decay=2500,pitchAdd=5.0)
+    doMidi(voice=pluckedGlass,vCorrect=vel*0.5,pitchShift=1.0, flatEnv=True, pure=False,qFactor=1.0,decay=2500,pitchAdd=5.0)
     postProcess()
-    doMidi(voice=pluckedGlass,vCorrect=0.1,pitchShift=4.0, flatEnv=False,pure=False,qFactor=1.0,decay=1000,pitchAdd=4.0)
+    doMidi(voice=pluckedGlass,vCorrect=vel*0.1,pitchShift=4.0, flatEnv=False,pure=False,qFactor=1.0,decay=1000,pitchAdd=4.0)
     postProcessTremolate()
     
-def chVL():
+def chVL(vel):
     global midi,index
     print "##### Channel VL #####"
     index+=1
@@ -392,12 +557,12 @@ def chVL():
     midi=dampVelocity(midi,68,0.86)
     midi=dampVelocity(midi,80,0.75)
     midi=legatoMidi(midis[index],beat,1000)
-    doMidi(voice=secondDiapason,vCorrect=0.3,flatEnv=False,decay=30000)
+    doMidi(voice=secondDiapason,vCorrect=vel*0.3,flatEnv=False,decay=30000)
     postProcess() 
-    doMidi(voice=secondDiapason,vCorrect=0.3,flatEnv=False,pitchAdd=2.0,decay=30000)
+    doMidi(voice=secondDiapason,vCorrect=vel*0.3,flatEnv=False,pitchAdd=2.0,decay=30000)
     postProcess()
 
-def chVLO():
+def chVLO(vel):
     global midi,index
     print "##### Channel VLO #####"
     index+=1
@@ -406,12 +571,12 @@ def chVLO():
     midi=dampVelocity(midi,68,0.86)
     midi=dampVelocity(midi,80,0.75)
     midi=legatoMidi(midis[index],beat,1000)
-    doMidi(voice=orchestralOboe,vCorrect=0.3,flatEnv=False,decay=30000)
+    doMidi(voice=orchestralOboe,vCorrect=vel*0.3,flatEnv=False,decay=30000)
     postProcess() 
-    doMidi(voice=orchestralOboe,vCorrect=0.3,flatEnv=False,pitchAdd=2.3,decay=30000)
+    doMidi(voice=orchestralOboe,vCorrect=vel*0.3,flatEnv=False,pitchAdd=2.3,decay=30000)
     postProcess()
 
-def chVLB():
+def chVLB(vel):
     global midi,index
     print "##### Channel VLB #####"
     index+=1
@@ -420,209 +585,248 @@ def chVLB():
     midi=dampVelocity(midi,68,0.86)
     midi=dampVelocity(midi,80,0.75)
     midi=legatoMidi(midis[index],beat,1000)
-    doMidi(voice=secondDiapason,vCorrect=0.6,flatEnv=False,pan=0.5,pitchShift=0.5)
+    doMidi(voice=secondDiapason,vCorrect=vel*0.6,flatEnv=False,pan=0.5,pitchShift=0.5)
     postProcess() 
-    doMidi(voice=secondDiapason,vCorrect=0.3,flatEnv=True,decay=30000,pan=0.9)
+    doMidi(voice=secondDiapason,vCorrect=vel*0.3,flatEnv=True,decay=30000,pan=0.9)
     postProcessEcho() 
-    doMidi(voice=secondDiapason,vCorrect=0.3,flatEnv=True,pitchAdd=2.0,decay=30000,pan=0.1)
+    doMidi(voice=secondDiapason,vCorrect=vel*0.3,flatEnv=True,pitchAdd=2.0,decay=30000,pan=0.1)
     postProcessEcho()
 
 ##### Voices #####
 
-def chVC_SM():
+def chVC_SM(vel):
     global midi,index
     print "##### Channel VC_SM #####"
     index+=1
     midi=legatoMidi(midis[index],beat,128)
     midi=dampVelocity(midi,80,0.75)
-    doMidi(voice=voxHumanaMSoprano,vCorrect=1.0,flatEnv=False)
+    doMidi(voice=voxHumanaMSoprano,vCorrect=vel*1.0,flatEnv=False)
     postProcess() 
 
-def chVC_SMR():
+def chVC_SMR(vel):
     global midi,index
     print "##### Channel VC_SMF #####"
     index+=1
     midi=shorterThanMidi(midis[index],beat,512)
     midi=legatoMidi(midi,beat,64)
     midi=dampVelocity(midi,70,0.75)
-    doMidi(voice=voxHumanaMSoprano,vCorrect=1.0,flatEnv=False,qFactor=1.5,pan=0.5)
+    doMidi(voice=voxHumanaMSoprano,vCorrect=vel*1.0,flatEnv=False,qFactor=1.5,pan=0.5)
     postProcess()
     midi=delayMidi(midi,beat,128)
-    doMidi(voice=voxHumanaMSoprano,vCorrect=0.1,flatEnv=False,qFactor=1.5,pan=0.6,pitchAdd=2.0)
+    doMidi(voice=voxHumanaMSoprano,vCorrect=vel*0.1,flatEnv=False,qFactor=1.5,pan=0.6,pitchAdd=2.0)
     postProcessEcho()
     
     midi=longAsMidi(midis[index],beat,512)
     midi=legatoMidi(midi,beat,128)
     midi=dampVelocity(midi,68,0.86)
     midi=dampVelocity(midi,80,0.75)
-    doMidi(voice=voxHumanaMSoprano,vCorrect=0.5,flatEnv=False,qFactor=2.5,pan=0.25)
+    doMidi(voice=voxHumanaMSoprano,vCorrect=vel*0.5,flatEnv=False,qFactor=2.5,pan=0.25)
     postProcessEcho()
-    doMidi(voice=voxHumanaMSoprano,vCorrect=0.5,flatEnv=False,qFactor=2.5,pan=0.75)
+    doMidi(voice=voxHumanaMSoprano,vCorrect=vel*0.5,flatEnv=False,qFactor=2.5,pan=0.75)
     postProcessEcho()
     midi=delayMidi(midi,beat,256)
-    doMidi(voice=voxHumanaMSoprano,vCorrect=0.1,flatEnv=False,qFactor=2.5,pan=0.5, pitchAdd=2.0)
+    doMidi(voice=voxHumanaMSoprano,vCorrect=vel*0.1,flatEnv=False,qFactor=2.5,pan=0.5, pitchAdd=2.0)
     postProcessEcho()
 
-def chVC_SF():
+def chVC_SF(vel):
     global midi,index
     print "##### Channel VC_SF #####"
     index+=1
     midi=legatoMidi(midis[index],beat,128)
     midi=dampVelocity(midi,80,0.75)
-    doMidi(voice=voxHumanaFSoprano,vCorrect=1.0,flatEnv=False,bend=False)
+    doMidi(voice=voxHumanaFSoprano,vCorrect=vel*1.0,flatEnv=False)
     postProcess() 
 
-def chVC_SFR():
+def chVC_SFR(vel):
     global midi,index
     print "##### Channel VC_SFR #####"
     index+=1
     midi=shorterThanMidi(midis[index],beat,512)
     midi=legatoMidi(midi,beat,64)
     midi=dampVelocity(midi,70,0.75)
-    doMidi(voice=voxHumanaFSoprano,vCorrect=1.0,flatEnv=False,qFactor=1.5,pan=0.5,bend=False)
+    doMidi(voice=voxHumanaFSoprano,vCorrect=vel*1.0,flatEnv=False,qFactor=1.5,pan=0.5)
     postProcess()
     midi=delayMidi(midi,beat,128)
-    doMidi(voice=voxHumanaFSoprano,vCorrect=0.1,flatEnv=False,qFactor=1.5,pan=0.6,pitchAdd=2.0,bend=False)
+    doMidi(voice=voxHumanaFSoprano,vCorrect=vel*0.1,flatEnv=False,qFactor=1.5,pan=0.6,pitchAdd=2.0)
     postProcessEcho()
     
     midi=longAsMidi(midis[index],beat,512)
     midi=legatoMidi(midi,beat,128)
     midi=dampVelocity(midi,68,0.86)
     midi=dampVelocity(midi,80,0.75)
-    doMidi(voice=voxHumanaFSoprano,vCorrect=0.5,flatEnv=False,qFactor=2.5,pan=0.25,bend=False)
+    doMidi(voice=voxHumanaFSoprano,vCorrect=vel*0.5,flatEnv=False,qFactor=2.5,pan=0.25)
     postProcessEcho()
-    doMidi(voice=voxHumanaFSoprano,vCorrect=0.5,flatEnv=False,qFactor=2.5,pan=0.75,bend=False)
+    doMidi(voice=voxHumanaFSoprano,vCorrect=vel*0.5,flatEnv=False,qFactor=2.5,pan=0.75)
     postProcessEcho()
     midi=delayMidi(midi,beat,256)
-    doMidi(voice=voxHumanaFSoprano,vCorrect=0.1,flatEnv=False,qFactor=2.5,pan=0.5, pitchAdd=2.0,bend=False)
+    doMidi(voice=voxHumanaFSoprano,vCorrect=vel*0.1,flatEnv=False,qFactor=2.5,pan=0.5, pitchAdd=2.0)
     postProcessEcho()
 
 ##### Percussion #####
 
-def chPR_B():
+def chPR_B(vel):
     global midi,index
     print "##### Channel PR_B #####"
     index+=1
     midi=legatoMidi(midis[index],beat,128)
     midi=dampVelocity(midi,80,0.75)
-    doMidi(voice=clear_bell,vCorrect=1.0,flatEnv=False,bend=False)
+    doMidi(voice=clear_bell,vCorrect=vel*1.0,flatEnv=False)
     postProcess()
 
 ##### Non Incrementing Accent Voices #####
 
-def chS():
+def chS(vel):
     global midi,index
     print "##### Channel S #####"
     midi=legatoMidi(midis[index],beat,192)
-    doMidi(voice=trostUpperAccent,vCorrect=0.25,flatEnv=True,pitchShift=0.25,pitchAdd=2.5,pan=0.25,pure=True)
+    doMidi(voice=trostUpperAccent,vCorrect=vel*0.25,flatEnv=True,pitchShift=0.25,pitchAdd=2.5,pan=0.25,pure=True)
     postProcess()
-    doMidi(voice=trostUpperAccent,vCorrect=0.25,flatEnv=True,pitchShift=0.25,pan=0.75,pure=True)
+    doMidi(voice=trostUpperAccent,vCorrect=vel*0.25,flatEnv=True,pitchShift=0.25,pan=0.75,pure=True)
     postProcess()
 
-def chUT():
+def chUT(vel):
     global midi,index
     print "##### Channel UT #####"
-    doMidi(voice=stoppedReed,vCorrect=0.05,flatEnv=True,pitchShift=3.0,pan=0.0)
+    doMidi(voice=stoppedReed,vCorrect=vel*0.05,flatEnv=True,pitchShift=3.0,pan=0.0)
     postProcessTremolate(rate=3.7) 
-    doMidi(voice=stoppedReed,vCorrect=0.05,flatEnv=True,pitchShift=3.0,pan=1.0)
+    doMidi(voice=stoppedReed,vCorrect=vel*0.05,flatEnv=True,pitchShift=3.0,pan=1.0)
     postProcessTremolate(rate=3.3) 
 
-def chUA():
+def chUA(vel):
     global midi,index
     print "##### Channel UA #####"
-    doMidi(voice=trostUpperAccent,vCorrect=0.05,pitchShift=4.0,pan=0.6,decay=5000)
+    doMidi(voice=trostUpperAccent,vCorrect=vel*0.05,pitchShift=4.0,pan=0.6,decay=5000)
     postProcess() 
-    doMidi(voice=trostUpperAccent,vCorrect=0.05,pitchShift=4.0,pan=0.4,decay=5000)
+    doMidi(voice=trostUpperAccent,vCorrect=vel*0.05,pitchShift=4.0,pan=0.4,decay=5000)
     postProcess() 
 
-def chST():
+def chST(vel):
     global midi,index
     print "##### Channel ST #####"
     midi=legatoMidi(midis[index],beat,192)
-    doMidi(voice=stoppedReed,vCorrect=0.25,flatEnv=True,pitchShift=0.25,pitchAdd=2.5,pan=0.25,pure=True)
+    doMidi(voice=stoppedReed,vCorrect=vel*0.25,flatEnv=True,pitchShift=0.25,pitchAdd=2.5,pan=0.25,pure=True)
     postProcess()
-    doMidi(voice=stoppedReed,vCorrect=0.25,flatEnv=True,pitchShift=0.25,pan=0.75,pure=True)
+    doMidi(voice=stoppedReed,vCorrect=vel*0.25,flatEnv=True,pitchShift=0.25,pan=0.75,pure=True)
     postProcess()
 
 ##################
 # Which Channels #
 ##################
 
-doChannels=['vc_sfr','pg','pgb','st']
-#doChannels=['pr_b']
+#doChannels=['vc_sfr','bf','tbf','s']
+doChannels=[('c',1),('c',1),('c',1.1),('c',1.25),('c',1.5),('l',0.8)]
+#doChannels=['sf','ua','bf','p','s']
 while len(doChannels):    
     ch=doChannels.pop(0)
-    if ch == 'a':
+    ch,vel=ch
+    vel=float(vel)
+    if ch == '-':
+        index-=1
+    elif ch == 'a':
         # Leeds and Orchestral Oboes
-        chA()
+        chA(vel)
     elif ch == 'o':
+        # Pure Orchestral Oboes with echo amd trem
+        chO(vel)
+    elif ch == 'os':
         # Pure Orchestral Oboes
-        chO()
+        chOS(vel)
     elif ch == 'l':
         # Pure Leads
-        chL()
+        chL(vel)
     elif ch == 'as':
         # Leeds ands Strings
-        chAS()
+        chAS(vel)
     elif ch == 'ac':
         # Clarions, two types
-        chAC()
+        chAC(vel)
     elif ch == 'acp':
         # Pure simple clarions
-        chACP()
+        chACP(vel)
     elif ch == 'ast':
         # Stopped reed in leed formation
-        chAST()
-    elif ch == 'b':
+        chAST(vel)
+    elif ch == 'atr':
+        # Trumpets, temolate on lon
+        chATR(vel)
+    elif ch == 'v':
         # Violas in simple formation
-        chB()
+        chV(vel)
     elif ch == 'c':
         # Second diapasons in simple formation
-        chC()
+        chC(vel)
     elif ch == 't':
         # Stopped reed in general purpose formation (flat envs)
-        chT()
+        chT(vel)
     elif ch == 'p':
         # Seconds diapasons in  general purpose formation  (flat envs)
-        chP()
+        chP(vel)
+    elif ch == 'ps':
+        # pure strings for general
+        chPS(vel)
+    elif ch == 'bf':
+        # Simple bright flute general
+        chBF(vel)
+    elif ch == 'tbf':
+        # Trost bright flute general
+        chTBF(vel)
+    elif ch == 'sf':
+        # Simple sweet flute general
+        chSF(vel)
+    elif ch == 'aps':
+        # pure strings lead
+        chPS(vel)
+    elif ch == 'abf':
+        # Simple bright flute lead
+        chA_BF(vel)
+    elif ch == 'atbf':
+        # Trost bright flute lead
+        chA_TBF(vel)
+    elif ch == 'asf':
+        # Simple sweet flute lead
+        chA_SF(vel)
     elif ch == 'pg':
-        chPG()
+        chPG(vel)
     elif ch == 'd':
-        chD()
+        chD(vel)
     elif ch == 'db':
-        chDB()
+        chDB(vel)
+    elif ch == 'doph':
+        chDOPH(vel)
     elif ch == 'dr':
-        chDR()
+        chDR(vel)
+    elif ch == 'dtp':
+        chDTP(vel)
     elif ch == 'dw':
-        chDW()
+        chDW(vel)
     elif ch == 'pgb':
-        chPGB()
+        chPGB(vel)
     elif ch == 'dst':
-        chDST()
+        chDST(vel)
     elif ch == 'ut':
-        chUT()
+        chUT(vel)
     elif ch == 'ua':
-        chUA()
+        chUA(vel)
     elif ch == 's':
-        chS()
+        chS(vel)
     elif ch == 'st':
-        chST()
+        chST(vel)
     elif ch == 'vl':
-        chVL()
+        chVL(vel)
     elif ch == 'vlo':
-        chVLO()
+        chVLO(vel)
     elif ch == 'vlb':
-        chVLB()
+        chVLB(vel)
     elif ch == 'vc_sm':
-        chVC_SM()
+        chVC_SM(vel)
     elif ch == 'vc_smr':
-        chVC_SMR()
+        chVC_SMR(vel)
     elif ch == 'vc_sf':
-        chVC_SF()
+        chVC_SF(vel)
     elif ch == 'vc_sfr':
-        chVC_SFR()
+        chVC_SFR(vel)
     elif ch == 'pr_b':
-        chPR_B()
+        chPR_B(vel)
     else:
         print "Unknown channel: " + ch
         exit(1)
@@ -632,6 +836,18 @@ while len(doChannels):
 #######################
 print "Mixing"
 left,right=doFinalMix()
+def final(sig_):
+    def inner():
+        sig = sig_
+        #sig = sf.Power(sig ,1.05)
+        sig = sf.Finalise(sig)
+        sig=sf.Cut(10,sf.Length(+sig),sig)
+        return sig
+    return sf_do(inner)
+
+left  = final(left)
+right = final(right)
+
 sf.WriteSignal(+left, "temp/dry-l.sig")
 sf.WriteSignal(+right,"temp/dry-r.sig")
 sf.WriteFile32((left,right),"temp/temp.wav")

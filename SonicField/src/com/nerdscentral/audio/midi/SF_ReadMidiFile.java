@@ -1,7 +1,6 @@
 /* For Copyright and License see LICENSE.txt and COPYING.txt in the root directory */
-package com.nerdscentral.audio;
+package com.nerdscentral.audio.midi;
 
-import com.nerdscentral.audio.io.MidiFunctions;
 import com.nerdscentral.sython.Caster;
 import com.nerdscentral.sython.SFPL_Context;
 import com.nerdscentral.sython.SFPL_Operator;

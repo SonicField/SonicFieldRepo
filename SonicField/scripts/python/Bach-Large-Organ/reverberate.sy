@@ -34,15 +34,26 @@ def reverberate(signal,convol):
 #(left,right)=sf.ReadFile("temp/dry.wav")
 left =sf.ReadSignal("temp/dry-l.sig")
 right=sf.ReadSignal("temp/dry-r.sig")
-l    = sf.Length(+left)
-left = sf.Multiply(left ,sf.NumericShape((0,1),(l-256,1),(l,0)))
-r    = sf.Length(+right)
-right= sf.Multiply(right,sf.NumericShape((0,1),(r-256,1),(r,0)))
+"""
+left  = sf.Silence(10)
+right = sf.Silence(10)
+for n in range(625,645):
+    print "temp/dry-l-"+str(n)+".sig"
+    tleft =sf.ReadSignal("temp/dry-l-"+str(n)+".sig")
+    tright=sf.ReadSignal("temp/dry-r-"+str(n)+".sig")
+    l    = sf.Length(+tleft)
+    tleft = sf.Multiply(tleft ,sf.NumericShape((0,0),(64,1),(l-256,1),(l,0)))
+    r    = sf.Length(+tright)
+    tright= sf.Multiply(tright,sf.NumericShape((0,0),(64,1),(r-256,1),(r,0)))
+    left  = sf.Concatenate(left ,tleft)
+    right = sf.Concatenate(right,tright)
+"""
 
 #left =sf.Cut(0,60000,left )
 #right=sf.Cut(0,60000,right)
 left =sf.Multiply(sf.NumericShape((0,0),(64,1),(sf.Length(+left ),1)),left )
 right=sf.Multiply(sf.NumericShape((0,0),(64,1),(sf.Length(+right),1)),right)
+
 left =sf.Concatenate(sf.Silence(1024),left)
 right=sf.Concatenate(sf.Silence(1024),right)
 
@@ -68,11 +79,11 @@ def excite(sig_,mix,power):
 #
 ####################################
 
-bright  = False
-vBright = True
+bright  = True
+vBright = False
 church  = True
 ambient = False
-post    = True
+post    = False
   
 if ambient:  
     (convoll,convolr)=sf.ReadFile("temp/v-grand-l.wav")

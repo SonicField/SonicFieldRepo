@@ -1,12 +1,13 @@
-package com.nerdscentral.audio.io;
+package com.nerdscentral.audio.midi;
 
 import javax.sound.midi.MidiUnavailableException;
 
+import com.nerdscentral.sython.Caster;
 import com.nerdscentral.sython.SFPL_Context;
 import com.nerdscentral.sython.SFPL_Operator;
 import com.nerdscentral.sython.SFPL_RuntimeException;
 
-public class SF_GetMidiDevices implements SFPL_Operator
+public class SF_OpenMidiSequencer implements SFPL_Operator
 {
 
     private static final long serialVersionUID = 1L;
@@ -14,7 +15,7 @@ public class SF_GetMidiDevices implements SFPL_Operator
     @Override
     public String Word()
     {
-        return Messages.getString("SF_GetMidiDeviceNames.0"); //$NON-NLS-1$
+        return Messages.getString("SF_OpenMidiSequencer.0"); //$NON-NLS-1$
     }
 
     @Override
@@ -22,11 +23,12 @@ public class SF_GetMidiDevices implements SFPL_Operator
     {
         try
         {
-            return MidiFunctions.getMidiDeviceNames();
+            MidiFunctions.openSequencer(Caster.makeMidiSequencer(input));
         }
         catch (MidiUnavailableException e)
         {
             throw new SFPL_RuntimeException(e);
         }
+        return input;
     }
 }

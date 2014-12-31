@@ -249,7 +249,7 @@ def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor,subBass,flatEn
         return notel,noter
     return sf_do(singInner)
 
-def doMidi(voice,vCorrect,pitchShift=1.0,qFactor=1.0,subBass=False,flatEnv=False,pure=False,pan=-1,rawBass=False,pitchAdd=0.0,decay=False,bend=True):
+def doMidi(voice,vCorrect,pitchShift=1.0,qFactor=1.0,subBass=False,flatEnv=False,pure=False,pan=-1,rawBass=False,pitchAdd=0.0,decay=False,bend=False):
     count=0.0
     while len(notes)!=0:
         notes.pop()

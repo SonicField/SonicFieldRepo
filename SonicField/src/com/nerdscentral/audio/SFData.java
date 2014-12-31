@@ -137,17 +137,17 @@ public class SFData extends SFSignal implements Serializable
         {
             synchronized (coreFile)
             {
-                long from = coreFile[fileRoundRobbin].length();
                 while (countDown > 0)
                 {
+                    long from = coreFile[fileRoundRobbin].length();
                     ByteBuffer chunk = channelMapper[fileRoundRobbin].map(MapMode.READ_WRITE, from, CHUNK_LEN);
                     chunk.order(ByteOrder.nativeOrder());
                     chunks[chunkCount] = chunk;
                     ++chunkCount;
                     from += CHUNK_LEN;
                     countDown -= CHUNK_LEN;
+                    if (++fileRoundRobbin >= coreFile.length) fileRoundRobbin = 0;
                 }
-                if (++fileRoundRobbin >= coreFile.length) fileRoundRobbin = 0;
             }
         }
     }
