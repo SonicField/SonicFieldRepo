@@ -31,9 +31,15 @@ public class MidiFunctions
     public static final int      NOTE_OFF   = 0x80;
     public static final String[] NOTE_NAMES = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };  //$NON-NLS-1$//$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$ //$NON-NLS-9$ //$NON-NLS-10$ //$NON-NLS-11$ //$NON-NLS-12$
 
-    public Sequence preProcessChannels(Sequence seqIn)
+    public static Sequence preProcessChannels(Sequence seqIn) throws InvalidMidiDataException
     {
-        return null;
+        // If there are multiple channels per track we move the channels into separate
+        // tracks so the output numer of tracks might be bigger than the input so first
+        // work out how many tracks we need.
+        int nTracks = 0;
+        // Create the output sequence
+        Sequence sqlOut = new Sequence(seqIn.getDivisionType(), seqIn.getResolution(), nTracks);
+        return sqlOut;
     }
 
     public static List<Object> readMidiFile(String fileName) throws SFPL_RuntimeException

@@ -1,0 +1,156 @@
+sf.SetSampleRate(64000)
+from random import random
+
+def excite(sig_,mix,power):
+    def exciteInner():
+        sig=sig_
+        m=sf.Magnitude(+sig)
+        sigh=sf.BesselHighPass(+sig,500,2)
+        mh=sf.Magnitude(+sigh)
+        sigh=sf.Power(sigh,power)
+        sigh=sf.Clean(sigh)
+        sigh=sf.BesselHighPass(sigh,1000,2)
+        nh=sf.Magnitude(+sigh)
+        sigh=sf.NumericVolume(sigh,mh/nh)
+        sig=sf.Mix(sf.NumericVolume(sigh,mix),sf.NumericVolume(sig,1.0-mix))
+        n=sf.Magnitude(+sig)
+        return sf.Realise(sf.NumericVolume(sig,m/n))
+    return sf_do(exciteInner)
+
+def reverbInner(signal,convol,grainLength):
+    def rii():
+        mag=sf.Magnitude(+signal)
+        if mag>0:
+            signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+            signal_=sf.FrequencyDomain(signal_)
+            signal_=sf.CrossMultiply(convol,signal_)
+            signal_=sf.TimeDomain(signal_)
+            newMag=sf.Magnitude(+signal_)
+            if newMag>0:
+                signal_=sf.NumericVolume(signal_,mag/newMag)        
+                # tail out clicks due to amplitude at end of signal 
+                return sf.Realise(signal_)
+            else:
+                return sf.Silence(sf.Length(signal_))
+        else:
+            -convol
+            return signal
+    return sf_do(rii)
+            
+def reverberate(signal,convol):
+    def revi():
+        grainLength = sf.Length(+convol)
+        convol_=sf.FrequencyDomain(sf.Concatenate(convol,sf.Silence(grainLength)))
+        signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+        out=[]
+        for grain in sf.Granulate(signal_,grainLength):
+            (signal_i,at)=grain
+            out.append((reverbInner(signal_i,+convol_,grainLength),at))
+        -convol_
+        return sf.Clean(sf.FixSize(sf.MixAt(out)))
+    return sf_do(revi)
+
+def makeEngine(length_,rpm):
+    def inner():
+        pitch=2.0*float(rpm)/60.0
+        length=float(length_)
+        sig=sf.SineWave(length,pitch*0.1+random()*0.05)
+        mod=sf.SineWave(length,0.1+random()*0.05)
+        mod=sf.DirectMix(1.0,sf.Pcnt50(mod))
+        sig=sf.Multiply(
+            sig,
+            mod
+        )
+        sig=sf.Power(sig,10)
+        sig=sf.RBJPeaking(sig,pitch,1,99)
+        sig=sf.RBJPeaking(sig,pitch,1,99)
+        sig=sf.Finalise(sig)
+        noise=sf.WhiteNoise(length)
+        noise=sf.Power(noise,5)
+        noise=sf.FixSize(noise)
+        noise=sf.ButterworthLowPass(noise,32,2)
+        noise=sf.Finalise(noise)
+        sig=sf.Mix(
+            sf.Pcnt98(sig),
+            sf.Pcnt2(noise)
+        )
+        sig=sf.Finalise(sig)
+        sig2=sf.RBJPeaking(+sig,pitch*32,4,99)
+        sig=sf.Mix(
+            sf.Pcnt10(sf.FixSize(sig2)),
+            sig
+        )
+        sig=sf.Cut(1,sf.Length(+sig)-1,sig)       
+        sLen=sf.Length(+sig)*0.011
+        mod=sf.WhiteNoise(sLen)
+        mod=sf.RBJLowPass(mod,8,1.0)
+        mod=sf.RBJLowPass(mod,8,1.0)
+        mod=sf.RBJLowPass(mod,8,1.0)
+        mod=sf.DirectRelength(mod,0.01)
+        mod=sf.Finalise(mod)
+        mod=sf.Pcnt50(mod)
+        mod=sf.DirectMix(1.0,mod)
+        mod=sf.Pcnt49(mod)
+        mod=sf.Cut(0,sf.Length(+sig),mod)
+        print sf.Length(+mod),sf.Length(+sig)
+        sig=sf.FrequencyModulate(sig,mod)
+        return sf.Realise(sig)
+    return sf_do(inner)
+
+length =  60*60000
+chans  =        16
+rpm    =      2200
+sigs  = []
+for x in range(0,chans):
+    l=float(x)/float(chans)
+    r=1.0-l
+    sig=makeEngine(length,rpm)
+    sigs.append(((l,r),sig))
+
+def mix(sigs,pos,keep=True):
+    def inner():
+        toMix=[]
+        for lr,sig in sigs:
+            v=lr[pos]
+            if keep:
+                +sig
+            p=30.0*v
+            toMix.append((sf.NumericVolume(sig,v),p))
+        sig=sf.Realise(sf.Finalise(sf.MixAt(toMix)))
+        #sig=sf.Saturate(sig)
+        sig=sf.Power(sig,1.1)
+        sig=sf.Cut(1,sf.Length(+sig)-1,sig)
+        return sf.Finalise(sig)
+    return sf_do(inner)
+
+left  = mix(sigs,0)
+right = mix(sigs,1,False)
+
+print "Entering reverb"
+(convoll,convolr)=sf.ReadFile("temp/bh-l.wav")
+(convorl,convorr)=sf.ReadFile("temp/bh-r.wav")
+
+convoll=excite(convoll,0.75,2.0)
+convolr=excite(convolr,0.75,2.0)
+convorl=excite(convorl,0.75,2.0)
+convorr=excite(convorr,0.75,2.0)
+
+ll  = reverberate(+left ,convoll)
+lr  = reverberate(+left ,convolr)
+rl  = reverberate(+right,convorl)
+rr  = reverberate(+right,convorr)
+
+wleft =sf.FixSize(sf.Mix(ll,rl))
+wright=sf.FixSize(sf.Mix(rr,lr))
+
+wright = excite(wright,0.15,1.11)
+wleft  = excite(wleft ,0.15,1.11)
+
+right  = excite(right,0.15,1.05)
+left   = excite(left ,0.15,1.05)
+
+wleft =sf.FixSize(sf.Mix(sf.Pcnt15(left),sf.Pcnt85(wleft)))
+wright =sf.FixSize(sf.Mix(sf.Pcnt15(right),sf.Pcnt85(wright)))
+
+sf.WriteFile32((wleft,wright),"temp/mix.wav")
+
