@@ -77,7 +77,7 @@
     </target>
     <target name="Bach-Large-Organ">
         <java classname="com.nerdscentral.sython.Sython" failonerror="true" fork="yes">
-            <jvmarg line="-DsonicFieldTemp=/Volumes/Swap,/Volumes/Seagate-1/temp -Dsynthon.threads=16  -XX:+UseCompressedOops  -Xmx2G"/>
+            <jvmarg line="-DsonicFieldTemp=/tmp -Dsynthon.threads=16 -Xmx2G"/>
             <arg line="scripts/python/Bach-Large-Organ/organ.sy"/>
             <classpath refid="SonicField.classpath"/>
         </java>
@@ -128,6 +128,13 @@
         <java classname="com.nerdscentral.sython.Sython" failonerror="true" fork="yes">
             <jvmarg line="-Xmx12G -Xms6G  -XX:+UseConcMarkSweepGC  -XX:+UseCompressedOops  -XX:ParallelGCThreads=4  -XX:+CMSParallelRemarkEnabled   -Dsynthon.threads=4 -XX:CMSInitiatingOccupancyFraction=60  -XX:+UseCMSInitiatingOccupancyOnly -DsonicFieldSwapLimit=1000000 -DsonicFieldTemp=/Volumes/Swap"/>
             <arg line="scripts/python/Bach-Contrapunctus-1.sy"/>
+            <classpath refid="SonicField.classpath"/>
+        </java>
+    </target>
+    <target name="Engine-1">
+        <java classname="com.nerdscentral.sython.Sython" failonerror="true" fork="yes">
+            <jvmarg line="-DsonicFieldTemp=/Volumes/Seagate-1/temp,/Volumes/Swap -Dsynthon.threads=16 -Xmx2G"/>
+            <arg line="scripts/python/Noise/engine.sy"/>
             <classpath refid="SonicField.classpath"/>
         </java>
     </target>
@@ -182,7 +189,7 @@
     </target>
     <target name="reverberate">
         <java classname="com.nerdscentral.sython.Sython" failonerror="true" fork="yes">
-            <jvmarg line="-DsonicFieldTemp=/Volumes/Swap,/Volumes/Seagate-1/temp -Dsynthon.threads=16 -Xmx2G"/>
+            <jvmarg line="-DsonicFieldTemp=/tmp -Dsynthon.threads=16 -Xmx2G"/>
             <arg line="scripts/python/Bach-Large-Organ/reverberate.sy"/>
             <classpath refid="SonicField.classpath"/>
         </java>

@@ -24,16 +24,16 @@ execfile(path+"/post.sy")
 # Timing configuration and temperament #
 ########################################
 
-midis=sf.ReadMidiFile("temp/passac.mid")
-#midis=sf.ReadMidiFile("temp/Little Book Of Organ/bwv644gm.mid")
+#midis=sf.ReadMidiFile("temp/passac.mid")
+midis=sf.ReadMidiFile("temp/Little Book Of Organ/bwv639gm.mid")
 
 # Length of full piece
 #======================
-length      =    12.0
+length      =     2.5
 
 # How much to play
 #==================
-minutes     =   120.0
+minutes     =     5.5
 
 # Temperament
 #=============
@@ -114,6 +114,28 @@ def chO(vel):
     postProcessEcho()
     doMidi(voice=orchestralOboe,vCorrect=vel*0.50)
     postProcessEcho()
+    
+    midi=longAsMidi(midis[index],beat,512)
+    midi=legatoMidi(midi,beat,128)
+    midi=dampVelocity(midi,68,0.86)
+    midi=dampVelocity(midi,80,0.86)
+    doMidi(voice=orchestralOboe,vCorrect=vel*0.33,flatEnv=True,pan=0.5,pitchAdd=2.0)
+    postProcessEcho()
+    doMidi(voice=orchestralOboe,vCorrect=vel*0.33,flatEnv=True,pan=0.2)
+    postProcessTremolate(rate=3.5)
+    doMidi(voice=orchestralOboe,vCorrect=vel*0.33,flatEnv=True,pan=0.8)
+    postProcessTremolate(rate=4.5)
+
+def chOT(vel):
+    global midi,index
+    print "##### Channel O #####"
+    index+=1
+    midi=shorterThanMidi(midis[index],beat,512)
+    midi=dampVelocity(midi,80,0.75)
+    doMidi(voice=orchestralOboe,vCorrect=vel*0.50)
+    postProcessTremolate(rate=3.5)
+    doMidi(voice=orchestralOboe,vCorrect=vel*0.50)
+    postProcessTremolate(rate=3.5)
     
     midi=longAsMidi(midis[index],beat,512)
     midi=legatoMidi(midi,beat,128)
@@ -713,9 +735,7 @@ def chST(vel):
 # Which Channels #
 ##################
 
-#doChannels=['vc_sfr','bf','tbf','s']
-doChannels=[('c',1),('c',1),('c',1.1),('c',1.25),('c',1.5),('l',0.8)]
-#doChannels=['sf','ua','bf','p','s']
+doChannels=[('ot',1.0),('ua',0.25),('c',1),('c',1.25),('s',1.0)]
 while len(doChannels):    
     ch=doChannels.pop(0)
     ch,vel=ch
@@ -729,8 +749,11 @@ while len(doChannels):
         # Pure Orchestral Oboes with echo amd trem
         chO(vel)
     elif ch == 'os':
-        # Pure Orchestral Oboes
+        # Pure Orchestral Oboes simple
         chOS(vel)
+    elif ch == 'ot':
+        # Pure Orchestral Oboes all trem but a but simpler than o
+        chOT(vel)
     elif ch == 'l':
         # Pure Leads
         chL(vel)
