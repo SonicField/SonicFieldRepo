@@ -114,6 +114,10 @@ com.nerdscentral.audio.pitch.SF_NLowPass
 com.nerdscentral.audio.pitch.SF_NLowPassBessel
 com.nerdscentral.audio.pitch.SF_Resample
 com.nerdscentral.audio.pitch.SF_ShapedBandPass
+com.nerdscentral.audio.pitch.SF_ShapedBiquadHighPass
+com.nerdscentral.audio.pitch.SF_ShapedBiquadLowPass
+com.nerdscentral.audio.pitch.SF_ShapedBiquadNotch
+com.nerdscentral.audio.pitch.SF_ShapedBiquadPeak
 com.nerdscentral.audio.pitch.SF_ShapedLadder
 com.nerdscentral.audio.pitch.SF_TimeDomain
 com.nerdscentral.audio.time.SF_FilteredResonateFilter

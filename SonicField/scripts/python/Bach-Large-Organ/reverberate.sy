@@ -79,11 +79,12 @@ def excite(sig_,mix,power):
 #
 ####################################
 
-bright  = True
-vBright = False
-church  = True
-ambient = False
+bright  = False
+vBright = True
+church  = False
+ambient = True
 post    = False
+spring  = True
   
 if ambient:  
     (convoll,convolr)=sf.ReadFile("temp/v-grand-l.wav")
@@ -94,6 +95,18 @@ elif church:
 else:
     (convoll,convolr)=sf.ReadFile("temp/Vocal-Chamber-L.wav")
     (convorl,convorr)=sf.ReadFile("temp/Vocal-Chamber-R.wav")
+
+if spring:
+    spring=sf.ReadFile("temp/classic-fs2a.wav")[0]
+    convoll=sf.Mix(
+        convoll,
+        +spring
+    )
+    
+    convorr=sf.Mix(
+        convorr,
+        sf.Invert(spring)
+    )
 
 convoll=excite(convoll,0.75,2.0)
 convolr=excite(convolr,0.75,2.0)

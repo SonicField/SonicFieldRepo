@@ -199,6 +199,5 @@ public class SFRBJFilter
         b2a0 = (b2 / a0);
         a1a0 = (a1 / a0);
         a2a0 = (a2 / a0);
-        // System.out.println("b0a0:" + b0a0 + " b1a0:" + b1a0 + " b2a0:" + b2a0 + " a1a0:" + a1a0 + " a2a0:" + a2a0);
     }
 }

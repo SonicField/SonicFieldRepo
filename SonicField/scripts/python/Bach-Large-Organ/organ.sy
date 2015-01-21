@@ -24,16 +24,16 @@ execfile(path+"/post.sy")
 # Timing configuration and temperament #
 ########################################
 
-#midis=sf.ReadMidiFile("temp/passac.mid")
-midis=sf.ReadMidiFile("temp/Little Book Of Organ/bwv639gm.mid")
+midis=sf.ReadMidiFile("temp/bwv659  - intro.mid")
+#midis=sf.ReadMidiFile("temp/Little Book Of Organ/bwv639gm.mid")
 
 # Length of full piece
 #======================
-length      =     2.5
+length      =     4.0
 
 # How much to play
 #==================
-minutes     =     5.5
+minutes     =    10.0
 
 # Temperament
 #=============
@@ -84,6 +84,25 @@ def chA(vel):
     postProcessTremolate(rate=3.5)
     doMidi(voice=orchestralOboe,vCorrect=vel*0.35,flatEnv=True,pan=0.8)
     postProcessTremolate(rate=4.5)
+
+def chLT(vel):
+    global midi,index
+    print "##### Channel O #####"
+    index+=1
+    midi=shorterThanMidi(midis[index],beat,512)
+    midi=dampVelocity(midi,68,0.75)
+    midi=dampVelocity(midi,80,0.75)
+    doMidi(voice=trostLeadDiapason,vCorrect=vel*1.0,flatEnv=False)
+    postProcess()
+
+    midi=longAsMidi(midis[index],beat,512)
+    midi=legatoMidi(midi,beat,128)
+    midi=dampVelocity(midi,68,0.75)
+    midi=dampVelocity(midi,80,0.75)
+    doMidi(voice=trostLeadDiapason,vCorrect=vel*0.50,flatEnv=True,pan=0.2)
+    postProcess()
+    doMidi(voice=trostLeadDiapason,vCorrect=vel*0.50,flatEnv=True,pan=0.8,pitchAdd=2.0)
+    postProcess()
 
 def chL(vel):
     global midi,index
@@ -256,14 +275,17 @@ def chAST(vel):
 
 def chA_PS(vel):
     global midi,index
-    print "##### Channel AS #####"
+    print "##### Channel AP_S #####"
     index+=1
     
-    midi=legatoMidi(midis[index],beat,128)
+    midi=legatoMidi(midis[index],beat,256)
     midi=dampVelocity(midi,68,0.86)
     midi=dampVelocity(midi,80,0.75)
-    doMidi(voice=string,vCorrect=vel*1.0)
+    doMidi(voice=string,vCorrect=vel*0.5,qFactor=3.0)
     postProcess()
+    doMidi(voice=string,vCorrect=vel*0.5,qFactor=3.0,pitchAdd=1.5)
+    postProcess()
+
 
 def chPS(vel):
     global midi,index
@@ -292,6 +314,15 @@ def chC(vel):
     midi=legatoMidi(midis[index],beat,128)
     midi=dampVelocity(midi,80,0.75)
     doMidi(voice=secondDiapason,vCorrect=vel*1.0,flatEnv=True)
+    postProcess() 
+
+def chC_S(vel):
+    global midi,index
+    print "##### Channel C_S #####"
+    index+=1
+    midi=legatoMidi(midis[index],beat,128)
+    midi=dampVelocity(midi,80,0.75)
+    doMidi(voice=secondDiapason,vCorrect=vel*1.0,flatEnv=False,qFactor=2.0)
     postProcess() 
 
 def chA_TBF(vel):
@@ -333,7 +364,7 @@ def chTBF(vel):
     print "##### Channel AS #####"
     index+=1
     
-    midi=legatoMidi(midis[index],beat,128)
+    midi=legatoMidi(midis[index],beat,256)
     midi=dampVelocity(midi,68,0.86)
     midi=dampVelocity(midi,80,0.75)
     doMidi(voice=trostBrightFlute,vCorrect=vel*1.0,flatEnv=True)
@@ -344,10 +375,32 @@ def chBF(vel):
     print "##### Channel AS #####"
     index+=1
     
-    midi=legatoMidi(midis[index],beat,128)
+    midi=legatoMidi(midis[index],beat,256)
     midi=dampVelocity(midi,68,0.86)
     midi=dampVelocity(midi,80,0.75)
     doMidi(voice=brightFlute,vCorrect=vel*1.0,flatEnv=True)
+    postProcess()
+
+def chTBF_S(vel):
+    global midi,index
+    print "##### Channel AS #####"
+    index+=1
+    
+    midi=legatoMidi(midis[index],beat,256)
+    midi=dampVelocity(midi,68,0.86)
+    midi=dampVelocity(midi,80,0.75)
+    doMidi(voice=trostBrightFlute,vCorrect=vel*1.0,flatEnv=False,qFactor=3.0)
+    postProcess()
+
+def chBF_S(vel):
+    global midi,index
+    print "##### Channel AS #####"
+    index+=1
+    
+    midi=legatoMidi(midis[index],beat,256)
+    midi=dampVelocity(midi,68,0.86)
+    midi=dampVelocity(midi,80,0.75)
+    doMidi(voice=brightFlute,vCorrect=vel*1.0,flatEnv=False,qFactor=3.0)
     postProcess()
 
 def chSF(vel):
@@ -735,7 +788,8 @@ def chST(vel):
 # Which Channels #
 ##################
 
-doChannels=[('ot',1.0),('ua',0.25),('c',1),('c',1.25),('s',1.0)]
+#doChannels=[('vc_sfr',1.0),('bf_s',0.4),('bf_s',0.6),('s',0.6)]
+doChannels=[('vc_sfr',1.0),('c_s',0.4),('c_s',0.4),('dtp',0.6),('st',0.6)]
 while len(doChannels):    
     ch=doChannels.pop(0)
     ch,vel=ch
@@ -757,6 +811,9 @@ while len(doChannels):
     elif ch == 'l':
         # Pure Leads
         chL(vel)
+    elif ch == 'lt':
+        # Pure Trost Leads
+        chLT(vel)
     elif ch == 'as':
         # Leeds ands Strings
         chAS(vel)
@@ -778,12 +835,18 @@ while len(doChannels):
     elif ch == 'c':
         # Second diapasons in simple formation
         chC(vel)
+    elif ch == 'c_s':
+        # Second diapasons in simple formation slow
+        chC_S(vel)
     elif ch == 't':
         # Stopped reed in general purpose formation (flat envs)
         chT(vel)
     elif ch == 'p':
         # Seconds diapasons in  general purpose formation  (flat envs)
         chP(vel)
+    elif ch == 'a_ps':
+        # pure strings with soft envelope
+        chA_PS(vel)
     elif ch == 'ps':
         # pure strings for general
         chPS(vel)
@@ -793,6 +856,12 @@ while len(doChannels):
     elif ch == 'tbf':
         # Trost bright flute general
         chTBF(vel)
+    elif ch == 'bf_s':
+        # Simple bright flute slow and gentle
+        chBF_S(vel)
+    elif ch == 'tbf_s':
+        # Trost bright flute slow and gentle
+        chTBF_S(vel)
     elif ch == 'sf':
         # Simple sweet flute general
         chSF(vel)
