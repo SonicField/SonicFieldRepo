@@ -19,7 +19,7 @@ public class SF_ShapedBiquadHighPass implements SFPL_Operator
     @Override
     public String Word()
     {
-        return Messages.getString("SF_ShapedBiquadLowPass.0"); //$NON-NLS-1$
+        return Messages.getString("SF_ShapedBiquadHighPass.0"); //$NON-NLS-1$
     }
 
     @Override
@@ -32,7 +32,7 @@ public class SF_ShapedBiquadHighPass implements SFPL_Operator
             SFSignal frequency = Caster.makeSFSignal(l.get(1));
             SFSignal q = Caster.makeSFSignal(l.get(2)))
         {
-            FilterType type = FilterType.LOWPASS;
+            FilterType type = FilterType.HIGHPASS;
             try (SFSignal y = x.replicateEmpty())
             {
                 int length = y.getLength();
