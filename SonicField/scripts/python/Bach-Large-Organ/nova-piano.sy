@@ -1,0 +1,357 @@
+def nova_piano(lr,rl,pitch,volume,hitStrength,attack,decay,sustain,release,modulationBoost=1.5,reverbAmount=0.5,noiseAmount=0.1,at=0):
+    print "Making Note:",' P:',pitch,' v:',volume,' h:',hitStrength,' a:',attack,' d:',decay,' s:',sustain,' r:',release,' m:',modulationBoost,' r:',reverbAmount,' n:',noiseAmount,' a:',at
+
+    def inner():
+        period=sf.Period(pitch)
+        hit=sf.Pcnt49(
+            sf.PhaseModulatedSineWave(
+                pitch*0.25,
+                sf.DirectMix(1,sf.SineWave(period*20,pitch*0.33))
+            )
+        )
+        hitNoise=sf.BesselHighPass(sf.WhiteNoise(sf.Length(+hit)),pitch,1)
+        hit=sf.FixSize(sf.Mix(hit,hitNoise))
+        hit=sf.ButterworthLowPass(hit,pitch*4.0,2)
+        hitEnv=sf.SimpleShape((0,0),(period*16,-30),(period*20,-99))
+        hit=sf.Multiply(hit,hitEnv)
+                
+        convol=sf.Power(sf.RBJHighPass(sf.WhiteNoise(124),20,1),2.5)
+        convol=sf.FixSize(sf.Multiply(convol,sf.SimpleShape((0,0),(125,-60))))
+        
+        hit=sf.Mix(
+            reverberate(+hit,convol),
+            hit
+        )
+        hit=sf.NumericVolume(sf.FixSize(hit),hitStrength)
+        
+        length=attack+decay+sustain+release
+        
+        # Modulate goes down with the pitch 
+        modulationAmount=1.5-pitch/1000.0
+        if modulationAmount<0.5:
+            modulationAmount=0.5
+    
+        modulationAmount*=modulationBoost
+        
+        # This is the critical number which makes a piano stretched 
+        # harmonic sound
+        pitchSpacing=1.005
+        modulator=sf.PhasedSineWave(length,pitch*pitchSpacing,0.5)
+        modulator=sf.Multiply(
+            sf.NumericShape((0,1),(length*0.5,0.5),(length,0)),
+            modulator
+        )
+        modulator=sf.DirectMix(1,modulator)
+        modulator=sf.NumericVolume(modulator,modulationAmount)
+        note=sf.PhaseModulatedSineWave(pitch,modulator)
+        note=sf.Mix(
+            +note,
+            sf.Pcnt50(sf.DirectResample(+note,1.005)),
+            sf.Pcnt50(sf.DirectResample( note,0.995))
+        )    
+        
+        note=sf.FixSize(note)
+        noteEnv=sf.NumericShape(
+            (0,0),
+            (attack,1),
+            (attack+decay,0.5),
+            (attack+decay+sustain,0.1),
+            (length,0)
+        )
+        
+        note=sf.FixSize(sf.Multiply(note,noteEnv))
+        note=sf.NumericVolume(note,volume)
+        note=sf.WaveShaper(1,0,1,1,4,10,note)
+        note=sf.FixSize(note)
+        note=sf.NumericVolume(note,volume)
+        note=sf.WaveShaper(0,0,1,1,4,10,note)
+        note=sf.FixSize(note)
+    
+        note=sf.FixSize(sf.ButterworthHighPass(note,pitch,1))
+        note=sf.FixSize(sf.ButterworthLowPass(note,1500,2))
+        twang=sf.Multiply(
+            sf.Slide((0,25),(attack+decay+sustain,15)),
+            sf.NumericShape((0,1),(attack+decay+sustain,0))
+        )
+        twang=sf.Concatenate(twang,sf.Silence(release))
+        
+        twang=sf.DirectMix( 1,sf.Pcnt20(twang))
+        note=sf.Multiply(
+            twang,
+            note
+        )
+        
+        note=sf.ButterworthLowPass(note,pitch*16,2)
+        note=sf.ButterworthLowPass(note,pitch*10,2)
+        note=sf.Mix(hit,note)
+        
+        base=64
+        soundingBoard=sf.MultipleResonantFilter(
+            sf.FixSize(sf.RBJLowPass(+note,110,1)),
+            (
+                (-7,sf.Period(base)),
+                (-7,sf.Period(base*1.25)),
+                (-7,sf.Period(base*1.50)),
+                (-7,sf.Period(base*1.75))
+            ),
+            -20
+        )
+        soundingBoard=sf.FixSize(soundingBoard)
+        soundingBoard=sf.RBJLowPass(soundingBoard,110,1) 
+        soundingBoard=sf.RBJLowPass(soundingBoard,110,1) 
+        soundingBoard=sf.FixSize(soundingBoard)
+        soundingBoard=sf.RBJHighPass(soundingBoard,25,1) 
+        damper=sf.NumericShape((0,0),(125,0),(500,1),(sf.Length(+note)-250,1),(sf.Length(+note),0))
+        soundingBoard=sf.FixSize(sf.Multiply(soundingBoard,+damper))
+        soundingBoard=sf.ButterworthHighPass(soundingBoard,pitch,1) 
+        soundingBoard=sf.Cut(250,sf.Length(+soundingBoard),soundingBoard)
+    
+        note=sf.Mix(soundingBoard,note)
+        
+        res=sf.Normalise(sf.Multiply(damper,+note))
+
+        res=sf.Multiply(
+            sf.NumericShape((0,0),(32,1),(length,0)),
+            res
+        )
+        
+        res=sf.FixSize(    
+            sf.MultipleResonantFilter(
+                sf.Concatenate(
+                    sf.Silence(250),
+                    res,
+                ),
+                (
+                    (-3,sf.Period(pitch*0.05)),
+                    (-6,sf.Period(pitch*0.2)),
+                    (-8,sf.Period(pitch*0.25)),
+                    (-8,sf.Period(pitch*0.333)),
+                    (-9,sf.Period(pitch*0.5)),
+                    (-6,sf.Period(pitch*1.5)),
+                    (-6,sf.Period(pitch*2.0)) 
+                ),
+                -80
+            )
+        )
+        
+        res=sf.Cut(0,length,res)
+        res=sf.NumericVolume(res,volume)
+        res=sf.Multiply(
+            sf.NumericShape((0,0),(32,1),(length,0)),
+            res
+        )
+        res=sf.FixSize(sf.WaveShaper(0,0,1,1,4,10,res))
+        note=sf.Mix(sf.Pcnt25(res),note)
+        note=sf.RBJHighPass(note,pitch*0.5,1)
+        note=sf.RBJHighPass(note,pitch*0.5,1)
+        note=sf.Finalise(note)
+
+        # Mix in the characteristic white noise
+        noise=sf.WhiteNoise(sf.Length(+note))
+        noise=sf.RBJBandPass(noise,pitch*0.5,pitch*2.0,2)
+        noise=sf.RBJBandPass(noise,pitch*0.5,pitch*2.0,2)
+        noise=sf.FixSize(noise)
+        noise=sf.DirectMix(1,noise)
+        note =sf.Mix(+note,sf.Multiply(note,sf.NumericVolume(noise,noiseAmount)))
+        
+        note=sf.RBJHighPass(note,15,1)
+        note=sf.RBJHighPass(note,15,1)
+        scnd=+note
+         
+        convol=sf.FixSize(
+            sf.Multiply(
+                sf.Power(sf.RBJHighPass(sf.WhiteNoise(1000),20,1),1.2),
+                sf.NumericShape((0,1),(50,1),(500,0.25),(1000,0))
+            )
+        )
+    
+        scnd=sf.Mix(
+            sf.NumericVolume(reverberate(+scnd,convol),    reverbAmount),
+            sf.NumericVolume(                scnd,1.0-reverbAmount)
+        )
+    
+        scnd=sf.FixSize(scnd)
+        scnd=sf.NumericVolume(scnd,volume)      
+        scnd=sf.FixSize(
+            sf.WaveShaper(0,0,1,1,4,10,scnd) 
+        )   
+        
+        note=sf.Mix(
+            sf.Multiply(sf.NumericShape((attack,0.125),(decay,0.25),(sustain,1),(sf.Length(+scnd),1)),scnd),
+            note
+        )
+
+        note=sf.FixSize(note)
+        note=sf.Multiply(
+            sf.NumericShape((0,0),(period,1),(sf.Length(+note),1)),
+            note
+        )
+        note=sf.Clean(note)    
+        note=sf.Mix(
+            sf.Pcnt5(sf.RBJPeaking(+note,pitch*1.0/0.999,0.25,5)),
+            sf.Pcnt5(sf.RBJPeaking(+note,pitch*3.0/2.001,0.25,5)),
+            note
+        )
+        note=sf.Finalise(note)
+        note=sf.ButterworthLowPass(note,pitch*16,6)
+        note=sf.ButterworthLowPass(note,pitch*10,2)
+        note=sf.NumericVolume(note,volume*100.0)
+        return (sf.NumericVolume(+note,lr),sf.NumericVolume(note,rl))
+        
+    return inner()
+
+def doMidiNova(vCorrect,pitchShift=1.0,pan=-1,pitchAdd=0.0,richness=1.0):
+    count=0.0
+    while len(notes)!=0:
+        notes.pop()
+    print "Stop: Nova Piano: ", len(midi) , " notes"
+    for index in range(0,len(midi)):
+ 
+        if index>0:
+            prev=midi[index-1]
+        else:
+            prev=()
+        if index<len(midi)-1:
+            next=midi[index+1]
+        else:
+            next=()
+        current=midi[index]
+        
+        tickOn,tickOff,note,key,velocity = current
+
+        at=tickOn*beat
+        if at>timeEnd or at<timeStart:
+            count+=1
+            continue
+        length=(tickOff-tickOn)*beat
+        if key==0:
+            pitch=base
+        else:
+            key=float(key)
+            pitch= temperament(key) * pitchShift
+        velocity=velocity/100
+        pitch+=pitchAdd
+        pl=pitch
+
+        # Compute hint
+        # Two letters - first for previous note
+        # second for next note
+        # S=start
+        # T=trill
+        # N=normal
+        # E=end
+        hint=""
+        if len(prev):
+            to,tf,n,k,v=prev
+            lp=(tf-to)*beat
+            ep=tf*beat
+            # quick close previous note
+            if at-ep < 100 and lp<256:
+                hint+="T"
+            else:
+                hint+="N"
+        else:
+            hint+="S"
+        if len(next):
+            to,tf,n,k,v=next
+            sn=to*beat
+            # quick close previous note
+            if sn-at < 100+length and length<256:
+                hint+="T"
+            else:
+                hint+="N"
+        else:
+            hint+="E"   
+        
+        # volume pitch correction to stop domination
+        # of high notes - not quite the same as 
+        # loudness correction due to the high dominating
+        # low perception issue.
+        vCUse=vCorrect
+        pCorrect=1
+        if vCorrect>0.25 and pitch > 660 :
+            if length <256:
+                sCorrect=1.5
+            else:
+                sCorrect=1.0
+            pCorrect=1.0
+            if pitch>660:
+                if pitch<2000:
+                    pCorrect=float(2000-pitch)/1340.0
+                    pCorrect=0.40*(1.0-pCorrect)+pCorrect
+                elif pitch<4000:
+                    pCorrect=float(8000-pitch)/4000.0
+                    pCorrect=0.75*(1.0-pCorrect)+0.4*pCorrect
+            pCorrect*=sCorrect
+            if pCorrect>1:
+                pCorrect=1
+        vCUse*=pCorrect
+
+        if pan==-1:
+            pl=pl-880
+            pl=float(pl-880)/880.0
+            if pl>1:
+                pl=1
+            elif pl<0:
+                pl=0
+            pl=0.05+pl*0.3
+            lr=pl
+        else:
+            lr=1.0-pan
+                    
+        rl=1.0-lr
+        
+        dl=30*rl+1000
+        dr=38*lr+1000
+        # Do all the enveloping stuff
+        if hint=='TN':
+            attack      =  32.0
+            decay       = 128.0
+            sustain     = length-attack-decay
+            if sustain < 128:
+                sustain=128
+            release     = 256
+            hitStrength = 0.25
+        elif hint=='NT':
+            attack      =  32.0
+            decay       = 128.0
+            sustain     = length-attack-decay
+            if sustain < 64:
+                sustain=64
+            release     = 64
+            hitStrength = 0.5        
+        elif hint=='TT':
+            attack      =  32.0
+            decay       = 128.0
+            sustain     = length-attack-decay
+            if sustain < 64:
+                sustain=64
+            release     = 64
+            hitStrength = 0.25
+        else:
+            attack      =  48.0
+            decay       = 256.0
+            sustain     = length-attack-decay
+            if sustain < 128:
+                sustain=128
+            release     = 392
+            hitStrength = 0.75
+        
+        modulationBoost=1.5
+        if pitch<128:
+            modulationBoost=2.5
+        reverbAmount=0.5
+        
+        reverbAmount   *=richness
+        modulationBoost*=richness
+        hitStrength    *=0.5
+        noiseAmount     =0.075
+        note=nova_piano(lr,rl,pitch,vCUse*velocity,hitStrength,attack,decay,sustain,release,modulationBoost,reverbAmount,noiseAmount,at)
+        notes.append(
+            (
+                note,
+                at+dl,at+dr
+            )
+        )
+        count+=1
+

@@ -79,11 +79,11 @@ def excite(sig_,mix,power):
 #
 ####################################
 
-bright  = False
+bright  = True
 vBright = True
-church  = False
+church  = True
 ambient = True
-post    = False
+post    = True
 spring  = True
   
 if ambient:  

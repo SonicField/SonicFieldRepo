@@ -1,14 +1,25 @@
 # From http://www.kylegann.com/histune.html
-def WerckmeisterIII(key):
+def keyFromCents(key,cents,offset=False):
     key=float(key)
     cent=2.0**(1.0/1200.0)
-    #Pitch:  C   C#     D       Eb      E       F       F#      G       G#      A       A#      B       C
-    cents=[  0,  90.225,192.18, 294.135,390.225,498.045,588.27, 696.09, 792.18, 888.27, 996.09, 1092.18,1200]
     octave=math.floor(key/12.0)
     pitch=base*2.0**octave
     note=int(key-octave*12)
-    pitch*=cent**cents[note]
+    if offset:
+        pitch*=cent**((cents[note]+note*100.0)-cents[0])
+    else:
+        pitch*=cent**cents[note]
     return pitch
+
+def WerckmeisterIII(key):
+    #Pitch:  C   C#     D       Eb      E       F       F#      G       G#      A       A#      B      
+    cents=[  0,  90.225,192.18, 294.135,390.225,498.045,588.27, 696.09, 792.18, 888.27, 996.09, 1092.18]
+    return keyFromCents(key,cents)
+
+def BachLehman(key):
+    #Pitch:  C   C#     D       Eb      E       F       F#      G       G#      A       A#      B
+    cents=[5.9  ,3.9   ,2      ,3.9   ,-2      ,7.8    ,2      ,3.9    ,3.9    ,0      ,3.9    ,0]
+    return keyFromCents(key,cents,True)
 
 def JustIntonation(key):
     key=float(key)
@@ -457,6 +468,7 @@ def repareOverlapMidi(midi,blip=5):
             index+=1
         if index==endAt:
             midiOut.append(next)
+        midiOut=sorted(midiOut, key=lambda tup: tup[0])
         if not mute:
             return midiOut
         midi=midiOut

@@ -16,6 +16,7 @@ execfile(path+"/generators.sy")
 execfile(path+"/voices.sy")
 execfile(path+"/percussion.sy")
 execfile(path+"/note-formation.sy")
+execfile(path+"/nova-piano.sy")
 
 notes  = []
 execfile(path+"/post.sy")
@@ -24,12 +25,11 @@ execfile(path+"/post.sy")
 # Timing configuration and temperament #
 ########################################
 
-midis=sf.ReadMidiFile("temp/bwv659  - intro.mid")
-#midis=sf.ReadMidiFile("temp/Little Book Of Organ/bwv639gm.mid")
+midis=sf.ReadMidiFile("temp/Little Book Of Organ/bwv639gm.mid")
 
 # Length of full piece
 #======================
-length      =     4.0
+length      =     3.3
 
 # How much to play
 #==================
@@ -37,14 +37,14 @@ minutes     =    10.0
 
 # Temperament
 #=============
-temperament =     WerckmeisterIII
-#temperament =     JustIntonation
-
+#temperament = WerckmeisterIII
+#temperament = JustIntonation
+temperament = BachLehman
 
 # Do Not Change
 #===============
 beat        =      4.0
-base        =      8.1757989156
+base        =      8.1757989156 * 415.0/440.0
 count       =      0.0
 timeStart   =      0.0
 timeEnd     =  60000.0 * minutes
@@ -58,6 +58,37 @@ beat        =  setLengthMidi(midis,beat,length)
 midis=repareOverlapMidis(midis)
 
 # exefile which ever voicing system wanted here
+midi=midis[1]
+midi=legatoMidi(midi,beat,512)
+doMidiNova(vCorrect=0.5,richness=0.33)
+postProcessTremolate(magnitude=0.25)
+doMidiNova(vCorrect=0.5,richness=0.33,pitchShift=1.0)
+postProcessTremolate(magnitude=0.25,rate=3.0)
+
+"""
+midi=midis[1]
+midi=legatoMidi(midi,beat,1024)
+midi=delayMidi(midi,beat,256)
+doMidi(voice=orchestralOboe,vCorrect=0.1,flatEnv=False,pitchShift=2.0,pan=0.6)
+postProcessTremolate(rate=4.0)
+"""
+
+midi=midis[2]
+midi=legatoMidi(midi,beat,2048)
+doMidiNova(vCorrect=1.0,richness=0.25)
+postProcess()
+
+midi=midis[3]
+midi=legatoMidi(midi,beat,512)
+vel=1.0
+doMidi(voice=leadDiapason,vCorrect=vel*0.1,flatEnv=False,pure=False,pan=0.0,pitchShift=0.5)
+postProcess()
+doMidi(voice=leadDiapason,vCorrect=vel,flatEnv=False    ,pure=False,pan=1.0,pitchAdd=3.0)
+postProcess()
+midi=midis[3]
+midi=legatoMidi(midi,beat,1024)
+doMidi(voice=stoppedReed,vCorrect=vel,flatEnv=True,pure=False,pan=0.9,pitchShift=0.5)
+postProcess()
 
 #######################
 # Final mix and write #

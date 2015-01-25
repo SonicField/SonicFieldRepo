@@ -88,6 +88,7 @@ def solar_piano(pitch,attack,decay,sustain,release,hit_strength):
         ),
         -20
     )
+    
     (>sounding-board,110,2)ButterworthLowPass Normalise !sounding-board 
     ((0,0),(125,0),(500,1),((?note length,250)-,1),(?note length,0))NumericShape !damper
     (>sounding-board,25,4)ButterworthHighPass !sounding-board
