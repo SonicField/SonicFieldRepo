@@ -1,0 +1,177 @@
+from com.nerdscentral.audio.midi import MidiFunctions
+
+class Midi(MidiFunctions):
+    metaTypes={
+            0x00:'SequenceNumber',
+            0x01:'text',
+            0x02:'copyright',
+            0x03:'track_name',
+            0x04:'instrument',
+            0x05:'lyrics',
+            0x06:'marker',
+            0x07:'cue',
+            0x20:'channel',
+            0x2F:'end',
+            0x51:'tempo',
+            0x54:'smpte_offset',
+            0x58:'time_signature',
+            0x59:'key_signature',
+            0x7f:'sequencer_specific'
+        }
+        
+    timeTypes={
+        0.0:  'PPQ',
+        24.0: 'SMPTE_24',
+        25.0: 'SMPTE_25',
+        29.97:'SMPTE_30DROP',
+        30.0: 'SMPTE_30'
+    }
+     
+    @staticmethod
+    def timeType(sequence):
+        return Midi.timeTypes[sequence.getDivisionType()]
+
+    @staticmethod
+    def isNote(event):
+        return event['command']=='note'
+
+    @staticmethod
+    def isMeta(event):
+        return event['command']=='meta'
+        
+    @staticmethod
+    def isTempo(event):
+        Midi.checkMeta(event)
+        return event['type']==0x51
+
+    @staticmethod
+    def isTimeSignature(event):
+        Midi.checkMeta(event)
+        return event['type']==0x58
+
+    @staticmethod
+    def metaType(event):
+        t=event['type']
+        if t in Midi.metaTypes:
+            return Midi.metaTypes[t]
+        return 'unknown'
+
+    @staticmethod
+    def checkMeta(event):
+        if not event['command']=='meta':
+            raise Exception('Not meta message')
+
+    @staticmethod
+    def tempo(event):
+        Midi.checkMeta(event)
+        if event['type']!=0x51:
+            raise Exception('not tempo message')
+        data=event['data']
+        if len(data)==0:
+            raise Exception('no data')
+        t=0
+        for i in range(0,len(data)):
+            if not i==0:
+                t <<= 8
+            t+=data[i]
+        return t
+
+    @staticmethod
+    def timeSignature(event):
+        Midi.checkMeta(event)
+        if event['type']!=0x58:
+            raise Exception('not tempo message')
+        data=event['data']
+        if not len(data)==4:
+            raise Exception('wrong data')
+        return {
+            'numerator'  :data[0],
+            'denominator':2**data[1],
+            'metronome'  :data[2],
+            '32nds/beat' :data[3]
+        }
+        
+    @staticmethod
+    def tickLength(denominator,microPerQuater,sequence):
+        # if denom = 4 then 1 beat per quater note
+        # if denom = 8 then 2 beats per quater note
+        # there fore beats per quater note= denom/4
+        beatsPerQuaterNote = denominator/4.0
+        ticksPerBeat       = float(sequence.getResolution())
+        microsPerBeat      = float(microPerQuater)/beatsPerQuaterNote
+        return microsPerBeat/float(ticksPerBeat)
+
+sequence=Midi.readMidiFile("temp/passac.mid")
+
+print 'Sequence Time  Type:', Midi.timeType(sequence)
+print 'Sequence Resolution:', sequence.getResolution()
+print 'Initial tick length:',Midi.tickLength(4,500000,sequence)
+otl=Midi.tickLength(4,500000,sequence)
+
+midis=Midi.processSequence(sequence)
+
+sout=Midi.blankSequence(sequence)
+
+# Create the timing information track
+tout=sout.createTrack()
+for event in midis[0]:
+    if Midi.isMeta(event):
+        if Midi.isTempo(event) or Midi.isTimeSignature(event):
+            tout.add(event['event'])
+
+tout1=sout.createTrack()
+tout2=sout.createTrack()
+midi1=[]
+midi2=[]
+flip=True
+for event in midis[5]:
+    if Midi.isNote(event):
+        if flip:
+            midi1.append(event['event'])
+            midi1.append(event['event-off'])
+            flip=False
+        else:
+            midi2.append(event['event'])
+            midi2.append(event['event-off'])
+            flip=True
+        
+midi1=sorted(midi1,key=lambda event: event.getTick())
+midi2=sorted(midi2,key=lambda event: event.getTick())
+
+for event in midi1:
+        Midi.setChannel(event,1)
+        tout1.add(event)
+for event in midi2:
+        Midi.setChannel(event,2)
+        tout2.add(event)
+
+
+Midi.writeMidiFile("temp/temp.midi",sout)
+
+print Midi.getMidiDeviceNames()
+player=Midi.getPlayer()
+player.play(sout)
+player.waitFor()
+
+"""
+for midi in midis:
+    print "Track"
+    midi=sorted(midi, key=lambda event: event['tick']) 
+    for event in midi:
+        tickLen=otl
+        tick=event['tick']
+        if Midi.isMeta(event):
+            if Midi.isTempo(event):
+                print "Tempo:",Midi.tempo(event)," microseconds to quater note at: ",event['tick']
+                tickLen=Midi.tickLength(4,Midi.tempo(event),sequence)
+                print "New Tick Length:",tickLen
+            elif Midi.isTimeSignature(event):
+                print "Time:",Midi.timeSignature(event)," at ",event['tick']
+            else:
+                type=event['type']
+                if type<0:
+                    type+=256
+                print "Meta:",Midi.metaType(event)
+        else:
+            if Midi.isNote(event):
+"""

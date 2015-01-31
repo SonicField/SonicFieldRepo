@@ -1,8 +1,0 @@
-250 !plen
-1600 !pitch
-(?plen,?pitch)SinWave !ping
-
-((0,0),((?plen,10)/,1),((?plen,0.9)*,1),(?plen,0))NumericShape !nshape
-(>ping,>nshape)Multiply !ping
-
-?ping Normalise monitor

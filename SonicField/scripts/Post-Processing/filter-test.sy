@@ -1,0 +1,4 @@
+sig=sf.Slide((1000,0),(10000,10000))
+sig=sf.RBJNotch(sig,4000,0.001)
+sig=sf.FixSize(sig)
+sf.WriteFile32([sig],"temp/temp.wav")

@@ -1,5 +1,0 @@
-# An example Sonic Field Performance File
-# This patch will take a wav file in temp/input.wav
-# and output a file called output.wav 
-
-patches/serious/revoice.sfpl

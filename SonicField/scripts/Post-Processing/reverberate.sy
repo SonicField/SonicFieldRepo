@@ -1,0 +1,207 @@
+def reverbInner(signal,convol,grainLength):
+    def rii():
+        mag=sf.Magnitude(+signal)
+        if mag>0:
+            signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+            signal_=sf.FrequencyDomain(signal_)
+            signal_=sf.CrossMultiply(convol,signal_)
+            signal_=sf.TimeDomain(signal_)
+            newMag=sf.Magnitude(+signal_)
+            if newMag>0:
+                signal_=sf.NumericVolume(signal_,mag/newMag)        
+                # tail out clicks due to amplitude at end of signal 
+                return sf.Realise(signal_)
+            else:
+                return sf.Silence(sf.Length(signal_))
+        else:
+            -convol
+            return signal
+    return sf_do(rii)
+            
+def reverberate(signal,convol):
+    def revi():
+        grainLength = sf.Length(+convol)
+        convol_=sf.FrequencyDomain(sf.Concatenate(convol,sf.Silence(grainLength)))
+        signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+        out=[]
+        for grain in sf.Granulate(signal_,grainLength):
+            (signal_i,at)=grain
+            out.append((reverbInner(signal_i,+convol_,grainLength),at))
+        -convol_
+        return sf.Clean(sf.FixSize(sf.MixAt(out)))
+    return sf_do(revi)
+
+def excite(sig_,mix,power):
+    def exciteInner():
+        sig=sig_
+        m=sf.Magnitude(+sig)
+        sigh=sf.BesselHighPass(+sig,500,2)
+        mh=sf.Magnitude(+sigh)
+        sigh=sf.Power(sigh,power)
+        sigh=sf.Clean(sigh)
+        sigh=sf.BesselHighPass(sigh,1000,2)
+        nh=sf.Magnitude(+sigh)
+        sigh=sf.NumericVolume(sigh,mh/nh)
+        sig=sf.Mix(sf.NumericVolume(sigh,mix),sf.NumericVolume(sig,1.0-mix))
+        n=sf.Magnitude(+sig)
+        return sf.Realise(sf.NumericVolume(sig,m/n))
+    return sf_do(exciteInner)
+
+####################################
+#
+# Load the file and clean
+#
+####################################
+
+(left,right)=sf.ReadFile("temp/pulse-passa-bass.wav")
+
+left =sf.Multiply(sf.NumericShape((0,0),(64,1),(sf.Length(+left ),1)),left )
+right=sf.Multiply(sf.NumericShape((0,0),(64,1),(sf.Length(+right),1)),right)
+
+left =sf.Concatenate(sf.Silence(1024),left)
+right=sf.Concatenate(sf.Silence(1024),right)
+
+
+####################################
+#
+# Room Size And Nature Controls
+#
+####################################
+
+bright  = True
+vBright = False
+church  = True
+ambient = False
+post    = False
+spring  = True
+bboost  = True
+  
+if ambient:  
+    (convoll,convolr)=sf.ReadFile("temp/v-grand-l.wav")
+    (convorl,convorr)=sf.ReadFile("temp/v-grand-r.wav")
+elif church:    
+    (convoll,convolr)=sf.ReadFile("temp/bh-l.wav")
+    (convorl,convorr)=sf.ReadFile("temp/bh-r.wav")
+else:
+    (convoll,convolr)=sf.ReadFile("temp/Vocal-Chamber-L.wav")
+    (convorl,convorr)=sf.ReadFile("temp/Vocal-Chamber-R.wav")
+
+if spring:
+    spring=sf.ReadFile("temp/classic-fs2a.wav")[0]
+    convoll=sf.Mix(
+        convoll,
+        +spring
+    )
+    
+    convorr=sf.Mix(
+        convorr,
+        sf.Invert(spring)
+    )
+
+if bboost:
+    left =sf.RBJLowShelf(left,256,1,6)
+    right=sf.RBJLowShelf(right,256,1,6)
+    
+convoll=excite(convoll,0.75,2.0)
+convolr=excite(convolr,0.75,2.0)
+convorl=excite(convorl,0.75,2.0)
+convorr=excite(convorr,0.75,2.0)
+
+ll  = reverberate(+left ,convoll)
+lr  = reverberate(+left ,convolr)
+rl  = reverberate(+right,convorl)
+rr  = reverberate(+right,convorr)
+wleft =sf.FixSize(sf.Mix(ll,rl))
+wright=sf.FixSize(sf.Mix(rr,lr))
+
+wright = excite(wright,0.15,1.11)
+wleft  = excite(wleft ,0.15,1.11)
+
+if bright:
+    right  = excite(right,0.15,1.05)
+    left   = excite(left ,0.15,1.05)
+if vBright:
+    right  = excite(right,0.25,1.15)
+    left   = excite(left ,0.25,1.15)
+
+sf.WriteFile32((sf.FixSize(+wleft),sf.FixSize(+wright)),"temp/wet.wav")
+
+wleft =sf.FixSize(sf.Mix(sf.Pcnt15(+left),sf.Pcnt85(wleft)))
+wright =sf.FixSize(sf.Mix(sf.Pcnt15(+right),sf.Pcnt85(wright)))
+
+sf.WriteFile32((+wleft,+wright),"temp/mix.wav")
+
+if ambient:
+    (convoll,convolr)=sf.ReadFile("temp/ultra-l.wav")
+    (convorl,convorr)=sf.ReadFile("temp/ultra-r.wav")
+elif church:
+    (convoll,convolr)=sf.ReadFile("temp/v-grand-l.wav")
+    (convorl,convorr)=sf.ReadFile("temp/v-grand-r.wav")
+else:
+    (convoll,convolr)=sf.ReadFile("temp/bh-l.wav")
+    (convorl,convorr)=sf.ReadFile("temp/bh-r.wav")
+
+left  = sf.BesselLowPass(left  ,392,1)
+right = sf.BesselLowPass(right,392,1)
+ll  = reverberate(+left ,convoll)
+lr  = reverberate( left ,convolr)
+rl  = reverberate(+right,convorl)
+rr  = reverberate( right,convorr)
+vwleft =sf.FixSize(sf.Mix(ll,rl))
+vwright=sf.FixSize(sf.Mix(rr,lr))
+sf.WriteFile32((sf.FixSize(+vwleft),sf.FixSize(+vwright)),"temp/vwet.wav")
+wleft =sf.FixSize(sf.Mix(wleft ,sf.Pcnt20(vwleft )))
+wright=sf.FixSize(sf.Mix(wright,sf.Pcnt20(vwright)))
+sf.WriteSignal(+wleft ,"temp/grand-l.sig")
+sf.WriteSignal(+wright,"temp/grand-r.sig")
+wleft  = sf.Normalise(wleft)
+wright = sf.Normalise(wright)
+sf.WriteFile32((wleft,wright),"temp/grand.wav")
+
+if post:
+    print "Warming"
+    
+    left  = sf.ReadSignal("temp/grand-l.sig")
+    right = sf.ReadSignal("temp/grand-r.sig")
+    
+    def highDamp(sig,freq,fact):
+        hfq=sf.BesselHighPass(+sig,freq,4)
+        ctr=sf.FixSize(sf.Follow(sf.FixSize(+hfq),0.25,0.5))
+        ctr=sf.Clean(ctr)
+        ctr=sf.RBJLowPass(ctr,8,1)
+        ctr=sf.DirectMix(
+            1,
+            sf.NumericVolume(
+                sf.FixSize(sf.Invert(ctr)),
+                fact
+            )
+        )
+        hfq=sf.Multiply(hfq,ctr)
+        return sf.Mix(hfq,sf.BesselLowPass(sig,freq,4))
+    
+    def filter(sig_):
+        def filterInner():
+            sig=sig_
+            q=0.5
+            sig=sf.Mix(
+                sf.Pcnt10(sf.FixSize(sf.WaveShaper(-0.03*q,0.2*q,0,-1.0*q,0.2*q,2.0*q,+sig))),
+                sig
+            )
+            sig=sf.RBJPeaking(sig,64,2,2)
+            damp=sf.BesselLowPass(+sig,2000,1)
+            sig=sf.FixSize(sf.Mix(damp,sig))
+            low=sf.BesselLowPass(+sig,256,4)
+            m1=sf.Magnitude(+low)
+            low=sf.FixSize(low)
+            low=sf.Saturate(low)
+            m2=sf.Magnitude(+low)
+            low=sf.NumericVolume(low,m1/m2)
+            sig=sf.BesselHighPass(sig,256,4)
+            sig=sf.Mix(low,sig)
+            sig=highDamp(sig,5000,0.66)
+            return sf.FixSize(sf.Clean(sig))
+        return sf_do(filterInner)
+    
+    left  = filter(left)
+    right = filter(right)
+    sf.WriteFile32((left,right),"temp/proc.wav")

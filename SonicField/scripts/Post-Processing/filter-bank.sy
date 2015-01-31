@@ -1,0 +1,68 @@
+left  = sf.ReadSignal("temp/grand-l.sig")
+right = sf.ReadSignal("temp/grand-r.sig")
+
+def highDamp(sig,freq,fact):
+    mag=sf.Magnitude(+sig)
+    hfq=sf.RBJHighPass(+sig,freq,1)
+    ctr=sf.FixSize(sf.Follow(sf.FixSize(+hfq),0.25,0.5))
+    ctr=sf.Clean(ctr)
+    ctr=sf.RBJLowPass(ctr,8,1)
+    ctr=sf.DirectMix(
+        1,
+        sf.NumericVolume(
+            sf.FixSize(sf.Invert(ctr)),
+            fact
+        )
+    )
+    hfq=sf.Multiply(hfq,ctr)
+    sig=sf.Mix(hfq,sf.RBJLowPass(sig,freq,1))
+    mag=mag/sf.Magnitude(+sig)
+    return sf.NumericVolume(sig,mag)
+
+def bandDamp(sig,freqLow,freqHigh,fact):
+    mag=sf.Magnitude(+sig)
+    hfq=sf.RBJBandPass(+sig,freqLow,freqHigh)
+    ctr=sf.FixSize(sf.Follow(sf.FixSize(+hfq),0.25,0.5))
+    ctr=sf.Clean(ctr)
+    ctr=sf.RBJLowPass(ctr,8,1)
+    ctr=sf.DirectMix(
+        1,
+        sf.NumericVolume(
+            sf.FixSize(sf.Invert(ctr)),
+            fact
+        )
+    )
+    hfq=sf.Multiply(hfq,ctr)
+    sig=sf.Mix(hfq,sf.RBJNotch(sig,freqLow,freqHigh))
+    mag=mag/sf.Magnitude(+sig)
+    return sf.NumericVolume(sig,mag)
+
+def lowBoost(sig_):
+    def filterInner():
+        sig=sig_
+        q=0.5
+        sig=sf.Mix(
+            sf.Pcnt10(sf.FixSize(sf.WaveShaper(-0.03*q,0.2*q,0,-1.0*q,0.2*q,2.0*q,+sig))),
+            sig
+        )
+        sig=sf.RBJPeaking(sig,64,2,2)
+        damp=sf.BesselLowPass(+sig,2000,1)
+        sig=sf.FixSize(sf.Mix(damp,sig))
+        low=sf.BesselLowPass(+sig,256,4)
+        m1=sf.Magnitude(+low)
+        low=sf.FixSize(low)
+        low=sf.Saturate(low)
+        m2=sf.Magnitude(+low)
+        low=sf.NumericVolume(low,m1/m2)
+        sig=sf.BesselHighPass(sig,256,4)
+        sig=sf.Mix(low,sig)
+        sig=highDamp(sig,5000,0.66)
+        return sf.FixSize(sf.Clean(sig))
+    return sf_do(filterInner)
+
+def multiCompress(sig,f1,f2,f3):
+ to do
+
+left  = filter(left)
+right = filter(right)
+sf.WriteFile32((left,right),"temp/proc.wav")
