@@ -27,6 +27,8 @@ import javax.sound.midi.SysexMessage;
 import javax.sound.midi.Track;
 import javax.sound.midi.Transmitter;
 
+import com.nerdscentral.sython.SFPL_RuntimeException;
+
 public class MidiFunctions
 {
 
@@ -308,6 +310,7 @@ public class MidiFunctions
             l.put("number", i++); //$NON-NLS-1$
             l.put("vendor", info.getVendor()); //$NON-NLS-1$
             l.put("version", info.getVersion()); //$NON-NLS-1$
+            l.put("description", info.getDescription()); //$NON-NLS-1$
             try (MidiDevice dev = MidiSystem.getMidiDevice(info);)
             {
                 l.put("max-reveivers", dev.getMaxReceivers()); //$NON-NLS-1$
@@ -323,4 +326,13 @@ public class MidiFunctions
         return new MidiPlayer();
     }
 
+    public static MidiPlayer getPlayer(int sequNo, int synthNo) throws SFPL_RuntimeException
+    {
+        return new MidiPlayer(sequNo, synthNo);
+    }
+
+    public void getSynths()
+    {
+        // javax.sound.midi.Synthesizer
+    }
 }

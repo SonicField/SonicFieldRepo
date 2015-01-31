@@ -149,7 +149,7 @@ for event in midi2:
 Midi.writeMidiFile("temp/temp.midi",sout)
 
 print Midi.getMidiDeviceNames()
-player=Midi.getPlayer()
+player=Midi.getPlayer(1,0)
 player.play(sout)
 player.waitFor()
 
