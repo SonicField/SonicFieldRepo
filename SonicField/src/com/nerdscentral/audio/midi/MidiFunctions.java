@@ -23,6 +23,7 @@ import javax.sound.midi.Receiver;
 import javax.sound.midi.Sequence;
 import javax.sound.midi.Sequencer;
 import javax.sound.midi.ShortMessage;
+import javax.sound.midi.Synthesizer;
 import javax.sound.midi.SysexMessage;
 import javax.sound.midi.Track;
 import javax.sound.midi.Transmitter;
@@ -31,10 +32,19 @@ import com.nerdscentral.sython.SFPL_RuntimeException;
 
 public class MidiFunctions
 {
-
-    public static final int                 NOTE_ON  = 0x90;
-    public static final int                 NOTE_OFF = 0x80;
-    private static HashMap<Integer, String> smLookup = new HashMap<>();
+    public static final int                 MODWHEEL        = 0x01;
+    public static final int                 BREATH          = 0x02;
+    public static final int                 FOOT            = 0x04;
+    public static final int                 PORTAMENTO_TIME = 0x05;
+    public static final int                 VOLUME          = 0x07;
+    public static final int                 BALANCE         = 0x08;
+    public static final int                 PAN             = 0x0A;
+    public static final int                 PORTAMENTO      = 0x41;
+    public static final int                 SOSTENUTO       = 0x42;
+    public static final int                 RESET           = 0x79;
+    public static final int                 NOTE_ON         = 0x90;
+    public static final int                 NOTE_OFF        = 0x80;
+    private static HashMap<Integer, String> smLookup        = new HashMap<>();
     static
     {
         smLookup.put(ShortMessage.ACTIVE_SENSING, "active_sensing"); //$NON-NLS-1$
@@ -156,6 +166,7 @@ public class MidiFunctions
                         Map<String, Object> row = new ConcurrentHashMap<>();
                         String command = smLookup.get(sm.getCommand());
                         if (command == null) command = "small-unknown"; //$NON-NLS-1$
+                        row.put("command", "command"); //$NON-NLS-1$ //$NON-NLS-2$
                         row.put("type", command); //$NON-NLS-1$
                         row.put("track", (double) trackNumber); //$NON-NLS-1$
                         row.put("channel", (double) sm.getChannel()); //$NON-NLS-1$
@@ -234,32 +245,6 @@ public class MidiFunctions
         return sequence.getTracks()[trackNo];
     }
 
-    /**
-     * Creates a SFPL style note
-     * 
-     * @param track
-     *            the track to put it on
-     * @param time
-     *            the time in milliseconds since start of track to place the note
-     * @param length
-     *            the length of the note in milliseconds
-     * @param channel
-     *            the channel
-     * @param note
-     * @param velocity
-     * @throws InvalidMidiDataException
-     */
-    public static void addNote(Track track, int time, int length, int channel, int note, int velocity)
-                    throws InvalidMidiDataException
-    {
-        ShortMessage mess = new ShortMessage(ShortMessage.NOTE_ON, channel, note, velocity);
-        MidiEvent event = new MidiEvent(mess, time);
-        track.add(event);
-        mess = new ShortMessage(ShortMessage.NOTE_OFF, channel, note, 0);
-        event = new MidiEvent(mess, time + length);
-        track.add(event);
-    }
-
     /** Saves a sequence as a type one file */
     public static void writeMidiFile(String fileName, Sequence sequence) throws IOException
     {
@@ -311,6 +296,9 @@ public class MidiFunctions
             l.put("vendor", info.getVendor()); //$NON-NLS-1$
             l.put("version", info.getVersion()); //$NON-NLS-1$
             l.put("description", info.getDescription()); //$NON-NLS-1$
+            l.put("synthesiser", MidiSystem.getMidiDevice(info) instanceof Synthesizer); //$NON-NLS-1$
+            l.put("sequencer", MidiSystem.getMidiDevice(info) instanceof Sequencer); //$NON-NLS-1$
+            l.put("class", MidiSystem.getMidiDevice(info).getClass()); //$NON-NLS-1$
             try (MidiDevice dev = MidiSystem.getMidiDevice(info);)
             {
                 l.put("max-reveivers", dev.getMaxReceivers()); //$NON-NLS-1$
@@ -331,8 +319,128 @@ public class MidiFunctions
         return new MidiPlayer(sequNo, synthNo);
     }
 
-    public void getSynths()
+    public static void addNote(Track track, int channel, int on, int off, int key, int velocity)
+                    throws InvalidMidiDataException
     {
-        // javax.sound.midi.Synthesizer
+        ShortMessage sm1 = new ShortMessage(ShortMessage.NOTE_ON, channel, key, velocity);
+        ShortMessage sm2 = new ShortMessage(ShortMessage.NOTE_OFF, channel, key, velocity);
+        MidiEvent ev1 = new MidiEvent(sm1, on);
+        MidiEvent ev2 = new MidiEvent(sm2, off);
+        track.add(ev1);
+        track.add(ev2);
     }
+
+    private static void addControl(Track track, int channel, int at, int amount, int control) throws InvalidMidiDataException
+    {
+        ShortMessage sm1 = new ShortMessage(ShortMessage.CONTROL_CHANGE, channel, control, amount);
+        MidiEvent ev1 = new MidiEvent(sm1, at);
+        track.add(ev1);
+    }
+
+    public static void addPan(Track track, int channel, int at, int amount) throws InvalidMidiDataException
+    {
+        addControl(track, channel, at, amount, PAN);
+    }
+
+    public static void addModWheel(Track track, int channel, int at, int amount) throws InvalidMidiDataException
+    {
+        addControl(track, channel, at, amount, MODWHEEL);
+    }
+
+    public static void addBreath(Track track, int channel, int at, int amount) throws InvalidMidiDataException
+    {
+        addControl(track, channel, at, amount, BREATH);
+    }
+
+    public static void addBFoot(Track track, int channel, int at, int amount) throws InvalidMidiDataException
+    {
+        addControl(track, channel, at, amount, FOOT);
+    }
+
+    public static void addPortamentoTime(Track track, int channel, int at, int amount) throws InvalidMidiDataException
+    {
+        addControl(track, channel, at, amount, PORTAMENTO_TIME);
+    }
+
+    public static void addVolume(Track track, int channel, int at, int amount) throws InvalidMidiDataException
+    {
+        addControl(track, channel, at, amount, VOLUME);
+    }
+
+    public static void addBalance(Track track, int channel, int at, int amount) throws InvalidMidiDataException
+    {
+        addControl(track, channel, at, amount, BALANCE);
+    }
+
+    public static void addPortamento(Track track, int channel, int at, int amount) throws InvalidMidiDataException
+    {
+        addControl(track, channel, at, amount, PORTAMENTO);
+    }
+
+    public static void addSostenuto(Track track, int channel, int at, int amount) throws InvalidMidiDataException
+    {
+        addControl(track, channel, at, amount, SOSTENUTO);
+    }
+
+    public static void addReset(Track track, int channel, int at, int amount) throws InvalidMidiDataException
+    {
+        addControl(track, channel, at, amount, RESET);
+    }
+
+    private static MidiEvent makeControl(int channel, int at, int amount, int control) throws InvalidMidiDataException
+    {
+        ShortMessage sm1 = new ShortMessage(ShortMessage.CONTROL_CHANGE, channel, control, amount);
+        return new MidiEvent(sm1, at);
+    }
+
+    public static MidiEvent makePan(int channel, int at, int amount) throws InvalidMidiDataException
+    {
+        return makeControl(channel, at, amount, PAN);
+    }
+
+    public static MidiEvent makeModWheel(int channel, int at, int amount) throws InvalidMidiDataException
+    {
+        return makeControl(channel, at, amount, MODWHEEL);
+    }
+
+    public static MidiEvent makeBreath(int channel, int at, int amount) throws InvalidMidiDataException
+    {
+        return makeControl(channel, at, amount, BREATH);
+    }
+
+    public static MidiEvent makeBFoot(int channel, int at, int amount) throws InvalidMidiDataException
+    {
+        return makeControl(channel, at, amount, FOOT);
+    }
+
+    public static MidiEvent makePortamentoTime(int channel, int at, int amount) throws InvalidMidiDataException
+    {
+        return makeControl(channel, at, amount, PORTAMENTO_TIME);
+    }
+
+    public static MidiEvent makeVolume(int channel, int at, int amount) throws InvalidMidiDataException
+    {
+        return makeControl(channel, at, amount, VOLUME);
+    }
+
+    public static MidiEvent makeBalance(int channel, int at, int amount) throws InvalidMidiDataException
+    {
+        return makeControl(channel, at, amount, BALANCE);
+    }
+
+    public static MidiEvent makePortamento(int channel, int at, int amount) throws InvalidMidiDataException
+    {
+        return makeControl(channel, at, amount, PORTAMENTO);
+    }
+
+    public static MidiEvent makeSostenuto(int channel, int at, int amount) throws InvalidMidiDataException
+    {
+        return makeControl(channel, at, amount, SOSTENUTO);
+    }
+
+    public static MidiEvent makeReset(int channel, int at, int amount) throws InvalidMidiDataException
+    {
+        return makeControl(channel, at, amount, RESET);
+    }
+
 }

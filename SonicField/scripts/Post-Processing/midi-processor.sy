@@ -38,6 +38,10 @@ class Midi(MidiFunctions):
     @staticmethod
     def isMeta(event):
         return event['command']=='meta'
+
+    @staticmethod
+    def isCommand(event):
+        return event['command']=='command'
         
     @staticmethod
     def isTempo(event):
@@ -124,54 +128,70 @@ tout2=sout.createTrack()
 midi1=[]
 midi2=[]
 flip=True
-for event in midis[5]:
+minKey=999
+maxKey=0
+
+# Use 499 for 1 Done
+# Use 496 for 2
+# Use 497 for 3
+# Use 497 for 4
+# Use 001 for 5 Done
+# Use 002 for 6
+midiNo=6
+
+for event in midis[midiNo]:
     if Midi.isNote(event):
+        ev1=event['event']
+        ev2=event['event-off']
+        if event['key']>maxKey:
+            maxKey=event['key']
+        if event['key']<minKey:
+            minKey=event['key']
+
+for event in midis[midiNo]:
+    if Midi.isNote(event):
+        ev1=event['event']
+        ev2=event['event-off']
+        ev1.setTick(ev1.getTick()+600)
+        ev2.setTick(ev2.getTick()+600)
+        key=event['key']
+        pan=127.0*float(key-minKey)/float(maxKey-minKey)
+        pan=31+pan/2
+        pan=int(pan)
+        pan=Midi.makePan(1,ev1.getTick()-1,pan)
         if flip:
+            midi1.append(pan)
             midi1.append(event['event'])
             midi1.append(event['event-off'])
             flip=False
         else:
+            midi2.append(pan)
             midi2.append(event['event'])
             midi2.append(event['event-off'])
             flip=True
+
+Midi.addPan(tout1,1,100,64)
+Midi.addPan(tout2,2,100,64)
+
+Midi.addNote(tout1,1,100,120,50,100)
+Midi.addNote(tout2,2,100,120,50,100)
         
 midi1=sorted(midi1,key=lambda event: event.getTick())
 midi2=sorted(midi2,key=lambda event: event.getTick())
 
 for event in midi1:
-        Midi.setChannel(event,1)
-        tout1.add(event)
-for event in midi2:
-        Midi.setChannel(event,2)
-        tout2.add(event)
-
+    Midi.setChannel(event,1)
+    tout1.add(event)
+#for event in midi2:
+#    Midi.setChannel(event,2)
+#    tout2.add(event)
 
 Midi.writeMidiFile("temp/temp.midi",sout)
 
-print Midi.getMidiDeviceNames()
-player=Midi.getPlayer(1,0)
-player.play(sout)
+for dev in Midi.getMidiDeviceNames():
+    print dev
+
+player=Midi.getPlayer(3,2)
+player.manual(sout)
 player.waitFor()
 
-"""
-for midi in midis:
-    print "Track"
-    midi=sorted(midi, key=lambda event: event['tick']) 
-    for event in midi:
-        tickLen=otl
-        tick=event['tick']
-        if Midi.isMeta(event):
-            if Midi.isTempo(event):
-                print "Tempo:",Midi.tempo(event)," microseconds to quater note at: ",event['tick']
-                tickLen=Midi.tickLength(4,Midi.tempo(event),sequence)
-                print "New Tick Length:",tickLen
-            elif Midi.isTimeSignature(event):
-                print "Time:",Midi.timeSignature(event)," at ",event['tick']
-            else:
-                type=event['type']
-                if type<0:
-                    type+=256
-                print "Meta:",Midi.metaType(event)
-        else:
-            if Midi.isNote(event):
-"""
