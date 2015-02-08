@@ -1,6 +1,8 @@
 import random
 import math
-    
+path="scripts/Post-Processing"
+execfile(path+"/chorus.sy")
+
 def granularReverb(signal,ratio,delay,density,length=50,stretch=1,vol=1):
     print "Granular reverb: ratio:",ratio," delay:",delay," density",density," length:",length," stretch:",stretch," volume:",vol
     def granularReverbInner():
@@ -24,35 +26,6 @@ def granularReverb(signal,ratio,delay,density,length=50,stretch=1,vol=1):
         out=sf.Clean(out)
         return out
     return sf_do(granularReverbInner)
-
-def reverbInner(signal,convol,grainLength):
-    def reverbInnerDo():
-        mag=sf.Magnitude(+signal)
-        if mag>0:
-            signal_=sf.Concatenate(signal,sf.Silence(grainLength))
-            signal_=sf.FrequencyDomain(signal_)
-            signal_=sf.CrossMultiply(convol,signal_)
-            signal_=sf.TimeDomain(signal_)
-            newMag=sf.Magnitude(+signal_)
-            signal_=sf.NumericVolume(signal_,mag/newMag)        
-            # tail out clicks due to amplitude at end of signal 
-            return sf.Realise(signal_)
-        else:
-            -convol
-            return signal
-            
-    return sf_do(reverbInnerDo)
-
-def reverberate(signal,convol):
-    grainLength = sf.Length(+convol)
-    convol_=sf.FrequencyDomain(sf.Concatenate(convol,sf.Silence(grainLength)))
-    signal_=sf.Concatenate(signal,sf.Silence(grainLength))
-    out=[]
-    for grain in sf.Granulate(signal_,grainLength):
-        (signal_i,at)=grain
-        out.append((reverbInner(signal_i,+convol_,grainLength),at))
-    -convol_
-    return sf.Normalise(sf.Clean(sf.MixAt(out)))
 
 def doNormal(sig):
     def doNormalInner():
@@ -83,21 +56,13 @@ def stretch(sig,echo):
         ))
     return sf_do(stretchInner)
 
-(left,right)=sf.ReadFile("temp/input.wav")
-
-#left =sf.Cut(0,10000,left)
-#right=sf.Cut(0,10000,right)
+(left,right)=sf.ReadFile("temp/a.wav")
  
 left  = stretch(left,1024)
 right = stretch(right,1024)    
 
 right = doNormal(right)
 left  = doNormal(left) 
+left,right=chorus(left,right)
 
-sf.WriteFile32((+left,+right),"temp/ambient-stretch-dry.wav")
-convoll,convolr=sf.ReadFile("temp/revb.wav")
-
-wleft =reverberate(left,convoll)
-wright=reverberate(right,convolr)
-
-sf.WriteFile32((wleft,wright),"temp/ambient-stretch-wet.wav")
+sf.WriteFile32((left,right),"temp/ambient-stretch-dry.wav")

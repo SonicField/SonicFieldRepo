@@ -111,6 +111,7 @@ com.nerdscentral.audio.time.SF_Resonate
 com.nerdscentral.audio.time.SF_ResonateFilter
 com.nerdscentral.audio.time.SF_Reverse
 com.nerdscentral.audio.time.SF_ShapedResonateFilter
+com.nerdscentral.audio.time.SF_TimeShift
 com.nerdscentral.audio.time.SF_TruncateSilence
 com.nerdscentral.audio.utilities.SF_AutoCorrolation
 com.nerdscentral.audio.utilities.SF_Frequency

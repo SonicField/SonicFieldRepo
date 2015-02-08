@@ -158,6 +158,35 @@ public class MidiPlayer implements MetaEventListener, java.lang.AutoCloseable, C
         play(sequence, false);
     }
 
+    public void playSolo(Sequence sequence, int controlTrack, int voiceTrack)
+    {
+        if (sequencer != null && sequence != null && sequencer.isOpen())
+        {
+            try
+            {
+                sequencer.setSequence(sequence);
+                int nt = sequence.getTracks().length;
+                for (int i = 0; i < nt; ++i)
+                {
+                    if (i == controlTrack || i == voiceTrack)
+                    {
+                        sequencer.setTrackMute(i, false);
+                    }
+                    else
+                    {
+                        sequencer.setTrackMute(i, true);
+                    }
+                }
+                sequencer.start();
+                this.loop = false;
+            }
+            catch (InvalidMidiDataException ex)
+            {
+                ex.printStackTrace();
+            }
+        }
+    }
+
     public void manual(Sequence sequence) throws IOException
     {
         if (sequencer != null && sequence != null && sequencer.isOpen())

@@ -1,0 +1,19 @@
+import random
+
+path="scripts/Post-Processing"
+execfile(path+"/midi.sy")
+
+sout=Midi.createSequence()
+
+# Create the timing information track
+tout=sout.createTrack()
+
+at=100
+base=64
+for i in range(1,1000):
+    Midi.addNote(tout,2,at,at+480,int(base+random.random()*32),100)
+    at+=720
+
+player=Midi.getPlayer(3,2)
+player.manual(sout)
+player.waitFor()

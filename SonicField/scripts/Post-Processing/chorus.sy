@@ -1,0 +1,62 @@
+sf.SetSampleRate(96000)
+if not 'random' in dir():
+    import random
+    random.seed(System.currentTimeMillis())
+
+def bandRand(min,max):
+    min=float(min)
+    max=float(max)
+    r1=random.random()
+    r2=random.random()
+    r=float(r1+r2)*0.5
+    r=r*(max-min)
+    r=r+min
+    return r
+
+def chorus(
+    left,
+    right,
+    minDepth = 10.0,
+    maxDepth = 50.0,
+    maxRate  =  0.1,
+    minRate  =  0.05,
+    nChorus  =  4.0,
+    minVol   =  0.7,
+    maxVol   =  1.0):    
+    def inner(signal_):
+        def inner_():
+            signal=sf.Clean(signal_)
+            sigs=[]
+            l=sf.Length(+signal)
+            for inst in range(0,nChorus):
+                def in_inner():
+                    print "Do"
+                    lfo=sf.PhasedSineWave(l,bandRand(minRate,maxRate),random.random())
+                    lfo=sf.NumericVolume(lfo,bandRand(minDepth,maxDepth))
+                    nsg=sf.TimeShift(+signal,lfo)
+                    lfo=sf.PhasedSineWave(l,bandRand(minRate,maxRate),random.random())
+                    lfo=sf.NumericVolume(lfo,bandRand(minVol,maxVol))
+                    lfo=sf.DirectMix(1,lfo)
+                    nsg=sf.Multiply(lfo,nsg)
+                    print "Done"
+                    return sf.Finalise(nsg)
+                sigs.append(sf_do(in_inner))
+            ret=sf.Finalise(sf.Mix(sigs))
+            -signal
+            return ret
+        return sf_do(inner_)
+    
+    return inner(left),inner(right)
+    
+(left,right)=sf.ReadFile("temp/a.wav")
+left,right=chorus(
+    left,
+    right,
+    minDepth =  0.0,
+    maxDepth = 10.0,
+    minVol   =  1.0,
+    maxVol   =  1.0,
+    nChorus  =  9.0)
+
+left,right=chorus(left,right)
+sf.WriteFile32((left,right),"temp/c.wav")
