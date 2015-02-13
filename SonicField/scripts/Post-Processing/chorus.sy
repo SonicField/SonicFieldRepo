@@ -49,7 +49,10 @@ def chorus(
     return inner(left),inner(right)
     
 (left,right)=sf.ReadFile("temp/a.wav")
-left,right=chorus(
+#left  = sf.RBJHighPass(left ,4000,2)
+#right = sf.RBJHighPass(right,4000,2)
+
+left1,right1=chorus(
     left,
     right,
     minDepth =  0.0,
@@ -57,6 +60,18 @@ left,right=chorus(
     minVol   =  1.0,
     maxVol   =  1.0,
     nChorus  =  9.0)
+    
+left2,right2=chorus(
+    +left1,
+    +right1,
+    minDepth = 10.0,
+    maxDepth = 50.0,
+    maxRate  =  0.1,
+    minRate  =  0.05,
+    nChorus  =  4.0,
+    minVol   =  0.7,
+    maxVol   =  1.0)
 
-left,right=chorus(left,right)
+left  = sf.Finalise(sf.Mix(left1 ,left2))
+right = sf.Finalise(sf.Mix(right1,right2))
 sf.WriteFile32((left,right),"temp/c.wav")

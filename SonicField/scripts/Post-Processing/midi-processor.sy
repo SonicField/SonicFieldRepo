@@ -1,6 +1,11 @@
 path="scripts/Post-Processing"
 execfile(path+"/midi.sy")
 
+
+print "MIDI Devices:"        
+for dev in Midi.getMidiDeviceNames():
+    print dev
+
 sequence=Midi.readMidiFile("temp/well2.mid")
 
 print 'Sequence Time  Type:', Midi.timeType(sequence)
@@ -9,7 +14,9 @@ print 'Initial tick length:',Midi.tickLength(4,500000,sequence)
 otl=Midi.tickLength(4,500000,sequence)
 
 offset=20000
+dilate=1.0
 midiNo=1
+cut   =10
 
 midis=Midi.processSequence(sequence)    
 
@@ -18,8 +25,11 @@ for midi in midis:
         if Midi.isNote(event):
             ev1=event['event']
             ev2=event['event-off']
-            ev1.setTick(ev1.getTick()+offset)
-            ev2.setTick(ev2.getTick()+offset)
+            ev1.setTick(int(ev1.getTick()*dilate)+offset)
+            ev2.setTick(int(ev2.getTick()*dilate)+offset)
+        else:
+            ev1=event['event']
+            ev1.setTick(int(ev1.getTick()*dilate)+offset)
 
 minKey=999
 maxKey=0
@@ -68,7 +78,7 @@ def playVoices(voices=4):
                 rota+=1
         
         Midi.addPan(tout1,1,100,64)
-        Midi.addNote(tout1,1,offset/2,10010,50,100)
+        Midi.addNote(tout1,1,offset/2,offset/2+2000,50,100)
         midi1=sorted(midi1,key=lambda event: event.getTick())
         
         for event in midi1:
@@ -76,9 +86,6 @@ def playVoices(voices=4):
             tout1.add(event)
         
         Midi.writeMidiFile("temp/temp.midi",sout)
-        
-        for dev in Midi.getMidiDeviceNames():
-            print dev
         
         player=Midi.getPlayer(3,2)
         player.play(sout)
@@ -96,48 +103,59 @@ def playVoices(voices=4):
 #
 # At the moment it is not clever enough to take account
 # of tempo change events
-def playNotes(release=120,voices=12):
+def playNotes(release=120,sameRelease=60,voices=12):
     chans=[]
     for v in range(0,voices):
         chans.append([])
     
     voice=0
+    vs=[]
+    rota=0
     for event in midis[midiNo]:
-        if Midi.isNote(event):       
-            for v in range(0,voices+1):
+        if Midi.isNote(event):
+            notFound=True
+            for v in range(0,2*(voices+1)):
+                second=v>voices                
+                v+=rota
                 v=v%voices
                 chan=chans[v]
                 if chan:
-                    if chan[-1]['key']==event['key']:
-                        break
                     top=chan[-1]['tick-off']
-                    top+=release
-                    if top<event['tick']:
+                    next=event['tick']
+                    if chan[-1]['key']==event['key']:
+                        if top+sameRelease<next:
+                            notFound=False
+                            rota+=1                        
+                            break
+                    if top+release<next and second:
+                        rota+=1
+                        notFound=False
                         break
                 else:
+                    notFound=False
                     break
-            print v
+
+            if notFound:
+                v=rota
+                v=v%voices
+                rota+=1
+            vs.append(v)
             chans[v].append(event)
+    print "Voicing:",vs
  
     for chan in chans:
-        print chan
-        
-    sout=Midi.blankSequence(sequence)
+        print chan    
 
+    sout=Midi.blankSequence(sequence)  
     # Create the timing information track
     tout=sout.createTrack()
     for event in midis[0]:
         if Midi.isMeta(event):
             if Midi.isTempo(event) or Midi.isTimeSignature(event):
                 tout.add(event['event'])
-
-    nChan=0
     for chan in chans:
         if chan:
-            nChan+=1
-            tout=sout.createTrack();
-            Midi.addPan(tout,1,100,64)
-            Midi.addNote(tout,1,offset/2,10010,50,100)
+
             events=[]
             for event in chan:
                 ev1=event['event']
@@ -152,21 +170,60 @@ def playNotes(release=120,voices=12):
                 events.append(event['event-off'])
 
             events=sorted(events,key=lambda event: event.getTick())
-            
+
+            # Create note track
+            tout=sout.createTrack()
+            Midi.addPan(tout,1,100,64)
+            Midi.addNote(tout,1,offset/2,(offset/2)+20,50,100)
+
             for event in events:
                 Midi.setChannel(event,1)
                 tout.add(event)
-    
     Midi.writeMidiFile("temp/temp.midi",sout)
-    
-    for dev in Midi.getMidiDeviceNames():
-        print dev
-    
-    player=Midi.getPlayer(3,2)
-    for trackNo in range(1,nChan):
-        print "Playing track: ",trackNo
-        player.playSolo(sout,0,trackNo)
-        player.waitFor()
+ 
 
-playNotes()  
-  
+    nChan=0
+    for chan in chans:
+        if chan:
+            nChan+=1
+            print "Performing Channel: :",chan
+            events=[]
+            for event in chan:
+                ev1=event['event']
+                ev2=event['event-off']
+                key=event['key']
+                pan=127.0*float(key-minKey)/float(maxKey-minKey)
+                pan=31+pan/2
+                pan=int(pan)
+                pan=Midi.makePan(1,ev1.getTick()-1,pan)
+                events.append(pan)
+                events.append(event['event'])
+                events.append(event['event-off'])
+
+            events=sorted(events,key=lambda event: event.getTick())
+                    
+            sout=Midi.blankSequence(sequence)  
+ 
+            # Create the timing information track
+            tout=sout.createTrack()
+            for event in midis[0]:
+                if Midi.isMeta(event):
+                    if Midi.isTempo(event) or Midi.isTimeSignature(event):
+                        tout.add(event['event'])
+
+            # Create note track
+            tout=sout.createTrack()
+            Midi.addPan(tout,1,100,64)
+            Midi.addNote(tout,1,offset/2,(offset/2)+20,50,100)
+
+            for event in events:
+                Midi.setChannel(event,1)
+                tout.add(event)
+            player=Midi.getPlayer(3,2)
+            #player=Midi.getPlayer(1,0)
+            player.play(sout)
+            player.waitFor()
+    
+
+#playVoices(2)  
+playNotes(release=120,sameRelease=60,voices=10)
