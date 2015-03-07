@@ -1,0 +1,22 @@
+def excite(sig_,mix,power):
+    def exciteInner():
+        sig=sig_
+        m=sf.Magnitude(+sig)
+        sigh=sf.BesselHighPass(+sig,500,2)
+        mh=sf.Magnitude(+sigh)
+        sigh=sf.Power(sigh,power)
+        sigh=sf.Clean(sigh)
+        sigh=sf.BesselHighPass(sigh,1000,2)
+        nh=sf.Magnitude(+sigh)
+        sigh=sf.NumericVolume(sigh,mh/nh)
+        sig=sf.Mix(sf.NumericVolume(sigh,mix),sf.NumericVolume(sig,1.0-mix))
+        n=sf.Magnitude(+sig)
+        return sf.Realise(sf.NumericVolume(sig,m/n))
+    return sf_do(exciteInner)
+    
+(left,right)=sf.ReadFile("temp/a.wav")
+left =excite(left ,0.5,1.05)
+right=excite(right,0.5,1.05)
+left  = sf.Finalise(left)
+right = sf.Finalise(right)
+sf.WriteFile32((left,right),"temp/c.wav")
