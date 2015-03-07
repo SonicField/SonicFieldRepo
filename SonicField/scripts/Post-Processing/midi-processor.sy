@@ -1,24 +1,27 @@
 path="scripts/Post-Processing"
 execfile(path+"/midi.sy")
 
-
 print "MIDI Devices:"        
 for dev in Midi.getMidiDeviceNames():
     print dev
 
-sequence=Midi.readMidiFile("temp/well2.mid")
+sequence=Midi.readMidiFile("temp/Fantasia On A Theme Of Sanity.mid")
 
 print 'Sequence Time  Type:', Midi.timeType(sequence)
 print 'Sequence Resolution:', sequence.getResolution()
 print 'Initial tick length:',Midi.tickLength(4,500000,sequence)
 otl=Midi.tickLength(4,500000,sequence)
 
-offset=20000
+offset=5000
 dilate=1.0
 midiNo=1
 cut   =10
+offset=int(offset)
 
-midis=Midi.processSequence(sequence)    
+midis=Midi.processSequence(sequence,'DELETE')
+
+synthesiser = 3
+sequencer   = 5
 
 for midi in midis:
     for event in midi:
@@ -46,11 +49,26 @@ for event in midis[midiNo]:
 # Fixed polyphony
 # Round robbin through a fixed number of voices
 # controlled by the 'voices' value.
+
+# reset track
+sout=Midi.blankSequence(sequence)
+tout1=sout.createTrack()    
+
+midi1=[]
+Midi.addPan(tout1,1,100,64)
+Midi.addNote(tout1,1,offset/2,offset/2+2000,50,100)
+midi1=sorted(midi1,key=lambda event: event.getTick())
+player=Midi.getPlayer(sequencer,synthesiser)
+player.play(sout)
+player.waitFor()
+
 def playVoices(voices=4):
+
+    
     for voice in range(0,voices):
     
         sout=Midi.blankSequence(sequence)
-        
+              
         # Create the timing information track
         tout=sout.createTrack()
         for event in midis[0]:
@@ -76,6 +94,10 @@ def playVoices(voices=4):
                     midi1.append(event['event'])
                     midi1.append(event['event-off'])
                 rota+=1
+            else:
+                #print event
+                midi1.append(event['event'])
+
         
         Midi.addPan(tout1,1,100,64)
         Midi.addNote(tout1,1,offset/2,offset/2+2000,50,100)
@@ -85,9 +107,9 @@ def playVoices(voices=4):
             Midi.setChannel(event,1)
             tout1.add(event)
         
-        Midi.writeMidiFile("temp/temp.midi",sout)
+        Midi.writeMidiFile("temp/temp"+str(voice)+".midi",sout)
         
-        player=Midi.getPlayer(3,2)
+        player=Midi.getPlayer(sequencer,synthesiser)
         player.play(sout)
         player.waitFor()
 
@@ -174,7 +196,7 @@ def playNotes(release=120,sameRelease=60,voices=12):
             # Create note track
             tout=sout.createTrack()
             Midi.addPan(tout,1,100,64)
-            Midi.addNote(tout,1,offset/2,(offset/2)+20,50,100)
+            Midi.addNote(tout,1,offset/2,(offset/2)+2000,50,100)
 
             for event in events:
                 Midi.setChannel(event,1)
@@ -219,11 +241,11 @@ def playNotes(release=120,sameRelease=60,voices=12):
             for event in events:
                 Midi.setChannel(event,1)
                 tout.add(event)
-            player=Midi.getPlayer(3,2)
+            player=Midi.getPlayer(sequencer,synthesiser)
             #player=Midi.getPlayer(1,0)
             player.play(sout)
             player.waitFor()
     
 
-#playVoices(2)  
-playNotes(release=120,sameRelease=60,voices=10)
+playVoices(1)  
+#playNotes(release=120,sameRelease=60,voices=4)

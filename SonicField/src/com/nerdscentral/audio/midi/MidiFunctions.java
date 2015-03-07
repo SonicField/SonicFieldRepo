@@ -90,12 +90,24 @@ public class MidiFunctions
 
     public static void setChannel(MidiEvent ev, int channel) throws InvalidMidiDataException
     {
-        ShortMessage sm = (ShortMessage) ev.getMessage();
-        sm.setMessage(sm.getCommand(), channel, sm.getData1(), sm.getData2());
+        if (ev.getMessage() instanceof ShortMessage)
+        {
+            ShortMessage sm = (ShortMessage) ev.getMessage();
+            sm.setMessage(sm.getCommand(), channel, sm.getData1(), sm.getData2());
+        }
     }
 
     public static List<Object> processSequence(Sequence sequence)
     {
+        return processSequence(sequence, "INSIDE"); //$NON-NLS-1$
+    }
+
+    // DELETE - remove the overlapping (second etc) note
+    // INSIDE - make the second note inside the first
+    // OUTSIDE - break into two sequential notes
+    public static List<Object> processSequence(Sequence sequence, String overlapMode)
+    {
+        if (overlapMode == "OUTSIDE") throw new RuntimeException("Not yet supported"); //$NON-NLS-1$ //$NON-NLS-2$
         List<Object> table = new ArrayList<>();
         int trackNumber = -1;
         for (Track track : sequence.getTracks())
@@ -115,6 +127,11 @@ public class MidiFunctions
                     {
                         int key = sm.getData1();
                         int velocity = sm.getData2();
+                        if (!onMap.containsKey(key))
+                        {
+                            onMap.put(key, new Stack<Map<String, Object>>());
+                        }
+                        Stack<Map<String, Object>> stack = onMap.get(key);
                         if (velocity > 0)
                         {
                             Map<String, Object> row = new ConcurrentHashMap<>();
@@ -125,41 +142,59 @@ public class MidiFunctions
                             row.put("track", (double) trackNumber); //$NON-NLS-1$
                             row.put("channel", (double) sm.getChannel()); //$NON-NLS-1$
                             row.put("event", event); //$NON-NLS-1$
-                            if (!onMap.containsKey(key))
+                            stack.push(row);
+                            if (stack.size() > 1)
                             {
-                                onMap.put(key, new Stack<Map<String, Object>>());
-                            }
-                            Stack<Map<String, Object>> st = onMap.get(key);
-                            if (st.size() > 0)
-                            {
-                                StringBuilder out = new StringBuilder();
-                                out.append(String.format("Warning: Overlapping Notes Detected:%n")); //$NON-NLS-1$
-                                for (Entry<String, Object> kv : row.entrySet())
+                                System.err.println("Warning: Overlapping Notes Detected:"); //$NON-NLS-1$
+                                for (Map<String, Object> s : stack)
                                 {
-                                    out.append(kv.getKey());
-                                    out.append("="); //$NON-NLS-1$
-                                    out.append(kv.getValue());
-                                    out.append(" "); //$NON-NLS-1$
+                                    StringBuilder out = new StringBuilder();
+                                    for (Entry<String, Object> kv : row.entrySet())
+                                    {
+                                        out.append(kv.getKey());
+                                        out.append("="); //$NON-NLS-1$
+                                        out.append(kv.getValue());
+                                        out.append(" "); //$NON-NLS-1$
+                                    }
+                                    System.err.println("    " + out); //$NON-NLS-1$
                                 }
-                                System.err.println(out);
+                                if (overlapMode == "DELETE") //$NON-NLS-1$
+                                {
+                                    System.err.println("    DELETE - remove second"); //$NON-NLS-1$
+                                    stack.pop();
+                                }
                             }
-                            st.push(row);
                         }
                         else
                         {
-                            Map<String, Object> row = onMap.get(key).pop();
-                            row.put("tick-off", (double) event.getTick()); //$NON-NLS-1$
-                            row.put("event-off", event); //$NON-NLS-1$
-                            column.add(row);
+                            Map<String, Object> row = stack.pop();
+                            if (stack.size() == 0)
+                            {
+                                System.err.println("Deleted or missmatch note silence"); //$NON-NLS-1$
+                            }
+                            else
+                            {
+                                row.put("tick-off", (double) event.getTick()); //$NON-NLS-1$
+                                row.put("event-off", event); //$NON-NLS-1$
+                                column.add(row);
+                            }
                         }
                     }
                     else if (sm.getCommand() == NOTE_OFF)
                     {
                         int key = sm.getData1();
-                        Map<String, Object> row = onMap.get(key).pop();
-                        row.put("tick-off", (double) event.getTick()); //$NON-NLS-1$
-                        row.put("event-off", event); //$NON-NLS-1$
-                        column.add(row);
+                        Stack<Map<String, Object>> stack = onMap.get(key);
+                        if (stack.size() == 0)
+                        {
+                            System.err.println("Deleted or missmatch end note"); //$NON-NLS-1$
+                        }
+                        else
+                        {
+                            Map<String, Object> row = stack.pop();
+                            row.put("tick-off", (double) event.getTick()); //$NON-NLS-1$
+                            row.put("event-off", event); //$NON-NLS-1$
+                            column.add(row);
+                        }
                     }
                     else
                     {

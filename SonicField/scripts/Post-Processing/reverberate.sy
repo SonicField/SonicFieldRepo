@@ -70,24 +70,24 @@ right=sf.Concatenate(sf.Silence(1024),right)
 
 bright  = True
 vBright = False
-church  = True
+church  = False
 ambient = False
 post    = True
 spring  = False
 bboost  = False
   
 if ambient:  
-    (convoll,convolr)=sf.ReadFile("temp/v-grand-l.wav")
-    (convorl,convorr)=sf.ReadFile("temp/v-grand-r.wav")
+    (convoll,convolr)=sf.ReadFile("temp/impulses/v-grand-l.wav")
+    (convorl,convorr)=sf.ReadFile("temp/impulses/v-grand-r.wav")
 elif church:    
-    (convoll,convolr)=sf.ReadFile("temp/bh-l.wav")
-    (convorl,convorr)=sf.ReadFile("temp/bh-r.wav")
+    (convoll,convolr)=sf.ReadFile("temp/impulses/bh-l.wav")
+    (convorl,convorr)=sf.ReadFile("temp/impulses/bh-r.wav")
 else:
-    (convoll,convolr)=sf.ReadFile("temp/Vocal-Chamber-L.wav")
-    (convorl,convorr)=sf.ReadFile("temp/Vocal-Chamber-R.wav")
+    (convoll,convolr)=sf.ReadFile("temp/impulses/Vocal-Chamber-L.wav")
+    (convorl,convorr)=sf.ReadFile("temp/impulses/Vocal-Chamber-R.wav")
 
 if spring:
-    spring=sf.ReadFile("temp/classic-fs2a.wav")[0]
+    spring=sf.ReadFile("temp/impulses/classic-fs2a.wav")[0]
     convoll=sf.Mix(
         convoll,
         +spring
@@ -132,14 +132,14 @@ wright =sf.FixSize(sf.Mix(sf.Pcnt15(+right),sf.Pcnt85(wright)))
 sf.WriteFile32((+wleft,+wright),"temp/mix.wav")
 
 if ambient:
-    (convoll,convolr)=sf.ReadFile("temp/ultra-l.wav")
-    (convorl,convorr)=sf.ReadFile("temp/ultra-r.wav")
+    (convoll,convolr)=sf.ReadFile("temp/impulses/ultra-l.wav")
+    (convorl,convorr)=sf.ReadFile("temp/impulses/ultra-r.wav")
 elif church:
-    (convoll,convolr)=sf.ReadFile("temp/v-grand-l.wav")
-    (convorl,convorr)=sf.ReadFile("temp/v-grand-r.wav")
+    (convoll,convolr)=sf.ReadFile("temp/impulses/v-grand-l.wav")
+    (convorl,convorr)=sf.ReadFile("temp/impulses/v-grand-r.wav")
 else:
-    (convoll,convolr)=sf.ReadFile("temp/bh-l.wav")
-    (convorl,convorr)=sf.ReadFile("temp/bh-r.wav")
+    (convoll,convolr)=sf.ReadFile("temp/impulses/bh-l.wav")
+    (convorl,convorr)=sf.ReadFile("temp/impulses/bh-r.wav")
 
 left  = sf.BesselLowPass(left  ,392,1)
 right = sf.BesselLowPass(right,392,1)
@@ -152,8 +152,8 @@ vwright=sf.FixSize(sf.Mix(rr,lr))
 sf.WriteFile32((sf.FixSize(+vwleft),sf.FixSize(+vwright)),"temp/vwet.wav")
 wleft =sf.FixSize(sf.Mix(wleft ,sf.Pcnt20(vwleft )))
 wright=sf.FixSize(sf.Mix(wright,sf.Pcnt20(vwright)))
-sf.WriteSignal(+wleft ,"temp/grand-l.sig")
-sf.WriteSignal(+wright,"temp/grand-r.sig")
+sf.WriteSignal(+wleft ,"temp/impulses/grand-l.sig")
+sf.WriteSignal(+wright,"temp/impulses/grand-r.sig")
 wleft  = sf.Normalise(wleft)
 wright = sf.Normalise(wright)
 sf.WriteFile32((wleft,wright),"temp/grand.wav")
