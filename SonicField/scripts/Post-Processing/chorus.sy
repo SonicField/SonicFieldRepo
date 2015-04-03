@@ -48,7 +48,7 @@ def chorus(
     
     return inner(left),inner(right)
     
-(left,right)=sf.ReadFile("temp/a.wav")
+(left,right)=sf.ReadFile("temp/dog.wav")
 #left  = sf.RBJHighPass(left ,4000,2)
 #right = sf.RBJHighPass(right,4000,2)
 
@@ -72,6 +72,9 @@ left2,right2=chorus(
     minVol   =  0.7,
     maxVol   =  1.0)
 
-left  = sf.Finalise(sf.Mix(left1 ,left2))
-right = sf.Finalise(sf.Mix(right1,right2))
+left  = sf.Mix(left1 ,left2)
+right = sf.Mix(right1,right2)
+left  = sf.Finalise(sf.RBJPeaking(left ,64,1,8))
+right = sf.Finalise(sf.RBJPeaking(right,64,1,8))
+
 sf.WriteFile32((left,right),"temp/c.wav")

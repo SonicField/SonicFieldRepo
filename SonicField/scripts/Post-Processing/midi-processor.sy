@@ -1,3 +1,4 @@
+from random import random
 path="scripts/Post-Processing"
 execfile(path+"/midi.sy")
 
@@ -5,7 +6,7 @@ print "MIDI Devices:"
 for dev in Midi.getMidiDeviceNames():
     print dev
 
-sequence=Midi.readMidiFile("temp/Fantasia On A Theme Of Sanity.mid")
+sequence=Midi.readMidiFile("temp/albinoni_sonata_4.mid")
 
 print 'Sequence Time  Type:', Midi.timeType(sequence)
 print 'Sequence Resolution:', sequence.getResolution()
@@ -22,6 +23,9 @@ midis=Midi.processSequence(sequence,'DELETE')
 
 synthesiser = 3
 sequencer   = 5
+#synthesiser = 2
+#sequencer   = 3
+
 
 for midi in midis:
     for event in midi:
@@ -62,56 +66,65 @@ player=Midi.getPlayer(sequencer,synthesiser)
 player.play(sout)
 player.waitFor()
 
-def playVoices(voices=4):
+def playVoices(voices=4,chorus=1,bendAmount=16,pan=True):
 
-    
-    for voice in range(0,voices):
-    
-        sout=Midi.blankSequence(sequence)
-              
-        # Create the timing information track
-        tout=sout.createTrack()
-        for event in midis[0]:
-            if Midi.isMeta(event):
-                if Midi.isTempo(event) or Midi.isTimeSignature(event):
-                    tout.add(event['event'])
+    for chor in range(0,chorus):
+        for voice in range(0,voices):
         
-        tout1=sout.createTrack()    
-        midi1=[]
-        
-        rota =0
-        for event in midis[midiNo]:
-            if Midi.isNote(event):
-                ev1=event['event']
-                ev2=event['event-off']
-                key=event['key']
-                pan=127.0*float(key-minKey)/float(maxKey-minKey)
-                pan=31+pan/2
-                pan=int(pan)
-                pan=Midi.makePan(1,ev1.getTick()-1,pan)
-                if rota % voices== voice:
-                    midi1.append(pan)
+            sout=Midi.blankSequence(sequence)
+                  
+            # Create the timing information track
+            tout=sout.createTrack()
+            for event in midis[0]:
+                if Midi.isMeta(event):
+                    if Midi.isTempo(event) or Midi.isTimeSignature(event):
+                        tout.add(event['event'])
+            
+            tout1=sout.createTrack()    
+            midi1=[]
+            
+            rota =0
+            for event in midis[midiNo]:
+                if Midi.isNote(event):
+                    ev1=event['event']
+                    ev2=event['event-off']
+                    key=event['key']
+                    if chor>0:
+                        pan=127.0*float(key-minKey)/float(maxKey-minKey)*((random()+random())/2.0)
+                        amt=(0.5*bendAmount)-bendAmount*random()
+                        amt=int(amt)
+                        pb=Midi.makePitchBend(1,ev1.getTick()-1,amt)
+                    else:
+                        pan=127.0*float(key-minKey)/float(maxKey-minKey)
+                    pan=31+pan/2
+                    pan=int(pan)
+                    pan=Midi.makePan(1,ev1.getTick()-1,pan)
+                    if rota % voices== voice:
+                        if pan:
+                            midi1.append(pan)
+                        if chor>0:
+                            midi1.append(pb)
+                        midi1.append(event['event'])
+                        midi1.append(event['event-off'])
+                    rota+=1
+                else:
+                    #print event
                     midi1.append(event['event'])
-                    midi1.append(event['event-off'])
-                rota+=1
-            else:
-                #print event
-                midi1.append(event['event'])
-
-        
-        Midi.addPan(tout1,1,100,64)
-        Midi.addNote(tout1,1,offset/2,offset/2+2000,50,100)
-        midi1=sorted(midi1,key=lambda event: event.getTick())
-        
-        for event in midi1:
-            Midi.setChannel(event,1)
-            tout1.add(event)
-        
-        Midi.writeMidiFile("temp/temp"+str(voice)+".midi",sout)
-        
-        player=Midi.getPlayer(sequencer,synthesiser)
-        player.play(sout)
-        player.waitFor()
+    
+            
+            Midi.addPan(tout1,1,100,64)
+            Midi.addNote(tout1,1,offset/2,offset/2+2000,50,100)
+            midi1=sorted(midi1,key=lambda event: event.getTick())
+            
+            for event in midi1:
+                Midi.setChannel(event,1)
+                tout1.add(event)
+            
+            Midi.writeMidiFile("temp/temp"+str(voice)+".midi",sout)
+            
+            player=Midi.getPlayer(sequencer,synthesiser)
+            player.play(sout)
+            player.waitFor()
 
 # Full polyphony
 # Release sets the minimum time between notes on a
@@ -125,7 +138,7 @@ def playVoices(voices=4):
 #
 # At the moment it is not clever enough to take account
 # of tempo change events
-def playNotes(release=120,sameRelease=60,voices=12):
+def playNotes(release=120,sameRelease=60,voices=12,pan=True):
     chans=[]
     for v in range(0,voices):
         chans.append([])
@@ -183,11 +196,12 @@ def playNotes(release=120,sameRelease=60,voices=12):
                 ev1=event['event']
                 ev2=event['event-off']
                 key=event['key']
-                pan=127.0*float(key-minKey)/float(maxKey-minKey)
-                pan=31+pan/2
-                pan=int(pan)
-                pan=Midi.makePan(1,ev1.getTick()-1,pan)
-                events.append(pan)
+                panev=127.0*float(key-minKey)/float(maxKey-minKey)
+                panev=31+pan/2
+                panev=int(pan)
+                panev=Midi.makePan(1,ev1.getTick()-1,pan)
+                if pan:
+                    events.append(pan)
                 events.append(event['event'])
                 events.append(event['event-off'])
 
@@ -247,5 +261,5 @@ def playNotes(release=120,sameRelease=60,voices=12):
             player.waitFor()
     
 
-playVoices(1)  
-#playNotes(release=120,sameRelease=60,voices=4)
+#playVoices(voices=1,chorus=1,bendAmount=0,pan=True)  
+playNotes(release=60,sameRelease=0,voices=8,pan=False)

@@ -478,4 +478,11 @@ public class MidiFunctions
         return makeControl(channel, at, amount, RESET);
     }
 
+    public static MidiEvent makePitchBend(int channel, int at, int amount) throws InvalidMidiDataException
+    {
+        int am = amount + 8192;
+        ShortMessage sm1 = new ShortMessage(ShortMessage.PITCH_BEND, channel, am >> 7, am & 127);
+        return new MidiEvent(sm1, at);
+    }
+
 }

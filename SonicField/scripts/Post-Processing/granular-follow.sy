@@ -1,0 +1,35 @@
+import random
+import math
+path="scripts/Post-Processing"
+#execfile(path+"/chorus.sy")
+def granularReverb(signal,ratio,delay,density,length=50,stretch=1,vol=1):
+    print "Granular reverb: ratio:",ratio," delay:",delay," density",density," length:",length," stretch:",stretch," volume:",vol
+    def granularReverbInner():
+        out=[]
+        for grain in sf.Granulate(signal,length,10):
+            (signal_i,at)=grain
+            signal_i=sf.Realise(signal_i)
+            signal_i=sf.DirectRelength(signal_i,ratio-0.01+(0.02*random.random()))
+            for x in range(0,density):
+                out.append(
+                    (
+                        +signal_i,
+                        int((at + (random.random()+random.random())*delay)*stretch)
+                    )
+                )
+            -signal_i
+      
+        out=sf.Collapse(out)
+        out=sf.Realise(sf.MixAt(out))
+        out=sf.Realise(sf.NumericVolume(out,vol))
+        return out
+    return sf_do(granularReverbInner)
+    
+left,right=(left,right)=sf.ReadFile("temp/c.wav")
+left =sf.Cut(0,10000,left)
+right=sf.Cut(0,10000,right)
+left  = granularReverb(left ,0.25,1.0,8,128,1,1)
+right = granularReverb(right,0.25,1.0,8,128,1,1)
+left  = sf.Finalise(left)
+right = sf.Finalise(right)
+sf.WriteFile32((left,right),"temp/d.wav")
