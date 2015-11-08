@@ -6,7 +6,7 @@ print "MIDI Devices:"
 for dev in Midi.getMidiDeviceNames():
     print dev
 
-sequence=Midi.readMidiFile("temp/albinoni_sonata_4.mid")
+sequence=Midi.readMidiFile("temp/gnos-3.mid")
 
 print 'Sequence Time  Type:', Midi.timeType(sequence)
 print 'Sequence Resolution:', sequence.getResolution()
@@ -256,10 +256,9 @@ def playNotes(release=120,sameRelease=60,voices=12,pan=True):
                 Midi.setChannel(event,1)
                 tout.add(event)
             player=Midi.getPlayer(sequencer,synthesiser)
-            #player=Midi.getPlayer(1,0)
             player.play(sout)
             player.waitFor()
     
 
-#playVoices(voices=1,chorus=1,bendAmount=0,pan=True)  
-playNotes(release=60,sameRelease=0,voices=8,pan=False)
+playVoices(voices=2,chorus=1,bendAmount=0,pan=False)  
+#playNotes(release=120,sameRelease=60,voices=5,pan=False)
