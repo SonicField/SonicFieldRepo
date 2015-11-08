@@ -9,9 +9,6 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
@@ -19,8 +16,6 @@ import java.nio.channels.FileChannel.MapMode;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
-
-import sun.misc.Unsafe;
 
 import com.nerdscentral.sython.SFPL_RuntimeException;
 
@@ -31,22 +26,6 @@ import com.nerdscentral.sython.SFPL_RuntimeException;
 public class SFData extends SFSignal implements Serializable
 {
 
-    private static Unsafe getUnsafe()
-    {
-        try
-        {
-            Field f = Unsafe.class.getDeclaredField("theUnsafe"); //$NON-NLS-1$
-            f.setAccessible(true);
-            return (Unsafe) f.get(null);
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static final Unsafe unsafe = getUnsafe();
-
     public static class NotCollectedException extends Exception
     {
         private static final long serialVersionUID = 1L;
@@ -54,9 +33,9 @@ public class SFData extends SFSignal implements Serializable
 
     // Directory to send swap files to
     private static final String                      SONIC_FIELD_TEMP = "sonicFieldTemp";             //$NON-NLS-1$
-    private static final long                        CHUNK_LEN        = 1024 * 1024;
-    private static final long                        CHUNK_SHIFT      = 20;
-    private static final long                        CHUNK_MASK       = CHUNK_LEN - 1;
+    private static long                              CHUNK_LEN        = 1024 * 1024;
+    private static long                              CHUNK_SHIFT      = 20;
+    private static long                              CHUNK_MASK       = CHUNK_LEN - 1;
     private static final long                        serialVersionUID = 1L;
     private final int                                length;
     private volatile boolean                         killed           = false;
@@ -67,10 +46,6 @@ public class SFData extends SFSignal implements Serializable
     private static int                               fileRoundRobbin  = 0;
     private final NotCollectedException              javaCreated;
     private final String                             pythonCreated;
-    private final long                               chunkIndex;
-    // shadows chunkIndex for memory management as chunkIndex must
-    // be final to enable optimisation
-    private long                                     allocked;
     private static ConcurrentLinkedDeque<ByteBuffer> freeChunks       = new ConcurrentLinkedDeque<>();
 
     private static class ResTracker
@@ -139,8 +114,7 @@ public class SFData extends SFSignal implements Serializable
         }
     }
 
-    private void makeMap(long size) throws IOException, SecurityException, IllegalArgumentException, IllegalAccessException,
-                    InvocationTargetException, NoSuchMethodException
+    private void makeMap(long size) throws IOException
     {
         long countDown = size;
         int chunkCount = 0;
@@ -178,23 +152,12 @@ public class SFData extends SFSignal implements Serializable
                 }
             }
         }
-        // now we have the chunks we get the address of the underlying memory
-        // of each and place that in the off heap lookup so we no longer reference
-        // them via objects but purely as raw memory
-        Method addM = chunks[0].getClass().getMethod("address"); //$NON-NLS-1$
-        addM.setAccessible(true);
-        long offSet = 0;
-        for (ByteBuffer chunk : chunks)
-        {
-            long address = (long) addM.invoke(chunk);
-            unsafe.putAddress(chunkIndex + offSet, address);
-            offSet += 8;
-        }
     }
 
     @Override
     public void clear()
     {
+        assert (CHUNK_LEN % 8 == 0);
         for (ByteBuffer chunk : chunks)
         {
             for (int l = 0; l < CHUNK_LEN; l += 8)
@@ -213,51 +176,27 @@ public class SFData extends SFSignal implements Serializable
         }
         chunks = null;
         resourceTracker.remove(this);
-        synchronized (unsafe)
-        {
-            if (allocked != 0) unsafe.freeMemory(chunkIndex);
-            allocked = 0;
-        }
     }
 
     private SFData(int lengthIn)
     {
-        allocked = 0;
         try
         {
-            try
-            {
-                if (lengthIn > Integer.MAX_VALUE) throw new RuntimeException(Messages.getString("SFData.12") + ": " + lengthIn); //$NON-NLS-1$ //$NON-NLS-2$
-                // Allocate the memory for the index - final so do it here
-                long size = (1 + ((lengthIn << 3) >> CHUNK_SHIFT)) << 3;
-                allocked = chunkIndex = unsafe.allocateMemory(size);
-                if (allocked == 0)
-                {
-                    throw new RuntimeException("Out of memory allocating " + size); //$NON-NLS-1$
-                }
-                makeMap(lengthIn * 8l);
-            }
-            catch (Exception e)
-            {
-                throw new RuntimeException(e);
-            }
-            // }
-            this.length = lengthIn;
-            NotCollectedException nc = new NotCollectedException();
-            nc.fillInStackTrace();
-            pythonCreated = getPythonStack();
-            resourceTracker.put(this, new ResTracker(nc, pythonCreated));
-            javaCreated = nc;
+            if (lengthIn > Integer.MAX_VALUE) throw new RuntimeException(Messages.getString("SFData.12") + ": " + lengthIn); //$NON-NLS-1$ //$NON-NLS-2$
+
+            makeMap(lengthIn * 8l);
         }
-        catch (Throwable t)
+        catch (IOException e)
         {
-            if (allocked != 0)
-            {
-                unsafe.freeMemory(allocked);
-                allocked = 0;
-            }
-            throw t;
+            throw new RuntimeException(e);
         }
+        // }
+        this.length = lengthIn;
+        NotCollectedException nc = new NotCollectedException();
+        nc.fillInStackTrace();
+        pythonCreated = getPythonStack();
+        resourceTracker.put(this, new ResTracker(nc, pythonCreated));
+        javaCreated = nc;
     }
 
     /* (non-Javadoc)
@@ -288,27 +227,16 @@ public class SFData extends SFSignal implements Serializable
         return data1;
     }
 
-    private long getAddress(int index)
-    {
-        long bytePos = index << 3;
-        long pos = bytePos & CHUNK_MASK;
-        long bufPos = (bytePos - pos) >> CHUNK_SHIFT;
-        long address = chunkIndex + (bufPos << 3);
-        // System.out.println("Accessing Index: " + Long.toHexString(address));
-        address = unsafe.getLong(address);
-        address += pos;
-        // System.out.println("Accessing Value: " + Long.toHexString(address));
-        return address;
-    }
-
     /* (non-Javadoc)
      * @see com.nerdscentral.audio.SFSignal#getSample(int)
      */
     @Override
     public final double getSample(int index)
     {
-
-        return unsafe.getDouble(getAddress(index));
+        long bytePos = index << 3;
+        long pos = bytePos & CHUNK_MASK;
+        long bufPos = (bytePos - pos) >> CHUNK_SHIFT;
+        return chunks[(int) bufPos].getDouble((int) pos);
     }
 
     /* (non-Javadoc)
@@ -317,7 +245,10 @@ public class SFData extends SFSignal implements Serializable
     @Override
     public final double setSample(int index, double value)
     {
-        unsafe.putDouble(getAddress(index), value);
+        long bytePos = index * 8l;
+        long pos = bytePos & CHUNK_MASK;
+        long bufPos = (bytePos - pos) >> CHUNK_SHIFT;
+        chunks[(int) bufPos].putDouble((int) pos, value);
         return value;
     }
 

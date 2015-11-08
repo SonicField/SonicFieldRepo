@@ -25,7 +25,7 @@ def granularReverb(signal,ratio,delay,density,length=50,stretch=1,vol=1):
         return out
     return sf_do(granularReverbInner)
     
-left,right=(left,right)=sf.ReadFile("temp/c.wav")
+left,right=(left,right)=sf.ReadFile("temp/dog.wav")
 left =sf.Cut(0,10000,left)
 right=sf.Cut(0,10000,right)
 left  = granularReverb(left ,0.25,1.0,8,128,1,1)
