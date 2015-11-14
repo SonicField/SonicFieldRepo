@@ -1,0 +1,34 @@
+import random
+import math
+from java.lang import System
+
+sf.SetSampleRate(192000)
+count=1000
+ncount=100
+
+def test():
+    t1=System.nanoTime()
+    for i in range(1,ncount):
+        signal=sf.Mix(+signal1,+signal2)
+        signal=sf.Realise(signal)
+        -signal
+    t2=System.nanoTime()
+    d=(t2-t1)/1000000.0
+    print "Done: " + str(d)
+    return d
+
+signal1=sf.Realise(sf.WhiteNoise(count))
+signal2=sf.Realise(sf.WhiteNoise(count))
+print "WARM"
+for i in range(1,100):
+    test()
+    
+print "Real"
+total=0.0
+for i in range(1,10):
+    total+=test()
+
+print "Mean " + str(total/9.0)
+
+-signal1
+-signal2
