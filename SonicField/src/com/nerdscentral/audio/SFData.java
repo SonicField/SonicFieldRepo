@@ -45,9 +45,14 @@ public class SFData extends SFSignal implements Serializable
         }
     }
 
+    private static final Unsafe unsafe = getUnsafe();
+
     private static class ByteBufferWrapper
     {
         public long       address;
+        @SuppressWarnings("unused")
+        // buffer is used to hold a reference to the buffer
+        // but its data is read via unsafe
         public ByteBuffer buffer;
 
         public ByteBufferWrapper(ByteBuffer b) throws NoSuchMethodException, SecurityException, IllegalAccessException,
@@ -59,8 +64,6 @@ public class SFData extends SFSignal implements Serializable
             buffer = b;
         }
     }
-
-    private static final Unsafe unsafe = getUnsafe();
 
     public static class NotCollectedException extends Exception
     {
@@ -237,7 +240,6 @@ public class SFData extends SFSignal implements Serializable
         {
             try
             {
-                if (l > Integer.MAX_VALUE) throw new RuntimeException(Messages.getString("SFData.12") + ": " + l); //$NON-NLS-1$ //$NON-NLS-2$
                 // Allocate the memory for the index - final so do it here
                 long size = (1 + ((l << 3) >> CHUNK_SHIFT)) << 3;
                 allocked = chunkIndex = unsafe.allocateMemory(size);
