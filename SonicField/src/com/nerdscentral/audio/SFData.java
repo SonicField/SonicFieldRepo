@@ -195,12 +195,10 @@ public class SFData extends SFSignal implements Serializable
     @Override
     public void clear()
     {
-        for (ByteBuffer chunk : chunks)
+        for (long i = 0; i < chunks.length; ++i)
         {
-            for (int l = 0; l < CHUNK_LEN; l += 8)
-            {
-                chunk.putLong(l, 0);
-            }
+            long address = unsafe.getAddress(chunkIndex + (i << 3l));
+            unsafe.setMemory(address, CHUNK_LEN << 3l, (byte) 0);
         }
     }
 
@@ -220,29 +218,28 @@ public class SFData extends SFSignal implements Serializable
         }
     }
 
-    private SFData(int lengthIn)
+    private SFData(int l)
     {
         allocked = 0;
         try
         {
             try
             {
-                if (lengthIn > Integer.MAX_VALUE) throw new RuntimeException(Messages.getString("SFData.12") + ": " + lengthIn); //$NON-NLS-1$ //$NON-NLS-2$
+                if (l > Integer.MAX_VALUE) throw new RuntimeException(Messages.getString("SFData.12") + ": " + l); //$NON-NLS-1$ //$NON-NLS-2$
                 // Allocate the memory for the index - final so do it here
-                long size = (1 + ((lengthIn << 3) >> CHUNK_SHIFT)) << 3;
+                long size = (1 + ((l << 3) >> CHUNK_SHIFT)) << 3;
                 allocked = chunkIndex = unsafe.allocateMemory(size);
                 if (allocked == 0)
                 {
                     throw new RuntimeException("Out of memory allocating " + size); //$NON-NLS-1$
                 }
-                makeMap(lengthIn * 8l);
+                makeMap(l << 3l);
             }
             catch (Exception e)
             {
                 throw new RuntimeException(e);
             }
-            // }
-            this.length = lengthIn;
+            this.length = l;
             NotCollectedException nc = new NotCollectedException();
             nc.fillInStackTrace();
             pythonCreated = getPythonStack();
@@ -269,9 +266,9 @@ public class SFData extends SFSignal implements Serializable
         return killed;
     }
 
-    public final static SFData build(int size)
+    public final static SFData build(int l)
     {
-        return new SFData(size);
+        return new SFData(l);
     }
 
     /* (non-Javadoc)
@@ -280,6 +277,7 @@ public class SFData extends SFSignal implements Serializable
     @Override
     public final SFData replicate()
     {
+        System.out.println("Replicate"); //$NON-NLS-1$
         SFData data1 = new SFData(this.getLength());
         for (int i = 0; i < this.getLength(); ++i)
         {
@@ -288,17 +286,13 @@ public class SFData extends SFSignal implements Serializable
         return data1;
     }
 
-    private long getAddress(int index)
+    private long getAddress(long index)
     {
         long bytePos = index << 3;
         long pos = bytePos & CHUNK_MASK;
         long bufPos = (bytePos - pos) >> CHUNK_SHIFT;
         long address = chunkIndex + (bufPos << 3);
-        // System.out.println("Accessing Index: " + Long.toHexString(address));
-        address = unsafe.getLong(address);
-        address += pos;
-        // System.out.println("Accessing Value: " + Long.toHexString(address));
-        return address;
+        return unsafe.getAddress(address) + pos;
     }
 
     /* (non-Javadoc)
@@ -307,7 +301,6 @@ public class SFData extends SFSignal implements Serializable
     @Override
     public final double getSample(int index)
     {
-
         return unsafe.getDouble(getAddress(index));
     }
 
@@ -372,7 +365,7 @@ public class SFData extends SFSignal implements Serializable
             System.out.println(Messages.getString("SFData.9") + pos2 + Messages.getString("SFData.10") + data2.getLength() + Messages.getString("SFData.11") + length); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
             throw new SFPL_RuntimeException(Messages.getString("SFData.0")); //$NON-NLS-1$
         }
-        int end = pos2 + data2.getLength();
+        long end = pos2 + data2.getLength();
         for (int index = pos2; index < end; ++index)
         {
             setSample(index, data2.getSample(index - pos2));
@@ -471,8 +464,13 @@ public class SFData extends SFSignal implements Serializable
     @Override
     public double[] getDataInternalOnly()
     {
-        double[] ret = new double[getLength()];
-        int len = getLength();
+        long length = getLength();
+        if (length > Integer.MAX_VALUE)
+        {
+            throw new RuntimeException(Messages.getString("SFData.5") + length); //$NON-NLS-1$
+        }
+        int len = (int) length;
+        double[] ret = new double[len];
         for (int index = 0; index < len; ++len)
         {
             ret[index] = getSample(index);
