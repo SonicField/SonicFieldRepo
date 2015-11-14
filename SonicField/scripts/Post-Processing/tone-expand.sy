@@ -1,5 +1,5 @@
 #(left,right)=sf.ReadFile("temp/input1.wav")
-(left,right)=sf.ReadFile("temp/input2.wav")
+(left,right)=sf.ReadFile("temp/a.wav")
 
 def resonate(left_,right_,del1,del2):
     def inner():

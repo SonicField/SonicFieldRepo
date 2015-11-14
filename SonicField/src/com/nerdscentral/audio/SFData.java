@@ -184,7 +184,7 @@ public class SFData extends SFSignal implements Serializable
         {
             if (lengthIn > Integer.MAX_VALUE) throw new RuntimeException(Messages.getString("SFData.12") + ": " + lengthIn); //$NON-NLS-1$ //$NON-NLS-2$
 
-            makeMap(lengthIn * 8l);
+            makeMap(lengthIn << 3l);
         }
         catch (IOException e)
         {
@@ -245,7 +245,7 @@ public class SFData extends SFSignal implements Serializable
     @Override
     public final double setSample(int index, double value)
     {
-        long bytePos = index * 8l;
+        long bytePos = index << 3l;
         long pos = bytePos & CHUNK_MASK;
         long bufPos = (bytePos - pos) >> CHUNK_SHIFT;
         chunks[(int) bufPos].putDouble((int) pos, value);
