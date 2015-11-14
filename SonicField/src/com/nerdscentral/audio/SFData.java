@@ -45,6 +45,21 @@ public class SFData extends SFSignal implements Serializable
         }
     }
 
+    private static class ByteBufferWrapper
+    {
+        public long       address;
+        public ByteBuffer buffer;
+
+        public ByteBufferWrapper(ByteBuffer b) throws NoSuchMethodException, SecurityException, IllegalAccessException,
+                        IllegalArgumentException, InvocationTargetException
+        {
+            Method addM = b.getClass().getMethod("address"); //$NON-NLS-1$
+            addM.setAccessible(true);
+            address = (long) addM.invoke(b);
+            buffer = b;
+        }
+    }
+
     private static final Unsafe unsafe = getUnsafe();
 
     public static class NotCollectedException extends Exception
@@ -53,25 +68,25 @@ public class SFData extends SFSignal implements Serializable
     }
 
     // Directory to send swap files to
-    private static final String                      SONIC_FIELD_TEMP = "sonicFieldTemp";             //$NON-NLS-1$
-    private static final long                        CHUNK_LEN        = 1024 * 1024;
-    private static final long                        CHUNK_SHIFT      = 20;
-    private static final long                        CHUNK_MASK       = CHUNK_LEN - 1;
-    private static final long                        serialVersionUID = 1L;
-    private final int                                length;
-    private volatile boolean                         killed           = false;
-    private static File[]                            coreFile;
-    private static RandomAccessFile[]                coreFileAccessor;
-    private ByteBuffer[]                             chunks;
-    private static FileChannel[]                     channelMapper;
-    private static int                               fileRoundRobbin  = 0;
-    private final NotCollectedException              javaCreated;
-    private final String                             pythonCreated;
-    private final long                               chunkIndex;
+    private static final String                             SONIC_FIELD_TEMP = "sonicFieldTemp";             //$NON-NLS-1$
+    private static final long                               CHUNK_LEN        = 1024 * 1024;
+    private static final long                               CHUNK_SHIFT      = 20;
+    private static final long                               CHUNK_MASK       = CHUNK_LEN - 1;
+    private static final long                               serialVersionUID = 1L;
+    private final int                                       length;
+    private volatile boolean                                killed           = false;
+    private static File[]                                   coreFile;
+    private static RandomAccessFile[]                       coreFileAccessor;
+    private ByteBufferWrapper[]                             chunks;
+    private static FileChannel[]                            channelMapper;
+    private static int                                      fileRoundRobbin  = 0;
+    private final NotCollectedException                     javaCreated;
+    private final String                                    pythonCreated;
+    private final long                                      chunkIndex;
     // shadows chunkIndex for memory management as chunkIndex must
     // be final to enable optimisation
-    private long                                     allocked;
-    private static ConcurrentLinkedDeque<ByteBuffer> freeChunks       = new ConcurrentLinkedDeque<>();
+    private long                                            allocked;
+    private static ConcurrentLinkedDeque<ByteBufferWrapper> freeChunks       = new ConcurrentLinkedDeque<>();
 
     private static class ResTracker
     {
@@ -151,11 +166,11 @@ public class SFData extends SFSignal implements Serializable
         }
 
         countDown = size;
-        chunks = new ByteBuffer[chunkCount];
+        chunks = new ByteBufferWrapper[chunkCount];
         chunkCount = 0;
         while (countDown > 0)
         {
-            ByteBuffer chunk = freeChunks.poll();
+            ByteBufferWrapper chunk = freeChunks.poll();
             if (chunk == null) break;
             chunks[chunkCount] = chunk;
             ++chunkCount;
@@ -170,7 +185,7 @@ public class SFData extends SFSignal implements Serializable
                     long from = coreFile[fileRoundRobbin].length();
                     ByteBuffer chunk = channelMapper[fileRoundRobbin].map(MapMode.READ_WRITE, from, CHUNK_LEN);
                     chunk.order(ByteOrder.nativeOrder());
-                    chunks[chunkCount] = chunk;
+                    chunks[chunkCount] = new ByteBufferWrapper(chunk);
                     ++chunkCount;
                     from += CHUNK_LEN;
                     countDown -= CHUNK_LEN;
@@ -181,13 +196,10 @@ public class SFData extends SFSignal implements Serializable
         // now we have the chunks we get the address of the underlying memory
         // of each and place that in the off heap lookup so we no longer reference
         // them via objects but purely as raw memory
-        Method addM = chunks[0].getClass().getMethod("address"); //$NON-NLS-1$
-        addM.setAccessible(true);
         long offSet = 0;
-        for (ByteBuffer chunk : chunks)
+        for (ByteBufferWrapper chunk : chunks)
         {
-            long address = (long) addM.invoke(chunk);
-            unsafe.putAddress(chunkIndex + offSet, address);
+            unsafe.putAddress(chunkIndex + offSet, chunk.address);
             offSet += 8;
         }
     }
@@ -205,7 +217,7 @@ public class SFData extends SFSignal implements Serializable
     @Override
     public void release()
     {
-        for (ByteBuffer chunk : chunks)
+        for (ByteBufferWrapper chunk : chunks)
         {
             freeChunks.push(chunk);
         }
