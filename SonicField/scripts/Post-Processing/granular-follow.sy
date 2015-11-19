@@ -9,7 +9,7 @@ def granularReverb(signal,ratio,delay,density,length=50,stretch=1,vol=1):
         for grain in sf.Granulate(signal,length,10):
             (signal_i,at)=grain
             signal_i=sf.Realise(signal_i)
-            signal_i=sf.DirectRelength(signal_i,ratio-0.01+(0.02*random.random()))
+            signal_i=sf.Realise(sf.DirectRelength(signal_i,ratio-0.01+(0.02*random.random())))
             for x in range(0,density):
                 out.append(
                     (
@@ -17,17 +17,19 @@ def granularReverb(signal,ratio,delay,density,length=50,stretch=1,vol=1):
                         int((at + (random.random()+random.random())*delay)*stretch)
                     )
                 )
-            -signal_i
+            print "WuWu ",sf.MaxValue(signal_i)
+            #-signal_i
       
-        out=sf.Collapse(out)
+        #out=sf.Collapse(out)
+        print "Willow"
         out=sf.Realise(sf.MixAt(out))
+        print "Willow mixed ", sf.MaxValue(+out)
         out=sf.Realise(sf.NumericVolume(out,vol))
+        print "Willow scaled ", sf.MaxValue(+out)    
         return out
     return sf_do(granularReverbInner)
     
 left,right=(left,right)=sf.ReadFile("temp/c.wav")
-left =sf.Cut(0,10000,left)
-right=sf.Cut(0,10000,right)
 left  = granularReverb(left ,0.25,1.0,8,128,1,1)
 right = granularReverb(right,0.25,1.0,8,128,1,1)
 left  = sf.Finalise(left)

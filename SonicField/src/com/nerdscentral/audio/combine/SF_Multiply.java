@@ -4,6 +4,7 @@ package com.nerdscentral.audio.combine;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.nerdscentral.audio.SFData;
 import com.nerdscentral.audio.SFMultipleTranslator;
 import com.nerdscentral.audio.SFSignal;
 import com.nerdscentral.sython.Caster;
@@ -44,6 +45,14 @@ public class SF_Multiply implements SFPL_Operator
         List<SFSignal> list = new ArrayList<>(2);
         list.add(Caster.makeSFSignal(l.get(0)));
         list.add(Caster.makeSFSignal(l.get(1)));
+        if (list.get(0).isRealised() && list.get(1).isRealised())
+        {
+            try (SFData data = (SFData) list.get(0).replicate())
+            {
+                data.operateOnto(0, list.get(1), SFData.OPERATION.MULTIPLY);
+                return Caster.prep4Ret(data);
+            }
+        }
         Translator ret = new Translator(list);
         for (SFSignal s : list)
         {

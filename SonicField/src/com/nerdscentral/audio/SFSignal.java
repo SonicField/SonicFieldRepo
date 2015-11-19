@@ -151,4 +151,10 @@ public abstract class SFSignal implements AutoCloseable
     {
         // NOOP on root class
     }
+
+    @SuppressWarnings("static-method")
+    public boolean isRealised()
+    {
+        return false;
+    }
 }

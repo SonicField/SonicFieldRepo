@@ -71,9 +71,9 @@ public class SFData extends SFSignal implements Serializable
     }
 
     // Directory to send swap files to
-    private static final String                             SONIC_FIELD_TEMP = "sonicFieldTemp";             //$NON-NLS-1$
-    private static final long                               CHUNK_LEN        = 1024 * 1024;
-    private static final long                               CHUNK_SHIFT      = 20;
+    private static final String                             SONIC_FIELD_TEMP = "sonicFieldTemp";               //$NON-NLS-1$
+    private static final long                               CHUNK_SHIFT      = 16;
+    private static final long                               CHUNK_LEN        = (long) Math.pow(2, CHUNK_SHIFT);
     private static final long                               CHUNK_MASK       = CHUNK_LEN - 1;
     private static final long                               serialVersionUID = 1L;
     private final int                                       length;
@@ -103,7 +103,7 @@ public class SFData extends SFSignal implements Serializable
         String                p;
     }
 
-    private static ConcurrentHashMap<SFData, ResTracker> resourceTracker = new ConcurrentHashMap<>();
+    private final static ConcurrentHashMap<SFData, ResTracker> resourceTracker = new ConcurrentHashMap<>();
 
     static
     {
@@ -186,11 +186,10 @@ public class SFData extends SFSignal implements Serializable
                 while (countDown > 0)
                 {
                     long from = coreFile[fileRoundRobbin].length();
-                    ByteBuffer chunk = channelMapper[fileRoundRobbin].map(MapMode.READ_WRITE, from, CHUNK_LEN);
+                    ByteBuffer chunk = channelMapper[fileRoundRobbin].map(MapMode.READ_WRITE, from, CHUNK_LEN << 3l);
                     chunk.order(ByteOrder.nativeOrder());
                     chunks[chunkCount] = new ByteBufferWrapper(chunk);
                     ++chunkCount;
-                    from += CHUNK_LEN;
                     countDown -= CHUNK_LEN;
                     if (++fileRoundRobbin >= coreFile.length) fileRoundRobbin = 0;
                 }
@@ -241,13 +240,13 @@ public class SFData extends SFSignal implements Serializable
             try
             {
                 // Allocate the memory for the index - final so do it here
-                long size = (1 + ((l << 3) >> CHUNK_SHIFT)) << 3;
+                long size = (1 + (l >> CHUNK_SHIFT)) << 3;
                 allocked = chunkIndex = unsafe.allocateMemory(size);
                 if (allocked == 0)
                 {
                     throw new RuntimeException("Out of memory allocating " + size); //$NON-NLS-1$
                 }
-                makeMap(l << 3l);
+                makeMap(l);
             }
             catch (Exception e)
             {
@@ -291,7 +290,6 @@ public class SFData extends SFSignal implements Serializable
     @Override
     public final SFData replicate()
     {
-        System.out.println("Replicate"); //$NON-NLS-1$
         SFData data1 = new SFData(this.getLength());
         for (int i = 0; i < this.getLength(); ++i)
         {
@@ -302,11 +300,11 @@ public class SFData extends SFSignal implements Serializable
 
     private long getAddress(long index)
     {
-        long bytePos = index << 3;
-        long pos = bytePos & CHUNK_MASK;
-        long bufPos = (bytePos - pos) >> CHUNK_SHIFT;
+        long pos = index & CHUNK_MASK;
+        long bufPos = index >> CHUNK_SHIFT;
         long address = chunkIndex + (bufPos << 3);
-        return unsafe.getAddress(address) + pos;
+        // System.out.println("Index: " + index + " address: " + unsafe.getAddress(address) + " pos: " + pos);
+        return unsafe.getAddress(address) + (pos << 3l);
     }
 
     /* (non-Javadoc)
@@ -490,5 +488,294 @@ public class SFData extends SFSignal implements Serializable
             ret[index] = getSample(index);
         }
         return ret;
+    }
+
+    @Override
+    public boolean isRealised()
+    {
+        return true;
+    }
+
+    private static long getAbsLen(SFData a, long aOffset, SFData b, long bOffset)
+    {
+        // Is there enough room irrespective of chunks
+
+        // How much space left in b
+        long absLen = b.getLength() - bOffset;
+
+        // How much we can copy from a
+        long wantLen = a.getLength() - aOffset;
+
+        // abs len is the amount we could copy ignoring chunks
+        if (wantLen < absLen) absLen = wantLen;
+
+        // Find the end of the next chunks
+        long aEnd = CHUNK_LEN + (aOffset & CHUNK_MASK);
+        long bEnd = CHUNK_LEN + (bOffset & CHUNK_MASK);
+
+        long maxChunkLen = aEnd > bEnd ? bEnd : aEnd;
+
+        if (absLen > maxChunkLen)
+        {
+            absLen = maxChunkLen;
+        }
+        return absLen;
+    }
+
+    // Mixes a onto b for as long as that can be done without flipping chuncks
+    // returns how many doubles it managed to mix, this can be call repeatedly
+    // to then mix two entire buffers. If return is zero then the end of the
+    // buffer has been reached.
+    private static long addChunks(SFData a, long aOffset, SFData b, long bOffset)
+    {
+        long absLen = getAbsLen(a, aOffset, b, bOffset);
+
+        // Not absLen is the longest continuous mix we can make from
+        // a to b.
+        long aAddr = a.getAddress(aOffset);
+        long bAddr = b.getAddress(bOffset);
+        for (long pos = 0; pos < absLen; pos += 8)
+        {
+            double aValue = unsafe.getDouble(aAddr + pos);
+            long putAddr = bAddr + pos;
+            double bValue = unsafe.getDouble(putAddr);
+            // Due to no compile time polymorphism we have to duplicate
+            // this method for each operator in the next line or suffer
+            // virtual dispatch :|
+            unsafe.putDouble(putAddr, aValue + bValue);
+        }
+        return absLen;
+    }
+
+    private static long copyChunks(SFData a, long aOffset, SFData b, long bOffset)
+    {
+        long absLen = getAbsLen(a, aOffset, b, bOffset);
+
+        // Not absLen is the longest continuous mix we can make from
+        // a to b.
+        long aAddr = a.getAddress(aOffset);
+        long bAddr = b.getAddress(bOffset);
+        for (long pos = 0; pos < absLen; pos += 8)
+        {
+            double aValue = unsafe.getDouble(aAddr + pos);
+            long putAddr = bAddr + pos;
+            // Due to no compile time polymorphism we have to duplicate
+            // this method for each operator in the next line or suffer
+            // virtual dispatch :|
+            unsafe.putDouble(putAddr, aValue);
+        }
+        return absLen;
+    }
+
+    private static long multiplyChunks(SFData a, long aOffset, SFData b, long bOffset)
+    {
+        long absLen = getAbsLen(a, aOffset, b, bOffset);
+
+        // Not absLen is the longest continuous mix we can make from
+        // a to b.
+        long aAddr = a.getAddress(aOffset);
+        long bAddr = b.getAddress(bOffset);
+        for (long pos = 0; pos < absLen; pos += 8)
+        {
+            double aValue = unsafe.getDouble(aAddr + pos);
+            long putAddr = bAddr + pos;
+            double bValue = unsafe.getDouble(putAddr);
+            // Due to no compile time polymorphism we have to duplicate
+            // this method for each operator in the next line or suffer
+            // virtual dispatch :|
+            unsafe.putDouble(putAddr, aValue * bValue);
+        }
+        return absLen;
+    }
+
+    private static long divideChunks(SFData a, long aOffset, SFData b, long bOffset)
+    {
+        long absLen = getAbsLen(a, aOffset, b, bOffset);
+
+        // Not absLen is the longest continuous mix we can make from
+        // a to b.
+        long aAddr = a.getAddress(aOffset);
+        long bAddr = b.getAddress(bOffset);
+        for (long pos = 0; pos < absLen; pos += 8)
+        {
+            double aValue = unsafe.getDouble(aAddr + pos);
+            long putAddr = bAddr + pos;
+            double bValue = unsafe.getDouble(putAddr);
+            // Due to no compile time polymorphism we have to duplicate
+            // this method for each operator in the next line or suffer
+            // virtual dispatch :|
+            unsafe.putDouble(putAddr, aValue / bValue);
+        }
+        return absLen;
+    }
+
+    private static long subtractChunks(SFData a, long aOffset, SFData b, long bOffset)
+    {
+        long absLen = getAbsLen(a, aOffset, b, bOffset);
+
+        // Not absLen is the longest continuous mix we can make from
+        // a to b.
+        long aAddr = a.getAddress(aOffset);
+        long bAddr = b.getAddress(bOffset);
+        for (long pos = 0; pos < absLen; pos += 8)
+        {
+            double aValue = unsafe.getDouble(aAddr + pos);
+            long putAddr = bAddr + pos;
+            double bValue = unsafe.getDouble(putAddr);
+            // Due to no compile time polymorphism we have to duplicate
+            // this method for each operator in the next line or suffer
+            // virtual dispatch :|
+            unsafe.putDouble(putAddr, aValue - bValue);
+        }
+        return absLen;
+    }
+
+    /**
+     * Stores useful information about a SFData signal so it can be returned as a single return from an optimised analysis run.
+     * 
+     */
+    public static class Stats
+    {
+        public double maxValue   = 0;
+        public double minValue   = 0;
+        public double totalValue = 0;
+
+    }
+
+    private static long scanChunks(SFData b, long bOffset, Stats stats)
+    {
+        long absLen = b.getLength() - bOffset;
+
+        // Not absLen is the longest continuous mix we can make from
+        // a to b.
+        long bAddr = b.getAddress(bOffset);
+        for (long pos = 0; pos < absLen; pos += 8)
+        {
+            long putAddr = bAddr + pos;
+            double bValue = unsafe.getDouble(putAddr);
+            if (bValue > stats.maxValue) stats.maxValue = bValue;
+            if (bValue < stats.minValue) stats.minValue = bValue;
+            stats.totalValue += bValue;
+        }
+        return absLen;
+    }
+
+    public Stats getStats()
+    {
+        Stats stats = new Stats();
+        long done = 0;
+        long thisAt = 0;
+        while ((done = scanChunks(this, thisAt, stats)) != 0)
+        {
+            thisAt += done;
+        }
+        return stats;
+    }
+
+    public enum OPERATION
+    {
+        ADD, COPY, MULTIPLY, DIVIDE, SUBTRACT
+    }
+
+    // Note that this is laboriously layed out to give
+    // separate call sites for each operation to help give
+    // static dispatch after optimisation
+    public void operateOnto(int at, SFSignal in, OPERATION operation)
+    {
+        if (in.isRealised())
+        {
+            // TODO this is a bit ambiguous around the meaning of isRealise() but
+            // in the current implementation where only SFData returns true for
+            // isRealise() we are OK.
+            long thisAt = at;
+            long otherAt = 0;
+            long done = 0;
+            SFData data = (SFData) in;
+            switch (operation)
+            {
+            case ADD:
+                while ((done = addChunks(data, otherAt, this, thisAt)) != 0)
+                {
+                    thisAt += done;
+                    otherAt += done;
+                }
+                break;
+            case COPY:
+                while ((done = copyChunks(data, otherAt, this, thisAt)) != 0)
+                {
+                    thisAt += done;
+                    otherAt += done;
+                }
+                break;
+            case MULTIPLY:
+                while ((done = multiplyChunks(data, otherAt, this, thisAt)) != 0)
+                {
+                    thisAt += done;
+                    otherAt += done;
+                }
+                break;
+            case DIVIDE:
+                while ((done = divideChunks(data, otherAt, this, thisAt)) != 0)
+                {
+                    thisAt += done;
+                    otherAt += done;
+                }
+                break;
+            case SUBTRACT:
+                while ((done = subtractChunks(data, otherAt, this, thisAt)) != 0)
+                {
+                    thisAt += done;
+                    otherAt += done;
+                }
+                break;
+            }
+        }
+        else
+        {
+            int len = in.getLength();
+            if (len > getLength()) len = getLength();
+            switch (operation)
+            {
+            case ADD:
+                for (int index = 0; index < len; ++index)
+                {
+                    long address = getAddress(index + at);
+                    double value = unsafe.getDouble(address);
+                    unsafe.putDouble(address, in.getSample(index) + value);
+                }
+                break;
+            case COPY:
+                for (int index = 0; index < len; ++index)
+                {
+                    long address = getAddress(index + at);
+                    unsafe.putDouble(address, in.getSample(index));
+                }
+                break;
+            case MULTIPLY:
+                for (int index = 0; index < len; ++index)
+                {
+                    long address = getAddress(index + at);
+                    double value = unsafe.getDouble(address);
+                    unsafe.putDouble(address, in.getSample(index) * value);
+                }
+                break;
+            case DIVIDE:
+                for (int index = 0; index < len; ++index)
+                {
+                    long address = getAddress(index + at);
+                    double value = unsafe.getDouble(address);
+                    unsafe.putDouble(address, in.getSample(index) / value);
+                }
+                break;
+            case SUBTRACT:
+                for (int index = 0; index < len; ++index)
+                {
+                    long address = getAddress(index + at);
+                    double value = unsafe.getDouble(address);
+                    unsafe.putDouble(address, in.getSample(index) - value);
+                }
+                break;
+            }
+        }
     }
 }
