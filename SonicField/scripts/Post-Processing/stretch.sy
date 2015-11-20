@@ -10,7 +10,7 @@ def granularReverb(signal,ratio,delay,density,length=50,stretch=1,vol=1):
         for grain in sf.Granulate(signal,length,10):
             (signal_i,at)=grain
             signal_i=sf.Realise(signal_i)
-            signal_i=sf.DirectRelength(signal_i,ratio-0.01+(0.02*random.random()))
+            signal_i=sf.Realise(sf.DirectRelength(signal_i,ratio-0.01+(0.02*random.random())))
             for x in range(0,density):
                 out.append(
                     (
@@ -20,7 +20,6 @@ def granularReverb(signal,ratio,delay,density,length=50,stretch=1,vol=1):
                 )
             -signal_i
       
-        out=sf.Collapse(out)
         out=sf.Realise(sf.MixAt(out))
         out=sf.Realise(sf.NumericVolume(out,vol))
         out=sf.Clean(out)
@@ -56,7 +55,7 @@ def stretch(sig,echo):
         ))
     return sf_do(stretchInner)
 
-(left,right)=sf.ReadFile("temp/a.wav")
+(left,right)=sf.ReadFile("temp/dog.wav")
  
 left  = stretch(left,1024)
 right = stretch(right,1024)    

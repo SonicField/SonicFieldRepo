@@ -510,10 +510,12 @@ public class SFData extends SFSignal implements Serializable
         if (wantLen < absLen) absLen = wantLen;
 
         // Find the end of the next chunks
-        long aEnd = CHUNK_LEN + (aOffset & CHUNK_MASK);
-        long bEnd = CHUNK_LEN + (bOffset & CHUNK_MASK);
+        long aEnd = CHUNK_LEN + (aOffset & ~CHUNK_MASK);
+        long bEnd = CHUNK_LEN + (bOffset & ~CHUNK_MASK);
+        long aDif = aEnd - aOffset;
+        long bDif = bEnd - bOffset;
 
-        long maxChunkLen = aEnd > bEnd ? bEnd : aEnd;
+        long maxChunkLen = aDif > bDif ? bDif : aDif;
 
         if (absLen > maxChunkLen)
         {
@@ -534,7 +536,8 @@ public class SFData extends SFSignal implements Serializable
         // a to b.
         long aAddr = a.getAddress(aOffset);
         long bAddr = b.getAddress(bOffset);
-        for (long pos = 0; pos < absLen; pos += 8)
+        long end = absLen << 3l;
+        for (long pos = 0; pos < end; pos += 8)
         {
             double aValue = unsafe.getDouble(aAddr + pos);
             long putAddr = bAddr + pos;

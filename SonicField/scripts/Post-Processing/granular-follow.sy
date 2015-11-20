@@ -17,21 +17,58 @@ def granularReverb(signal,ratio,delay,density,length=50,stretch=1,vol=1):
                         int((at + (random.random()+random.random())*delay)*stretch)
                     )
                 )
-            print "WuWu ",sf.MaxValue(signal_i)
-            #-signal_i
+            -signal_i
       
-        #out=sf.Collapse(out)
-        print "Willow"
         out=sf.Realise(sf.MixAt(out))
-        print "Willow mixed ", sf.MaxValue(+out)
         out=sf.Realise(sf.NumericVolume(out,vol))
-        print "Willow scaled ", sf.MaxValue(+out)    
         return out
     return sf_do(granularReverbInner)
-    
-left,right=(left,right)=sf.ReadFile("temp/c.wav")
-left  = granularReverb(left ,0.25,1.0,8,128,1,1)
-right = granularReverb(right,0.25,1.0,8,128,1,1)
+
+def reverbInner(signal,convol,grainLength):
+    def reverbInnerDo():
+        mag=sf.Magnitude(+signal)
+        if mag>0:
+            signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+            signal_=sf.FrequencyDomain(signal_)
+            signal_=sf.CrossMultiply(convol,signal_)
+            signal_=sf.TimeDomain(signal_)
+            newMag=sf.Magnitude(+signal_)
+            signal_=sf.NumericVolume(signal_,mag/newMag)        
+            # tail out clicks due to amplitude at end of signal 
+            return sf.Clean(signal_)
+        else:
+            -convol
+            return signal
+            
+    return sf_do(reverbInnerDo)
+
+def reverberate(signal,convol):
+    grainLength = sf.Length(+convol)
+    convol_=sf.FrequencyDomain(sf.Concatenate(convol,sf.Silence(grainLength)))
+    signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+    out=[]
+    for grain in sf.Granulate(signal_,grainLength):
+        (signal_i,at)=grain
+        signal_i=sf.Realise(signal_i)
+        out.append((reverbInner(signal_i,+convol_,grainLength),at))
+    -convol_
+    return sf.Clean(sf.Normalise(sf.MixAt(out)))
+ 
+def doRev(signal,revSignal):
+    def doRevInner():
+        sig=sf.Mix(
+            granularReverb(+signal ,0.25,10.0,  8,256,4,1.0),
+            granularReverb(+signal ,1.0, 10.0, 16,128,4,0.5),
+            granularReverb(signal  ,2.0, 10.0,256,512,4,0.1)
+        )
+        return reverberate(signal,revSignal)
+    return sf_do(doRevInner)
+        
+left,right=sf.ReadFile("temp/c.wav")
+revl=sf.ReadFile("temp/impulses/ultra-l.wav")
+revr=sf.ReadFile("temp/impulses/ultra-r.wav")
+left  = doRev(left,revl[0])
+right = doRev(right,revr[0])
 left  = sf.Finalise(left)
 right = sf.Finalise(right)
 sf.WriteFile32((left,right),"temp/d.wav")
