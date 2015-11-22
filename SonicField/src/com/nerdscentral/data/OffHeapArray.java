@@ -360,6 +360,7 @@ public final class OffHeapArray extends UnsafeProvider implements AutoCloseable
     @Override
     public final void finalize() throws Exception
     {
+        if (!closed) System.err.println("Mem leak"); //$NON-NLS-1$
         close();
     }
 

@@ -35,7 +35,7 @@ public class OffHeapFFT implements AutoCloseable
         sin = OffHeapArray.doubleArray(n1 >> 1);
         double dir = isForward ? -2 * Math.PI : 2 * Math.PI;
 
-        for (long i = 0; i < n1 / 2; i++)
+        for (long i = 0; i < n1 >> 1; ++i)
         {
             cos.setDouble(i, Math.cos(dir * i / n1));
             sin.setDouble(i, Math.sin(dir * i / n1));
