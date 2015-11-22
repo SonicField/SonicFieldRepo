@@ -35,14 +35,15 @@ def reverbInner(signal,convol,grainLength):
             newMag=sf.Magnitude(+signal_)
             signal_=sf.NumericVolume(signal_,mag/newMag)        
             # tail out clicks due to amplitude at end of signal 
-            return sf.Clean(signal_)
+            return sf.Realise(sf.Clean(signal_))
         else:
             -convol
-            return signal
+            return sf.Realise(signal)
             
     return sf_do(reverbInnerDo)
 
 def reverberate(signal,convol):
+    print "Reverberate"
     grainLength = sf.Length(+convol)
     convol_=sf.FrequencyDomain(sf.Concatenate(convol,sf.Silence(grainLength)))
     signal_=sf.Concatenate(signal,sf.Silence(grainLength))
@@ -57,18 +58,19 @@ def reverberate(signal,convol):
 def doRev(signal,revSignal):
     def doRevInner():
         sig=sf.Mix(
-            granularReverb(+signal ,0.25,10.0,  8,256,4,1.0),
-            granularReverb(+signal ,1.0, 10.0, 16,128,4,0.5),
-            granularReverb(signal  ,2.0, 10.0,256,512,4,0.1)
+            granularReverb(+signal ,0.25,11.0,  8,256,4,1.0),
+            granularReverb(+signal ,1.0, 13.0, 16,128,4,0.5),
+            granularReverb(+signal  ,2.0,17.0,256,512,4,0.25),
+            granularReverb(signal  ,4.0, 23.0,256,512,4,0.25),         
         )
-        return reverberate(signal,revSignal)
+        return reverberate(sig,revSignal)
     return sf_do(doRevInner)
         
 left,right=sf.ReadFile("temp/c.wav")
-revl=sf.ReadFile("temp/impulses/ultra-l.wav")
-revr=sf.ReadFile("temp/impulses/ultra-r.wav")
-left  = doRev(left,revl[0])
-right = doRev(right,revr[0])
-left  = sf.Finalise(left)
-right = sf.Finalise(right)
+(revl,t)=sf.ReadFile("temp/impulses/revr-church.wav")
+(revr,t)=sf.ReadFile("temp/impulses/revr-church.wav")
+leftw  = doRev(left,revl)
+rightw = doRev(right,revr)
+left  = sf.Finalise(leftw)
+right = sf.Finalise(rightw)
 sf.WriteFile32((left,right),"temp/d.wav")

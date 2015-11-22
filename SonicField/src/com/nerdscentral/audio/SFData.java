@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
@@ -22,6 +21,8 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 
 import sun.misc.Unsafe;
 
+import com.nerdscentral.data.OffHeapArray;
+import com.nerdscentral.data.UnsafeProvider;
 import com.nerdscentral.sython.SFPL_RuntimeException;
 
 /**
@@ -30,22 +31,8 @@ import com.nerdscentral.sython.SFPL_RuntimeException;
  */
 public class SFData extends SFSignal implements Serializable
 {
-
-    private static Unsafe getUnsafe()
-    {
-        try
-        {
-            Field f = Unsafe.class.getDeclaredField("theUnsafe"); //$NON-NLS-1$
-            f.setAccessible(true);
-            return (Unsafe) f.get(null);
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static final Unsafe unsafe = getUnsafe();
+    // JIT time alias in effect, maybe remove in the future
+    private static final Unsafe unsafe = UnsafeProvider.unsafe;
 
     private static class ByteBufferWrapper
     {
@@ -303,7 +290,6 @@ public class SFData extends SFSignal implements Serializable
         long pos = index & CHUNK_MASK;
         long bufPos = index >> CHUNK_SHIFT;
         long address = chunkIndex + (bufPos << 3);
-        // System.out.println("Index: " + index + " address: " + unsafe.getAddress(address) + " pos: " + pos);
         return unsafe.getAddress(address) + (pos << 3l);
     }
 
@@ -361,6 +347,17 @@ public class SFData extends SFSignal implements Serializable
         for (int i = 0; i < j; ++i)
         {
             data.setSample(i, input[i]);
+        }
+        return data;
+    }
+
+    public static final SFData build(OffHeapArray input, int j)
+    {
+        SFData data = SFData.build(j);
+        input.checkBoundsDouble(0, j);
+        for (int i = 0; i < j; ++i)
+        {
+            data.setSample(i, input.getDouble(i));
         }
         return data;
     }
@@ -558,7 +555,8 @@ public class SFData extends SFSignal implements Serializable
         // a to b.
         long aAddr = a.getAddress(aOffset);
         long bAddr = b.getAddress(bOffset);
-        for (long pos = 0; pos < absLen; pos += 8)
+        long end = absLen << 3l;
+        for (long pos = 0; pos < end; pos += 8)
         {
             double aValue = unsafe.getDouble(aAddr + pos);
             long putAddr = bAddr + pos;
@@ -578,7 +576,8 @@ public class SFData extends SFSignal implements Serializable
         // a to b.
         long aAddr = a.getAddress(aOffset);
         long bAddr = b.getAddress(bOffset);
-        for (long pos = 0; pos < absLen; pos += 8)
+        long end = absLen << 3l;
+        for (long pos = 0; pos < end; pos += 8)
         {
             double aValue = unsafe.getDouble(aAddr + pos);
             long putAddr = bAddr + pos;
@@ -599,7 +598,8 @@ public class SFData extends SFSignal implements Serializable
         // a to b.
         long aAddr = a.getAddress(aOffset);
         long bAddr = b.getAddress(bOffset);
-        for (long pos = 0; pos < absLen; pos += 8)
+        long end = absLen << 3l;
+        for (long pos = 0; pos < end; pos += 8)
         {
             double aValue = unsafe.getDouble(aAddr + pos);
             long putAddr = bAddr + pos;
@@ -620,7 +620,8 @@ public class SFData extends SFSignal implements Serializable
         // a to b.
         long aAddr = a.getAddress(aOffset);
         long bAddr = b.getAddress(bOffset);
-        for (long pos = 0; pos < absLen; pos += 8)
+        long end = absLen << 3l;
+        for (long pos = 0; pos < end; pos += 8)
         {
             double aValue = unsafe.getDouble(aAddr + pos);
             long putAddr = bAddr + pos;
