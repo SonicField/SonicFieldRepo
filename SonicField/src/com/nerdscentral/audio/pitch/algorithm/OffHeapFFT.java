@@ -1,3 +1,4 @@
+/* For Copyright and License see LICENSE.txt and COPYING.txt in the root directory */
 package com.nerdscentral.audio.pitch.algorithm;
 
 import com.nerdscentral.data.OffHeapArray;
