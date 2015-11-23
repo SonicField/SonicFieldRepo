@@ -26,6 +26,7 @@ public class SF_TimeDomain implements SFPL_Operator
 
         try (SFSignal signal = Caster.makeSFSignal(input))
         {
+            // TODO these feel like they should be half the length - investigate
             int NFFT = signal.getLength();
             try (
                 OffHeapArray out = OffHeapArray.doubleArray(NFFT << 1);
@@ -36,6 +37,7 @@ public class SF_TimeDomain implements SFPL_Operator
                 int j = 0;
                 re.initialise();
                 im.initialise();
+                out.initialise();
                 for (int i = 0; i < NFFT >> 1; ++i)
                 {
                     re.setDouble(i, signal.getSample(j++));
@@ -47,7 +49,7 @@ public class SF_TimeDomain implements SFPL_Operator
                     ret.clear();
                     for (int i = 0; i >> 1 < NFFT; i += 2)
                     {
-                        ret.setSample(i >> 2, out.getDouble(i));
+                        ret.setSample(i >> 1, out.getDouble(i));
                     }
                     return Caster.prep4Ret(ret);
                 }

@@ -33,11 +33,13 @@ public class SF_FrequencyDomain implements SFPL_Operator
                 OffHeapArray re = OffHeapArray.doubleArray(NFFT);
                 OffHeapArray im = OffHeapArray.doubleArray(NFFT))
             {
+                out.initialise();
+                re.initialise();
+                im.initialise();
                 for (int i = 0; i < Nx; ++i)
                 {
                     re.setDouble(i, signal.getSample(i));
                 }
-                im.initialise();
                 FFTbase.fft(re, im, out, true);
                 try (SFData ret = SFData.build(out, NFFT))
                 {

@@ -1,0 +1,41 @@
+def reverbInner(signal,convol,grainLength):
+    def rii():
+        mag=sf.Magnitude(+signal)
+        if mag>0:
+            signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+            signal_=sf.FrequencyDomain(signal_)
+            signal_=sf.CrossMultiply(convol,signal_)
+            signal_=sf.TimeDomain(signal_)
+            newMag=sf.Magnitude(+signal_)
+            if newMag>0:
+                signal_=sf.NumericVolume(signal_,mag/newMag)        
+                # tail out clicks due to amplitude at end of signal 
+                return sf.Realise(signal_)
+            else:
+                return sf.Silence(sf.Length(signal_))
+        else:
+            -convol
+            return signal
+    return sf_do(rii)
+            
+def reverberate(signal,convol):
+    def revi():
+        grainLength = sf.Length(+convol)
+        convol_=sf.FrequencyDomain(sf.Concatenate(convol,sf.Silence(grainLength)))
+        signal_=sf.Concatenate(signal,sf.Silence(grainLength))
+        out=[]
+        for grain in sf.Granulate(signal_,grainLength):
+            (signal_i,at)=grain
+            out.append((reverbInner(signal_i,+convol_,grainLength),at))
+        -convol_
+        return sf.Clean(sf.FixSize(sf.MixAt(out)))
+    return sf_do(revi)
+
+(left,right)=sf.ReadFile("temp/test-signal.wav")
+
+(convoll,convolr)=sf.ReadFile("temp/impulses/Vocal-Chamber-L.wav")
+
+ll  = reverberate(+left ,convoll)
+rr  = reverberate(+right,convolr)
+
+sf.WriteFile32((sf.FixSize(ll),sf.FixSize(rr)),"temp/test-out.wav")
