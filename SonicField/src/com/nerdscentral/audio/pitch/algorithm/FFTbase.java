@@ -1,15 +1,17 @@
 package com.nerdscentral.audio.pitch.algorithm;
 
 import java.lang.ref.SoftReference;
-import java.util.concurrent.atomic.AtomicReference;
 
 import com.nerdscentral.data.OffHeapArray;
 
 public class FFTbase
 {
-
-    static AtomicReference<SoftReference<OffHeapFFT>> cachedF = new AtomicReference<>(null);
-    static AtomicReference<SoftReference<OffHeapFFT>> cachedR = new AtomicReference<>(null);
+    private static final ThreadLocal<SoftReference<OffHeapFFT>> cachedF = new ThreadLocal<SoftReference<OffHeapFFT>>()
+                                                                        {/**/
+                                                                        };
+    private static final ThreadLocal<SoftReference<OffHeapFFT>> cachedR = new ThreadLocal<SoftReference<OffHeapFFT>>()
+                                                                        {/**/
+                                                                        };
 
     @SuppressWarnings("resource")
     public static void fft(final OffHeapArray inputReal, OffHeapArray inputImag, OffHeapArray newArray, boolean forward)
@@ -26,14 +28,7 @@ public class FFTbase
         {
             if (transform.size() != n)
             {
-                try
-                {
-                    transform.close();
-                }
-                catch (Exception e)
-                {
-                    throw new RuntimeException(e);
-                }
+                transform.close();
                 transform = null;
             }
         }
@@ -52,14 +47,13 @@ public class FFTbase
         }
         transform.fft(inputReal, inputImag);
 
-        long length = inputReal.doubleSize() * 2;
-        double radice = 1 / Math.sqrt(n);
+        long length = inputReal.doubleSize() << 1;
+        double radice = 1.0 / Math.sqrt(n);
         for (long i = 0; i < length; i += 2)
         {
-            long i2 = i / 2;
+            long i2 = i >> 1;
             newArray.setDouble(i, inputReal.getDouble(i2) * radice);
             newArray.setDouble(i + 1, inputImag.getDouble(i2) * radice);
         }
     }
-
 }

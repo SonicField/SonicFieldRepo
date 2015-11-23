@@ -40,7 +40,6 @@ public class SF_TimeDomain implements SFPL_Operator
                     im.setDouble(i, signal.getSample(j++));
                 }
                 FFTbase.fft(re, im, out, false);
-
                 try (SFData ret = SFData.build(NFFT))
                 {
                     for (int i = 0; i / 2 < NFFT; i += 2)

@@ -10,12 +10,7 @@ public class OffHeapFFT implements AutoCloseable
     // Lookup tables. Only need to recompute when size of FFT changes.
     private final OffHeapArray cos;
     private final OffHeapArray sin;
-    private final boolean      forward;
-
-    public boolean isForward()
-    {
-        return forward;
-    }
+    private volatile boolean   closed = false;
 
     public long size()
     {
@@ -24,7 +19,6 @@ public class OffHeapFFT implements AutoCloseable
 
     public OffHeapFFT(long n1, boolean isForward)
     {
-        this.forward = isForward;
         this.n = n1;
         this.m = (int) (Math.log(n1) / Math.log(2));
 
@@ -45,6 +39,7 @@ public class OffHeapFFT implements AutoCloseable
 
     public void fft(OffHeapArray x, OffHeapArray y)
     {
+        if (closed) throw new RuntimeException(Messages.getString("OffHeapFFT.0")); //$NON-NLS-1$
         long i, j, k, n1, n2, a;
         double c, s, t1, t2;
 
@@ -54,7 +49,7 @@ public class OffHeapFFT implements AutoCloseable
         // Bit-reverse
         j = 0;
         n2 = n >> 1;
-        for (i = 1; i < n - 1; i++)
+        for (i = 1; i < n - 1; ++i)
         {
             n1 = n2;
             while (j >= n1)
@@ -78,7 +73,7 @@ public class OffHeapFFT implements AutoCloseable
         n1 = 0;
         n2 = 1;
 
-        for (i = 0; i < m; i++)
+        for (i = 0; i < m; ++i)
         {
             n1 = n2;
             n2 <<= 1;
@@ -106,6 +101,8 @@ public class OffHeapFFT implements AutoCloseable
     @Override
     public void close() throws RuntimeException
     {
+        if (closed) throw new RuntimeException(Messages.getString("OffHeapFFT.1")); //$NON-NLS-1$
+        closed = true;
         sin.close();
         cos.close();
     }
