@@ -58,25 +58,29 @@ public class SFData extends SFSignal implements Serializable
     }
 
     // Directory to send swap files to
-    private static final String                             SONIC_FIELD_TEMP = "sonicFieldTemp";               //$NON-NLS-1$
-    private static final long                               CHUNK_SHIFT      = 16;
-    private static final long                               CHUNK_LEN        = (long) Math.pow(2, CHUNK_SHIFT);
-    private static final long                               CHUNK_MASK       = CHUNK_LEN - 1;
-    private static final long                               serialVersionUID = 1L;
+    private static final String                             SONIC_FIELD_TEMP        = "sonicFieldTemp";               //$NON-NLS-1$
+    private static final String                             SONIC_FIELD_SAFE_MEMORY = "sonicFieldSaferMemory";        //$NON-NLS-1$
+    private static final String                             SONIC_FIELD_TRUE        = "true";                         //$NON-NLS-1$
+
+    private static final long                               CHUNK_SHIFT             = 16;
+    private static final long                               CHUNK_LEN               = (long) Math.pow(2, CHUNK_SHIFT);
+    private static final long                               CHUNK_MASK              = CHUNK_LEN - 1;
+    private static final long                               serialVersionUID        = 1L;
     private final int                                       length;
-    private volatile boolean                                killed           = false;
+    private volatile boolean                                killed                  = false;
     private static File[]                                   coreFile;
     private static RandomAccessFile[]                       coreFileAccessor;
     private ByteBufferWrapper[]                             chunks;
     private static FileChannel[]                            channelMapper;
-    private static int                                      fileRoundRobbin  = 0;
+    private static int                                      fileRoundRobbin         = 0;
     private final NotCollectedException                     javaCreated;
     private final String                                    pythonCreated;
     private final long                                      chunkIndex;
     // shadows chunkIndex for memory management as chunkIndex must
     // be final to enable optimisation
     private long                                            allocked;
-    private static ConcurrentLinkedDeque<ByteBufferWrapper> freeChunks       = new ConcurrentLinkedDeque<>();
+    private static ConcurrentLinkedDeque<ByteBufferWrapper> freeChunks              = new ConcurrentLinkedDeque<>();
+    private static final boolean                            saferMemory;
 
     private static class ResTracker
     {
@@ -94,6 +98,9 @@ public class SFData extends SFSignal implements Serializable
 
     static
     {
+        String safe = System.getProperty(SONIC_FIELD_SAFE_MEMORY);
+        saferMemory = safe != null && safe.equals(SONIC_FIELD_TRUE);
+        if (saferMemory) System.out.println(Messages.getString("SFData.4")); //$NON-NLS-1$
         File tempDir[];
         String tempEnv = System.getProperty(SONIC_FIELD_TEMP);
         String[] tdNames = null;
@@ -212,6 +219,11 @@ public class SFData extends SFSignal implements Serializable
         }
         chunks = null;
         resourceTracker.remove(this);
+        if (saferMemory) freeUnsafeMemory();
+    }
+
+    private void freeUnsafeMemory()
+    {
         synchronized (unsafe)
         {
             if (allocked != 0) unsafe.freeMemory(chunkIndex);
@@ -437,6 +449,10 @@ public class SFData extends SFSignal implements Serializable
             System.err.println(Messages.getString("SFData.13")); //$NON-NLS-1$
             System.err.println(pythonCreated);
             javaCreated.printStackTrace();
+        }
+        if (!saferMemory)
+        {
+            freeUnsafeMemory();
         }
     }
 
