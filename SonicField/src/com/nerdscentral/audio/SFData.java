@@ -60,6 +60,7 @@ public class SFData extends SFSignal implements Serializable
     // Directory to send swap files to
     private static final String                             SONIC_FIELD_TEMP        = "sonicFieldTemp";               //$NON-NLS-1$
     private static final String                             SONIC_FIELD_SAFE_MEMORY = "sonicFieldSaferMemory";        //$NON-NLS-1$
+    private static final String                             SONIC_FIELD_DIRECT      = "sonicFieldDirectMemory";       //$NON-NLS-1$
     private static final String                             SONIC_FIELD_TRUE        = "true";                         //$NON-NLS-1$
 
     private static final long                               CHUNK_SHIFT             = 16;
@@ -81,6 +82,7 @@ public class SFData extends SFSignal implements Serializable
     private long                                            allocked;
     private static ConcurrentLinkedDeque<ByteBufferWrapper> freeChunks              = new ConcurrentLinkedDeque<>();
     private static final boolean                            saferMemory;
+    private static final boolean                            mapped;
 
     private static class ResTracker
     {
@@ -100,41 +102,51 @@ public class SFData extends SFSignal implements Serializable
     {
         String safe = System.getProperty(SONIC_FIELD_SAFE_MEMORY);
         saferMemory = safe != null && safe.equals(SONIC_FIELD_TRUE);
+        String mapOption = System.getProperty(SONIC_FIELD_DIRECT);
+        mapped = !(mapOption != null && mapOption.equals(SONIC_FIELD_TRUE));
         if (saferMemory) System.out.println(Messages.getString("SFData.4")); //$NON-NLS-1$
-        File tempDir[];
-        String tempEnv = System.getProperty(SONIC_FIELD_TEMP);
-        String[] tdNames = null;
-        if (tempEnv == null)
+        if (mapped)
         {
-            tdNames = new String[] { System.getProperty("java.io.tmpdir") }; //$NON-NLS-1$
+            File tempDir[];
+            String tempEnv = System.getProperty(SONIC_FIELD_TEMP);
+            String[] tdNames = null;
+            if (tempEnv == null)
+            {
+                tdNames = new String[] { System.getProperty("java.io.tmpdir") }; //$NON-NLS-1$
+            }
+            else
+            {
+                tdNames = tempEnv.split(","); //$NON-NLS-1$
+            }
+            int nTemps = tdNames.length;
+            tempDir = new File[nTemps];
+            coreFile = new File[nTemps];
+            coreFileAccessor = new RandomAccessFile[nTemps];
+            channelMapper = new FileChannel[nTemps];
+            String pid = ManagementFactory.getRuntimeMXBean().getName();
+            int index = 0;
+            for (String tdName : tdNames)
+            {
+                tempDir[index] = new File(tdName);
+                try
+                {
+                    coreFile[index] = File.createTempFile("SonicFieldSwap" + pid, ".mem", tempDir[index]);  //$NON-NLS-1$//$NON-NLS-2$            
+                    coreFile[index].deleteOnExit();
+                    // Now create the actual file
+                    coreFileAccessor[index] = new RandomAccessFile(coreFile[index], "rw"); //$NON-NLS-1$
+                }
+                catch (IOException e)
+                {
+                    throw new RuntimeException(e);
+                }
+                channelMapper[index] = coreFileAccessor[index].getChannel();
+                ++index;
+            }
         }
         else
         {
-            tdNames = tempEnv.split(","); //$NON-NLS-1$
-        }
-        int nTemps = tdNames.length;
-        tempDir = new File[nTemps];
-        coreFile = new File[nTemps];
-        coreFileAccessor = new RandomAccessFile[nTemps];
-        channelMapper = new FileChannel[nTemps];
-        String pid = ManagementFactory.getRuntimeMXBean().getName();
-        int index = 0;
-        for (String tdName : tdNames)
-        {
-            tempDir[index] = new File(tdName);
-            try
-            {
-                coreFile[index] = File.createTempFile("SonicFieldSwap" + pid, ".mem", tempDir[index]);  //$NON-NLS-1$//$NON-NLS-2$            
-                coreFile[index].deleteOnExit();
-                // Now create the actual file
-                coreFileAccessor[index] = new RandomAccessFile(coreFile[index], "rw"); //$NON-NLS-1$
-            }
-            catch (IOException e)
-            {
-                throw new RuntimeException(e);
-            }
-            channelMapper[index] = coreFileAccessor[index].getChannel();
-            ++index;
+            // Used for sync only
+            coreFile = new File[1];
         }
     }
 
@@ -179,13 +191,21 @@ public class SFData extends SFSignal implements Serializable
             {
                 while (countDown > 0)
                 {
-                    long from = coreFile[fileRoundRobbin].length();
-                    ByteBuffer chunk = channelMapper[fileRoundRobbin].map(MapMode.READ_WRITE, from, CHUNK_LEN << 3l);
+                    ByteBuffer chunk;
+                    if (mapped)
+                    {
+                        long from = coreFile[fileRoundRobbin].length();
+                        chunk = channelMapper[fileRoundRobbin].map(MapMode.READ_WRITE, from, CHUNK_LEN << 3l);
+                        if (++fileRoundRobbin >= coreFile.length) fileRoundRobbin = 0;
+                    }
+                    else
+                    {
+                        chunk = ByteBuffer.allocateDirect((int) (CHUNK_LEN << 3l));
+                    }
                     chunk.order(ByteOrder.nativeOrder());
                     chunks[chunkCount] = new ByteBufferWrapper(chunk);
                     ++chunkCount;
                     countDown -= CHUNK_LEN;
-                    if (++fileRoundRobbin >= coreFile.length) fileRoundRobbin = 0;
                 }
             }
         }

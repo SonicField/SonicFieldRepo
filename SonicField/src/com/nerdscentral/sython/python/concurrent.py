@@ -19,12 +19,16 @@ SF_ASLEEP         = AtomicLong()
 SF_STARTED        = System.currentTimeMillis()
 TRACE=True
 
-SF_LOG_LOCK=ReentrantLock()
-print "Thread\tQueue\tAsleep\tTime\tMessage..."
-def cLog(*args):
-    SF_LOG_LOCK.lock()
-    print "\t".join(str(x) for x in [Thread.currentThread().getId(),SF_QUEUED.get(),SF_ASLEEP.get(),(System.currentTimeMillis()-SF_STARTED)] + list(args))
-    SF_LOG_LOCK.unlock()
+if TRACE:
+    SF_LOG_LOCK=ReentrantLock()
+    print "Thread\tQueue\tAsleep\tTime\tMessage..."
+    def cLog(*args):
+        SF_LOG_LOCK.lock()
+        print "\t".join(str(x) for x in [Thread.currentThread().getId(),SF_QUEUED.get(),SF_ASLEEP.get(),(System.currentTimeMillis()-SF_STARTED)] + list(args))
+        SF_LOG_LOCK.unlock()
+else:
+    def cLog(*args):
+        pass
 
 cLog( "Concurrent Threads: " + SF_MAX_CONCURRENT.__str__())
 SF_POOL    = Executors.newCachedThreadPool()
@@ -115,8 +119,6 @@ class sf_superFuture(Future):
         queue.append(self)
         self.mutex=ReentrantLock()
         self.submitted=False
-        if len(queue)>SF_MAX_CONQUEUE:
-            self.submitAll()
 
     def getId(self):
         return self.id
@@ -177,7 +179,10 @@ class sf_superFuture(Future):
                     it.remove()
                     SF_ASLEEP.getAndDecrement();
                     cLog("Steel",toSteel.toDo)
-                    SF_ASLEEP.getAndIncrement();
+                    if self.future.isDone():
+                        nap=False
+                    else:
+                        SF_ASLEEP.getAndIncrement();
                     toSteel.directSubmit()
                 except Exception, e:
                     cLog("Failed to steel",e.getMessage())
