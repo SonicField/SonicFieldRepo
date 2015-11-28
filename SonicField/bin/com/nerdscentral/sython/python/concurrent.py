@@ -167,6 +167,7 @@ class sf_superFuture(Future):
         else:
             nap=False
             cLog("Get")
+        back=1
         while not self.future.isDone():
             nap=True
             it=SF_PENDING.iterator()
@@ -174,15 +175,20 @@ class sf_superFuture(Future):
                 try:
                     toSteel=it.next()
                     it.remove()
-                    cLog("Steeling",toSteel.toDo)
+                    SF_ASLEEP.getAndDecrement();
+                    cLog("Steel",toSteel.toDo)
+                    SF_ASLEEP.getAndIncrement();
                     toSteel.directSubmit()
                 except Exception, e:
                     cLog("Failed to steel",e.getMessage())
             else:
-                cLog("Non pending")
-            Thread.sleep(250)
+                if back==1:
+                    cLog("Non Pending")
+                Thread.sleep(back)
+                back+=1
+                if back>100:
+                    back=100
         r = self.future.get()
-        cLog("Done?",self.future.isDone())
         if nap:
             SF_ASLEEP.getAndDecrement();
         cLog("Wake")
