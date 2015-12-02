@@ -389,12 +389,13 @@ class sf_superFuture(Future):
                     # Nap also controls the thread back off
                     if self.future.isDone():
                         nap=False
+                        break
                     else:
                         nap=True
                         SF_ASLEEP.getAndIncrement();
                 except Exception, e:
                     # All bets are off
-                    cLog("Failed to Steal",e.getMessage())
+                    cLog("Failed to Steal",str(e))
                     # Just raise and give up
                     raise
             # If the thread would block again or we are not able to steal as
@@ -435,10 +436,15 @@ def sf_do(toDo):
     return sf_superFuture(toDo)
     
 # An experimental decorator approach equivalent to sf_do
-def sf_parallel(func):
-    def inner(*args, **kwargs): #1
-        return func(*args, **kwargs) #2
-    return sf_do(inner)
+class sf_parallel(object):
+
+    def __init__(self,func):
+        self.func=func
+
+    def __call__(self,*args, **kwargs):
+        def closure():
+            return self.func(*args, **kwargs) 
+        return sf_superFuture(closure)
 
 # Shut the execution pool down. This waits for it to shut down
 # but if the shutdown takes longer than timeout then it is 
