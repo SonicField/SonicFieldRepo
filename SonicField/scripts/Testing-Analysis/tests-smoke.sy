@@ -80,12 +80,14 @@ def parallel():
     s=sf.SineWave(1000,1000)
     assertClose("Parallel-mix-magnitude",sf.Magnitude(s)*4,sf.Magnitude(+t),t)
     
+    @sf_parallel
     def p2(x):
        return sf.SineWave(1000,x)
     t=sf.Mix(p2(1000),p2(1000),p2(1000),p2(1000))
     s=sf.SineWave(1000,1000)
     assertClose("Parallel-mix-magnitude-1-arg",sf.Magnitude(s)*4,sf.Magnitude(+t),t)
     
+    @sf_parallel
     def p3(x,y):
        return sf.SineWave(y,x)
     t=sf.Mix(p3(1000,1000),p3(1000,1000),p3(1000,1000),p3(1000,1000))
@@ -95,10 +97,16 @@ def parallel():
     t=sf.Mix(p3(x=1000,y=1000),p3(x=1000,y=1000),p3(x=1000,y=1000),p3(x=1000,y=1000))
     s=sf.SineWave(1000,1000)
     assertClose("Parallel-mix-magnitude-2-kargs",sf.Magnitude(s)*4,sf.Magnitude(+t),t)
+    
+    @sf_parallel
+    def p4(x,y):
+       return sf.SineWave(y,x),sf.SineWave(y,x)
+    t,r=p4(1000,1000)
+    assertClose("Parallel-mix-magnitude-2-proxi",sf.Magnitude(r),sf.Magnitude(+t),t)
 
-#simpleMix()
-#simpleGranulate()
-#realisedGranulate()
-#simpleFFT()
-#realisedFFT()
+simpleMix()
+simpleGranulate()
+realisedGranulate()
+simpleFFT()
+realisedFFT()
 parallel()

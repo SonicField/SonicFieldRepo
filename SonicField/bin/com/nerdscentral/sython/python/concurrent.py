@@ -415,6 +415,11 @@ class sf_superFuture(Future):
         # Return the result if any
         return r
 
+    # Proxy all other methods to the result of the future
+    def __getattr__(self,name):
+        cLog("Proxying: ",name)
+        return self.get().__getattr__(name)
+
     # If the return of the get is iterable then we delegate to it so that 
     # this super future appears to be its embedded task
     def __iter__(self):

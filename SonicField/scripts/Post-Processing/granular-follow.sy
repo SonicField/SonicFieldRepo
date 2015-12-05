@@ -57,12 +57,19 @@ def reverberate(signal,convol):
 #sf_parallel
 def doRev(signal,revSignal):
     sig=sf.Mix(
-        granularReverb(+signal ,0.125,229.0,  8,1024,8,1.0),
-        granularReverb(+signal ,0.125,563.0,  8,1024,8,1.0),
-        granularReverb(+signal ,0.25 ,241.0,  8, 256,8,1.0),
-        granularReverb(+signal ,1.0  ,307.0, 16, 128,8,0.5),
-        granularReverb(+signal ,2.0  ,373.0,256, 512,8,0.25),
-        granularReverb(signal  ,4.0  ,487.0,256, 512,8,0.25)
+#        granularReverb(+signal ,0.125,229.0,  8,1024,8,1.0),
+#        granularReverb(+signal ,0.125,563.0,  8,1024,8,1.0),
+#        granularReverb(+signal ,0.25 ,241.0,  8, 256,8,1.0),
+#        granularReverb(+signal ,1.0  ,307.0, 16, 128,8,0.5),
+        granularReverb(+signal ,0.125,229.0, 16,512,12,1.0),
+        granularReverb(+signal ,0.125,563.0, 16,512,12,1.0),
+        granularReverb(+signal ,0.25 ,241.0, 32,128,12,1.0),
+        granularReverb(+signal ,1.0  ,307.0, 64,128,12,0.5),
+        granularReverb(+signal ,2.0  ,373.0,512, 64,12,0.1),
+        granularReverb(signal  ,4.0  ,487.0,1024,64,12,0.05)
+        
+#        granularReverb(+signal ,2.0  ,373.0,256, 512,8,0.25),
+#        granularReverb(signal  ,4.0  ,487.0,256, 512,8,0.25)
     )
     
     return reverberate(sig,revSignal)
