@@ -226,14 +226,14 @@ public class Caster
         }
         else if (in instanceof SFSignal)
         {
-            ((SFSignal) in).incrReference();
+            ((SFSignal) in).incrReferenceCount();
         }
         return in;
     }
 
     public static SFSignal incrReference(SFSignal input)
     {
-        input.incrReference();
+        input.incrReferenceCount();
         return input;
     }
 

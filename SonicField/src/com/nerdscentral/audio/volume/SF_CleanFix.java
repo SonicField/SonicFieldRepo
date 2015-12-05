@@ -41,7 +41,7 @@ public class SF_CleanFix implements SFPL_Operator
         {
             try (SFData dataIn = SFData.realise(sig); SFData dataOut = dataIn.replicateEmpty();)
             {
-                if (dataIn == sig) dataIn.incrReference();
+                if (dataIn == sig) dataIn.incrReferenceCount();
 
                 double max = SF_Clean.decimateFilter(dataIn, dataOut);
                 max = 1 / max;

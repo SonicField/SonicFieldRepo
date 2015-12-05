@@ -49,15 +49,15 @@ public abstract class SFSingleTranslator extends SFGenerator
     }
 
     @Override
-    public void decrReference()
+    public void decrReferenceCount()
     {
-        signal.decrReference();
+        signal.decrReferenceCount();
     }
 
     @Override
-    public void incrReference()
+    public void incrReferenceCount()
     {
-        signal.incrReference();
+        signal.incrReferenceCount();
     }
 
     @Override
@@ -67,9 +67,9 @@ public abstract class SFSingleTranslator extends SFGenerator
     }
 
     @Override
-    public int getReference()
+    public int getReferenceCount()
     {
-        return signal.getReference();
+        return signal.getReferenceCount();
     }
 
 }

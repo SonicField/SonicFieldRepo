@@ -60,7 +60,7 @@ public class SF_FixSize implements SFPL_Operator
             // If we keep the input then we increase its reference
             // so when what ever calls reduces it all
             // is OK. IE this behaves as though the return is always new
-            if (data == signalIn) data.incrReference();
+            if (data == signalIn) data.incrReferenceCount();
             int len = data.getLength();
 
             double max = 0;

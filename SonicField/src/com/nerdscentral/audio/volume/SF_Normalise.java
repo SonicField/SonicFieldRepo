@@ -63,7 +63,7 @@ public class SF_Normalise implements SFPL_Operator
             // If we keep the input then we increase its reference
             // so when what ever calls doNormalisation reduces it all
             // is OK. IE this behaves as though the return is always new
-            if (data == signalIn) data.incrReference();
+            if (data == signalIn) data.incrReferenceCount();
             int len = data.getLength();
             for (int i = 0; i < len; ++i)
             {

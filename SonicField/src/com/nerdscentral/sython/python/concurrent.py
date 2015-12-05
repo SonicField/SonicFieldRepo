@@ -257,6 +257,19 @@ class sf_superFuture(Future):
         self.mutex=ReentrantLock()
         self.submitted=False
 
+    # Testing Only
+    # ============
+    # Forward isDone to the wrapped future. Therefore,
+    # this is effectively isDone for this super future as well. We can safely
+    # call isDone on the super future test if calling 'get' will imediately
+    # return with the pre-executed and completed work in the future.
+    #
+    # This is not likely to be of use for normal code because we should not
+    # interfere with the scheduler by inspecting if work is done or not.
+    # However, this method is very useful for testing.
+    def isDone(self):
+        return self.toDo.isDone()
+
     # Used by work stealing to submit this task for immediate execution on the
     # the executing thread. The actual execution is delegated to an sf_getter
     # which executes the task in its constructor. This (along with submit) use
@@ -418,7 +431,7 @@ class sf_superFuture(Future):
     # Proxy all other methods to the result of the future
     def __getattr__(self,name):
         cLog("Proxying: ",name)
-        return self.get().__getattr__(name)
+        return getattr(self.get(),name)
 
     # If the return of the get is iterable then we delegate to it so that 
     # this super future appears to be its embedded task

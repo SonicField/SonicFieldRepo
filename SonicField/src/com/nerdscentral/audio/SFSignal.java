@@ -110,15 +110,14 @@ public abstract class SFSignal implements AutoCloseable
         else if (c < 0) throw new RuntimeException(Messages.getString("SFSignal.1")); //$NON-NLS-1$
     }
 
-    public void incrReference()
+    public void incrReferenceCount()
     {
         referenceCount.incrementAndGet();
-
     }
 
     public SFSignal __pos__()
     {
-        incrReference();
+        incrReferenceCount();
         return this;
     }
 
@@ -128,12 +127,12 @@ public abstract class SFSignal implements AutoCloseable
         return this;
     }
 
-    public int getReference()
+    public int getReferenceCount()
     {
         return referenceCount.get();
     }
 
-    public void decrReference()
+    public void decrReferenceCount()
     {
         referenceCount.decrementAndGet();
     }

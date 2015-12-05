@@ -103,10 +103,16 @@ def parallel():
        return sf.SineWave(y,x),sf.SineWave(y,x)
     t,r=p4(1000,1000)
     assertClose("Parallel-mix-magnitude-2-itter",sf.Magnitude(r),sf.Magnitude(+t),t)
+    
+    # Check we can plus and minute on a future.
+    t=p3(1000,1000)
+    +t
+    -t
+    assertEqual("Reference-count",t.getReferenceCount(),1,t)
 
-simpleMix()
-simpleGranulate()
-realisedGranulate()
-simpleFFT()
-realisedFFT()
+#simpleMix()
+#simpleGranulate()
+#realisedGranulate()
+#simpleFFT()
+#realisedFFT()
 parallel()
