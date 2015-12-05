@@ -24,7 +24,7 @@ public class SF_Clean implements SFPL_Operator
         {
             try (SFData dataIn = SFData.realise(sig); SFData dataOut = dataIn.replicateEmpty();)
             {
-                if (dataIn == sig) dataIn.incrReference();
+                if (dataIn == sig) dataIn.incrReferenceCount();
 
                 decimateFilter(dataIn, dataOut);
                 return Caster.prep4Ret(dataOut);

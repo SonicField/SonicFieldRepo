@@ -43,7 +43,7 @@ public class SF_ReadSignal implements SFPL_Operator
 
         }
 
-        private void updateBuffer(int index)
+        private void updateBuffer(long index)
         {
             try
             {

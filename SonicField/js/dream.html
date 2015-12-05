@@ -1,0 +1,109 @@
+<!DOCTYPE html >
+<html>
+<head>
+<style type="text/css">
+canvas
+{
+    border: 0
+    color: black;
+    background: black;
+    display: block;
+}
+
+canvas#hiddenArea
+{
+    display: none;
+}
+div
+{
+    text-align:center;
+}
+body
+{
+    padding:0;
+    margin:0;
+    color:white;
+    background:grey;
+}
+</style>
+<script type="text/javascript">
+var context;
+var canvas;
+var hCanvas;
+var hContext;
+var count=0;
+
+(function() {
+})();
+function startAnimation(){
+    var requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||
+    window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
+    window.requestAnimationFrame = requestAnimationFrame;
+ setup();
+ repaint();
+}
+
+function repaint(){
+    if(++count%20==0){
+        var start=context.getImageData(0,0,canvas.width,canvas.height);
+        context.fillStyle = "rgba(0, 0, 0, 1.0)";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        if(count%1000!=0){
+            context.globalAlpha=0.99;
+            context.drawImage(hCanvas,0,0);
+        }
+    }
+    
+    var imgD1=context.getImageData(0,0,canvas.width,canvas.height);
+    var scale=0.05
+    var scaleFactor=1+scale;
+    hContext.putImageData(imgD1,0,0);
+    context.scale(scaleFactor,scaleFactor);
+    var sx=canvas.width*scale/2;
+    var sy=canvas.height*scale/2;
+    context.translate(-sx+1.6,-sy+1.1)
+    context.globalAlpha=0.125;
+    context.drawImage(hCanvas,0,0);
+ 
+    context.globalAlpha=1.0;
+    if((Math.random()*20)>19){
+        context.lineWidth = 2;
+        var c="rgb(" + Math.floor(Math.random()*255) + "," + Math.floor(Math.random()*255) + ","+ Math.floor(Math.random()*255) + ")";
+        context.strokeStyle = c;
+    }
+    var radius=Math.random()*50;
+    context.setTransform(1,0,0,1,0,0);
+    context.beginPath();
+    x=canvas.width/2
+    y=canvas.height/2
+    //context.arc(canvas.width/2,canvas.height/2,radius,0,2*Math.PI,true);
+    var rotation=new Date();
+    rotation=rotation.getSeconds();
+    rotation/=2.0*Math.PI;
+    context.ellipse(x, y, radius*0.5, radius, rotation, 0, 2*Math.PI, true);
+    context.stroke();
+
+    requestAnimationFrame(repaint);
+}
+
+function setup() {
+  canvas=document.getElementById('drawArea');
+  hCanvas=document.getElementById('hiddenArea');
+  if (canvas.getContext) {
+    context=canvas.getContext('2d');
+    hContext=hCanvas.getContext('2d');
+ context.globalAlpha =1;
+    context.strokeStyle = "rgb(150,29,28)";
+    //context.strokeStyle = 'blue';
+  } else {
+    // put code for browsers that don’t support canvas here
+    alert("This page uses HTML 5 to render correctly. Other browsers may not see anything.");
+  }
+}
+</script>
+</head>
+<body onload="startAnimation()">
+<canvas id="drawArea" width="1920" height="1080"></canvas>
+<canvas id="hiddenArea" width="1920" height="1920"></canvas>
+</body>
+</html>

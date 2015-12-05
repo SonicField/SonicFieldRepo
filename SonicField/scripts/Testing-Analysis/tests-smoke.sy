@@ -1,0 +1,122 @@
+def assertEqual(msg,a,b,sig=None):
+    if a!=b:
+        print "Fail: ",msg,a,b
+        if sig is not None:
+            sf.WriteFile32([sig],"temp/"+msg+".wav")
+    else:
+        print "Pass: ",msg,a,b
+        if sig is not None:
+            -sig
+
+def assertClose(msg,a,b,sig=None,ratio=1.0e-10):
+    if (b==0 and abs(a)>ratio) or (b!=0 and abs(1.0-abs(a/b))>ratio):
+        print "Fail: ",msg,a,b
+        if sig is not None:
+            sf.WriteFile32([sig],"temp/"+msg+".wav")
+    else:
+        print "Pass: ",msg,a,b
+        if sig is not None:
+            -sig
+
+def simpleMix():
+    signal=sf.Silence(10000)
+    signal=sf.Realise(signal)
+    other=+signal
+    other=sf.DirectMix(1,other)
+    signal=sf.Mix(other,signal)
+    other=+signal
+    other=sf.DirectMix(-2,other)
+    signal=sf.Mix(other,signal)
+    assertEqual("Simple-mix-magnitude",sf.Magnitude(+signal),0,signal)
+
+def simpleGranulate():
+    signalA=sf.SineWave(10000,1000)
+    signalB=sf.MixAt(sf.Granulate(+signalA,128,0))
+    assertClose("Simple-granulate-magnitude-a",sf.Magnitude(+signalB),sf.Magnitude(+signalA),+signalB)    
+    signalB=sf.NumericVolume(signalB,-1)
+    signal=sf.Mix(signalA,signalB)  
+    assertClose("Simple-granulate-magnitude-b",sf.Magnitude(+signal),0,signal)
+
+def realisedGranulate():
+    signalA=sf.SineWave(10000,1000)
+    all=[]
+    for sig,at in sf.Granulate(+signalA,128,0):
+        all.append((sf.Realise(sig),at))
+    signalB=sf.MixAt(all)
+    assertClose("Realised-granulate-magnitude-a",sf.Magnitude(+signalB),sf.Magnitude(+signalA),+signalB)    
+    signalB=sf.Realise(sf.NumericVolume(signalB,-1))
+    signal=sf.Mix(signalA,signalB)
+    signal=sf.Realise(signal)
+    assertClose("Realised-granulate-magnitude-b",sf.Magnitude(+signal),0,signal)
+
+def simpleFFT():
+    signalA=sf.SineWave(10000,1000)
+    oldMag=sf.Magnitude(+signalA)
+    signalB=sf.FrequencyDomain(+signalA)
+    signalB=sf.TimeDomain(signalB)
+    newMag=sf.Magnitude(+signalB)
+    assertClose("Simple-FFT-magnitude-a",newMag,346.410161514,+signalB,1.0e-8);
+    signalB=sf.NumericVolume(signalB,oldMag/newMag)
+    signalB=sf.NumericVolume(signalB,-1)
+    signalB=sf.Mix(signalA,signalB)  
+    assertClose("Simple-FFT-magnitude",sf.Magnitude(+signalB),0,signalB)    
+
+def realisedFFT():
+    signalA=sf.SineWave(10000,1000)
+    oldMag=sf.Magnitude(+signalA)
+    signalB=sf.Realise(sf.FrequencyDomain(sf.Realise(+signalA)))
+    interMag=sf.Magnitude(+signalB)
+    assertClose("Realised-FFT-magnitude-i",interMag,489.897948556,+signalB,1.0e-8);
+    signalB=sf.Realise(sf.TimeDomain(signalB))
+    newMag=sf.Magnitude(+signalB)
+    assertClose("Realised-FFT-magnitude-a",newMag,346.410161514,+signalB,1.0e-8);
+    signalB=sf.NumericVolume(signalB,oldMag/newMag)
+    signalB=sf.NumericVolume(signalB,-1)
+    signalB=sf.Mix(signalA,signalB)  
+    assertClose("Realised-FFT-magnitude",sf.Magnitude(+signalB),0,signalB,1.0e-8)
+
+def parallel():
+    @sf_parallel
+    def p1():
+       return sf.SineWave(1000,1000)
+    t=sf.Mix(p1(),p1(),p1(),p1())
+    assertEqual("Parallel-mix-length",sf.Length(+t),1000,+t)
+    s=sf.SineWave(1000,1000)
+    assertClose("Parallel-mix-magnitude",sf.Magnitude(s)*4,sf.Magnitude(+t),t)
+    
+    @sf_parallel
+    def p2(x):
+       return sf.SineWave(1000,x)
+    t=sf.Mix(p2(1000),p2(1000),p2(1000),p2(1000))
+    s=sf.SineWave(1000,1000)
+    assertClose("Parallel-mix-magnitude-1-arg",sf.Magnitude(s)*4,sf.Magnitude(+t),t)
+    
+    @sf_parallel
+    def p3(x,y):
+       return sf.SineWave(y,x)
+    t=sf.Mix(p3(1000,1000),p3(1000,1000),p3(1000,1000),p3(1000,1000))
+    s=sf.SineWave(1000,1000)
+    assertClose("Parallel-mix-magnitude-2-args",sf.Magnitude(s)*4,sf.Magnitude(+t),t)
+    
+    t=sf.Mix(p3(x=1000,y=1000),p3(x=1000,y=1000),p3(x=1000,y=1000),p3(x=1000,y=1000))
+    s=sf.SineWave(1000,1000)
+    assertClose("Parallel-mix-magnitude-2-kargs",sf.Magnitude(s)*4,sf.Magnitude(+t),t)
+    
+    @sf_parallel
+    def p4(x,y):
+       return sf.SineWave(y,x),sf.SineWave(y,x)
+    t,r=p4(1000,1000)
+    assertClose("Parallel-mix-magnitude-2-itter",sf.Magnitude(r),sf.Magnitude(t))
+    
+    # Check we can plus and minute on a future.
+    t=p3(1000,1000)
+    +t
+    -t
+    assertEqual("Reference-count",t.getReferenceCount(),1)
+
+simpleMix()
+simpleGranulate()
+realisedGranulate()
+simpleFFT()
+realisedFFT()
+parallel()

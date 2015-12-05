@@ -77,38 +77,22 @@ public class SF_MixAt implements SFPL_Operator
         int nMembers = inList.size();
         List<SFSignal> signals = new ArrayList<>(nMembers);
         List<Integer> offsets = new ArrayList<>(nMembers);
+        boolean allRealised = true;
         for (Object each : inList)
         {
             List<Object> dataList = Caster.makeBunch(each);
             double offset = Caster.makeDouble(dataList.get(1)) * SFConstants.SAMPLE_RATE_MS;
             offsets.add((int) SFMaths.floor(offset));
-            signals.add(Caster.makeSFSignal(dataList.get(0)));
+            @SuppressWarnings("resource")
+            // Closed explicity - not exception safe
+            SFSignal signal = Caster.makeSFSignal(dataList.get(0));
+            signals.add(signal);
+            allRealised = allRealised && signal.isRealised();
         }
         int count = signals.size();
-        if (count > TRANS_CUTTOFF)
+        if (allRealised || count > TRANS_CUTTOFF)
         {
-            int length = 0;
-            for (int i = 0; i < count; ++i)
-            {
-                int tl = offsets.get(i);
-                tl += signals.get(i).getLength();
-                if (tl > length) length = tl;
-            }
-            SFSignal out = SFData.build(length);
-            out.clear();
-            for (int i = 0; i < count; ++i)
-            {
-                int at = offsets.get(i);
-                SFSignal in = signals.get(i);
-                int len = in.getLength();
-                for (int j = 0; j < len; ++j)
-                {
-                    int p = j + at;
-                    out.setSample(p, out.getSample(p) + in.getSample(j));
-                }
-                in.close();
-            }
-            return out;
+            return largeMix(signals, offsets);
         }
         Translator ret = new Translator(signals, offsets);
         for (SFSignal s : signals)
@@ -116,6 +100,29 @@ public class SF_MixAt implements SFPL_Operator
             s.close();
         }
         return ret;
+    }
+
+    public static SFSignal largeMix(List<SFSignal> signals, List<Integer> offsets)
+    {
+        int count = signals.size();
+
+        int length = 0;
+        for (int i = 0; i < count; ++i)
+        {
+            int tl = offsets.get(i);
+            tl += signals.get(i).getLength();
+            if (tl > length) length = tl;
+        }
+        SFData out = SFData.build(length);
+        out.clear();
+        for (int i = 0; i < count; ++i)
+        {
+            int at = offsets.get(i);
+            SFSignal in = signals.get(i);
+            out.operateOnto(at, in, SFData.OPERATION.ADD);
+            in.close();
+        }
+        return out;
     }
 
     @Override

@@ -3,6 +3,7 @@ package com.nerdscentral.audio.pitch;
 import com.nerdscentral.audio.SFData;
 import com.nerdscentral.audio.SFSignal;
 import com.nerdscentral.audio.pitch.algorithm.FFTbase;
+import com.nerdscentral.data.OffHeapArray;
 import com.nerdscentral.sython.Caster;
 import com.nerdscentral.sython.SFPL_Context;
 import com.nerdscentral.sython.SFPL_Operator;
@@ -22,32 +23,37 @@ public class SF_TimeDomain implements SFPL_Operator
     @Override
     public Object Interpret(Object input, SFPL_Context context) throws SFPL_RuntimeException
     {
-        double[] re, im;
-        int NFFT;
 
         try (SFSignal signal = Caster.makeSFSignal(input))
         {
-
-            NFFT = signal.getLength();
-
-            re = new double[NFFT];
-            im = new double[NFFT];
-            int j = 0;
-            for (int i = 0; i < NFFT / 2; ++i)
+            // TODO these feel like they should be half the length - investigate
+            int NFFT = signal.getLength();
+            try (
+                OffHeapArray out = OffHeapArray.doubleArray(NFFT << 1);
+                OffHeapArray re = OffHeapArray.doubleArray(NFFT);
+                OffHeapArray im = OffHeapArray.doubleArray(NFFT))
             {
-                re[i] = signal.getSample(j++);
-                im[i] = signal.getSample(j++);
-            }
-        }
-        double[] d = FFTbase.fft(re, im, false);
 
-        try (SFData ret = SFData.build(NFFT))
-        {
-            for (int i = 0; i / 2 < NFFT; i += 2)
-            {
-                ret.setSample(i / 2, d[i]);
+                int j = 0;
+                re.initialise();
+                im.initialise();
+                out.initialise();
+                for (int i = 0; i < NFFT >> 1; ++i)
+                {
+                    re.setDouble(i, signal.getSample(j++));
+                    im.setDouble(i, signal.getSample(j++));
+                }
+                FFTbase.fft(re, im, out, false);
+                try (SFData ret = SFData.build(NFFT))
+                {
+                    ret.clear();
+                    for (int i = 0; i >> 1 < NFFT; i += 2)
+                    {
+                        ret.setSample(i >> 1, out.getDouble(i));
+                    }
+                    return Caster.prep4Ret(ret);
+                }
             }
-            return Caster.prep4Ret(ret);
         }
     }
 }

@@ -23,11 +23,11 @@ public abstract class SFMultipleTranslator extends SFGenerator
     }
 
     @Override
-    public void incrReference() throws RuntimeException
+    public void incrReferenceCount() throws RuntimeException
     {
         for (SFSignal x : signals)
         {
-            x.incrReference();
+            x.incrReferenceCount();
         }
     }
 
@@ -52,7 +52,7 @@ public abstract class SFMultipleTranslator extends SFGenerator
     }
 
     @Override
-    public void decrReference()
+    public void decrReferenceCount()
     {
         this.__neg__();
     }

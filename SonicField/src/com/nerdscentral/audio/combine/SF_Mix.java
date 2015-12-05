@@ -4,7 +4,6 @@ package com.nerdscentral.audio.combine;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.nerdscentral.audio.SFMultipleTranslator;
 import com.nerdscentral.audio.SFSignal;
 import com.nerdscentral.sython.Caster;
 import com.nerdscentral.sython.SFPL_Context;
@@ -19,50 +18,32 @@ import com.nerdscentral.sython.SFPL_RuntimeException;
  */
 public class SF_Mix implements SFPL_Operator
 {
-    static class Translator extends SFMultipleTranslator
-    {
-
-        protected Translator(List<SFSignal> input)
-        {
-            super(input);
-        }
-
-        @Override
-        public double getSample(int index)
-        {
-            double d = 0;
-            for (int mindex = 0; mindex < getNMembers(); ++mindex)
-            {
-                d += getInputSample(mindex, index);
-            }
-            return d;
-        }
-    }
 
     /**
      * 
      */
-    private static final long serialVersionUID = 1L;
+    private static final long     serialVersionUID = 1L;
+
+    private final static SF_MixAt mixer            = new SF_MixAt();
+    private final static Double   zero             = new Double(0);
 
     @Override
     public Object Interpret(final Object input, final SFPL_Context context) throws SFPL_RuntimeException
     {
-        List<Object> inList = Caster.makeBunch(input);
-        List<SFSignal> incomming = new ArrayList<>();
-        for (Object each : inList)
+        // Defer to MixAt where all the optimisation for mixing can happen
+        List<Object> il = Caster.makeBunch(input);
+        ArrayList<ArrayList<Object>> out = new ArrayList<>(il.size());
+        for (Object o : il)
         {
-            try (SFSignal data = Caster.makeSFSignal(each);)
-            {
-                incomming.add(data);
-                data.incrReference();
-            }
+            @SuppressWarnings("resource")
+            // Resource managed by mixer - see later
+            SFSignal s = Caster.makeSFSignal(o);
+            ArrayList<Object> pair = new ArrayList<>(2);
+            pair.add(s);
+            pair.add(zero);
+            out.add(pair);
         }
-        Translator ret = new Translator(incomming);
-        for (SFSignal x : incomming)
-        {
-            x.close();
-        }
-        return ret;
+        return mixer.Interpret(out, context);
     }
 
     @Override

@@ -1,118 +1,116 @@
-#(left,right)=sf.ReadFile("temp/input1.wav")
-(left,right)=sf.ReadFile("temp/a.wav")
+(left,right)=sf.ReadFile("temp/output.wav")
 
+@sf_parallel
 def resonate(left_,right_,del1,del2):
-    def inner():
-        left  = sf.Concatenate(left_ ,sf.Silence(120000))
-        right = sf.Concatenate(right_,sf.Silence(120000))
-        
-        leftA  = sf.Mix(
-            sf.Pcnt90(sf.Finalise(sf.ResonantFilter(+left  ,0.9,0.5,del1[0]))),
-            sf.Pcnt10(sf.Finalise(sf.ResonantFilter(+right ,0.9,0.5,del1[1])))
+
+    left  = sf.Concatenate(left_ ,sf.Silence(120000))
+    right = sf.Concatenate(right_,sf.Silence(120000))
+    +left
+    +right
+    @sf_parallel
+    def a():
+        return sf.Mix(
+            sf.Pcnt90(sf.Finalise(sf.ResonantFilter(left  ,0.9,0.5,del1[0]))),
+            sf.Pcnt10(sf.Finalise(sf.ResonantFilter(right ,0.9,0.5,del1[1])))
         )
         
-        rightA = sf.Mix(
+    @sf_parallel
+    def b():
+        return sf.Mix(
             sf.Pcnt90(sf.Finalise(sf.ResonantFilter(right ,0.9,0.5,del2[0]))),
             sf.Pcnt10(sf.Finalise(sf.ResonantFilter(left  ,0.9,0.5,del2[1])))
         )
-        return leftA,rightA
-    return sf_do(inner)
+    
+    return a(),b()
 
+@sf_parallel
 def excite(sig_,mix,power):
-    def exciteInner():
-        sig=sig_
-        m=sf.Magnitude(+sig)
-        sigh=sf.BesselHighPass(+sig,500,2)
-        mh=sf.Magnitude(+sigh)
-        sigh=sf.Power(sigh,power)
-        sigh=sf.Clean(sigh)
-        sigh=sf.BesselHighPass(sigh,1000,2)
-        nh=sf.Magnitude(+sigh)
-        sigh=sf.NumericVolume(sigh,mh/nh)
-        sig=sf.Mix(sf.NumericVolume(sigh,mix),sf.NumericVolume(sig,1.0-mix))
-        n=sf.Magnitude(+sig)
-        return sf.Realise(sf.NumericVolume(sig,m/n))
-    return sf_do(exciteInner)
-    
+    sig=sig_
+    m=sf.Magnitude(+sig)
+    sigh=sf.BesselHighPass(+sig,500,2)
+    mh=sf.Magnitude(+sigh)
+    sigh=sf.Power(sigh,power)
+    sigh=sf.Clean(sigh)
+    sigh=sf.BesselHighPass(sigh,1000,2)
+    nh=sf.Magnitude(+sigh)
+    sigh=sf.NumericVolume(sigh,mh/nh)
+    sig=sf.Mix(sf.NumericVolume(sigh,mix),sf.NumericVolume(sig,1.0-mix))
+    n=sf.Magnitude(+sig)
+    return sf.Realise(sf.NumericVolume(sig,m/n))
+
+@sf_parallel    
 def highDamp(sig,freq,fact):
-    def highDampInner():
-        hfq=sf.BesselHighPass(+sig,freq,4)
-        ctr=sf.FixSize(sf.Follow(sf.FixSize(+hfq),0.25,0.5))
-        ctr=sf.Clean(ctr)
-        ctr=sf.RBJLowPass(ctr,8,1)
-        ctr=sf.DirectMix(
-            1,
-            sf.NumericVolume(
-                sf.FixSize(sf.Invert(ctr)),
-                fact
-            )
+    hfq=sf.BesselHighPass(+sig,freq,4)
+    ctr=sf.FixSize(sf.Follow(sf.FixSize(+hfq),0.25,0.5))
+    ctr=sf.Clean(ctr)
+    ctr=sf.RBJLowPass(ctr,8,1)
+    ctr=sf.DirectMix(
+        1,
+        sf.NumericVolume(
+            sf.FixSize(sf.Invert(ctr)),
+            fact
         )
-        hfq=sf.Multiply(hfq,ctr)
-        return sf.Mix(hfq,sf.BesselLowPass(sig,freq,4))
-    return sf_do(highDampInner)
+    )
+    hfq=sf.Multiply(hfq,ctr)
+    return sf.Mix(hfq,sf.BesselLowPass(sig,freq,4))
 
+@sf_parallel
 def lowDamp(sig,freq,fact):
-    def lowDampInner():
-        hfq=sf.BesselLowPass(+sig,freq,4)
-        ctr=sf.FixSize(sf.Follow(sf.FixSize(+hfq),0.15,1.0))
-        ctr=sf.Clean(ctr)
-        ctr=sf.RBJLowPass(ctr,8,1)
-        ctr=sf.DirectMix(
-            1,
-            sf.NumericVolume(
-                sf.FixSize(sf.Invert(ctr)),
-                fact
-            )
+    hfq=sf.BesselLowPass(+sig,freq,4)
+    ctr=sf.FixSize(sf.Follow(sf.FixSize(+hfq),0.15,1.0))
+    ctr=sf.Clean(ctr)
+    ctr=sf.RBJLowPass(ctr,8,1)
+    ctr=sf.DirectMix(
+        1,
+        sf.NumericVolume(
+            sf.FixSize(sf.Invert(ctr)),
+            fact
         )
-        hfq=sf.Multiply(hfq,ctr)
-        return sf.Mix(hfq,sf.BesselHighPass(sig,freq,4))
-    return sf_do(lowDampInner)
+    )
+    hfq=sf.Multiply(hfq,ctr)
+    return sf.Mix(hfq,sf.BesselHighPass(sig,freq,4))
 
+@sf_parallel
 def filter(sig_,hPoint=5000,lPoint=128,hFact=0.66,lFact=0.66,mix=0.15,power=1.05):
-    def filterInner():
-        sig=sig_
-        q=0.5
-        print "Clean"
-        sig=sf.Finalise(sig)
-        sig=sf.RBJHighPass(sig,16,2)
-        sig=sf.Finalise(sig)
-        print "Warm and excite"
-        sig=sf.Mix(
-            sf.Pcnt10(sf.FixSize(sf.WaveShaper(-0.03*q,0.2*q,0,-1.0*q,0.2*q,2.0*q,+sig))),
-            excite(sig,mix,power)
-        )
-        
-        print "Bass Boost"
-        sig=sf.RBJPeaking(sig,32,2,2)
-        #damp=sf.BesselLowPass(+sig,2000,1)
-        #sig=sf.FixSize(sf.Mix(damp,sig))
-        
-        print "Saturate:"
-        low=sf.BesselLowPass(+sig,256,4)
-        m1=sf.Magnitude(+low)
-        low=sf.FixSize(low)
-        low=sf.Saturate(low)
-        m2=sf.Magnitude(+low)
-        low=sf.NumericVolume(low,m1/m2)
-        sig=sf.BesselHighPass(sig,256,4)
-        sig=sf.Mix(low,sig)
-        
-        print "Band compress/expand"
-        sig=lowDamp( sig,lPoint,lFact)
-        sig=highDamp(sig,hPoint,hFact)
-        return sf.FixSize(sf.Clean(sig))
-    return sf_do(filterInner)
-
-def lp(sig,freq):
-    def inner():
-        return sf.RBJLowPass(sig,freq,1,2)
-    return sf_do(inner)
-
-def hp(sig,freq):
-    def inner():
-        return sf.RBJHighPass(sig,freq,1,2)
-    return sf_do(inner)
+    sig=sig_
+    q=0.5
+    print "Clean"
+    sig=sf.Finalise(sig)
+    sig=sf.RBJHighPass(sig,16,2)
+    sig=sf.Finalise(sig)
+    print "Warm and excite"
+    sig=sf.Mix(
+        sf.Pcnt10(sf.FixSize(sf.WaveShaper(-0.03*q,0.2*q,0,-1.0*q,0.2*q,2.0*q,+sig))),
+        excite(sig,mix,power)
+    )
     
+    print "Bass Boost"
+    sig=sf.RBJPeaking(sig,32,2,2)
+    #damp=sf.BesselLowPass(+sig,2000,1)
+    #sig=sf.FixSize(sf.Mix(damp,sig))
+    
+    print "Saturate:"
+    low=sf.BesselLowPass(+sig,256,4)
+    m1=sf.Magnitude(+low)
+    low=sf.FixSize(low)
+    low=sf.Saturate(low)
+    m2=sf.Magnitude(+low)
+    low=sf.NumericVolume(low,m1/m2)
+    sig=sf.BesselHighPass(sig,256,4)
+    sig=sf.Mix(low,sig)
+    
+    print "Band compress/expand"
+    sig=lowDamp( sig,lPoint,lFact)
+    sig=highDamp(sig,hPoint,hFact)
+    return sf.FixSize(sf.Clean(sig))
+
+@sf_parallel
+def lp(sig,freq):
+    return sf.RBJLowPass(sig,freq,1,2)
+
+#sf_parallel
+def hp(sig,freq):
+    return sf.RBJHighPass(sig,freq,1,2)
 
 print "Reasonate"
 leftC,rightC=resonate(+left,+right,(43,93),(44,94))

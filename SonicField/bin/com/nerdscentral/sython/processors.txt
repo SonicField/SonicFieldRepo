@@ -29,7 +29,6 @@ com.nerdscentral.audio.amps.SF_WaveMaximise
 com.nerdscentral.audio.amps.SF_WaveShaper
 com.nerdscentral.audio.combine.SF_Blockulate
 com.nerdscentral.audio.combine.SF_ClipToSafe
-com.nerdscentral.audio.combine.SF_Collapse
 com.nerdscentral.audio.combine.SF_Concat
 com.nerdscentral.audio.combine.SF_Convolve
 com.nerdscentral.audio.combine.SF_ConvolveDelay
