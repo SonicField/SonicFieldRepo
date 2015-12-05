@@ -80,6 +80,29 @@ public abstract class SFSignal implements AutoCloseable
         return CubicInterpolator.getValue(getSample(s - 1), getSample(s), getSample(s + 1), getSample(s + 2), index - s);
     }
 
+    /**
+     * Get a sample using periodic boundary conditions. As an optimisation it will only work negative values up it -length.
+     * 
+     * @param asked
+     * @param length
+     * @return the sample at the ask location assuming periodic boundaries
+     */
+    private final double getPeriodicSample(int asked, int length)
+    {
+        int correctedAsked = asked;
+        if (asked < 0) correctedAsked += length;
+        return getSample(correctedAsked % length);
+    }
+
+    /** As per getSampleCubic but using periodic boundary conditions */
+    public final double getSampleCubicPeriodic(double index)
+    {
+        int s = (int) SFMaths.floor(index);
+        int len = getLength();
+        return CubicInterpolator.getValue(getPeriodicSample(s - 1, len), getPeriodicSample(s, len),
+                        getPeriodicSample(s + 1, len), getPeriodicSample(s + 2, len), index - s);
+    }
+
     public abstract double setSample(int index, double value);
 
     public abstract int getLength();

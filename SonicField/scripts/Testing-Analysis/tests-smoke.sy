@@ -114,9 +114,23 @@ def parallel():
     -t
     assertEqual("Reference-count",t.getReferenceCount(),1)
 
-simpleMix()
-simpleGranulate()
-realisedGranulate()
-simpleFFT()
-realisedFFT()
-parallel()
+def generate():
+    signalA=sf.SineWave(10000,1000)
+    oldMag=sf.Magnitude(+signalA)
+    # one second at one hz
+    table=sf.SineWave(1000,1)
+    # generate 10 seconds of 10KHz from the table
+    signalB=sf.Generate(10000,1000,table)
+    genMag=sf.Magnitude(+signalB)
+    assertClose("Generate-magnitude",genMag,oldMag,+signalB,1.0e-8);
+    signalB=sf.NumericVolume(signalB,-1)
+    genMag=sf.Magnitude(sf.Mix(+signalB,signalA))
+    assertClose("Generate-wavefor",genMag,0.0,signalB,1.0e-8);
+
+#simpleMix()
+#simpleGranulate()
+#realisedGranulate()
+#simpleFFT()
+#ealisedFFT()
+#parallel()
+generate()

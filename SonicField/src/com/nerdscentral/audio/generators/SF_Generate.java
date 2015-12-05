@@ -7,11 +7,8 @@ import com.nerdscentral.audio.SFConstants;
 import com.nerdscentral.audio.SFData;
 import com.nerdscentral.audio.SFSignal;
 import com.nerdscentral.audio.SFSimpleGenerator;
-import com.nerdscentral.audio.pitch.SFNPoleFilterOperator;
-import com.nerdscentral.audio.pitch.algorithm.SFFilterGenerator;
-import com.nerdscentral.audio.pitch.algorithm.SFFilterGenerator.NPoleFilterDef;
+import com.nerdscentral.audio.pitch.SF_FrequencyDomain;
 import com.nerdscentral.sython.Caster;
-import com.nerdscentral.sython.SFMaths;
 import com.nerdscentral.sython.SFPL_Context;
 import com.nerdscentral.sython.SFPL_Operator;
 import com.nerdscentral.sython.SFPL_RuntimeException;
@@ -20,25 +17,13 @@ public class SF_Generate implements SFPL_Operator
 {
     private static final long serialVersionUID = 1L;
 
-    private static class Filter extends SFNPoleFilterOperator
-    {
-
-        static SFData filter(SFData x, double frequency)
-        {
-            NPoleFilterDef fd = SFFilterGenerator.computeBesselNLP(frequency, 6);
-            SFData y = x.replicateEmpty();
-            filterLoop(x, y, fd, fd.getGaindc());
-            return y;
-        }
-    }
-
     public static class Generator extends SFSimpleGenerator
     {
 
-        final static double  PI2 = SFMaths.PI * 2.0d;
-        final SFData         waveTable;
-        private final double upscale;
-        private final int    size;
+        final SFData                            waveTable;
+        private final double                    upscale;
+        private final int                       size;
+        private final static SF_FrequencyDomain toFreq = new SF_FrequencyDomain();
 
         @Override
         public void release()
@@ -47,26 +32,22 @@ public class SF_Generate implements SFPL_Operator
             waveTable.release();
         }
 
-        // TO DO reduce the amount of wave table stored, there is
-        // no need to store 3 times , just 1 and a little bit at each side
-        @SuppressWarnings("resource")
-        // resource managed by container
-        protected Generator(int len, double up, SFSignal wt)
+        @SuppressWarnings("unused")
+        protected Generator(int len, double up, SFSignal wt) throws SFPL_RuntimeException
         {
             super(len);
             this.size = len;
-            this.upscale = up;
-            SFData ttable = SFData.build(size * 3);
-            for (int i = 0; i < size; ++i)
-            {
-                double data = wt.getSample(i);
-                ttable.setSample(i, data);
-                ttable.setSample(i + size, data);
-                ttable.setSample(i + size * 2, data);
-            }
-            // Remove all frequencies which will be over the Nyquist limit
-            // Before sub-sampling
-            this.waveTable = Filter.filter(ttable, 20000 / upscale);
+            // If the wave table is longer then sample rate we need
+            // to upscale more and if it is shorter then less
+            this.upscale = up * wt.getLength() / SFConstants.SAMPLE_RATE;
+            // TODO use FFT to remove the frequencies higher than nyquist
+            // after up scale
+
+            // SFData fDomain = (SFData) toFreq.Interpret(wt, null);
+            // Zero to filter
+            // Convert back to time domain
+            waveTable = SFData.realise(wt);
+            wt.decrReferenceCount();
         }
 
         @Override
@@ -74,7 +55,8 @@ public class SF_Generate implements SFPL_Operator
         {
             double pos = index * upscale;
             pos = pos % size;
-            return waveTable.getSampleCubic(index + size);
+            // use periodic boundary condition for the interpolation
+            return waveTable.getSampleCubicPeriodic(pos);
         }
 
     }

@@ -9,6 +9,7 @@ import javax.sound.midi.Sequence;
 import javax.sound.midi.Sequencer;
 import javax.sound.midi.Track;
 
+import com.nerdscentral.audio.SFConstants;
 import com.nerdscentral.audio.SFSignal;
 import com.nerdscentral.audio.pitch.algorithm.SFInLineIIRFilter;
 
@@ -72,6 +73,12 @@ public class Caster
         {
             throw new SFPL_RuntimeException(throwConversion(Double.class, o2));
         }
+    }
+
+    public final static int makeSize(Object o) throws SFPL_RuntimeException
+    {
+        final double duration = (Caster.makeDouble(o)) / 1000.0d;
+        return (int) (duration * SFConstants.SAMPLE_RATE);
     }
 
     private static String throwConversion(Class c, Object o) throws SFPL_RuntimeException
