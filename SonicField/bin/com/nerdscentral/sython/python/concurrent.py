@@ -440,13 +440,13 @@ class sf_superFuture(Future):
             
     # Similarly for resource control for the + and - reference counting 
     # semantics for SF_Signal objects
-    #def __pos__(self):
-    #    obj=self.get()
-    #    return +obj
+    def __pos__(self):
+        obj=self.get()
+        return +obj
 
-    #def __neg__(self):
-    #    obj=self.get()
-    #    return -obj
+    def __neg__(self):
+        obj=self.get()
+        return -obj
 
 # Wrap a closure in a super future which automatically 
 # queues it for future lazy execution

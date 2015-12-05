@@ -1,18 +1,22 @@
-def assertEqual(msg,a,b,sig):
+def assertEqual(msg,a,b,sig=None):
     if a!=b:
         print "Fail: ",msg,a,b
-        sf.WriteFile32([sig],"temp/"+msg+".wav")
+        if sig is not None:
+            sf.WriteFile32([sig],"temp/"+msg+".wav")
     else:
         print "Pass: ",msg,a,b
-        -sig
+        if sig is not None:
+            -sig
 
-def assertClose(msg,a,b,sig,ratio=1.0e-10):
+def assertClose(msg,a,b,sig=None,ratio=1.0e-10):
     if (b==0 and abs(a)>ratio) or (b!=0 and abs(1.0-abs(a/b))>ratio):
         print "Fail: ",msg,a,b
-        sf.WriteFile32([sig],"temp/"+msg+".wav")
+        if sig is not None:
+            sf.WriteFile32([sig],"temp/"+msg+".wav")
     else:
         print "Pass: ",msg,a,b
-        -sig
+        if sig is not None:
+            -sig
 
 def simpleMix():
     signal=sf.Silence(10000)
@@ -102,17 +106,17 @@ def parallel():
     def p4(x,y):
        return sf.SineWave(y,x),sf.SineWave(y,x)
     t,r=p4(1000,1000)
-    assertClose("Parallel-mix-magnitude-2-itter",sf.Magnitude(r),sf.Magnitude(+t),t)
+    assertClose("Parallel-mix-magnitude-2-itter",sf.Magnitude(r),sf.Magnitude(t))
     
     # Check we can plus and minute on a future.
     t=p3(1000,1000)
     +t
     -t
-    assertEqual("Reference-count",t.getReferenceCount(),1,t)
+    assertEqual("Reference-count",t.getReferenceCount(),1)
 
-#simpleMix()
-#simpleGranulate()
-#realisedGranulate()
-#simpleFFT()
-#realisedFFT()
+simpleMix()
+simpleGranulate()
+realisedGranulate()
+simpleFFT()
+realisedFFT()
 parallel()
