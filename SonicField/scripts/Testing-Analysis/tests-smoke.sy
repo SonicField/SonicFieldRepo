@@ -102,7 +102,7 @@ def parallel():
     def p4(x,y):
        return sf.SineWave(y,x),sf.SineWave(y,x)
     t,r=p4(1000,1000)
-    assertClose("Parallel-mix-magnitude-2-proxi",sf.Magnitude(r),sf.Magnitude(+t),t)
+    assertClose("Parallel-mix-magnitude-2-itter",sf.Magnitude(r),sf.Magnitude(+t),t)
 
 simpleMix()
 simpleGranulate()
