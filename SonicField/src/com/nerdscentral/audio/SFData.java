@@ -163,7 +163,8 @@ public class SFData extends SFSignal implements Serializable
         }
     }
 
-    private void makeMap(long size) throws IOException
+    private void makeMap(long size) throws IOException, SecurityException, IllegalArgumentException, IllegalAccessException,
+                    InvocationTargetException, NoSuchMethodException
     {
         long countDown = size;
         int chunkCount = 0;
@@ -252,6 +253,7 @@ public class SFData extends SFSignal implements Serializable
 
     private SFData(int l)
     {
+        allocked = 0;
         try
         {
             try
@@ -276,17 +278,15 @@ public class SFData extends SFSignal implements Serializable
             resourceTracker.put(this, new ResTracker(nc, pythonCreated));
             javaCreated = nc;
         }
-        catch (IOException e)
+        catch (Throwable t)
         {
-            throw new RuntimeException(e);
+            if (allocked != 0)
+            {
+                unsafe.freeMemory(allocked);
+                allocked = 0;
+            }
+            throw t;
         }
-        // }
-        this.length = lengthIn;
-        NotCollectedException nc = new NotCollectedException();
-        nc.fillInStackTrace();
-        pythonCreated = getPythonStack();
-        resourceTracker.put(this, new ResTracker(nc, pythonCreated));
-        javaCreated = nc;
     }
 
     /* (non-Javadoc)
@@ -340,10 +340,7 @@ public class SFData extends SFSignal implements Serializable
     @Override
     public final double setSample(int index, double value)
     {
-        long bytePos = index << 3l;
-        long pos = bytePos & CHUNK_MASK;
-        long bufPos = (bytePos - pos) >> CHUNK_SHIFT;
-        chunks[(int) bufPos].putDouble((int) pos, value);
+        unsafe.putDouble(getAddress(index), value);
         return value;
     }
 
@@ -512,14 +509,8 @@ public class SFData extends SFSignal implements Serializable
     @Override
     public double[] getDataInternalOnly()
     {
-        long length = getLength();
-        if (length > Integer.MAX_VALUE)
-        {
-            throw new RuntimeException(Messages.getString("SFData.5") + length); //$NON-NLS-1$
-        }
-        int len = (int) length;
-        double[] ret = new double[len];
-        for (int index = 0; index < len; ++len)
+        double[] ret = new double[length];
+        for (int index = 0; index < length; ++index)
         {
             ret[index] = getSample(index);
         }
