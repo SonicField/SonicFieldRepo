@@ -32,20 +32,18 @@ public class SF_Generate implements SFPL_Operator
             waveTable.release();
         }
 
-        @SuppressWarnings("unused")
-        protected Generator(int len, double up, SFSignal wt) throws SFPL_RuntimeException
+        // No sensible way to automatically remove frequencies
+        // which will exceed nyquist on upscaling. Therefore
+        // this does not bother, it relies on the uncomming table
+        // having the correct mix of frequencies to correctly
+        // upscale
+        protected Generator(int len, double up, SFSignal wt)
         {
             super(len);
             this.size = len;
             // If the wave table is longer then sample rate we need
             // to upscale more and if it is shorter then less
             this.upscale = up * wt.getLength() / SFConstants.SAMPLE_RATE;
-            // TODO use FFT to remove the frequencies higher than nyquist
-            // after up scale
-
-            // SFData fDomain = (SFData) toFreq.Interpret(wt, null);
-            // Zero to filter
-            // Convert back to time domain
             waveTable = SFData.realise(wt);
             wt.decrReferenceCount();
         }
