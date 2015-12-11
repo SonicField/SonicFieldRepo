@@ -147,15 +147,17 @@ SF_PENDING = Collections.newSetFromMap(ConcurrentHashMap(SF_MAX_CONCURRENT*128,0
 # EXECUTION
 # =========
 
+# Force 'nice' interleaving when logging from multiple threads
+SF_LOG_LOCK=ReentrantLock()
+print "Thread\tQueue\tAsleep\tTime\tMessage..."
+def c_log(*args):
+    SF_LOG_LOCK.lock()
+    print "\t".join(str(x) for x in [Thread.currentThread().getId(),SF_QUEUED.get(),SF_ASLEEP.get(),(System.currentTimeMillis()-SF_STARTED)] + list(args))
+    SF_LOG_LOCK.unlock()
+
 # Define the logger method as more than pass only is tracing is turned on
 if TRACE:
-    # Force 'nice' interleaving when logging from multiple threads
-    SF_LOG_LOCK=ReentrantLock()
-    print "Thread\tQueue\tAsleep\tTime\tMessage..."
-    def cLog(*args):
-        SF_LOG_LOCK.lock()
-        print "\t".join(str(x) for x in [Thread.currentThread().getId(),SF_QUEUED.get(),SF_ASLEEP.get(),(System.currentTimeMillis()-SF_STARTED)] + list(args))
-        SF_LOG_LOCK.unlock()
+    cLog=c_log
 else:
     def cLog(*args):
         pass
@@ -479,5 +481,9 @@ def shutdown_and_await_termination(pool, timeout):
         Thread.currentThread().interrupt()
 
 # The default shutdown for the main pool  
-def shutdownConcurrnt():
+def sf_shutdown():
     shutdown_and_await_termination(SF_POOL, 5)
+    
+__builtin__.c_log=c_log
+__builtin__.sf_do=sf_do
+__builtin__.sf_parallel=sf_parallel

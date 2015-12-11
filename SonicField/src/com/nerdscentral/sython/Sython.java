@@ -106,6 +106,7 @@ public class Sython
                 {
                     String lin = null;
                     HashMap<String, SFPL_Operator> processors = new HashMap<>();
+                    interp.exec("import __builtin__");
                     while ((lin = bpir.readLine()) != null)
                     {
                         if (lin.trim().length() > 0)
@@ -115,6 +116,7 @@ public class Sython
                             processors.put(word, op);
                             init("    def " + word + "(self, input, *args):");
                             init("        return self.run(\"" + word + "\",input,args)");
+                            init("    __builtin__." + word + "=" + word);
                         }
                     }
                     List<SFPL_Operator> vols = new ArrayList<>(404);
@@ -126,6 +128,7 @@ public class Sython
                         processors.put(word, op);
                         init("    def " + word + "(self, input):");
                         init("        return self.run(\"" + word + "\",input,[])");
+                        init("    __builtin__." + word + "=" + word);
                     }
                     init("");
                     System.out.println("Python about to interpret:");
@@ -137,6 +140,7 @@ public class Sython
                     PyObject sf = pyo.__call__(pid);
                     interp.exec("print \"Installing sf object\"");
                     interp.set("sf", sf);
+                    interp.exec("__builtin__.sf=sf");
                 }
                 // Loading sython modules
                 try (
@@ -180,7 +184,7 @@ public class Sython
                     {
                         interp.execfile(f);
                     }
-                    interp.exec("shutdownConcurrnt()");
+                    interp.exec("sf_shutdown()");
                     interp.exec("print \"========================\"");
                     interp.exec("print \"------- All DONE -------\"");
                     long t1 = System.currentTimeMillis();

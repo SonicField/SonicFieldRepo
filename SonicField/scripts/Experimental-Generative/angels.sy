@@ -1,0 +1,7 @@
+import sys
+sys.path.append("/Users/alexanderturner/SonicFieldRepo/SonicField/scripts/Packs")
+
+c_log(sys.path)
+from Filters import byquad_filter
+filtered=byquad_filter('fog')
+c_log(str(filtered.get()))

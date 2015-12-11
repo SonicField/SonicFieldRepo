@@ -108,7 +108,7 @@ def filter(sig_,hPoint=5000,lPoint=128,hFact=0.66,lFact=0.66,mix=0.15,power=1.05
 def lp(sig,freq):
     return sf.RBJLowPass(sig,freq,1,2)
 
-#sf_parallel
+@sf_parallel
 def hp(sig,freq):
     return sf.RBJHighPass(sig,freq,1,2)
 
@@ -123,15 +123,14 @@ rightB =lp(rightB,500)
 leftC  =hp(leftC, 2000)
 rightC =hp(rightC,2000)
 
+@sf_parallel
 def mix(a,b,c,d):
-    def inner():
-        return sf.Mix(
-        sf.Pcnt50(a),
-        sf.Pcnt15(b),
-        sf.Pcnt15(c),
-        sf.Pcnt15(d)
-        )
-    return sf_do(inner)
+    return sf.Mix(
+    sf.Pcnt50(a),
+    sf.Pcnt15(b),
+    sf.Pcnt15(c),
+    sf.Pcnt15(d)
+    )
 
 left   = mix(left, leftA, leftB, leftC)
 right  = mix(right,rightA,rightB,rightC)
