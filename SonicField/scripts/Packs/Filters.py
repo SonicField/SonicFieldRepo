@@ -6,15 +6,35 @@
 
 from Types import is_signal
 
-def byquad_filter(f_type=None,input=None,frequency=None,q=None,db_gain=None):
-
-
+def byquad_filter(f_type,input,frequency,q,db_gain=None):
 
     def byquad_filter_high():
-        pass
+        if shaped:
+            return sf.ShapedRBJHighPass(
+                input,
+                ensure_signal(frequency),
+                ensure_signal(q)
+            )
+        else:
+            return sf.RBJHighPass(
+                input,
+                frequency,
+                q
+            )
 
     def byquad_filter_low():
-        pass
+        if shaped:
+            return sf.ShapedRBJLowPass(
+                input,
+                ensure_signal(frequency),
+                ensure_signal(q)
+            )
+        else:
+            return sf.RBJLowPass(
+                input,
+                frequency,
+                q
+            )
 
     def byquad_filter_high_shelf():
         if shaped:
