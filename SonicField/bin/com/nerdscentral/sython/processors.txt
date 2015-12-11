@@ -52,6 +52,7 @@ com.nerdscentral.audio.convolutions.SF_CelloBody
 com.nerdscentral.audio.convolutions.SF_ViolaBody
 com.nerdscentral.audio.convolutions.SF_ViolinBody
 com.nerdscentral.audio.generators.SF_ClosestJust
+com.nerdscentral.audio.generators.SF_Constant
 com.nerdscentral.audio.generators.SF_FullPulse
 com.nerdscentral.audio.generators.SF_Gaussian
 com.nerdscentral.audio.generators.SF_Generate

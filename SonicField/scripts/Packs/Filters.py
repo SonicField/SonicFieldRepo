@@ -8,6 +8,8 @@ from Types import is_signal
 
 def byquad_filter(f_type=None,input=None,frequency=None,q=None,db_gain=None):
 
+
+
     def byquad_filter_high():
         pass
 
@@ -15,10 +17,12 @@ def byquad_filter(f_type=None,input=None,frequency=None,q=None,db_gain=None):
         pass
 
     def byquad_filter_high_shelf():
-        pass
+        if shaped:
+            raise Exception(f_type,'Not currently available as shaped')
 
     def byquad_filter_low_shelf():
-        pass
+        if shaped:
+            raise Exception(f_type,'Not currently available as shaped')
 
     def byquad_filter_notch():
         pass
@@ -27,7 +31,8 @@ def byquad_filter(f_type=None,input=None,frequency=None,q=None,db_gain=None):
         pass
 
     def byquad_filter_all():
-        pass
+        if shaped:
+            raise Exception(f_type,'Not currently available as shaped')
     
     def byquad_filter_band():
         pass
