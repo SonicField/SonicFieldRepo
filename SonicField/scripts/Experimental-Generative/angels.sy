@@ -1,7 +1,6 @@
 import sys
 sys.path.append("/Users/alexanderturner/SonicFieldRepo/SonicField/scripts/Packs")
-
-c_log(sys.path)
 from Filters import byquad_filter
+
 filtered=byquad_filter(f_type='low',input=sf.WhiteNoise(1000),frequency=440,q=1)
 sf.WriteFile32([filtered],"temp/out.wav")

@@ -1,81 +1,106 @@
+################
+# Test helpers #
+################
+
 def assertEqual(msg,a,b,sig=None):
     if a!=b:
-        print "Fail: ",msg,a,b
+        c_log("Fail: ",msg,a,b)
         if sig is not None:
             sf.WriteFile32([sig],"temp/"+msg+".wav")
     else:
-        print "Pass: ",msg,a,b
+        c_log("Pass: ",msg,a,b)
         if sig is not None:
             -sig
 
 def assertClose(msg,a,b,sig=None,ratio=1.0e-10):
     if (b==0 and abs(a)>ratio) or (b!=0 and abs(1.0-abs(a/b))>ratio):
-        print "Fail: ",msg,a,b
+        c_log("Fail: ",msg,a,b)
         if sig is not None:
             sf.WriteFile32([sig],"temp/"+msg+".wav")
     else:
-        print "Pass: ",msg,a,b
+        c_log("Pass: ",msg,a,b)
         if sig is not None:
             -sig
 
-def simpleMix():
-    signal=sf.Silence(10000)
-    signal=sf.Realise(signal)
-    other=+signal
-    other=sf.DirectMix(1,other)
-    signal=sf.Mix(other,signal)
-    other=+signal
-    other=sf.DirectMix(-2,other)
-    signal=sf.Mix(other,signal)
-    assertEqual("Simple-mix-magnitude",sf.Magnitude(+signal),0,signal)
+def runSuite(suite):
+    c_log("\n\n### TEST SUITE:",str(suite),"###")
+    suite()
 
-def simpleGranulate():
-    signalA=sf.SineWave(10000,1000)
-    signalB=sf.MixAt(sf.Granulate(+signalA,128,0))
-    assertClose("Simple-granulate-magnitude-a",sf.Magnitude(+signalB),sf.Magnitude(+signalA),+signalB)    
-    signalB=sf.NumericVolume(signalB,-1)
-    signal=sf.Mix(signalA,signalB)  
-    assertClose("Simple-granulate-magnitude-b",sf.Magnitude(+signal),0,signal)
+#####################
+# Data Manipulation #
+#####################
+def data_suite():
+    def simpleMix():
+        signal=sf.Silence(10000)
+        signal=sf.Realise(signal)
+        other=+signal
+        other=sf.DirectMix(1,other)
+        signal=sf.Mix(other,signal)
+        other=+signal
+        other=sf.DirectMix(-2,other)
+        signal=sf.Mix(other,signal)
+        assertEqual("Simple-mix-magnitude",sf.Magnitude(+signal),0,signal)
+    
+    def simpleGranulate():
+        signalA=sf.SineWave(10000,1000)
+        signalB=sf.MixAt(sf.Granulate(+signalA,128,0))
+        assertClose("Simple-granulate-magnitude-a",sf.Magnitude(+signalB),sf.Magnitude(+signalA),+signalB)    
+        signalB=sf.NumericVolume(signalB,-1)
+        signal=sf.Mix(signalA,signalB)  
+        assertClose("Simple-granulate-magnitude-b",sf.Magnitude(+signal),0,signal)
+    
+    def realisedGranulate():
+        signalA=sf.SineWave(10000,1000)
+        all=[]
+        for sig,at in sf.Granulate(+signalA,128,0):
+            all.append((sf.Realise(sig),at))
+        signalB=sf.MixAt(all)
+        assertClose("Realised-granulate-magnitude-a",sf.Magnitude(+signalB),sf.Magnitude(+signalA),+signalB)    
+        signalB=sf.Realise(sf.NumericVolume(signalB,-1))
+        signal=sf.Mix(signalA,signalB)
+        signal=sf.Realise(signal)
+        assertClose("Realised-granulate-magnitude-b",sf.Magnitude(+signal),0,signal)
+    simpleMix()
+    simpleGranulate()
+    realisedGranulate()
 
-def realisedGranulate():
-    signalA=sf.SineWave(10000,1000)
-    all=[]
-    for sig,at in sf.Granulate(+signalA,128,0):
-        all.append((sf.Realise(sig),at))
-    signalB=sf.MixAt(all)
-    assertClose("Realised-granulate-magnitude-a",sf.Magnitude(+signalB),sf.Magnitude(+signalA),+signalB)    
-    signalB=sf.Realise(sf.NumericVolume(signalB,-1))
-    signal=sf.Mix(signalA,signalB)
-    signal=sf.Realise(signal)
-    assertClose("Realised-granulate-magnitude-b",sf.Magnitude(+signal),0,signal)
+#######
+# FFT #
+#######
+def fft_suite():
+    def simple_FFT():
+        signalA=sf.SineWave(10000,1000)
+        oldMag=sf.Magnitude(+signalA)
+        signalB=sf.FrequencyDomain(+signalA)
+        signalB=sf.TimeDomain(signalB)
+        newMag=sf.Magnitude(+signalB)
+        assertClose("Simple-FFT-magnitude-a",newMag,346.410161514,+signalB,1.0e-8);
+        signalB=sf.NumericVolume(signalB,oldMag/newMag)
+        signalB=sf.NumericVolume(signalB,-1)
+        signalB=sf.Mix(signalA,signalB)  
+        assertClose("Simple-FFT-magnitude",sf.Magnitude(+signalB),0,signalB)    
+    
+    def realised_FFT():
+        signalA=sf.SineWave(10000,1000)
+        oldMag=sf.Magnitude(+signalA)
+        signalB=sf.Realise(sf.FrequencyDomain(sf.Realise(+signalA)))
+        interMag=sf.Magnitude(+signalB)
+        assertClose("Realised-FFT-magnitude-i",interMag,489.897948556,+signalB,1.0e-8);
+        signalB=sf.Realise(sf.TimeDomain(signalB))
+        newMag=sf.Magnitude(+signalB)
+        assertClose("Realised-FFT-magnitude-a",newMag,346.410161514,+signalB,1.0e-8);
+        signalB=sf.NumericVolume(signalB,oldMag/newMag)
+        signalB=sf.NumericVolume(signalB,-1)
+        signalB=sf.Mix(signalA,signalB)  
+        assertClose("Realised-FFT-magnitude",sf.Magnitude(+signalB),0,signalB,1.0e-8)
+    simple_FFT()
+    realised_FFT()
 
-def simpleFFT():
-    signalA=sf.SineWave(10000,1000)
-    oldMag=sf.Magnitude(+signalA)
-    signalB=sf.FrequencyDomain(+signalA)
-    signalB=sf.TimeDomain(signalB)
-    newMag=sf.Magnitude(+signalB)
-    assertClose("Simple-FFT-magnitude-a",newMag,346.410161514,+signalB,1.0e-8);
-    signalB=sf.NumericVolume(signalB,oldMag/newMag)
-    signalB=sf.NumericVolume(signalB,-1)
-    signalB=sf.Mix(signalA,signalB)  
-    assertClose("Simple-FFT-magnitude",sf.Magnitude(+signalB),0,signalB)    
+######################
+# Parallel Execution #
+######################
 
-def realisedFFT():
-    signalA=sf.SineWave(10000,1000)
-    oldMag=sf.Magnitude(+signalA)
-    signalB=sf.Realise(sf.FrequencyDomain(sf.Realise(+signalA)))
-    interMag=sf.Magnitude(+signalB)
-    assertClose("Realised-FFT-magnitude-i",interMag,489.897948556,+signalB,1.0e-8);
-    signalB=sf.Realise(sf.TimeDomain(signalB))
-    newMag=sf.Magnitude(+signalB)
-    assertClose("Realised-FFT-magnitude-a",newMag,346.410161514,+signalB,1.0e-8);
-    signalB=sf.NumericVolume(signalB,oldMag/newMag)
-    signalB=sf.NumericVolume(signalB,-1)
-    signalB=sf.Mix(signalA,signalB)  
-    assertClose("Realised-FFT-magnitude",sf.Magnitude(+signalB),0,signalB,1.0e-8)
-
-def parallel():
+def parallel_suite():
     @sf_parallel
     def p1():
        return sf.SineWave(1000,1000)
@@ -114,7 +139,10 @@ def parallel():
     -t
     assertEqual("Reference-count",t.getReferenceCount(),1)
 
-def generate():
+##############
+# Generators #
+##############
+def generate_suite():
     signalA=sf.SineWave(10000,1000)
     oldMag=sf.Magnitude(+signalA)
     # one second at one hz
@@ -127,10 +155,24 @@ def generate():
     genMag=sf.Magnitude(sf.Mix(+signalB,signalA))
     assertClose("Generate-wavefor",genMag,0.0,signalB,1.0e-8);
 
-#simpleMix()
-#simpleGranulate()
-#realisedGranulate()
-#simpleFFT()
-#ealisedFFT()
-#parallel()
-generate()
+
+###############
+# IIR Filters #
+###############
+
+def filter_suite():
+    import sys
+    sys.path.append("/Users/alexanderturner/SonicFieldRepo/SonicField/scripts/Packs")
+    from Filters import byquad_filter
+    filtered=byquad_filter(f_type='low',input=sf.WhiteNoise(1000),frequency=440,q=1)
+
+
+#################
+# Run the tests #
+#################
+
+runSuite(data_suite)
+runSuite(fft_suite)
+runSuite(parallel_suite)
+runSuite(generate_suite)
+runSuite(filter_suite)

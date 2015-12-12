@@ -75,4 +75,5 @@ def byquad_filter(f_type,input,frequency,q,db_gain=None):
     }.get(f_type,not_known)
     c_log(run)
     return sf_do(run)
-        
+ 
+ 
