@@ -1,6 +1,15 @@
 ################
 # Test helpers #
 ################
+def assertTrue(msg,a,sig=None):
+    if not a:
+        c_log("Fail: ",msg)
+        if sig is not None:
+            sf.WriteFile32([sig],"temp/"+msg+".wav")
+    else:
+        c_log("Pass: ",msg)
+        if sig is not None:
+            -sig
 
 def assertEqual(msg,a,b,sig=None):
     if a!=b:
@@ -155,7 +164,6 @@ def generate_suite():
     genMag=sf.Magnitude(sf.Mix(+signalB,signalA))
     assertClose("Generate-wavefor",genMag,0.0,signalB,1.0e-8);
 
-
 ###############
 # IIR Filters #
 ###############
@@ -164,15 +172,32 @@ def filter_suite():
     import sys
     sys.path.append("/Users/alexanderturner/SonicFieldRepo/SonicField/scripts/Packs")
     from Filters import byquad_filter
-    filtered=byquad_filter(f_type='low',input=sf.WhiteNoise(1000),frequency=440,q=1)
 
+    def byquad_low():
+        sig1=sf.SineWave(1000,1000)
+        sig2=sf.SineWave(1000,2000)    
+        filtered1=byquad_filter(f_type='low',input=+sig1,frequency=1000,q=1.0)
+        filtered2=byquad_filter(f_type='low',input=+sig2,frequency=1000,q=1.0)
+        assertClose("byquad-low-passband-magnitude",  sf.Magnitude(sig1),sf.Magnitude(+filtered1),filtered1,0.1)
+        assertTrue ("byquad-low-rejectband-magnitude",sf.Magnitude(sig2)>sf.Magnitude(+filtered2)*3.0,filtered2)
+
+    def byquad_high():
+        sig1=sf.SineWave(1000,1000)
+        sig2=sf.SineWave(1000,2000)    
+        filtered1=byquad_filter(f_type='high',input=+sig1,frequency=1000,q=1.0)
+        filtered2=byquad_filter(f_type='high',input=+sig2,frequency=1000,q=1.0)
+        assertClose("byquad-high-passband-magnitude",  sf.Magnitude(sig2),sf.Magnitude(+filtered2),filtered2,0.1)
+        assertTrue ("byquad-high-rejectband-magnitude",sf.Magnitude(sig1)*3.0<sf.Magnitude(+filtered2),filtered2)
+        
+    byquad_low()
+    byquad_high()
 
 #################
 # Run the tests #
 #################
 
-runSuite(data_suite)
-runSuite(fft_suite)
-runSuite(parallel_suite)
-runSuite(generate_suite)
+#runSuite(data_suite)
+#runSuite(fft_suite)
+#runSuite(parallel_suite)
+#runSuite(generate_suite)
 runSuite(filter_suite)

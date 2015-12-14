@@ -433,6 +433,9 @@ class sf_superFuture(Future):
     # Proxy all other methods to the result of the future
     def __getattr__(self,name):
         cLog("Proxying: ",name)
+        # This prevents a recursive proxying of future
+        if name=='future':
+            raise Exception('No such method')
         return getattr(self.get(),name)
 
     # If the return of the get is iterable then we delegate to it so that 
