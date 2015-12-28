@@ -32,7 +32,7 @@ public class SF_ShapedBiquadPeak implements SFPL_Operator
             SFSignal frequency = Caster.makeSFSignal(l.get(1));
             SFSignal q = Caster.makeSFSignal(l.get(2)))
         {
-            double db_gain = Caster.makeDouble(l.get(3));
+            SFSignal db_gain = Caster.makeSFSignal(l.get(3));
             FilterType type = FilterType.PEAK;
             try (SFSignal y = x.replicateEmpty())
             {
@@ -41,7 +41,8 @@ public class SF_ShapedBiquadPeak implements SFPL_Operator
                 {
                     if (index % 100 == 0)
                     {
-                        filter.calc_filter_coeffs(type, frequency.getSample(index), q.getSample(index), db_gain);
+                        filter.calc_filter_coeffs(type, frequency.getSample(index), q.getSample(index),
+                                        db_gain.getSample(index));
                     }
                     y.setSample(index, filter.filter(x.getSample(index)));
                 }

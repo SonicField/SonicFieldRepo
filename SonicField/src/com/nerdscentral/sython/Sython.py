@@ -1,6 +1,14 @@
 import traceback
 from com.nerdscentral.audio import SFSignal
 
+# Set up the module load path and then clean up afterwards
+from java.lang import System
+import sys
+sys.path.append(System.getProperty('sython.modules'))
+del sys.modules['sys']
+del sys.modules['java.lang']
+
+# This si the code which actually calls Sonic Field operators
 class SonicField:
     def __init__(self,procs):
         from com.nerdscentral.sython import SFPL_Context
