@@ -155,3 +155,19 @@ def tremolate(vox_,rate,mag):
         vox=sf.Realise(sf.NumericVolume(vox,m1/m2))
         return vox
     return sf_do(tremolateInner)
+    
+def pitch_move(sig):
+    l=sf.Length(+sig)
+    if l>1024:
+        move=sf.NumericShape(
+            (0,0.995+random.random()*0.01),
+            (l,0.995+random.random()*0.01)
+        )
+    elif l>512:
+        move=sf.NumericShape(
+            (0,0.9975+random.random()*0.005),
+            (l,0.9975+random.random()*0.005)
+        )
+    else:
+        return sig
+    return sf.Clean(sf.Resample(move,sig))

@@ -1,72 +1,16 @@
 sf.SetSampleRate(96000)
-import random
-import math
 
-@sf_parallel
-def granularReverb(signal,ratio,delay,density,length=50,stretch=1,vol=1,rand=1.0,spread=1.0):
-    c_log("Granular reverb: ratio:",ratio," delay:",delay," density",density," length:",length," stretch:",stretch," volume:",vol,"rand:",rand,"spread",spread)
-    out=[]
-    for grain in sf.Granulate(signal,length,10):
-        (signal_i,at)=grain
-        signal_i=sf.Realise(signal_i)
-        signal_i=sf.Realise(sf.DirectRelength(signal_i,ratio-0.01*spread+(0.02*spread*random.random())))
-        for x in range(0,density):
-            time=delay*(
-                (random.random()+random.random())*rand+
-                (1.0-rand)
-            )
-            time=abs(time)
-            out.append(
-                (
-                    +signal_i,
-                    int((at + time)*stretch)
-                )
-            )
-        -signal_i
-  
-    out=sf.Realise(sf.MixAt(out))
-    out=sf.Realise(sf.NumericVolume(out,vol))
-    return out
+import Reverberation
+from Parallel_Helpers import mix,finalise
 
-@sf_parallel
-def reverbInner(signal,convol,grainLength):
-    mag=sf.Magnitude(+signal)
-    if mag>0:
-        signal_=sf.Concatenate(signal,sf.Silence(grainLength))
-        len=sf.Length(+signal_)
-        signal_=sf.FrequencyDomain(signal_)
-        signal_=sf.CrossMultiply(convol,signal_)
-        signal_=sf.TimeDomain(signal_)
-        newMag=sf.Magnitude(+signal_)
-        signal_=sf.NumericVolume(signal_,mag/newMag)        
-        # tail out clicks due to amplitude at end of signal
-        return sf.Realise(sf.Clean(sf.Cut(0,len,signal_)))
-    else:
-        -convol
-        return sf.Realise(signal)
-
-@sf_parallel
-def reverberate(signal,convol):
-    print "Reverberate"
-    grainLength = sf.Length(+convol)
-    convol_=sf.FrequencyDomain(sf.Concatenate(convol,sf.Silence(grainLength)))
-    signal_=sf.Concatenate(signal,sf.Silence(grainLength))
-    out=[]
-    for grain in sf.Granulate(signal_,grainLength):
-        (signal_i,at)=grain
-        signal_i=sf.Realise(signal_i)
-        out.append((reverbInner(signal_i,+convol_,grainLength),at))
-    -convol_
-    return sf.Clean(sf.Normalise(sf.MixAt(out)))
- 
 #sf_parallel
 def doRev(signal,revSignal):
-    sig=sf.Mix(
-        granularReverb(+signal ,0.125,229.0/2.5, 16,512,4,1.0,0.1),
-        granularReverb(+signal ,0.125,563.0/2.5, 16,512,4,1.0,0.1),
-        granularReverb(+signal ,0.25 ,241.0/2.5, 32,128,4,1.0,0.3),
-        granularReverb(+signal ,1.0  ,307.0/2.5, 64,128,4,0.5,0.5,0.5),
-        granularReverb(+signal ,4.0  ,487.0/2.5, 64,128,4,0.5,1.5,0.25),
+    sig=mix(
+        granular_reverberate(+signal ,0.125,229.0/2.5, 16,512,4,1.0,0.1),
+        granular_reverberate(+signal ,0.125,563.0/2.5, 16,512,4,1.0,0.1),
+        granular_reverberate(+signal ,0.25 ,241.0/2.5, 32,128,4,1.0,0.3),
+        granular_reverberate(+signal ,1.0  ,307.0/2.5, 64,128,4,0.5,0.5,0.5),
+        granular_reverberate(+signal ,4.0  ,487.0/2.5, 64,128,4,0.5,1.5,0.25),
     )
     
     return reverberate(sig,revSignal)
@@ -77,8 +21,8 @@ left,right=sf.ReadFile("temp/input.wav")
 -t
 (revr,t)=sf.ReadFile("temp/impulses/ultra-r.wav")
 -t
-revl=sf.Finalise(sf.Power(revl,1.5))
-revr=sf.Finalise(sf.Power(revr,1.5))
+revl=finalise(sf.Power(revl,1.5))
+revr=finalise(sf.Power(revr,1.5))
 leftw  = doRev(+left,revl)
 rightw = doRev(+right,revr)
 (revl,t)=sf.ReadFile("temp/impulses/revl-church.wav")
@@ -87,6 +31,6 @@ rightw = doRev(+right,revr)
 -t
 lefth  = doRev(left,revl)
 righth = doRev(right,revr)
-left  = sf.Finalise(sf.MixAt((leftw,30),(lefth,10)))
-right = sf.Finalise(sf.MixAt((rightw,30),(righth,0)))
+left  = finalise((leftw,30), (lefth,10))
+right = finalise((rightw,30),(righth,0))
 sf.WriteFile32((+left,+right),"temp/output.wav")

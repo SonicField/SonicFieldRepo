@@ -260,15 +260,6 @@ def pitchMove(sig):
     else:
         return sig
     return sf.Clean(sf.Resample(move,sig))
-    
-def polish(sig,freq):
-    if freq > 128:
-        sig=sf.ButterworthHighPass(sig,freq*0.66,6)
-    elif freq > 64:
-        sig=sf.ButterworthHighPass(sig,freq*0.66,4)
-    else:
-        sig=sf.ButterworthHighPass(sig,freq*0.66,2)   
-    return sf.Clean(sig)
 
 def singBase(length,freq,z=1.0):
     vox=sf.WhiteNoise(length)
