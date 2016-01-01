@@ -50,6 +50,10 @@ public class SF_Multiply implements SFPL_Operator
             try (SFData data = (SFData) list.get(0).replicate())
             {
                 data.operateOnto(0, list.get(1), SFData.OPERATION.MULTIPLY);
+                for (SFSignal s : list)
+                {
+                    s.close();
+                }
                 return Caster.prep4Ret(data);
             }
         }

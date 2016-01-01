@@ -73,6 +73,26 @@ def data_suite():
     simpleGranulate()
     realisedGranulate()
 
+###########
+# Combine #
+###########
+def combine_suite():
+    signalA=sf.SineWave(10000,1000)
+    signalB=sf.NumericShape((0,2),(1000,2))
+    sig=sf.Multiply(signalA,signalB)
+    magA=sf.Magnitude(sf.SineWave(10000,1000))
+    magB=sf.Magnitude(+sig)*0.5    
+    assertClose("sf-multiply",magA,magB,sig)
+
+    signalA=sf.SineWave(10000,1000)
+    signalB=sf.NumericShape((0,2),(1000,2))
+    signalA=sf.Realise(signalA)
+    signalB=sf.Realise(signalB)
+    sig=sf.Multiply(signalA,signalB)
+    magA=sf.Magnitude(sf.SineWave(10000,1000))
+    magB=sf.Magnitude(+sig)*0.5    
+    assertClose("sf-multiply-realised",magA,magB,sig)
+
 #######
 # FFT #
 #######
@@ -200,4 +220,5 @@ def filter_suite():
 #runSuite(fft_suite)
 #runSuite(parallel_suite)
 #runSuite(generate_suite)
-runSuite(filter_suite)
+runSuite(combine_suite)
+#runSuite(filter_suite)
