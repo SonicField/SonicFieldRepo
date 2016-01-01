@@ -1,4 +1,4 @@
-import Random
+import random
 from Parallel_Helpers import mix
 from organ.Algorithms import pitch_move,polish
 

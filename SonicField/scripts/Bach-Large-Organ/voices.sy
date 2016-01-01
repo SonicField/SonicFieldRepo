@@ -6,8 +6,8 @@
 
 def voxHumana_inner(length,freq,a,b,c,z1=1.0,z2=1.25):
     vox=sf.Mix(
-        sf.Pcnt75(singBase(length,freq,z1)),
-        sf.Pcnt25(singBase(length,freq*2.0,z1))
+        sf.Pcnt75(sing_base(length,freq,z1)),
+        sf.Pcnt25(sing_base(length,freq*2.0,z1))
     )
     length=sf.Length(+vox)
     vox=sf.FixSize(polish(vox,freq)) 

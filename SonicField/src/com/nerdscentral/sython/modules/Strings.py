@@ -121,7 +121,7 @@ def nordic_string(pitch,e,a,d,dat,s,sat,r,whiteAmount,vibStart,vibMiddle,vibAmou
         signal=sf.Normalise(sf.Mix(sigs))
         return signal
 
-    clog("Performing Note: ",pitch,e,a,d,dat,s,sat,r,whiteAmount,vibStart,vibMiddle,vibAmount,vibRate)
+    c_log("Performing Note: ",pitch,e,a,d,dat,s,sat,r,whiteAmount,vibStart,vibMiddle,vibAmount,vibRate)
     envA=sf.SimpleShape(
         (0,-60),
         (e,0),

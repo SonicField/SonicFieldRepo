@@ -171,17 +171,17 @@ def run(pitch,beat,minutes,startP,initial,overV):
         s=s-d-a
         d=d-a       
         
-        vCorrection = 1/pitchScale
+        velocity_correction = 1/pitchScale
         
         # Do not over correct very & v high low frequencies 
         #  or very quiet notes. This aim it to stop loud highs
         #  dominating (psycho-acoustics)
         if rvs<0.2:
-            if vCorrection<1:
-                vCorrection=1
+            if velocity_correction<1:
+                velocity_correction=1
         
-        if vCorrection>4:
-            vCorrection=4
+        if velocity_correction>4:
+            velocity_correction=4
                                   
         print (
             at,
@@ -191,7 +191,7 @@ def run(pitch,beat,minutes,startP,initial,overV):
             "Pitch: ",      pitch,
             "Length: ",     length,
             "Rvs: ",        rvs,
-            "VCorr: ",      vCorrection
+            "VCorr: ",      velocity_correction
         ).__str__()    
             
         signal = saturatedNode(
@@ -202,7 +202,7 @@ def run(pitch,beat,minutes,startP,initial,overV):
             d,
             s,
             r,
-            volume * vCorrection
+            volume * velocity_correction
         )
 
         lr=random.random()

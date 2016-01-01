@@ -64,9 +64,9 @@ def safeEnv(sig,env):
         print "***WARNING: envelop failure *** ",length," -> ",p," diff:", p-length
     return sf.NumericShape(ne)
          
-def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor,subBass,flatEnv,pure,rawBass,decay,bend):
+def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,velocity_correct_,quick_factor,sub_bass,flat_env,pure,raw_bass,decay,bend):
     def singInner():
-        vCorrect=vCorrect_
+        velocity_correct=velocity_correct_
         length=lengthIn
         tp=0
         
@@ -142,14 +142,14 @@ def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor,subBass,flatEn
                 p=32
             else:
                 p=64
-            q*=qFactor
+            q*=quick_factor
             env=safeEnv(sig,[(0,0),(q,1),(192-p,0.5),(length,0)])
             if hint=="TT":
-                vCorrect*=0.8
+                velocity_correct*=0.8
             elif hint=="NN" and pitch>660:
                 shine=True
-                vCorrect*=0.5        
-        elif tp==1 or flatEnv:
+                velocity_correct*=0.5        
+        elif tp==1 or flat_env:
             if pHint=="T":
                 q=48
             else:
@@ -158,24 +158,24 @@ def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor,subBass,flatEn
                 p=64
             else:
                 p=128
-            q*=qFactor
+            q*=quick_factor
             env=safeEnv(sig,[(0,0),(q,0.75),(length-p,1.0),(length,0)])
             if hint=="TT":
-                vCorrect*=0.8            
+                velocity_correct*=0.8            
             if hint=="TT":
-                vCorrect*=0.8
+                velocity_correct*=0.8
             elif hint=="NN" and pitch>880:
                 shine=True
-                vCorrect*=0.6
+                velocity_correct*=0.6
         elif tp==2:
-            env=safeEnv(sig,[(0,0),(96*qFactor,0.75),(length-256,1.0),(length,0)])
+            env=safeEnv(sig,[(0,0),(96*quick_factor,0.75),(length-256,1.0),(length,0)])
         elif tp==3:
             if length<1280:
-                env=safeEnv(sig,[(0,0),(64*qFactor,0.5),(256,1),(512,0.75),((length-512)/2.0+512,0.5),(length,0)])
+                env=safeEnv(sig,[(0,0),(64*quick_factor,0.5),(256,1),(512,0.75),((length-512)/2.0+512,0.5),(length,0)])
             else:
-                env=safeEnv(sig,[(0,0),(64*qFactor,0.5),(256,1),(512,0.75),(length-512,0.75),(length,0)])
+                env=safeEnv(sig,[(0,0),(64*quick_factor,0.5),(256,1),(512,0.75),(length-512,0.75),(length,0)])
         else:
-            env=safeEnv(sig,[(0,0),(64*qFactor,0.25),(512,1),(length/2,0.75),(length,0)])
+            env=safeEnv(sig,[(0,0),(64*quick_factor,0.25),(512,1),(length/2,0.75),(length,0)])
 
         if bend:
             mod=sf.NumericShape((0,0.995),(length,1.005))
@@ -191,7 +191,7 @@ def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor,subBass,flatEn
         sig=sf.FixSize(sig)
      
         if pitch<256:
-            if subBass:
+            if sub_bass:
                 if pitch < 128:
                     sig=sf.Mix(
                         granularReverb(+sig,ratio=0.501 ,delay=256,density=32,length=256,stretch=1,vol=0.20),
@@ -208,7 +208,7 @@ def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor,subBass,flatEn
                         granularReverb(+sig,ratio=0.501,delay=256,density=32,length=256,stretch=1,vol=0.15),
                         sig
                     )
-            if rawBass:
+            if raw_bass:
                 sig=sf.BesselLowPass(sig,pitch*8.0,1)
             else:        
                 sig=sf.BesselLowPass(sig,pitch*8.0,2)
@@ -255,12 +255,12 @@ def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor,subBass,flatEn
         )
         
         note=sf.NumericVolume(sf.FixSize(sig),v)
-        notel=sf.Realise(sf.NumericVolume(+note,vl*vCorrect))
-        noter=sf.Realise(sf.NumericVolume( note,vr*vCorrect))
+        notel=sf.Realise(sf.NumericVolume(+note,vl*velocity_correct))
+        noter=sf.Realise(sf.NumericVolume( note,vr*velocity_correct))
         return notel,noter
     return sf_do(singInner)
 
-def doMidi(voice,vCorrect,pitchShift=1.0,qFactor=1.0,subBass=False,flatEnv=False,pure=False,pan=-1,rawBass=False,pitchAdd=0.0,decay=False,bend=False):
+def doMidi(voice,velocity_correct,pitch_shift=1.0,quick_factor=1.0,sub_bass=False,flat_env=False,pure=False,pan=-1,raw_bass=False,pitch_add=0.0,decay=False,bend=False):
     count=0.0
     while len(notes)!=0:
         notes.pop()
@@ -285,20 +285,20 @@ def doMidi(voice,vCorrect,pitchShift=1.0,qFactor=1.0,subBass=False,flatEnv=False
             pitch=base
         else:
             key=float(key)
-            pitch= temperament(key) * pitchShift
+            pitch= temperament(key) * pitch_shift
         velocity=velocity/100
         v=velocity
-        pitch+=pitchAdd
+        pitch+=pitch_add
         pl=pitch
 
-        vCUse=vCorrect
+        vCUse=velocity_correct
         
         # volume pitch correction to stop domination
         # of high notes - not quite the same as 
         # loudness correction due to the high dominating
         # low perception issue.
         pCorrect=1
-        if vCorrect>0.25 and pitch > 660 :
+        if velocity_correct>0.25 and pitch > 660 :
             if length <256:
                 sCorrect=1.5
             else:
@@ -373,7 +373,7 @@ def doMidi(voice,vCorrect,pitchShift=1.0,qFactor=1.0,subBass=False,flatEnv=False
             hint+="E"
  
         print "H",hint,"C",count,"P",pitch,"@",at,"L",length,"V",velocity,"VU",vCUse,"PC",pCorrect
-        note = sing(hint,pitch, length,beat,v,lr,rl,voice,vCUse,qFactor,subBass,flatEnv,pure,rawBass,decay,bend)
+        note = sing(hint,pitch, length,beat,v,lr,rl,voice,vCUse,quick_factor,sub_bass,flat_env,pure,raw_bass,decay,bend)
         dl=30*rl+1000
         dr=38*lr+1000
         notes.append((note,at+dl,at+dr))
@@ -554,7 +554,7 @@ def dampVelocity(midi,key=80,amount=0.75):
         if tkey<key:
             v=tvelocity
         else:
-            print "Damping: ",midi[index]
+            c_log("Damping: ",midi[index])
             v=tvelocity*amount
         midiOut.append((ttickOn,ttickOff,tnote,tkey,v))
         index+=1

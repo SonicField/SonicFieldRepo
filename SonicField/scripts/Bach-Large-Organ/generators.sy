@@ -236,7 +236,7 @@ def polish(sig,freq):
         sig=sf.ButterworthHighPass(sig,freq*0.66,2)   
     return sf.Clean(sig)
 
-def singBase(length,freq,z=1.0):
+def sing_base(length,freq,z=1.0):
     voxA=[]
     hc=1.0
     freq=float(freq)

@@ -176,7 +176,6 @@ public class Sython
 
                     interp.exec("import __builtin__");
                     interp.exec("__builtin__.sf=sf");
-                    interp.exec("__builtin__.sf_do=sf_do");
                     interp.exec("print \"Switching To Python Mode\"");
                     interp.exec("print \"========================\"");
                     long t0 = System.currentTimeMillis();

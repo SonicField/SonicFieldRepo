@@ -1,0 +1,76 @@
+#########
+# Setup #
+#########
+
+import os
+from organ.Player import *
+from organ.Post   import *
+from organ.Voices import vox_humana_femail_soprano
+
+sf.SetSampleRate(192000)
+
+# Voices
+def femail_soprano(midi_in,beat,temperament,velocity):
+    c_log("##### Channel VC_SFR #####")
+    midi=shorter_than_midi(midi_in,beat,512)
+    midi=legato_midi(midi,beat,64)
+    midi=damp_velocity(midi,70,0.75)
+    notes=play_midi(midi,beat,temperament,voice=vox_humana_femail_soprano,velocity_correct=velocity*1.0,flat_env=False,quick_factor=1.5,pan=0.5)
+    left,right=post_process(notes)
+    midi=delay_midi(midi,beat,128)
+    notes=play_midi(midi,beat,temperament,voice=vox_humana_femail_soprano,velocity_correct=velocity*0.1,flat_env=False,quick_factor=1.5,pan=0.6,pitch_add=2.0)
+    left,right=post_process_echo(notes,left,right)
+    
+    midi=long_as_midi(midi_in,beat,512)
+    midi=legato_midi(midi,beat,128)
+    midi=damp_velocity(midi,68,0.86)
+    midi=damp_velocity(midi,80,0.75)
+    notes=play_midi(midi,beat,temperament,voice=vox_humana_femail_soprano,velocity_correct=velocity*0.5,flat_env=False,quick_factor=2.5,pan=0.25)
+    left,right=post_process_echo(notes,left,right)
+    play_midi(midi,beat,temperament,voice=vox_humana_femail_soprano,velocity_correct=velocity*0.5,flat_env=False,quick_factor=2.5,pan=0.75)
+    left,right=post_process_echo(notes,left,right)
+    midi=delay_midi(midi,beat,256)
+    play_midi(midi,beat,temperament,voice=vox_humana_femail_soprano,velocity_correct=velocity*0.1,flat_env=False,quick_factor=2.5,pan=0.5, pitch_add=2.0)
+    return post_process_echo(notes,left,right)
+
+notes  = []
+########################################
+# Timing configuration and temperament #
+########################################
+
+midis=read_midi_file("temp/input.mid")
+
+# Length of full piece
+#======================
+length      =     0.75
+
+# Temperament
+#=============
+#temperament = werckmeisterIII
+temperament = just_intonation
+#temperament = bach_lehman
+
+# Do Not Change
+#===============
+beat        =  set_length_midi(midis,length)
+
+###########
+# Voicing #
+###########
+
+# Repair overlaps?
+midis=repare_overlap_midis(midis)
+
+# Produce sounds
+midi = midis[1]
+left,right = femail_soprano(midi,beat,just_intonation,1.0)
+
+#######################
+# Final mix and write #
+#######################
+c_log("Mixing")
+left,right=do_final_mix(notes)
+
+sf.WriteSignal(+left, "temp/dry-l.sig")
+sf.WriteSignal(+right,"temp/dry-r.sig")
+sf.WriteFile32((left,right),"temp/temp.wav")

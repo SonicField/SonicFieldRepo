@@ -10,17 +10,17 @@ def chA():
     index+=1
     midi=shorterThanMidi(midis[index],beat,512)
     midi=dampVelocity(midi,80,0.75)
-    doMidi(voice=pluckedGlass,vCorrect=0.5,flatEnv=False,qFactor=1.0,decay=2500,pan=0.4)
+    doMidi(voice=pluckedGlass,velocity_correct=0.5,flat_env=False,quick_factor=1.0,decay=2500,pan=0.4)
     postProcess()
-    doMidi(voice=brightPluckedGlass,vCorrect=0.05,flatEnv=True,pitchShift=4.0,decay=500,pan=0.6)
+    doMidi(voice=brightPluckedGlass,velocity_correct=0.05,flat_env=True,pitch_shift=4.0,decay=500,pan=0.6)
     postProcess()
     
     midi=longAsMidi(midis[1],beat,1024)
     midi=dampVelocity(midi,68,0.75)
     midi=dampVelocity(midi,80,0.75)
-    doMidi(voice=pluckedGlass,vCorrect=0.75,flatEnv=False,qFactor=1.0,decay=15000,pan=0.7)
+    doMidi(voice=pluckedGlass,velocity_correct=0.75,flat_env=False,quick_factor=1.0,decay=15000,pan=0.7)
     postProcessTremolate(rate=4.0)
-    doMidi(voice=pluckedGlass,vCorrect=0.1,flatEnv=False,qFactor=1.0,decay=15000,pitchShift=4.0,pan=0.45)
+    doMidi(voice=pluckedGlass,velocity_correct=0.1,flat_env=False,quick_factor=1.0,decay=15000,pitch_shift=4.0,pan=0.45)
     postProcessTremolate(rate=4.5,magnitude=0.33)
 
 def chP():
@@ -30,13 +30,13 @@ def chP():
     midi=midis[index]
     midi=dampVelocity(midi,68,0.75)
     midi=dampVelocity(midi,80,0.75)
-    doMidi(voice=pluckedGlass,vCorrect=0.375,flatEnv=False,qFactor=1.0,decay=15000,pan=0.7)
+    doMidi(voice=pluckedGlass,velocity_correct=0.375,flat_env=False,quick_factor=1.0,decay=15000,pan=0.7)
     postProcess()
-    doMidi(voice=pluckedGlass,vCorrect=0.05,flatEnv=False,qFactor=1.0,decay=15000,pitchShift=4.0,pan=0.45)
+    doMidi(voice=pluckedGlass,velocity_correct=0.05,flat_env=False,quick_factor=1.0,decay=15000,pitch_shift=4.0,pan=0.45)
     postProcess()
-    doMidi(voice=pluckedGlass,vCorrect=0.375,flatEnv=False,qFactor=1.0,decay=15000,pan=0.9,pitchAdd=4.0)
+    doMidi(voice=pluckedGlass,velocity_correct=0.375,flat_env=False,quick_factor=1.0,decay=15000,pan=0.9,pitch_add=4.0)
     postProcessEcho()
-    doMidi(voice=pluckedGlass,vCorrect=0.05,flatEnv=False,qFactor=1.0,decay=15000,pitchShift=4.0,pan=0.1,pitchAdd=3.0)
+    doMidi(voice=pluckedGlass,velocity_correct=0.05,flat_env=False,quick_factor=1.0,decay=15000,pitch_shift=4.0,pan=0.1,pitch_add=3.0)
     postProcessEcho()
 
 def chB():
@@ -45,25 +45,25 @@ def chB():
     index+=1
     midi=shorterThanMidi(midis[index],beat,512)
     midi=dampVelocity(midi,50,0.75)
-    doMidi(voice=pluckedGlass,vCorrect=0.75,flatEnv=False,qFactor=2.0,pan=0.75,decay=5000)
+    doMidi(voice=pluckedGlass,velocity_correct=0.75,flat_env=False,quick_factor=2.0,pan=0.75,decay=5000)
     postProcess()
-    doMidi(voice=pluckedGlass,vCorrect=0.5,flatEnv=False,qFactor=1.0,pan=0.50,decay=5000)
+    doMidi(voice=pluckedGlass,velocity_correct=0.5,flat_env=False,quick_factor=1.0,pan=0.50,decay=5000)
     postProcess()
     
     # Reed
-    doMidi(voice=muteOboe,vCorrect=0.2,flatEnv=False,qFactor=1.0,decay=500,pan=0.55)
+    doMidi(voice=muteOboe,velocity_correct=0.2,flat_env=False,quick_factor=1.0,decay=500,pan=0.55)
     postProcessTremolate(rate=5.0)
     
     midi=longAsMidi(midis[index],beat,512)
     midi=dampVelocity(midi,80,0.75)
     midi=dampVelocity(midi,50,0.75)
-    doMidi(voice=pluckedGlass,vCorrect=0.75,flatEnv=False,qFactor=2.0,decay=5000,pan=0.65)
+    doMidi(voice=pluckedGlass,velocity_correct=0.75,flat_env=False,quick_factor=2.0,decay=5000,pan=0.65)
     postProcess()
-    doMidi(voice=pluckedGlass,vCorrect=0.50,flatEnv=False,qFactor=1.0,decay=5000,pitchAdd=4.25,pan=0.55)
+    doMidi(voice=pluckedGlass,velocity_correct=0.50,flat_env=False,quick_factor=1.0,decay=5000,pitch_add=4.25,pan=0.55)
     postProcessEcho()
     
     # Reed
-    doMidi(voice=muteOboe,vCorrect=0.2,flatEnv=True,qFactor=1.0,decay=2500,pan=0.425)
+    doMidi(voice=muteOboe,velocity_correct=0.2,flat_env=True,quick_factor=1.0,decay=2500,pan=0.425)
     postProcessTremolate(rate=1.5)
 
 def chC():
@@ -71,12 +71,12 @@ def chC():
     print "##### Channel C #####"
     index+=1
     midi=legatoMidi(midis[index],beat,128)
-    doMidi(voice=pluckedGlass,vCorrect=0.5,flatEnv=True,decay=15000)
+    doMidi(voice=pluckedGlass,velocity_correct=0.5,flat_env=True,decay=15000)
     postProcess()
-    doMidi(voice=pluckedGlass,vCorrect=0.5,flatEnv=True,pitchAdd=2.5,decay=15000)
+    doMidi(voice=pluckedGlass,velocity_correct=0.5,flat_env=True,pitch_add=2.5,decay=15000)
     postProcess()
     # Reed
-    doMidi(voice=muteOboe,vCorrect=0.2,flatEnv=True,qFactor=1.0,decay=2500,pan=0.5)
+    doMidi(voice=muteOboe,velocity_correct=0.2,flat_env=True,quick_factor=1.0,decay=2500,pan=0.5)
     postProcessTremolate(rate=1.5)
 
 def chD():
@@ -84,12 +84,12 @@ def chD():
     print "##### Channel D #####"
     index+=1
     midi=legatoMidi(midis[index],beat,128)
-    doMidi(voice=muteOboe,vCorrect=0.6,pitchShift=0.25,flatEnv=True,pure=True,qFactor=1.0)
+    doMidi(voice=muteOboe,velocity_correct=0.6,pitch_shift=0.25,flat_env=True,pure=True,quick_factor=1.0)
     postProcess()
     
-    doMidi(voice=brightPluckedGlass,vCorrect=0.5)
+    doMidi(voice=brightPluckedGlass,velocity_correct=0.5)
     postProcess()
-    doMidi(voice=brightPluckedGlass,vCorrect=0.5,pitchShift=0.995)
+    doMidi(voice=brightPluckedGlass,velocity_correct=0.5,pitch_shift=0.995)
     postProcess()
     
 def chE():
@@ -99,26 +99,26 @@ def chE():
     midi=shorterThanMidi(midis[index],beat,512)
     midi=legatoMidi(midis[index],beat,64)
     midi=dampVelocity(midi,70,0.75)
-    doMidi(voice=pluckedGlass,vCorrect=0.6,pitchShift=0.25,flatEnv=False,pure=True,qFactor=0.5,decay=500)
+    doMidi(voice=pluckedGlass,velocity_correct=0.6,pitch_shift=0.25,flat_env=False,pure=True,quick_factor=0.5,decay=500)
     postProcess()    
-    doMidi(voice=pluckedGlass,vCorrect=0.5,pitchShift=0.5, flatEnv=False,pure=True,qFactor=0.5,decay=500)
+    doMidi(voice=pluckedGlass,velocity_correct=0.5,pitch_shift=0.5, flat_env=False,pure=True,quick_factor=0.5,decay=500)
     postProcess()    
-    doMidi(voice=pluckedGlass,vCorrect=0.5,pitchShift=1.0, flatEnv=False,pure=True,qFactor=0.5,decay=500)
+    doMidi(voice=pluckedGlass,velocity_correct=0.5,pitch_shift=1.0, flat_env=False,pure=True,quick_factor=0.5,decay=500)
     postProcess()
-    doMidi(voice=pluckedGlass,vCorrect=0.1,pitchShift=4.0, flatEnv=False,pure=True,qFactor=0.5,decay=500)
+    doMidi(voice=pluckedGlass,velocity_correct=0.1,pitch_shift=4.0, flat_env=False,pure=True,quick_factor=0.5,decay=500)
     postProcess()
     
     midi=longAsMidi(midis[index],beat,512)
     midi=legatoMidi(midis[index],beat,512)
     midi=dampVelocity(midi,60,0.75)
     midi=dampVelocity(midi,70,0.75)
-    doMidi(voice=pluckedGlass,vCorrect=0.6,pitchShift=0.25,flatEnv=True, pure=False,qFactor=1.0,decay=2500)
+    doMidi(voice=pluckedGlass,velocity_correct=0.6,pitch_shift=0.25,flat_env=True, pure=False,quick_factor=1.0,decay=2500)
     postProcess()    
-    doMidi(voice=pluckedGlass,vCorrect=0.5,pitchShift=0.5, flatEnv=True, pure=False,qFactor=1.0,decay=2500,pitchAdd=2.5)
+    doMidi(voice=pluckedGlass,velocity_correct=0.5,pitch_shift=0.5, flat_env=True, pure=False,quick_factor=1.0,decay=2500,pitch_add=2.5)
     postProcess()    
-    doMidi(voice=pluckedGlass,vCorrect=0.5,pitchShift=1.0, flatEnv=True, pure=False,qFactor=1.0,decay=2500,pitchAdd=5.0)
+    doMidi(voice=pluckedGlass,velocity_correct=0.5,pitch_shift=1.0, flat_env=True, pure=False,quick_factor=1.0,decay=2500,pitch_add=5.0)
     postProcess()
-    doMidi(voice=pluckedGlass,vCorrect=0.1,pitchShift=4.0, flatEnv=False,pure=False,qFactor=1.0,decay=1000,pitchAdd=4.0)
+    doMidi(voice=pluckedGlass,velocity_correct=0.1,pitch_shift=4.0, flat_env=False,pure=False,quick_factor=1.0,decay=1000,pitch_add=4.0)
     postProcessTremolate()
 
 ##################

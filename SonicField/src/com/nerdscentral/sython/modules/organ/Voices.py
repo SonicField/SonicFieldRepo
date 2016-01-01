@@ -6,13 +6,13 @@
 
 from organ.Generators import *
 from Parallel_Helpers import mix
-from organ.Algorithms import do_formatn
+from organ.Algorithms import do_formant,excite
 
 @sf_parallel
 def vox_humana_inner(length,freq,a,b,c,z1=1.0,z2=1.25):
     vox=mix(
-        sf.Pcnt75(singBase(length,freq,z1)),
-        sf.Pcnt25(singBase(length,freq*2.0,z1))
+        sf.Pcnt75(sing_base(length,freq,z1)),
+        sf.Pcnt25(sing_base(length,freq*2.0,z1))
     )
     length=sf.Length(+vox)
     vox=sf.FixSize(polish(vox,freq)) 
@@ -53,7 +53,7 @@ def vox_humana_inner(length,freq,a,b,c,z1=1.0,z2=1.25):
     return sf.FixSize(vox)
 
 @sf_parallel
-def vox_human_femail_soprano(length,freq):
+def vox_humana_femail_soprano(length,freq):
     vox = vox_humana_inner(length,freq,850,1200,2800,2.0,3.0)
     a = sf.BesselLowPass(+vox,freq    ,2)
     b = sf.Power(sf.BesselHighPass(vox,freq*4.0,2),1.25)
@@ -707,15 +707,15 @@ def stopped_reed(length,freq):
 @sf_parallel
 def trumpet(length,freq):
     if length>256:
-        sig1=trumpetBase(length,freq,-0.25)
-        sig2=trumpetBase(length,freq, 0.25)
+        sig1=trumpe_base(length,freq,-0.25)
+        sig2=trumpet_base(length,freq, 0.25)
         env1=sf.NumericShape((0,0),(256,1),(length,1))
         env2=sf.NumericShape((0,1),(256,0),(length,0))
         sig1=sf.Multiply(sig1,env1)
         sig2=sf.Multiply(sig2,env2)
         sig=mix(sig1,sig2)
     else:
-        sig=trumpetBase(length,freq,-0.25)
+        sig=trumpet_base(length,freq,-0.25)
     
     sig=sf.FixSize(sig)
     sig=polish(sig,freq)

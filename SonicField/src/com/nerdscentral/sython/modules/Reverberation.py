@@ -30,7 +30,7 @@ def granular_reverberate(signal,ratio,delay,density,length=50,stretch=1,vol=1,ra
 
 @sf_parallel
 def reverberate(signal,convol):
-    clog("Reverberate")
+    c_log("Reverberate")
     @sf_parallel
     def reverberate_inner(signal,convol,grain_length):
         mag=sf.Magnitude(+signal)
@@ -54,6 +54,6 @@ def reverberate(signal,convol):
     for grain in sf.Granulate(signal_,grain_length):
         (signal_i,at)=grain
         signal_i=sf.Realise(signal_i)
-        out.append((reverberarte_inner(signal_i,+convol_,grain_length),at))
+        out.append((reverberate_inner(signal_i,+convol_,grain_length),at))
     -convol_
     return sf.Finalise(mix(out))

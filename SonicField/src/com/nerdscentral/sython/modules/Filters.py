@@ -24,6 +24,7 @@ from Types import is_signal
 
 def byquad_filter(f_type,input,frequency,q=1.0,db_gain=6.0):
 
+    @sf_parallel
     def byquad_filter_high():
         if shaped:
             return sf.ShapedRBJHighPass(
@@ -38,6 +39,7 @@ def byquad_filter(f_type,input,frequency,q=1.0,db_gain=6.0):
                 q
             )
 
+    @sf_parallel
     def byquad_filter_low():
         if shaped:
             return sf.ShapedRBJLowPass(
@@ -52,6 +54,7 @@ def byquad_filter(f_type,input,frequency,q=1.0,db_gain=6.0):
                 q
             )
 
+    @sf_parallel
     def byquad_filter_high_shelf():
         if shaped:
             raise Exception(f_type,'Not currently available as shaped')
@@ -63,6 +66,7 @@ def byquad_filter(f_type,input,frequency,q=1.0,db_gain=6.0):
             db_gain
         )
         
+    @sf_parallel
     def byquad_filter_low_shelf():
         if shaped:
             raise Exception(f_type,'Not currently available as shaped')
@@ -74,6 +78,7 @@ def byquad_filter(f_type,input,frequency,q=1.0,db_gain=6.0):
             db_gain
         )
 
+    @sf_parallel
     def byquad_filter_notch():
         if shaped:
             return sf.ShapedRBJNotch(
@@ -88,6 +93,7 @@ def byquad_filter(f_type,input,frequency,q=1.0,db_gain=6.0):
                 q
             )
 
+    @sf_parallel
     def byquad_filter_peak():
         if shaped:
             return sf.ShapedRBJPeaking(
@@ -104,6 +110,7 @@ def byquad_filter(f_type,input,frequency,q=1.0,db_gain=6.0):
                 db_gain
             )
 
+    @sf_parallel
     def byquad_filter_all():
         if shaped:
             raise Exception(f_type,'Not currently available as shaped')
@@ -114,6 +121,7 @@ def byquad_filter(f_type,input,frequency,q=1.0,db_gain=6.0):
             q
         )
     
+    @sf_parallel
     def byquad_filter_band():
         if shaped:
             return sf.ShapedRBJBandPass(
@@ -128,6 +136,7 @@ def byquad_filter(f_type,input,frequency,q=1.0,db_gain=6.0):
                 q
             )
 
+    @sf_parallel
     def ladder_filter():
         # if non of the inputs of signals no matter
         # this will make a static filter from a shaped filter
@@ -155,6 +164,6 @@ def byquad_filter(f_type,input,frequency,q=1.0,db_gain=6.0):
         'ladder'     : ladder_filter
     }.get(f_type,not_known)
     c_log(run)
-    return sf_do(run)
+    return run()
  
  

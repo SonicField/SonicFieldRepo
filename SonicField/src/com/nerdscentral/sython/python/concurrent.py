@@ -121,13 +121,6 @@ Note that tasks can be executed in any order on any thread.
 # to scheduled.
 SF_MAX_CONCURRENT = int(System.getProperty("sython.threads"))
 
-# Tracks the number of current queue but not executing tasks
-SF_QUEUED         = AtomicLong()
-
-# Tracks the number of executors which are sleeping because they are blocked
-# and are not currently stealing work
-SF_ASLEEP         = AtomicLong()
-
 # Marks when the concurrent system came up to make logging more human readable
 SF_STARTED        = System.currentTimeMillis()
 
@@ -149,20 +142,20 @@ SF_PENDING = Collections.newSetFromMap(ConcurrentHashMap(SF_MAX_CONCURRENT*128,0
 
 # Force 'nice' interleaving when logging from multiple threads
 SF_LOG_LOCK=ReentrantLock()
-print "Thread\tQueue\tAsleep\tTime\tMessage..."
+print "Thread\tQueue\tActive\tTime\tMessage..."
 def c_log(*args):
     SF_LOG_LOCK.lock()
-    print "\t".join(str(x) for x in [Thread.currentThread().getId(),SF_QUEUED.get(),SF_ASLEEP.get(),(System.currentTimeMillis()-SF_STARTED)] + list(args))
+    print "\t".join(str(x) for x in [Thread.currentThread().getId(),SF_PENDING.size(),SF_POOL.getActiveCount(),(System.currentTimeMillis()-SF_STARTED)] + list(args))
     SF_LOG_LOCK.unlock()
 
 # Define the logger method as more than pass only is tracing is turned on
 if TRACE:
-    cLog=c_log
+    c_log=c_log
 else:
-    def cLog(*args):
+    def c_log(*args):
         pass
 
-cLog( "Concurrent Threads: " + SF_MAX_CONCURRENT.__str__())
+c_log( "Concurrent Threads: " + SF_MAX_CONCURRENT.__str__())
     
 # Decorates ConcurrentLinkedQueue with tracking of total (global) number of
 # queued elements. Also remaps the method names to be closer to python lists
@@ -170,13 +163,11 @@ class sf_safeQueue(ConcurrentLinkedQueue):
     # Note that this is actually the reverse of a python pop, this is actually
     # equivalent to [1,2,3,4,5].pop(0).
     def pop(self):
-        SF_QUEUED.getAndDecrement()
         r = self.poll()
         SF_PENDING.remove(r)
         return r
     
     def append(self, what):
-        SF_QUEUED.getAndIncrement()
         SF_PENDING.add(what)
         self.add(what)
 
@@ -189,9 +180,9 @@ class sf_callable(Callable):
     # This method is that which causes a task to be executed. It actually
     # executes the Python closure which defines the work to be done
     def call(self):
-        cLog("FStart",self.toDo)
+        c_log("FStart",self.toDo)
         ret=self.toDo()
-        cLog("FDone")
+        c_log("FDone")
         return ret
 
 # Holds the Future created by submitting a sf_callable to the SF_POOL for
@@ -211,18 +202,20 @@ class sf_futureWrapper(Future):
         return self.toDo.get()
 
 # Also a Future (see sf_futureWrapper) but these execute the python closer
-# in the thread which calls the constructor. Therefore, the results is available
-# when the constructor exits. These are the primary mechanism for preventing
+# in the thread which calls the constructor. The results is available
+# when the execute method exits. These are the primary mechanism for preventing
 # The Embrace Of Meh.
 class sf_getter(Future):
     def __init__(self,toDo):
         self.toDo=toDo
-        cLog("GStart",self.toDo)
+
+    def execute(self):
+        c_log("GStart",self.toDo)
         self.result=self.toDo()
-        cLog("GDone")
+        c_log("GDone")
 
     def isDone(self):
-        return True
+        return hasattr(self,'result')
 
     def get(self):
         return self.result
@@ -243,7 +236,39 @@ SF_TASK_QUEUE=sf_taskQueue()
 # The main coordination class for the schedular. Whilst it is a future
 # it actually deligates execution to sf_futureWrapper and sf_getter objects
 # for synchronous and asynchronous operation respectively
-class sf_superFuture(Future):
+class super_future(Future):
+
+    def steal(self,nap=False):
+        # Iterate over the global set of pending super futures
+        # Note that the locking logic in the super futures ensure 
+        # no double execute.
+        it=SF_PENDING.iterator()
+        while it.hasNext():
+            try:
+                c_log("In Steal")
+                # reset back (the back-off sleep time)
+                back=1
+                toSteal=it.next()
+                it.remove()
+                c_log("Steal",toSteal.toDo)
+                # The stollen task must be performed in this thread as 
+                # this is the thread which would otherwise block so is
+                # availible for further execution
+                toSteal.directSubmit()
+                # Now we manage state of 'nap' which is used for logging
+                # Based on if we can steal more (i.e. would still block)
+                # Nap also controls the thread back off
+                if hasattr(self,"future") and self.future.isDone():
+                    nap=False
+                    break
+                else:
+                    nap=True
+            except Exception, e:
+                # All bets are off
+                c_log("Failed to Steal",str(e))
+                # Just raise and give up
+                raise
+        return nap
 
     # - Wrap the closure (toDo) which is the actual task (work to do)
     # - Add that task to the thread local queue by adding self to the queue
@@ -253,11 +278,14 @@ class sf_superFuture(Future):
     #   is part of the mechanism which prevents work stealing resulting in a
     #   task being executed twice.
     def __init__(self,toDo):
+        mutex=ReentrantLock()
+        mutex.lock()
+        self.mutex=mutex
         self.toDo=toDo
+        self.submitted=False
         queue=SF_TASK_QUEUE.get()
         queue.append(self)
-        self.mutex=ReentrantLock()
-        self.submitted=False
+        mutex.unlock()
 
     # Testing Only
     # ============
@@ -287,9 +315,10 @@ class sf_superFuture(Future):
             self.mutex.unlock()
             return
         self.submitted=True
-        self.mutex.unlock()
         # Execute
         self.future=sf_getter(self.toDo)
+        self.mutex.unlock()
+        self.future.execute()
     
     # Normal (non work stealing) submition of this task. This might or might not
     # result in immediate execution. If the total number of active executors is
@@ -307,27 +336,42 @@ class sf_superFuture(Future):
             self.mutex.unlock()
             return
         self.submitted=True
-        self.mutex.unlock()
         
         # See if we have reached the parallel execution soft limit
         count=SF_POOL.getActiveCount()
-        cLog("Submit")
+        c_log("Submit")
         if count<SF_MAX_CONCURRENT:
             # No, so submit to the thread pool for execution
             task=sf_callable(self.toDo)
             self.future=sf_futureWrapper(SF_POOL.submit(task))
+            self.mutex.unlock()
         else:
             # Yes, execute in the current thread
             self.future=sf_getter(self.toDo)
-        cLog("Submitted")
+            self.mutex.unlock()
+            self.future.execute()
+        c_log("Submitted")
 
     # Submit all the tasks in the current thread local queue of tasks. This is
     # lazy executor. This gets called when we need results. 
     def submitAll(self):
+        self.mutex.lock()
+        s=self.submitted
+        self.mutex.unlock()
+        if s:
+            c_log('Submitted already',self)
         queue=SF_TASK_QUEUE.get()
-        while(len(queue)):
+        if queue.size()==0:
+            c_log('Empty queue',self)     
+        while len(queue):
             queue.pop().submit()
-
+        # If this super_future is being submitted on a different thread to the
+        # one which created it then it will not be submitted by submitting the
+        # the thread local queue. However, we make the assumption that the 
+        # super_future is submitted on exit of this method. To fix this issue
+        # we submit it here; note that double submission has not effect.
+        self.submit()
+    
     # The point of execution in the lazy model. This method is what consumers
     # of tasks call to get the task executed and retrieve the result (if any).
     # This therefore acts as the point of synchronisation. This method will not
@@ -338,28 +382,10 @@ class sf_superFuture(Future):
     # whilst waiting for taskB to complete the thread can just steal another
     # task and so on. This is why we can use the directSubmit for stolen tasks.  
     def get(self):
-        cLog( "Submit All")
+        c_log( "Submit All",self)
         # Submit the current thread local task queue
         self.submitAll()
-        cLog( "Submitted All")
-        t=System.currentTimeMillis()
-        c=1
-        # There is a race condition where by the submitAll has been called
-        # which recursively causes another instance of get on this super future
-        # which results in there being no tasks to submit but we get to this 
-        # point before self.future has been set. This tends to resolve itself
-        # very quickly as the empty calls to submit all do not do very much work 
-        # so the origianl progresses and sets the future. Rather than a complex
-        # and potentially brittle locking system, we just spin waiting for the
-        # future to be set. This works fine on my Mac as it only ever seems to 
-        # spin once, so the cost is pretty much the same as a locking approach
-        # basically, one quantum. If this starts to spin a lot in the future
-        # a promise/future approach could be used. 
-        while not hasattr(self,"future"):
-            c+=1
-            Thread.yield()
-        t=System.currentTimeMillis()-t
-        cLog( "Raced: ", c ,t)
+        c_log( "Submitted All",self)
         
         # This is where the work stealing logic starts
         # isDone() tells us if the thread would block if get() were called on
@@ -367,12 +393,11 @@ class sf_superFuture(Future):
         # not to 'waste' the thread. This if block is setting up the
         # log/tracking information
         if not self.future.isDone():
-            SF_ASLEEP.getAndIncrement();
-            cLog("Sleep")
+            c_log("Sleep")
             nap=True
         else:
             nap=False
-            cLog("Get")
+            c_log("Get")
         # back control increasing backoff of the thread trying to work steal.
         # This is not the most efficient solution but as Sonic Field tasks are
         # generally large, this approach is OK for the current use. We back of
@@ -380,63 +405,35 @@ class sf_superFuture(Future):
         # polling every 100 milliseconds.
         back=1
         # This look steal work until the get() on the current task will 
-        # not block
+        # not block.
+        #
+        # Note that this loop is where deadlock can happen because if a ring
+        # of tasks forms this will loop/sleep for ever.
+        #
         while not self.future.isDone():
-            # Iterate over the global set of pending super futures
-            # Note that the locking logic in the super futures ensure 
-            # no double execute.
-            it=SF_PENDING.iterator()
-            while it.hasNext():
-                try:
-                    # reset back (the back-off sleep time)
-                    back=1
-                    toSteal=it.next()
-                    it.remove()
-                    cLog("Steal",toSteal.toDo)
-                    # Track number of tasks available to steal for logging
-                    SF_ASLEEP.getAndDecrement();
-                    # The stollen task must be performed in this thread as 
-                    # this is the thread which would otherwise block so is
-                    # availible for further execution
-                    toSteal.directSubmit()
-                    # Now we manage state of 'nap' which is used for logging
-                    # based on if we can steal more (i.e. would still block)
-                    # Nap also controls the thread back off
-                    if self.future.isDone():
-                        nap=False
-                        break
-                    else:
-                        nap=True
-                        SF_ASLEEP.getAndIncrement();
-                except Exception, e:
-                    # All bets are off
-                    cLog("Failed to Steal",str(e))
-                    # Just raise and give up
-                    raise
+            nap=self.steal(nap)
             # If the thread would block again or we are not able to steal as
             # nothing pending then we back off. 
             if nap==True:
                 if back==1:
-                    cLog("Non Pending")
+                    c_log("Non Pending")
                 Thread.sleep(back)
                 back+=1
                 if back>100:
                     back=100
-        if nap:
-            SF_ASLEEP.getAndDecrement();
         # To get here we know this get will not block
         r = self.future.get()
-        cLog("Wake")
+        c_log("Wake")
         # Return the result if any
         return r
 
     # Proxy all other methods to the result of the future
-    def __getattr__(self,name):
-        cLog("Proxying: ",name)
-        # This prevents a recursive proxying of future
-        if name=='future':
-            raise Exception('No such method')
-        return getattr(self.get(),name)
+    #def __getattr__(self,name):
+    #    # This prevents a recursive proxying of future
+    #    if name=='future':
+    #        raise Exception('No such method')
+    #    c_log("Proxying: ",name)
+    #    return getattr(self.get(),name)
 
     # If the return of the get is iterable then we delegate to it so that 
     # this super future appears to be its embedded task
@@ -452,22 +449,38 @@ class sf_superFuture(Future):
     def __neg__(self):
         obj=self.get()
         return -obj
-
-# Wrap a closure in a super future which automatically 
-# queues it for future lazy execution
-def sf_do(toDo):
-    return sf_superFuture(toDo)
     
-# An experimental decorator approach equivalent to sf_do
+# Perform a function in parallel. To prevent for formation of cycles of 
+# futures (effectively deadlock) this code goes over the parameters looking
+# for anything which is a future and then waits for those futures to complete
+# before branching off into another thread.
 class sf_parallel(object):
 
     def __init__(self,func):
         self.func=func
 
+    @staticmethod
+    def recursive_get_futures(to_get):
+        if isinstance(to_get,super_future):
+            #raise RuntimeError('Get on args to function')
+            c_log('Getting: ',to_get)
+            to_get.get()
+        elif isinstance(to_get,(list,tuple)):
+            c_log('Recursing list')
+            for g in to_get:
+                sf_parallel.recursive_get_futures(g)
+        elif isinstance(to_get,dict):
+            c_log('Recursing dict')
+            for key, value in to_get.iteritems():
+               sf_parallel.recursive_get_futures(value)
+                    
     def __call__(self,*args, **kwargs):
+        sf_parallel.recursive_get_futures((args, kwargs))
+                
         def closure():
-            return self.func(*args, **kwargs) 
-        return sf_superFuture(closure)
+            return self.func(*args, **kwargs)
+        c_log('Parallel',self.func,closure) 
+        return super_future(closure)
 
 # Shut the execution pool down. This waits for it to shut down
 # but if the shutdown takes longer than timeout then it is 
@@ -488,5 +501,4 @@ def sf_shutdown():
     shutdown_and_await_termination(SF_POOL, 5)
     
 __builtin__.c_log=c_log
-__builtin__.sf_do=sf_do
 __builtin__.sf_parallel=sf_parallel

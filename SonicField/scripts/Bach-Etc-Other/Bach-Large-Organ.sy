@@ -261,7 +261,7 @@ def pitchMove(sig):
         return sig
     return sf.Clean(sf.Resample(move,sig))
 
-def singBase(length,freq,z=1.0):
+def sing_base(length,freq,z=1.0):
     vox=sf.WhiteNoise(length)
     vox=sf.Clean(vox)
     vox=sf.ButterworthBandPass(vox,freq,freq*8,4)
@@ -291,7 +291,7 @@ def singBase(length,freq,z=1.0):
 ###############################################################################
 
 def voxCelest(length,freq):
-    vox=singBase(length,freq)
+    vox=sing_base(length,freq)
     noise=sf.Multiply(
         cleanNoise(length,freq*0.5),
         sf.SimpleShape((0,-60),(64,-28),(128,-40),(length,-40))
@@ -726,9 +726,9 @@ def safeEnv(sig,env):
         print "***WARNING: envelop failure *** ",length," -> ",p," diff:", p-length
     return sf.NumericShape(ne)
          
-def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor,subBass,flatEnv):
+def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,velocity_correct_,quick_factor,sub_bass,flat_env):
     def singInner():
-        vCorrect=vCorrect_
+        velocity_correct=velocity_correct_
         length=lengthIn
         tp=0
         
@@ -795,14 +795,14 @@ def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor,subBass,flatEn
                 p=32
             else:
                 p=64
-            q*=qFactor
+            q*=quick_factor
             env=safeEnv(sig,[(0,0),(q,1),(192-p,0.5),(length,0)])
             if hint=="TT":
-                vCorrect*=0.8
+                velocity_correct*=0.8
             elif hint=="NN" and pitch>660:
                 shine=True
-                vCorrect*=0.5        
-        elif tp==1 or flatEnv:
+                velocity_correct*=0.5        
+        elif tp==1 or flat_env:
             if pHint=="T":
                 q=48
             else:
@@ -811,24 +811,24 @@ def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor,subBass,flatEn
                 p=64
             else:
                 p=128
-            q*=qFactor
+            q*=quick_factor
             env=safeEnv(sig,[(0,0),(q,0.75),(length-p,1.0),(length,0)])
             if hint=="TT":
-                vCorrect*=0.8            
+                velocity_correct*=0.8            
             if hint=="TT":
-                vCorrect*=0.8
+                velocity_correct*=0.8
             elif hint=="NN" and pitch>880:
                 shine=True
-                vCorrect*=0.6
+                velocity_correct*=0.6
         elif tp==2:
-            env=safeEnv(sig,[(0,0),(96*qFactor,0.75),(length-256,1.0),(length,0)])
+            env=safeEnv(sig,[(0,0),(96*quick_factor,0.75),(length-256,1.0),(length,0)])
         elif tp==3:
             if length<1280:
-                env=safeEnv(sig,[(0,0),(64*qFactor,0.5),(256,1),(512,0.75),((length-512)/2.0+512,0.5),(length,0)])
+                env=safeEnv(sig,[(0,0),(64*quick_factor,0.5),(256,1),(512,0.75),((length-512)/2.0+512,0.5),(length,0)])
             else:
-                env=safeEnv(sig,[(0,0),(64*qFactor,0.5),(256,1),(512,0.75),(length-512,0.75),(length,0)])
+                env=safeEnv(sig,[(0,0),(64*quick_factor,0.5),(256,1),(512,0.75),(length-512,0.75),(length,0)])
         else:
-            env=safeEnv(sig,[(0,0),(64*qFactor,0.25),(512,1),(length/2,0.75),(length,0)])
+            env=safeEnv(sig,[(0,0),(64*quick_factor,0.25),(512,1),(length/2,0.75),(length,0)])
 
         mod=sf.NumericShape((0,0.995),(length,1.005))
         mod=sf.Mix(mod,sf.NumericVolume(+env,0.01))
@@ -843,7 +843,7 @@ def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor,subBass,flatEn
         sig=sf.FixSize(sig)
      
         if pitch<256:
-            if subBass:
+            if sub_bass:
                 if pitch < 128:
                     sig=sf.Mix(
                         granularReverb(+sig,ratio=0.501 ,delay=256,density=32,length=256,stretch=1,vol=0.20),
@@ -905,12 +905,12 @@ def sing(hint,pitch,lengthIn,beat,v,vl,vr,voice,vCorrect_,qFactor,subBass,flatEn
         
         note=sf.NumericVolume(sf.FixSize(sig),v)
         sf.Check(note)
-        notel=sf.Realise(sf.NumericVolume(+note,vl*vCorrect))
-        noter=sf.Swap(sf.NumericVolume( note,vr*vCorrect))
+        notel=sf.Realise(sf.NumericVolume(+note,vl*velocity_correct))
+        noter=sf.Swap(sf.NumericVolume( note,vr*velocity_correct))
         return (notel,noter)
     return sf_do(singInner)
 
-def doMidi(notesStart,notesEnd,notes,midi,voice,vCorrect,pitchShift=1.0,qFactor=1.0,subBass=False,flatEnv=False):
+def doMidi(notesStart,notesEnd,notes,midi,voice,velocity_correct,pitch_shift=1.0,quick_factor=1.0,sub_bass=False,flat_env=False):
     count=0.0
     while len(notes)!=0:
         notes.pop()
@@ -937,19 +937,19 @@ def doMidi(notesStart,notesEnd,notes,midi,voice,vCorrect,pitchShift=1.0,qFactor=
             pitch=base
         else:
             key=float(key)
-            pitch= (sf.Semitone(0)**key) * base * pitchShift
+            pitch= (sf.Semitone(0)**key) * base * pitch_shift
         velocity=velocity/100
         v=velocity
         pl=pitch
 
-        vCUse=vCorrect
+        vCUse=velocity_correct
         
         # volume pitch correction to stop domination
         # of high notes - not quite the same as 
         # loudness correction due to the high dominating
         # low perception issue.
         pCorrect=1
-        if vCorrect>0.25 and pitch > 660 :
+        if velocity_correct>0.25 and pitch > 660 :
             if length <256:
                 sCorrect=1.5
             else:
@@ -1021,7 +1021,7 @@ def doMidi(notesStart,notesEnd,notes,midi,voice,vCorrect,pitchShift=1.0,qFactor=
             hint+="E"
  
         print "H",hint,"C",count,"P",pitch,"@",at,"L",length,"V",velocity,"VU",vCUse,"PC",pCorrect
-        note = sing(hint,pitch, length,beat,v,lr,rl,voice,vCUse,qFactor,subBass,flatEnv)
+        note = sing(hint,pitch, length,beat,v,lr,rl,voice,vCUse,quick_factor,sub_bass,flat_env)
         dl=30*rl+1000
         dr=38*lr+1000
         notes.append((note,at+dl,at+dr))
@@ -1181,12 +1181,12 @@ def my_so(what):
 # Soft two manual settings:
 # =========================
 # First manual  = leadDiapason  ,2.0
-# Pedals manual = warmBass      ,1.5,subBass=True
+# Pedals manual = warmBass      ,1.5,sub_bass=True
 
 # Grand two manual settings:
 # ==========================
 # First manual  = secondDiapason,2.0
-# Pedals manual = warmBass      ,1.5,subBass=True
+# Pedals manual = warmBass      ,1.5,sub_bass=True
 # Pedals manual = upperAccent   ,0.2,x4
 
 # Standard two manual settings:
@@ -1225,7 +1225,7 @@ def my_so(what):
 # Second manual = clarion        ,0.8
 # Third manual  = secondDiapason ,1.2
 # Third manual  = upperAccent    ,0.1,x2
-# Pedals        = warmBass       ,1.5,subBass=True
+# Pedals        = warmBass       ,1.5,sub_bass=True
 # Padels        = upperAccent    ,0.2,x4
 
 # Counterpoint 3 manual and pedals 
@@ -1240,7 +1240,7 @@ def my_so(what):
 # Second manual = upperAccent    ,0.1,x2
 # Third manual  = secondDiapason ,0.8
 # Third manual  = upperAccent    ,0.1,x2
-# Pedals        = warmBass       ,1.5,subBass=True
+# Pedals        = warmBass       ,1.5,sub_bass=True
 # Padels        = simpleOboe     ,0.1,x2
 # Padels        = simpleOboe     ,0.1,x4
 
@@ -1257,7 +1257,7 @@ def my_so(what):
 # Third manual  = leadDiapason   ,0.8
 # Third manual  = upperAccent    ,0.2,x2
 # Pedals        = grandBass      ,2.5
-# Pedals        = warmBass       ,1.5,x0.501,subBass=True
+# Pedals        = warmBass       ,1.5,x0.501,sub_bass=True
 # Padels        = upperAccent    ,0.2,x4
 # Padels        = upperAccent    ,0.1,x8
 
@@ -1268,7 +1268,7 @@ def my_so(what):
 # First manual  = leadDiapason   ,0.5,1.001
 # Second manual = secondDiapaon  ,0.8
 # Third manual  = secondDiapason ,0.8
-# Pedals        = warmBass       ,1.5,subBass=True
+# Pedals        = warmBass       ,1.5,sub_bass=True
 # Padels        = upperAccent    ,0.2,x4
 
 # 3 oboes manuals and pedals 
@@ -1276,7 +1276,7 @@ def my_so(what):
 # First manual  = muteOboe       ,1.0,0.5
 # Second manual = muteOboe       ,1.0,0.5
 # Third manual  = muteOboe       ,1.0,0.5
-# Pedals        = warmBass       ,1.5,subBass=True
+# Pedals        = warmBass       ,1.5,sub_bass=True
 # Padels        = upperAccent    ,0.1,x4
 
 # 2 diapason manuals oboe instead 
@@ -1293,7 +1293,7 @@ def my_so(what):
 # First manual  = leadDiapason   ,0.6,1.001
 # Second manual = secondDiapaon  ,0.8
 # Third manual  = secondDiapason ,0.8
-# Pedals        = warmBass       ,1.5,subBass=True
+# Pedals        = warmBass       ,1.5,sub_bass=True
 # Padels        = upperAccent    ,0.2,x4
 
 # 2 Inverted diapason and read 3
@@ -1312,9 +1312,9 @@ def my_so(what):
 # First manual  = leadDiapason   ,0.4,1.001
 # Second manual = secondDiapaon  ,0.8
 # Third manual  = secondDiapason ,0.8
-# Third manual  = upperAccent    ,0.2,x4,subBass=False,qFactor=0.5
-# Pedals        = warmBass       ,1.5,subBass=True
-# Padels        = stoppedReed    ,0.501,x0.5,subBass=True
+# Third manual  = upperAccent    ,0.2,x4,sub_bass=False,quick_factor=0.5
+# Pedals        = warmBass       ,1.5,sub_bass=True
+# Padels        = stoppedReed    ,0.501,x0.5,sub_bass=True
 # Padels        = upperAccent    ,0.2,x4
 
 # Bombasic 5 parts (2 pedals)
@@ -1322,29 +1322,29 @@ def my_so(what):
 # First manual  = string         ,1.2
 # First manual  = string         ,0.33,2.0
 # Second manual = richRead       ,1.0
-# Second manual = voice=upperAccent,vCorrect=0.25,pitchShift=2.0,qFactor=0.5,subBass=False
+# Second manual = voice=upperAccent,velocity_correct=0.25,pitch_shift=2.0,quick_factor=0.5,sub_bass=False
 # Third manual  = muteOboe       ,1.0
-# Third manual  = voice=upperAccent,vCorrect=0.25,pitchShift=2.0,qFactor=0.5,subBass=False
-# Fourth Pedals = voice=bombard,vCorrect=1.0,subBass=False,flatEnv=True
-# Fourth Padels = voice=ophicleide,pitchShift=0.5,vCorrect=0.5,subBass=False,flatEnv=True
-# Fith Pedals   = voice=bombard,vCorrect=1.0,subBass=False,flatEnv=True
-# Fourth Padels = voice=ophicleide,pitchShift=0.5,vCorrect=0.5,subBass=False,flatEnv=True
+# Third manual  = voice=upperAccent,velocity_correct=0.25,pitch_shift=2.0,quick_factor=0.5,sub_bass=False
+# Fourth Pedals = voice=bombard,velocity_correct=1.0,sub_bass=False,flat_env=True
+# Fourth Padels = voice=ophicleide,pitch_shift=0.5,velocity_correct=0.5,sub_bass=False,flat_env=True
+# Fith Pedals   = voice=bombard,velocity_correct=1.0,sub_bass=False,flat_env=True
+# Fourth Padels = voice=ophicleide,pitch_shift=0.5,velocity_correct=0.5,sub_bass=False,flat_env=True
 
 # BWV 645 in 9 voices
 # ===================
 # 1: sweetFlute,1.2
 # 1: celestFlute,0.33,2.0
-# 2: string,vCorrect=0.5,pitchShift=2.0
-# 3: upperAccent,vCorrect=0.2,pitchShift=4.0
+# 2: string,velocity_correct=0.5,pitch_shift=2.0
+# 3: upperAccent,velocity_correct=0.2,pitch_shift=4.0
 # 4: brightFlute,1.0
-# 4: voice=celestFlute,vCorrect=0.25,pitchShift=2.0,qFactor=0.5,subBass=False
+# 4: voice=celestFlute,velocity_correct=0.25,pitch_shift=2.0,quick_factor=0.5,sub_bass=False
 # 5: brightFlute,1.0
-# 5: voice=celestFlute,vCorrect=0.25,pitchShift=2.0,qFactor=0.5,subBass=False
-# 6: secondDiapason,vCorrect=1.0,subBass=False,flatEnv=True
-# 6: secondDiapason,pitchShift=0.5,vCorrect=0.5,subBass=False,flatEnv=True
+# 5: voice=celestFlute,velocity_correct=0.25,pitch_shift=2.0,quick_factor=0.5,sub_bass=False
+# 6: secondDiapason,velocity_correct=1.0,sub_bass=False,flat_env=True
+# 6: secondDiapason,pitch_shift=0.5,velocity_correct=0.5,sub_bass=False,flat_env=True
 # 6: upperAccent,0.2,4.0
-# 7: secondDiapason,pitchShift=0.5,vCorrect=1.0,subBass=False,flatEnv=True
-# 7: secondDiapason,pitchShift=0.5,vCorrect=0.5,subBass=False,flatEnv=True
+# 7: secondDiapason,pitch_shift=0.5,velocity_correct=1.0,sub_bass=False,flat_env=True
+# 7: secondDiapason,pitch_shift=0.5,velocity_correct=0.5,sub_bass=False,flat_env=True
 # 7: upperAccent,0.2,4.0
 # 8: bombard,0.5,0.5
 # 9: clarion,0.5,0.5
@@ -1355,10 +1355,10 @@ def my_so(what):
 # 1:celestFlute,0.33,2.0
 # 1:celestFlute,0.25,4.0
 # 2:stoppedReed,0.8
-# 2:voice=celestFlute,vCorrect=0.25,pitchShift=2.0,qFactor=0.5,subBass=False
-# 2:voice=secondDiapason,vCorrect=0.25,pitchShift=0.5,qFactor=0.5,subBass=False
+# 2:voice=celestFlute,velocity_correct=0.25,pitch_shift=2.0,quick_factor=0.5,sub_bass=False
+# 2:voice=secondDiapason,velocity_correct=0.25,pitch_shift=0.5,quick_factor=0.5,sub_bass=False
 # 3:muteOboe,0.75
-# 3:voice=celestFlute,vCorrect=0.25,pitchShift=2.0,subBass=False
+# 3:voice=celestFlute,velocity_correct=0.25,pitch_shift=2.0,sub_bass=False
 
 
 #######################################
@@ -1391,39 +1391,39 @@ def postProcess():
 print "Channel 1"
 
 midi=legatoMidi(midis[1],beat,256)
-doMidi(notesStart,notesEnd,notes,midi,voxCelest,vCorrect=0.75,pitchShift=1.0,qFactor=4.0,subBass=False,flatEnv=False)
+doMidi(notesStart,notesEnd,notes,midi,voxCelest,velocity_correct=0.75,pitch_shift=1.0,quick_factor=4.0,sub_bass=False,flat_env=False)
 postProcess()
-doMidi(notesStart,notesEnd,notes,midi,voxEtherial,vCorrect=0.25,pitchShift=2.0,qFactor=4.0,subBass=False,flatEnv=False)
+doMidi(notesStart,notesEnd,notes,midi,voxEtherial,velocity_correct=0.25,pitch_shift=2.0,quick_factor=4.0,sub_bass=False,flat_env=False)
 postProcess()
 midi=delayMidi(midis[1],beat,128)
-doMidi(notesStart,notesEnd,notes,midi,voxCelest,vCorrect=0.50,pitchShift=1.001,qFactor=4.0,subBass=False,flatEnv=False)
+doMidi(notesStart,notesEnd,notes,midi,voxCelest,velocity_correct=0.50,pitch_shift=1.001,quick_factor=4.0,sub_bass=False,flat_env=False)
 postProcess()
 
 print "Channel 2"
 midi=midis[2]
-doMidi(notesStart,notesEnd,notes,midi,clarion,0.15,flatEnv=False,qFactor=2.0)
+doMidi(notesStart,notesEnd,notes,midi,clarion,0.15,flat_env=False,quick_factor=2.0)
 postProcess()
 midi=delayMidi(midis[2],beat,64)
-doMidi(notesStart,notesEnd,notes,midi,voice=voxCelest,vCorrect=1.0,pitchShift=1.0,qFactor=4.0,subBass=False)
+doMidi(notesStart,notesEnd,notes,midi,voice=voxCelest,velocity_correct=1.0,pitch_shift=1.0,quick_factor=4.0,sub_bass=False)
 postProcess()
 
 print "Channel 3"
 midi=midis[3]
-doMidi(notesStart,notesEnd,notes,midi,muteOboe,0.6,flatEnv=True,qFactor=3.0)
+doMidi(notesStart,notesEnd,notes,midi,muteOboe,0.6,flat_env=True,quick_factor=3.0)
 postProcess()
-doMidi(notesStart,notesEnd,notes,midi,muteOboe,0.6,flatEnv=False,pitchShift=1.0025,qFactor=3.0)
+doMidi(notesStart,notesEnd,notes,midi,muteOboe,0.6,flat_env=False,pitch_shift=1.0025,quick_factor=3.0)
 postProcess()
-doMidi(notesStart,notesEnd,notes,midi,voice=celestFlute,vCorrect=0.25,pitchShift=2.0,qFactor=2.0,subBass=False)
+doMidi(notesStart,notesEnd,notes,midi,voice=celestFlute,velocity_correct=0.25,pitch_shift=2.0,quick_factor=2.0,sub_bass=False)
 postProcess()
-doMidi(notesStart,notesEnd,notes,midi,voice=secondDiapason,vCorrect=0.25,pitchShift=0.5,qFactor=2.0,subBass=False)
+doMidi(notesStart,notesEnd,notes,midi,voice=secondDiapason,velocity_correct=0.25,pitch_shift=0.5,quick_factor=2.0,sub_bass=False)
 postProcess()
 
 print "Channel 4"
 midi=midis[4]
-doMidi(notesStart,notesEnd,notes,midi,doubleBombard,vCorrect=1.5,pitchShift=0.5,qFactor=2.0,subBass=True,flatEnv=True)
+doMidi(notesStart,notesEnd,notes,midi,doubleBombard,velocity_correct=1.5,pitch_shift=0.5,quick_factor=2.0,sub_bass=True,flat_env=True)
 postProcess()
 midi=delayMidi(midis[4],beat,64)
-doMidi(notesStart,notesEnd,notes,midi,voice=viola,vCorrect=0.25,pitchShift=1.0,qFactor=2.0,subBass=False)
+doMidi(notesStart,notesEnd,notes,midi,voice=viola,velocity_correct=0.25,pitch_shift=1.0,quick_factor=2.0,sub_bass=False)
 postProcess()
 
 def mix(notes):

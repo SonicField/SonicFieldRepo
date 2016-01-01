@@ -110,7 +110,7 @@ def vocalRaw3(length,freq):
 def vocalRaw4(length,freq):
     return sf.FixSize(sf.Power(sf.MakeTriangle(sf.SineWave(length,freq)),2.0))
 
-def sing(pitch,lengthIn,beat,v,vl,vr,voice,vCorrect):
+def sing(pitch,lengthIn,beat,v,vl,vr,voice,velocity_correct):
     def singInner():
         length=lengthIn
         tp=0
@@ -222,12 +222,12 @@ def sing(pitch,lengthIn,beat,v,vl,vr,voice,vCorrect):
             sf.Pcnt80(sig)
         )
         note=sf.NumericVolume(sf.FixSize(sig),v)
-        notel=sf.Realise(sf.NumericVolume(+note,vl*vCorrect))
-        noter=sf.Realise(sf.NumericVolume( note,vr*vCorrect))
+        notel=sf.Realise(sf.NumericVolume(+note,vl*velocity_correct))
+        noter=sf.Realise(sf.NumericVolume( note,vr*velocity_correct))
         return (notel,noter)
     return sf_do(singInner)
 
-def doMidi(count,notesStart,notesEnd,notes,midi,voice,vCorrect,pitchShift=1.0):
+def doMidi(count,notesStart,notesEnd,notes,midi,voice,velocity_correct,pitch_shift=1.0):
     for tickOn,tickOff,note,key,velocity in midi:
         if count>notesEnd:
             break
@@ -240,12 +240,12 @@ def doMidi(count,notesStart,notesEnd,notes,midi,voice,vCorrect,pitchShift=1.0):
             pitch=base
         else:
             key=float(key)
-            pitch= (sf.Semitone(0)**key) * base * pitchShift
+            pitch= (sf.Semitone(0)**key) * base * pitch_shift
         velocity=velocity/100
         v=velocity
         pl=pitch
 
-        vCUse=vCorrect
+        vCUse=velocity_correct
         
         if pl<300:
             # low to the right ish

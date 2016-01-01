@@ -3,19 +3,23 @@
 # will run in parallel etc. 
 
 @sf_parallel
-def mix(notes):
-    if not isinstance(notes,list):
-        raise TypeError('Mix required list was passed: ' + str(typeof(notes)))
-    if isinstance(notes[0],list):
+def mix(*args):
+    if len(args)==1:
+        notes=args[0]
+    else:
+        notes=args
+    if not isinstance(notes,(list,tuple)):
+        raise TypeError('Mix required list was passed: ' + str(type(notes)))
+    if isinstance(notes[0],(list,tuple)):
         return sf.Realise(sf.MixAt(notes))
     else:
-        return return sf.Realise(sf.Mix(notes))
+        return sf.Realise(sf.Mix(notes))
 
 # Mixes if required and converts to a realised form for further processing
 
 @sf_parallel
 def realise(signal):
-    if isinstance(notes[0],list):
+    if isinstance(signal,list):
         return mix(signal)
     else:
         return sf.Realise(signal)

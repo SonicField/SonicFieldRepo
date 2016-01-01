@@ -1,9 +1,10 @@
 import math
 import random
 import sys
+from Parallel_Helpers import mix,realise,finalise
 
 @sf_parallel
-def excite(sig_,mix,power):
+def excite(sig_,mix_ammount,power):
     sig=sig_
     m=sf.Magnitude(+sig)
     sigh=sf.BesselHighPass(+sig,500,2)
@@ -13,7 +14,7 @@ def excite(sig_,mix,power):
     sigh=sf.BesselHighPass(sigh,1000,2)
     nh=sf.Magnitude(+sigh)
     sigh=sf.NumericVolume(sigh,mh/nh)
-    sig=mix(sf.NumericVolume(sigh,mix),sf.NumericVolume(sig,1.0-mix))
+    sig=mix(sf.NumericVolume(sigh,mix_ammount),sf.NumericVolume(sig,1.0-mix_ammount))
     n=sf.Magnitude(+sig)
     return realise(sf.NumericVolume(sig,m/n))
     
