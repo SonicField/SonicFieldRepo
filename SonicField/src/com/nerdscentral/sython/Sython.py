@@ -23,6 +23,6 @@ class SonicField:
         trace=''.join(traceback.format_stack())
         SFSignal.setPythonStack(trace)
         if TRACE:
-            c_log(input)
+            c_log(word+'('+str(input)+')')
         ret=self.processors.get(word).Interpret(input,self.context)
         return ret

@@ -74,8 +74,6 @@ def post_process_echo(notes,all_left=[],all_right=[]):
 
 @sf_parallel
 def do_final_mix(all_left,all_right):
-    left =sf.Silence(1)
-    right=sf.Silence(1)
     left =finalise(all_left)
     right=finalise(all_right)
     left  = sf.Cut(1,sf.Length(+left ),left)

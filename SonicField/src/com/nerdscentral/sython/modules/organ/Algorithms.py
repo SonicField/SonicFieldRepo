@@ -2,6 +2,7 @@ import math
 import random
 import sys
 from Parallel_Helpers import mix,realise,finalise
+from Reverberation import reverberate
 
 @sf_parallel
 def excite(sig_,mix_ammount,power):
@@ -65,7 +66,8 @@ def echo_division(vox_):
     length=sf.Length(+vox)
     convol=sf.ReadFile("temp/swell.wav")
     voxW=reverberate(+vox ,convol[0])
-    vox=realise(mix(vox,voxW))
+    vox=realise(vox,voxW)
+    c_log("Reference count:",vox.getReferenceCount())
     m2=sf.Magnitude(+vox)
     vox=realise(sf.NumericVolume(vox,m1/m2))
     return vox

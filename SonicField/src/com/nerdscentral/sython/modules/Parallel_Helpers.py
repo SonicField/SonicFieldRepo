@@ -18,15 +18,20 @@ def mix(*args):
 # Mixes if required and converts to a realised form for further processing
 
 @sf_parallel
-def realise(signal):
-    if isinstance(signal,list):
-        return mix(signal)
+def realise(*args):
+    if len(args)>1:
+        return mix(args)
     else:
-        return sf.Realise(signal)
+        return sf.Realise(args[0])
 
 # Mixes if required and finalises which means to convert to an maximum diviation
 # from zero or + or - 1 and remove all frequencies above half nyquist.
 
 @sf_parallel
-def finalise(signal):
-    return sf.Finalise(signal)
+def finalise(*args):
+    if len(args)>1:
+        return sf.Finalise(mix(args))
+    elif isinstance(args[0],(list,tuple)):
+        return sf.Finalise(mix(args[0]))
+    else:
+        return sf.Finalise(args[0])

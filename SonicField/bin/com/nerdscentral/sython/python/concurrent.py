@@ -127,6 +127,9 @@ SF_STARTED        = System.currentTimeMillis()
 # Causes scheduler operation to be logged
 TRACE             = str(System.getProperty("sython.trace")).lower()=="true"
 
+# Removes all parallel execution so debugging is easier.
+LINEAR            = str(System.getProperty("sython.linear")).lower()=="true"
+
 # A thread pool used for the executors 
 SF_POOL    = Executors.newCachedThreadPool()
 
@@ -365,6 +368,11 @@ class super_future(Future):
             c_log('Empty queue',self)     
         while len(queue):
             queue.pop().submit()
+        # If this super_future is being submitted on a different thread to the
+        # one which created it then it will not be submitted by submitting the
+        # the thread local queue. However, we make the assumption that the 
+        # super_future is submitted on exit of this method. To fix this issue
+        # we submit it here; note that double submission has not effect.
         self.submit()
     
     # The point of execution in the lazy model. This method is what consumers
@@ -423,12 +431,12 @@ class super_future(Future):
         return r
 
     # Proxy all other methods to the result of the future
-    #def __getattr__(self,name):
-    #    # This prevents a recursive proxying of future
-    #    if name=='future':
-    #        raise Exception('No such method')
-    #    c_log("Proxying: ",name)
-    #    return getattr(self.get(),name)
+    def __getattr__(self,name):
+        # This prevents a recursive proxying of future
+        if name=='future':
+            raise Exception('No such method')
+        c_log("Proxying: ",name)
+        return getattr(self.get(),name)
 
     # If the return of the get is iterable then we delegate to it so that 
     # this super future appears to be its embedded task
@@ -457,15 +465,12 @@ class sf_parallel(object):
     @staticmethod
     def recursive_get_futures(to_get):
         if isinstance(to_get,super_future):
-            #raise RuntimeError('Get on args to function')
             c_log('Getting: ',to_get)
             to_get.get()
         elif isinstance(to_get,(list,tuple)):
-            c_log('Recursing list')
             for g in to_get:
                 sf_parallel.recursive_get_futures(g)
         elif isinstance(to_get,dict):
-            c_log('Recursing dict')
             for key, value in to_get.iteritems():
                sf_parallel.recursive_get_futures(value)
                     
@@ -475,7 +480,10 @@ class sf_parallel(object):
         def closure():
             return self.func(*args, **kwargs)
         c_log('Parallel',self.func,closure) 
-        return super_future(closure)
+        if LINEAR:
+            return closure()
+        else:
+            return super_future(closure)
 
 # Shut the execution pool down. This waits for it to shut down
 # but if the shutdown takes longer than timeout then it is 

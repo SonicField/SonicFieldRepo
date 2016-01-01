@@ -5,9 +5,14 @@
 import os
 from organ.Player import *
 from organ.Post   import *
-from organ.Voices import vox_humana_femail_soprano
-
-sf.SetSampleRate(192000)
+from organ.Voices import \
+    vox_humana_femail_soprano,\
+    upper_accent,\
+    trost_upper_accent,\
+    string,\
+    sweet_flute
+    
+sf.SetSampleRate(96000)
 
 # Voices
 def femail_soprano(midi_in,beat,temperament,velocity):
@@ -15,23 +20,31 @@ def femail_soprano(midi_in,beat,temperament,velocity):
     midi=shorter_than_midi(midi_in,beat,512)
     midi=legato_midi(midi,beat,64)
     midi=damp_velocity(midi,70,0.75)
-    notes=play_midi(midi,beat,temperament,voice=vox_humana_femail_soprano,velocity_correct=velocity*1.0,flat_env=False,quick_factor=1.5,pan=0.5)
-    left,right=post_process(notes)
+    notes1=play_midi(midi,beat,temperament,voice=vox_humana_femail_soprano,velocity_correct=velocity*1.0,flat_env=False,quick_factor=1.5,pan=0.5)
     midi=delay_midi(midi,beat,128)
-    notes=play_midi(midi,beat,temperament,voice=vox_humana_femail_soprano,velocity_correct=velocity*0.1,flat_env=False,quick_factor=1.5,pan=0.6,pitch_add=2.0)
-    left,right=post_process_echo(notes,left,right)
-    
+    notes2=play_midi(midi,beat,temperament,voice=vox_humana_femail_soprano,velocity_correct=velocity*0.1,flat_env=False,quick_factor=1.5,pan=0.6,pitch_add=2.0)
     midi=long_as_midi(midi_in,beat,512)
     midi=legato_midi(midi,beat,128)
     midi=damp_velocity(midi,68,0.86)
     midi=damp_velocity(midi,80,0.75)
-    notes=play_midi(midi,beat,temperament,voice=vox_humana_femail_soprano,velocity_correct=velocity*0.5,flat_env=False,quick_factor=2.5,pan=0.25)
-    left,right=post_process_echo(notes,left,right)
-    play_midi(midi,beat,temperament,voice=vox_humana_femail_soprano,velocity_correct=velocity*0.5,flat_env=False,quick_factor=2.5,pan=0.75)
-    left,right=post_process_echo(notes,left,right)
+    notes3=play_midi(midi,beat,temperament,voice=vox_humana_femail_soprano,velocity_correct=velocity*0.5,flat_env=False,quick_factor=2.5,pan=0.25)
+    notes4=play_midi(midi,beat,temperament,voice=vox_humana_femail_soprano,velocity_correct=velocity*0.5,flat_env=False,quick_factor=2.5,pan=0.75)
     midi=delay_midi(midi,beat,256)
-    play_midi(midi,beat,temperament,voice=vox_humana_femail_soprano,velocity_correct=velocity*0.1,flat_env=False,quick_factor=2.5,pan=0.5, pitch_add=2.0)
-    return post_process_echo(notes,left,right)
+    notes5=play_midi(midi,beat,temperament,voice=vox_humana_femail_soprano,velocity_correct=velocity*0.1,flat_env=False,quick_factor=2.5,pan=0.5, pitch_add=2.0)
+
+    left1,right1=post_process(notes1)
+    left2,right2=post_process_echo(notes2)
+    left3,right3=post_process_echo(notes3)
+    left4,right4=post_process_echo(notes4)
+    left5,right5=post_process_echo(notes5)
+    
+    return left1+left2+left3+left4+left5,right1+right2+right3+right4+right5
+
+def test_signal(midi_in,beat,temperament,velocity):
+    notes1=play_midi(midi,beat,temperament,voice=string,velocity_correct=velocity*1.0,flat_env=False,quick_factor=1.0,pan=-1)
+    left1,right1=post_process(notes1)
+    
+    return left1,right1
 
 notes  = []
 ########################################
@@ -42,13 +55,14 @@ midis=read_midi_file("temp/input.mid")
 
 # Length of full piece
 #======================
-length      =     0.75
+length      =     0.25
 
 # Temperament
 #=============
 #temperament = werckmeisterIII
 temperament = just_intonation
 #temperament = bach_lehman
+#temperament = equal_temperament
 
 # Do Not Change
 #===============
@@ -63,13 +77,13 @@ midis=repare_overlap_midis(midis)
 
 # Produce sounds
 midi = midis[1]
-left,right = femail_soprano(midi,beat,just_intonation,1.0)
+left,right = test_signal(midi,beat,just_intonation,1.0)
 
 #######################
 # Final mix and write #
 #######################
 c_log("Mixing")
-left,right=do_final_mix(notes)
+left,right=do_final_mix(left,right)
 
 sf.WriteSignal(+left, "temp/dry-l.sig")
 sf.WriteSignal(+right,"temp/dry-r.sig")

@@ -180,7 +180,7 @@ def viola_base(length,frequency):
     return make_simple_base(length,frequency,0.5)
 
 @sf_parallel
-def sweet_flute_Base(length,frequency):
+def sweet_flute_base(length,frequency):
     return make_simple_base(length,frequency,8.0)
     
 @sf_parallel
