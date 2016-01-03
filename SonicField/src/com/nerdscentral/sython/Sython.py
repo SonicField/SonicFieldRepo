@@ -20,9 +20,9 @@ class SonicField:
             args=list(args)
             args.insert(0,input)
             input=args
-        trace=''.join(traceback.format_stack())
-        SFSignal.setPythonStack(trace)
         if TRACE:
+            trace=''.join(traceback.format_stack())
+            SFSignal.setPythonStack(trace)
             c_log(word+'('+str(input)+')')
         ret=self.processors.get(word).Interpret(input,self.context)
         return ret

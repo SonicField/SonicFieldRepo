@@ -27,6 +27,7 @@ public class SFConstants
     public static final double                   UPPER_AUDIBLE_LIMIT = 20000;
     public static final double                   UPPER_ALIAS_LIMIT   = 24000;
     public static final double                   NOISE_FLOOR         = 1.0 / 32768.00;
+    public static boolean                        TRACE               = false;
 
     static
     {

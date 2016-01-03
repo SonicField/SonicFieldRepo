@@ -87,7 +87,7 @@ def tremolate(vox_,rate,mag):
     vox=sf.Multiply(ev,vox)
     convol=sf.ReadFile("temp/swell.wav")
     voxW=reverberate(+vox ,convol[0])
-    vox=realise(mix(vox,voxW))
+    vox=mix(vox,voxW)
     m2=sf.Magnitude(+vox)
     vox=realise(sf.NumericVolume(vox,m1/m2))
     return vox

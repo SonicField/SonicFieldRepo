@@ -1,5 +1,5 @@
 import random
-from Parallel_Helpers import mix
+from Parallel_Helpers import mix,realise
 from organ.Algorithms import pitch_move,polish
 
 @sf_parallel
@@ -231,11 +231,16 @@ def sing_base(length,freq,z=1.0):
     freq=float(freq)
     while hc*freq<20000:
         hf=hc*freq
-        for c in range(1,3):
-            voxA.append(sf.NumericVolume(sf.PhasedSineWave(length,hf+random.random()*10.0,random.random()),(1.0/hc)**z))
-            voxA.append(sf.NumericVolume(sf.PhasedSineWave(length,hf-random.random()*10.0,random.random()),(1.0/hc)**z))
-            voxA.append(sf.NumericVolume(sf.PhasedSineWave(length,hf+random.random()*10.0,random.random()),(1.0/hc)**z))
-            voxA.append(sf.NumericVolume(sf.PhasedSineWave(length,hf-random.random()*10.0,random.random()),(1.0/hc)**z))
+        @sf_parallel
+        def inner():
+            voxI=[]
+            for c in range(1,3):
+                voxI.append(sf.NumericVolume(sf.PhasedSineWave(length,hf+random.random()*10.0,random.random()),(1.0/hc)**z))
+                voxI.append(sf.NumericVolume(sf.PhasedSineWave(length,hf-random.random()*10.0,random.random()),(1.0/hc)**z))
+                voxI.append(sf.NumericVolume(sf.PhasedSineWave(length,hf+random.random()*10.0,random.random()),(1.0/hc)**z))
+                voxI.append(sf.NumericVolume(sf.PhasedSineWave(length,hf-random.random()*10.0,random.random()),(1.0/hc)**z))
+            return mix(voxI)
+        voxA.append(inner())
         hc+=1
         
     vox=mix(voxA)
@@ -276,7 +281,6 @@ def stretched_bass(length,freq,z=1.0,s=1.0,d=0.0,at=0):
             ),
             vox
         )
-        vox=sf.Realise(vox)
         hf+=freq*s
         hc+=1
         

@@ -1,4 +1,4 @@
-from random import ranomd
+from random import random
 def simple_sawtooth(length,pitch):
     signals=[]
     v=1

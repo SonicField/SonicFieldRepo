@@ -272,11 +272,19 @@ public class SFData extends SFSignal implements Serializable
                 throw new RuntimeException(e);
             }
             this.length = l;
-            NotCollectedException nc = new NotCollectedException();
-            nc.fillInStackTrace();
-            pythonCreated = getPythonStack();
-            resourceTracker.put(this, new ResTracker(nc, pythonCreated));
-            javaCreated = nc;
+            if (SFConstants.TRACE)
+            {
+                NotCollectedException nc = new NotCollectedException();
+                nc.fillInStackTrace();
+                pythonCreated = getPythonStack();
+                resourceTracker.put(this, new ResTracker(nc, pythonCreated));
+                javaCreated = nc;
+            }
+            else
+            {
+                pythonCreated = null;
+                javaCreated = null;
+            }
         }
         catch (Throwable t)
         {
@@ -468,7 +476,7 @@ public class SFData extends SFSignal implements Serializable
         {
             System.err.println(Messages.getString("SFData.13")); //$NON-NLS-1$
             System.err.println(pythonCreated);
-            javaCreated.printStackTrace();
+            if (javaCreated != null) javaCreated.printStackTrace();
         }
         if (!saferMemory)
         {

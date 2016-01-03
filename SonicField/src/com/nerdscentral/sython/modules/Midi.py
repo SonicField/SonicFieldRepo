@@ -90,6 +90,16 @@ def just_intonation(key,base=modern_base):
 def equal_temperament(key,base=modern_base):
     key=float(key)
     return(sf.Semitone(0)**key) * base
+
+def unpack_midi(tup,beat,base=modern_base):
+            tickOn,tickOff,note,key,velocity = tup
+            at  = tickOn*beat
+            llen = (tickOff-tickOn)*beat
+            if key==0:
+                pitch=base
+            else:
+                pitch= (sf.Semitone(0)**float(key)) * base
+            return tickOn,tickOff,note,key,velocity,at,llen,pitch
     
 def interpret_midi_bombast(midi,beat):
     change=True

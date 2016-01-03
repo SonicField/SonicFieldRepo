@@ -8,15 +8,19 @@ from organ.Post   import *
 from organ.Voices import \
     vox_humana_femail_soprano,\
     upper_accent,\
-    trost_upper_accent,\
+    reed,\
     string,\
-    sweet_flute
+    sweet_flute,\
+    orchestral_oboe,\
+    shawm,\
+    bright_plucked_glass,\
+    plucked_glass
+    
     
 sf.SetSampleRate(96000)
 
 # Voices
 def femail_soprano(midi_in,beat,temperament,velocity):
-    c_log("##### Channel VC_SFR #####")
     midi=shorter_than_midi(midi_in,beat,512)
     midi=legato_midi(midi,beat,64)
     midi=damp_velocity(midi,70,0.75)
@@ -40,22 +44,47 @@ def femail_soprano(midi_in,beat,temperament,velocity):
     
     return left1+left2+left3+left4+left5,right1+right2+right3+right4+right5
 
-def test_signal(midi_in,beat,temperament,velocity):
-    notes1=play_midi(midi,beat,temperament,voice=string,velocity_correct=velocity*1.0,flat_env=False,quick_factor=1.0,pan=-1)
+def third_lead(midi_in,beat,temperament,velocity):
+    notes1=play_midi(midi_in,beat,temperament,voice=shawm,bend=False,velocity_correct=velocity*0.5,flat_env=False, quick_factor=0.75,pan=0.25)
+    notes2=play_midi(midi_in,beat,temperament,voice=shawm,bend=True ,velocity_correct=velocity*0.5,flat_env=False, quick_factor=0.50,pan=0.75,pitch_add=2.0)
+    notes3=play_midi(midi_in,beat,temperament,voice=sweet_flute,bend=True,velocity_correct=velocity*0.5,flat_env=False, quick_factor=1.0,pan=0.5,pitch_add=-2.0)
     left1,right1=post_process(notes1)
-    
-    return left1,right1
+    left2,right2=post_process(notes2)
+    left3,right3=post_process_tremolate(notes3,rate=3.4)
+    return mix(left1,left2,left3),mix(right1,right2,right3)
+
+def first_lead(midi_in,beat,temperament,velocity):
+    notes1=play_midi(midi_in,beat,temperament,voice=reed, bend=True,mellow=True,velocity_correct=velocity*1.0,flat_env=False, quick_factor=0.5,pan=-1)
+    notes2=play_midi(midi_in,beat,temperament,voice=sweet_flute,mellow=True,bend=True,velocity_correct=velocity*0.5,flat_env=False, quick_factor=1.0,pan=0.5,pitch_add=-2.0)
+    left1,right1=post_process(notes1)
+    left2,right2=post_process_tremolate(notes2,magnitude=1.0,rate=4.0)
+    return mix(left1,left2),mix(right1,right2)
+
+def second_lead(midi_in,beat,temperament,velocity):
+    midi=interpret_mid_istaccato(midi_in,beat,gap=64)
+    notes1=play_midi(midi,beat,temperament,voice=plucked_glass, bend=True,decay=1500,mellow=False,velocity_correct=velocity*1.0,flat_env=False, quick_factor=0.1,pan=0.80)
+    midi=scatter_midi(midi_in,beat,millis=128)
+    notes2=play_midi(midi,beat,temperament,voice=bright_plucked_glass, bend=True,decay=1250,mellow=True,velocity_correct=velocity*0.25,flat_env=True,quick_factor=0.1,pan=0.20,pitch_shift=2.0,pitch_add=1)
+    midi=scatter_midi(midi_in,beat,millis=128)
+    notes3=play_midi(midi,beat,temperament,voice=plucked_glass,decay=5000,bend=True,mellow=True,velocity_correct=velocity*0.2,flat_env=False,quick_factor=0.5,pan=0.50,pitch_add=-1)
+
+    left1,right1=post_process(notes1)
+    left2,right2=post_process(notes2)
+    left3,right3=post_process(notes3)
+    return mix(left1,left2,left3),mix(right1,right2,right3)
 
 notes  = []
 ########################################
 # Timing configuration and temperament #
 ########################################
 
-midis=read_midi_file("temp/input.mid")
+midis=read_midi_file("temp/pontchar.mid")
+#midis=read_midi_file("temp/input.mid")
 
 # Length of full piece
 #======================
-length      =     0.25
+length      =     2.5
+#length      =     0.15
 
 # Temperament
 #=============
@@ -76,8 +105,14 @@ beat        =  set_length_midi(midis,length)
 midis=repare_overlap_midis(midis)
 
 # Produce sounds
-midi = midis[1]
-left,right = test_signal(midi,beat,just_intonation,1.0)
+#left1,right1 = first_lead (midis[1],beat,just_intonation,1.0)
+left2,right2 = second_lead(midis[2],beat,just_intonation,1.0)
+#left3,right3 = third_lead (midis[5],beat,just_intonation,1.0)
+#left=mix(left1,left2,left3)
+#right=mix(right1,right2,right3)
+
+left=left2
+right=right2
 
 #######################
 # Final mix and write #
@@ -87,4 +122,4 @@ left,right=do_final_mix(left,right)
 
 sf.WriteSignal(+left, "temp/dry-l.sig")
 sf.WriteSignal(+right,"temp/dry-r.sig")
-sf.WriteFile32((left,right),"temp/temp.wav")
+sf.WriteFile32((left,right),"temp/temp-e.wav")

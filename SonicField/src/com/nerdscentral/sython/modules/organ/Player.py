@@ -42,11 +42,12 @@ def safe_env(sig,env):
 #  decay:    true/false if true causes steady decay of note throughout envelope.
 #  bend:     true/false if true then let the pitch of the note rise very
 #            slightly over the note
+#  mellow:   Use filtering to mellow the note, required for sub_bass to work
 ################################################################################
 
 @sf_parallel
 def sing(hint,pitch,lengthIn,v,vl,vr,voice,velocity_correct_,quick_factor,
-         sub_bass,flat_env,pure,raw_bass,decay,bend):
+         sub_bass,flat_env,pure,raw_bass,decay,bend,mellow):
     velocity_correct=velocity_correct_
     length=lengthIn
     tp=0
@@ -170,48 +171,48 @@ def sing(hint,pitch,lengthIn,v,vl,vr,voice,velocity_correct_,quick_factor,
             -mod
 
     sig=sf.FixSize(sig)
- 
-    if pitch<256:
-        if sub_bass:
-            if pitch < 128:
-                sig=sf.Mix(
-                    granular_reverberate(+sig,ratio=0.501 ,delay=256,density=32,length=256,stretch=1,vol=0.20),
-                    granular_reverberate(+sig,ratio=0.2495,delay=256,density=32,length=256,stretch=1,vol=0.10),
-                    sig
-                )
-            elif pitch < 192:
-                sig=sf.Mix(
-                    granular_reverberate(+sig,ratio=0.501,delay=256,density=32,length=256,stretch=1,vol=0.25),
-                    sig
-                )
-            else:
-                sig=sf.Mix(
-                    granular_reverberate(+sig,ratio=0.501,delay=256,density=32,length=256,stretch=1,vol=0.15),
-                    sig
-                )
-        if raw_bass:
-            sig=sf.BesselLowPass(sig,pitch*8.0,1)
-        else:        
-            sig=sf.BesselLowPass(sig,pitch*8.0,2)
-    if pitch<392:
-        sig=sf.BesselLowPass(sig,pitch*6.0,2)
-    elif pitch<512:
-        sig=sf.Mix(
-            sf.BesselLowPass(+sig,pitch*6.0, 2),
-            sf.BesselLowPass( sig,pitch*3.0, 2)
-        )                
-    elif pitch<640:
-        sig=sf.BesselLowPass(sig,pitch*3.5, 2)
-    elif pitch<1280:
-        sig=sf.Mix(
-            sf.BesselLowPass(+sig,pitch*3.5, 2),
-            sf.BesselLowPass( sig,pitch*5.0, 2)
-        )                
-    else:
-        sig=sf.Mix(
-            sf.BesselLowPass(+sig,pitch*5, 2),
-            sf.BesselLowPass( sig,5000,    1)
-        )
+    if mellow:
+        if pitch<256:
+            if sub_bass:
+                if pitch < 128:
+                    sig=sf.Mix(
+                        granular_reverberate(+sig,ratio=0.501 ,delay=256,density=32,length=256,stretch=1,vol=0.20),
+                        granular_reverberate(+sig,ratio=0.2495,delay=256,density=32,length=256,stretch=1,vol=0.10),
+                        sig
+                    )
+                elif pitch < 192:
+                    sig=sf.Mix(
+                        granular_reverberate(+sig,ratio=0.501,delay=256,density=32,length=256,stretch=1,vol=0.25),
+                        sig
+                    )
+                else:
+                    sig=sf.Mix(
+                        granular_reverberate(+sig,ratio=0.501,delay=256,density=32,length=256,stretch=1,vol=0.15),
+                        sig
+                    )
+            if raw_bass:
+                sig=sf.BesselLowPass(sig,pitch*8.0,1)
+            else:        
+                sig=sf.BesselLowPass(sig,pitch*8.0,2)
+        if pitch<392:
+            sig=sf.BesselLowPass(sig,pitch*6.0,2)
+        elif pitch<512:
+            sig=sf.Mix(
+                sf.BesselLowPass(+sig,pitch*6.0, 2),
+                sf.BesselLowPass( sig,pitch*3.0, 2)
+            )                
+        elif pitch<640:
+            sig=sf.BesselLowPass(sig,pitch*3.5, 2)
+        elif pitch<1280:
+            sig=sf.Mix(
+                sf.BesselLowPass(+sig,pitch*3.5, 2),
+                sf.BesselLowPass( sig,pitch*5.0, 2)
+            )                
+        else:
+            sig=sf.Mix(
+                sf.BesselLowPass(+sig,pitch*5, 2),
+                sf.BesselLowPass( sig,5000,    1)
+            )
 
     sig=sf.Multiply(sig,env)                     
     sig=sf.FixSize(sig)
@@ -262,6 +263,7 @@ def sing(hint,pitch,lengthIn,v,vl,vr,voice,velocity_correct_,quick_factor,
 #               to produce a celest effect
 # decay:        use decay - see sing
 # bend:         use bend - see sing
+# mellow:       use mellow - see sing
 #
 # midi channels are lists of tuples. The tuples have this structure:
 #
@@ -291,7 +293,8 @@ def play_midi(
         raw_bass            =False,
         pitch_add           =0.0,
         decay               =False,
-        bend                =False
+        bend                =False,
+        mellow              =False
     ):
     notes=[]
     c_log("Stop: ",voice)
@@ -401,7 +404,7 @@ def play_midi(
             hint+="E"
  
         c_log("H",hint,"P",pitch,"@",at,"L",length,"V",velocity,"VU",vCUse,"PC",pCorrect)
-        signals = sing(hint,pitch, length,velocity,lr,rl,voice,vCUse,quick_factor,sub_bass,flat_env,pure,raw_bass,decay,bend)
+        signals = sing(hint,pitch, length,velocity,lr,rl,voice,vCUse,quick_factor,sub_bass,flat_env,pure,raw_bass,decay,bend,mellow)
         dl=30*rl+1000
         dr=38*lr+1000
         notes.append((signals,at+dl,at+dr))

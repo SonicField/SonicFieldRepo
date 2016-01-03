@@ -7,6 +7,10 @@
 from organ.Generators import *
 from Parallel_Helpers import mix
 from organ.Algorithms import do_formant,excite
+from Signal_Generators import phasing_sawtooth,simple_sawtooth
+from Filters import byquad_filter
+from Reverberation import reverberate
+import math
 
 @sf_parallel
 def vox_humana_inner(length,freq,a,b,c,z1=1.0,z2=1.25):
@@ -241,14 +245,14 @@ def bright_plucked_glass(length,freq):
                 sf.FixSize(sf.MakeSawTooth(sf.SineWave(length,freq*0.75))),
                 sf.FixSize(sf.MakeSawTooth(sf.SineWave(length,freq**0.5)))
             ),
-            sf.SimpleShape((0,1.0),(16,-30),(16,-60),(length,-99))            
+            sf.SimpleShape((0,1.0),(16,-30),(32,-60),(length,-99))            
     )
     start=sf.Clean(start)
     sig=mix(sf.FixSize(sig),sf.FixSize(start))
     return sf.FixSize(sf.Clean(sig))
 
 @sf_parallel
-def trost_lead_biapason(length,freq):
+def trost_lead_diapason(length,freq):
     sig=mix(
         sf.Multiply(
             mix(
@@ -271,7 +275,7 @@ def trost_lead_biapason(length,freq):
     return pitch_move(sig)
 
 @sf_parallel
-def lead_biapason(length,freq):
+def lead_diapason(length,freq):
     sig=mix(
         sf.Pcnt65(sf.MakeTriangle(sf.PhasedSineWave(length,freq,random.random()))),
         sf.Pcnt25(sf.MakeTriangle(sf.PhasedSineWave(length,freq*2.0,random.random()))),
@@ -285,7 +289,7 @@ def lead_biapason(length,freq):
     return pitch_move(sig)
 
 @sf_parallel
-def second_biapason(length,freq):
+def second_diapason(length,freq):
     sig=mix(
         sf.MakeTriangle(sf.PhasedSineWave(length,freq,random.random())),
         sf.Pcnt25(sf.MakeTriangle(sf.PhasedSineWave(length,freq*2.0,random.random()))),
@@ -595,7 +599,7 @@ def mute_oboe(length,freq):
     
 @sf_parallel
 def orchestral_oboe(length,freq):
-    vox=makeSimpleBase(length,freq,0.25)
+    vox=make_simple_base(length,freq,0.25)
     vox=sf.Multiply(
         sf.NumericShape((0,0),(sf.Period(freq)/2.0,1),(length,1)),
         vox
@@ -729,6 +733,28 @@ def trumpet(length,freq):
     )
         
     sig=sf.FixSize(sig)
+    sig=polish(sig,freq)
+    return sf.FixSize(sig)
+
+@sf_parallel
+def shawm(length,freq):
+    s1=simple_sawtooth(length,freq)
+    if freq>1000:
+        s_freq=1000
+    else:
+        s_freq=freq*2.0
+    
+    sig=mix(
+        s1,
+        sf.Multiply(
+            clean_noise(length,s_freq),
+            sf.SimpleShape((0,-60),(64,-20),(128,-30),(length,-40))
+        )
+    )
+
+    sig=sf.FixSize(sig)
+    sig=byquad_filter('peak',sig,freq*3.0,1,6)
+    sig=byquad_filter('low', sig,freq*6.0,1,6)
     sig=polish(sig,freq)
     return sf.FixSize(sig)
 

@@ -11,6 +11,7 @@ from java.lang import Thread
 from java.util import Collections
 from java.util.concurrent import TimeUnit
 from java.util.concurrent.atomic import AtomicLong, AtomicBoolean
+from com.nerdscentral.audio import SFConstants
 
 """
 Work Stealing Lazy Task Scheduler By Dr Alexander J Turner
@@ -126,9 +127,17 @@ SF_STARTED        = System.currentTimeMillis()
 
 # Causes scheduler operation to be logged
 TRACE             = str(System.getProperty("sython.trace")).lower()=="true"
+SFConstants.TRACE=TRACE
 
 # Removes all parallel execution so debugging is easier.
-LINEAR            = str(System.getProperty("sython.linear")).lower()=="true"
+SF_LINEAR         = str(System.getProperty("sython.linear")).lower()=="true"
+
+SF_DO_STEALING    = True
+
+if TRACE:
+    SF_LINEAR_LIMIT   = 1024
+else:
+    SF_LINEAR_LIMIT   = 1024*1024
 
 # A thread pool used for the executors 
 SF_POOL    = Executors.newCachedThreadPool()
@@ -242,6 +251,8 @@ SF_TASK_QUEUE=sf_taskQueue()
 class super_future(Future):
 
     def steal(self,nap=False):
+        if not SF_DO_STEALING:
+            return True
         # Iterate over the global set of pending super futures
         # Note that the locking logic in the super futures ensure 
         # no double execute.
@@ -363,11 +374,17 @@ class super_future(Future):
         self.mutex.unlock()
         if s:
             c_log('Submitted already',self)
-        queue=SF_TASK_QUEUE.get()
-        if queue.size()==0:
+        # drain the thread local queue before submitting so 
+        # tasks cannot get recursively submitted
+        queue=[]
+        t_queue=SF_TASK_QUEUE.get()
+        if t_queue.size()==0:
             c_log('Empty queue',self)     
         while len(queue):
+            queue.append(t_queue.pop())
+        while len(queue):
             queue.pop().submit()
+            
         # If this super_future is being submitted on a different thread to the
         # one which created it then it will not be submitted by submitting the
         # the thread local queue. However, we make the assumption that the 
@@ -413,17 +430,19 @@ class super_future(Future):
         # Note that this loop is where deadlock can happen because if a ring
         # of tasks forms this will loop/sleep for ever.
         #
+        x=0
         while not self.future.isDone():
             nap=self.steal(nap)
             # If the thread would block again or we are not able to steal as
             # nothing pending then we back off. 
             if nap==True:
-                if back==1:
+                if x%10==100:
                     c_log("Non Pending")
                 Thread.sleep(back)
                 back+=1
                 if back>100:
                     back=100
+            x+=1
         # To get here we know this get will not block
         r = self.future.get()
         c_log("Wake")
@@ -480,7 +499,7 @@ class sf_parallel(object):
         def closure():
             return self.func(*args, **kwargs)
         c_log('Parallel',self.func,closure) 
-        if LINEAR:
+        if SF_PENDING.size()> SF_LINEAR_LIMIT or SF_LINEAR:
             return closure()
         else:
             return super_future(closure)
