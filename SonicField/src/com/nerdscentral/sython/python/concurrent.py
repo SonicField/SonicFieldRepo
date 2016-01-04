@@ -135,7 +135,11 @@ SF_LINEAR         = str(System.getProperty("sython.linear")).lower()=="true"
 # TODO - make these configurable from the command line
 
 # Do we work steal?
-SF_DO_STEALING    = True
+
+if System.getProperty("sython.steal") is None:
+    SF_DO_STEALING = True
+else:
+    SF_DO_STEALING = str(System.getProperty("sython.steal")).lower()=="true"
 
 # Sets the maximum number of jobs queued for parallel execution before
 # starting linear execution of new jobs
@@ -158,7 +162,7 @@ SF_POOL    = Executors.newCachedThreadPool()
 # efficient way. Note that a task being in this set does not guarantee it is
 # not being executed. A locking flag on the 'superFuture' task management
 # objects disambiguates this to prevent double execution. 
-SF_PENDING = Collections.newSetFromMap(ConcurrentHashMap(SF_MAX_CONCURRENT*128,0.75,SF_MAX_CONCURRENT))
+SF_PENDING   = Collections.newSetFromMap(ConcurrentHashMap(SF_MAX_CONCURRENT*128,0.75,SF_MAX_CONCURRENT+1))
 
 # EXECUTION
 # =========
@@ -166,14 +170,14 @@ SF_PENDING = Collections.newSetFromMap(ConcurrentHashMap(SF_MAX_CONCURRENT*128,0
 # Force 'nice' interleaving when logging from multiple threads
 SF_LOG_LOCK=ReentrantLock()
 print "Thread\tQueue\tActive\tTime\tMessage..."
-def c_log(*args):
+def d_log(*args):
     SF_LOG_LOCK.lock()
     print "\t".join(str(x) for x in [Thread.currentThread().getId(),SF_PENDING.size(),SF_POOL.getActiveCount(),(System.currentTimeMillis()-SF_STARTED)] + list(args))
     SF_LOG_LOCK.unlock()
 
 # Define the logger method as more than pass only is tracing is turned on
 if TRACE:
-    c_log=c_log
+    c_log=d_log
 else:
     def c_log(*args):
         pass
@@ -431,7 +435,7 @@ class super_future(Future):
         t_queue=SF_TASK_QUEUE.get()
         if t_queue.size()==0:
             c_log('Empty queue',self)     
-        while len(queue):
+        while len(t_queue):
             queue.append(t_queue.pop())
         while len(queue):
             queue.pop().submit()
@@ -457,7 +461,7 @@ class super_future(Future):
         # Submit the current thread local task queue
         self.submitAll()
         c_log( "Submitted All",self)
-        
+
         # This is where the work stealing logic starts
         # isDone() tells us if the thread would block if get() were called on
         # the future. We will try to work steal if the thread would block so as
@@ -492,8 +496,11 @@ class super_future(Future):
                 Thread.sleep(back)
                 back+=1
                 if back>100:
+                    c_log('Waiting on',self.future)
                     back=100
+
             x+=1
+            
         # To get here we know this get will not block
         r = self.future.get()
         c_log("Wake")

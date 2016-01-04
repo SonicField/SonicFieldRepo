@@ -18,7 +18,7 @@ from organ.Voices import \
     stopped_reed as clarinet,\
     clean_basson
     
-sf.SetSampleRate(60000)
+sf.SetSampleRate(96000)
 
 def third_lead(midi_in,beat,temperament,velocity):
     notes1=play_midi(midi_in,beat,temperament,voice=shawm,bend=False,velocity_correct=velocity*0.5,flat_env=False, quick_factor=0.75,pan=0.25)
@@ -107,6 +107,7 @@ left,right=do_final_mix(left,right)
 sf.WriteSignal(+left, "temp/dry-l-a.sig")
 sf.WriteSignal(+right,"temp/dry-r-s.sig")
 sf.WriteFile32((left,right),"temp/temp-a.wav")
+'''
 
 
 left,right = first_harmony(midis[3],beat,just_intonation,1.0)
@@ -115,7 +116,6 @@ left,right=do_final_mix(left,right)
 sf.WriteSignal(+left, "temp/dry-l-b.sig")
 sf.WriteSignal(+right,"temp/dry-r-b.sig")
 sf.WriteFile32((left,right),"temp/temp-b.wav")
-'''
 left,right = first_bass(midis[4],beat,just_intonation,1.0)
 left,right=do_final_mix(left,right)
 
