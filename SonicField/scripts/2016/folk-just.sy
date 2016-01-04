@@ -14,35 +14,11 @@ from organ.Voices import \
     orchestral_oboe,\
     shawm,\
     bright_plucked_glass,\
-    plucked_glass
+    plucked_glass,\
+    stopped_reed as clarinet,\
+    clean_basson
     
-    
-sf.SetSampleRate(96000)
-
-# Voices
-def femail_soprano(midi_in,beat,temperament,velocity):
-    midi=shorter_than_midi(midi_in,beat,512)
-    midi=legato_midi(midi,beat,64)
-    midi=damp_velocity(midi,70,0.75)
-    notes1=play_midi(midi,beat,temperament,voice=vox_humana_femail_soprano,velocity_correct=velocity*1.0,flat_env=False,quick_factor=1.5,pan=0.5)
-    midi=delay_midi(midi,beat,128)
-    notes2=play_midi(midi,beat,temperament,voice=vox_humana_femail_soprano,velocity_correct=velocity*0.1,flat_env=False,quick_factor=1.5,pan=0.6,pitch_add=2.0)
-    midi=long_as_midi(midi_in,beat,512)
-    midi=legato_midi(midi,beat,128)
-    midi=damp_velocity(midi,68,0.86)
-    midi=damp_velocity(midi,80,0.75)
-    notes3=play_midi(midi,beat,temperament,voice=vox_humana_femail_soprano,velocity_correct=velocity*0.5,flat_env=False,quick_factor=2.5,pan=0.25)
-    notes4=play_midi(midi,beat,temperament,voice=vox_humana_femail_soprano,velocity_correct=velocity*0.5,flat_env=False,quick_factor=2.5,pan=0.75)
-    midi=delay_midi(midi,beat,256)
-    notes5=play_midi(midi,beat,temperament,voice=vox_humana_femail_soprano,velocity_correct=velocity*0.1,flat_env=False,quick_factor=2.5,pan=0.5, pitch_add=2.0)
-
-    left1,right1=post_process(notes1)
-    left2,right2=post_process_echo(notes2)
-    left3,right3=post_process_echo(notes3)
-    left4,right4=post_process_echo(notes4)
-    left5,right5=post_process_echo(notes5)
-    
-    return left1+left2+left3+left4+left5,right1+right2+right3+right4+right5
+sf.SetSampleRate(60000)
 
 def third_lead(midi_in,beat,temperament,velocity):
     notes1=play_midi(midi_in,beat,temperament,voice=shawm,bend=False,velocity_correct=velocity*0.5,flat_env=False, quick_factor=0.75,pan=0.25)
@@ -73,18 +49,33 @@ def second_lead(midi_in,beat,temperament,velocity):
     left3,right3=post_process(notes3)
     return mix(left1,left2,left3),mix(right1,right2,right3)
 
+def first_bass(midi_in,beat,temperament,velocity):
+    notes1=play_midi(midi_in,beat,temperament,voice=clarinet,bend=True,mellow=True,velocity_correct=velocity*1.0,flat_env=False, quick_factor=1.5,pan=0.4)
+    notes2=play_midi(midi_in,beat,temperament,voice=clarinet,bend=True,mellow=True,velocity_correct=velocity*1.0,flat_env=False, quick_factor=1.5,pan=0.6)
+    left1,right1 = post_process_tremolate(notes1,magnitude=0.20,rate=3.0)
+    left2,right2 = post_process_tremolate(notes2,magnitude=0.15,rate=2.5)
+    return mix(left1,left2),mix(right1,right2)
+    
+def first_harmony(midi_in,beat,temperament,velocity):
+    notes1=play_midi(midi_in,beat,temperament,voice=clean_basson,bend=True,mellow=False,velocity_correct=velocity*1.0,flat_env=False, quick_factor=1.0,pan=-1)
+    notes2=play_midi(midi_in,beat,temperament,voice=upper_accent,bend=True,mellow=False,velocity_correct=velocity*0.1,flat_env=False, quick_factor=1.0,pan=-1,pitch_shift=4.0)
+
+    left1,right1 = post_process(notes1)
+    left2,right2 = post_process(notes2)
+    return mix(left1,left2),mix(right1,right2)
+
 notes  = []
 ########################################
 # Timing configuration and temperament #
 ########################################
 
 midis=read_midi_file("temp/pontchar.mid")
-#midis=read_midi_file("temp/input.mid")
+#midis=read_midi_file("temp/test-b.mid")
 
 # Length of full piece
 #======================
-length      =     2.5
-#length      =     0.15
+length      =     2.75
+#length      =    0.15
 
 # Temperament
 #=============
@@ -105,21 +96,29 @@ beat        =  set_length_midi(midis,length)
 midis=repare_overlap_midis(midis)
 
 # Produce sounds
-#left1,right1 = first_lead (midis[1],beat,just_intonation,1.0)
+'''
+left1,right1 = first_lead (midis[1],beat,just_intonation,1.0)
 left2,right2 = second_lead(midis[2],beat,just_intonation,1.0)
-#left3,right3 = third_lead (midis[5],beat,just_intonation,1.0)
-#left=mix(left1,left2,left3)
-#right=mix(right1,right2,right3)
-
-left=left2
-right=right2
-
-#######################
-# Final mix and write #
-#######################
-c_log("Mixing")
+left3,right3 = third_lead (midis[5],beat,just_intonation,1.0)
+left=mix(left1,left2,left3)
+right=mix(right1,right2,right3)
 left,right=do_final_mix(left,right)
 
-sf.WriteSignal(+left, "temp/dry-l.sig")
-sf.WriteSignal(+right,"temp/dry-r.sig")
-sf.WriteFile32((left,right),"temp/temp-e.wav")
+sf.WriteSignal(+left, "temp/dry-l-a.sig")
+sf.WriteSignal(+right,"temp/dry-r-s.sig")
+sf.WriteFile32((left,right),"temp/temp-a.wav")
+
+
+left,right = first_harmony(midis[3],beat,just_intonation,1.0)
+left,right=do_final_mix(left,right)
+
+sf.WriteSignal(+left, "temp/dry-l-b.sig")
+sf.WriteSignal(+right,"temp/dry-r-b.sig")
+sf.WriteFile32((left,right),"temp/temp-b.wav")
+'''
+left,right = first_bass(midis[4],beat,just_intonation,1.0)
+left,right=do_final_mix(left,right)
+
+sf.WriteSignal(+left, "temp/dry-l-c.sig")
+sf.WriteSignal(+right,"temp/dry-r-c.sig")
+sf.WriteFile32((left,right),"temp/temp-c.wav")

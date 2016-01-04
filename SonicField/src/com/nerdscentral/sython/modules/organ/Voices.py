@@ -399,11 +399,11 @@ def single_bombard(length,freq):
 @sf_parallel
 def ophicleide(length,freq):
     b=mix(
-            [sf.Pcnt10(ophicleidePulse(length,freq*0.25-1)),0],
-            [sf.Pcnt20(ophicleidePulse(length,freq)),15],
-            [sf.Pcnt20(ophicleidePulse(length,freq)),10],
-            [sf.Pcnt20(ophicleidePulse(length,freq*2.0)),5],
-            [sf.Pcnt20(ophicleidePulse(length,freq*3.0)),0]
+            [sf.Pcnt10(ophicleide_pulse(length,freq*0.25-1)),0],
+            [sf.Pcnt20(ophicleide_pulse(length,freq)),15],
+            [sf.Pcnt20(ophicleide_pulse(length,freq)),10],
+            [sf.Pcnt20(ophicleide_pulse(length,freq*2.0)),5],
+            [sf.Pcnt20(ophicleide_pulse(length,freq*3.0)),0]
     )
     b=mix(
         sf.Power(+b,2.0),
@@ -515,6 +515,48 @@ def warm_bass(length,freq):
         q=freq*4.0
     sig=sf.BesselLowPass(sig,q,1)
     return pitch_move(sig)
+
+@sf_parallel
+def clean_basson(length,freq):
+    sig=sf.FixSize(
+        sf.Power(
+            sf.Clean(
+                mix(
+                    nice_saw(length,freq),
+                    sf.PhasedSineWave(length,freq,random.random())
+                )
+            )
+            ,
+            1.5
+        )
+    )
+    sig=polish(sig,freq)
+    sig=sf.FixSize(sf.Power(sig,1.5))
+    sig=polish(sig,freq)
+    sig=sf.FixSize(sf.Power(sig,1.5))
+    sig=polish(sig,freq)
+    sig=sf.FixSize(sig)
+      
+    sig=sf.RBJPeaking(sig,freq*5,0.5,5)
+    sig=sf.RBJPeaking(sig,freq*7,1,5)
+    sig=sf.RBJNotch  (sig,freq*2,0.5,1)
+    sig=sf.Clean(sig)
+    
+    sig=mix(
+        sf.FixSize(sig),
+        sf.ButterworthLowPass (
+            sf.Multiply(
+                clean_noise(length,freq*9.0),
+                sf.SimpleShape((0,-60),(64,-32),(96,-60),(length,-60))
+            ),
+            freq*9,
+            4
+        )
+    )
+
+    sig=sf.ButterworthLowPass (sig,freq*9,2)
+    sig=polish(sig,freq)
+    return sf.FixSize(sig)
 
 @sf_parallel
 def simple_oboe(length,freq):

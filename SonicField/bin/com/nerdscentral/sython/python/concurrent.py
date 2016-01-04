@@ -132,12 +132,23 @@ SFConstants.TRACE=TRACE
 # Removes all parallel execution so debugging is easier.
 SF_LINEAR         = str(System.getProperty("sython.linear")).lower()=="true"
 
+# TODO - make these configurable from the command line
+
+# Do we work steal?
 SF_DO_STEALING    = True
 
-if TRACE:
-    SF_LINEAR_LIMIT   = 1024
+# Sets the maximum number of jobs queued for parallel execution before
+# starting linear execution of new jobs
+if System.getProperty("sython.linear_limit") is None:
+    if TRACE:
+        SF_LINEAR_LIMIT   = 1024
+    else:
+        SF_LINEAR_LIMIT   = 1024*1024
 else:
-    SF_LINEAR_LIMIT   = 1024*1024
+    SF_LINEAR_LIMIT = int(System.getProperty("sython.linear_limit"))
+
+# Maximum recursion depth of stealing
+SF_MAX_STEAL          = 64
 
 # A thread pool used for the executors 
 SF_POOL    = Executors.newCachedThreadPool()
@@ -241,6 +252,41 @@ class sf_taskQueue(ThreadLocal):
     def initialValue(self):
         return sf_safeQueue()
 
+# Measures the depth of recursion of the stealing system so that we do not
+# blow out the stack.
+class sf_depth_count:
+    def __init__(self):
+        self.count=0
+        
+    def incr(self):
+        self.count+=1
+        return self.count
+    
+    def decr(self):
+        self.count-=1
+        return self.count
+        
+    def value(self):
+        return self.count
+
+    class sf_steal_depth(ThreadLocal):
+        def initialValue(self):
+            return sf_depth_count()
+
+    @staticmethod
+    def new_counter():
+        return sf_depth_count.sf_steal_depth()
+
+# Keeps track of the level of recursion of stealing for the current 
+# thread to protect against stack overflow
+SF_STEAL_RECURSION = sf_depth_count.new_counter()
+
+def sf_check_steal_overflow():
+    return SF_STEAL_RECURSION.get().incr()<=SF_MAX_STEAL
+
+def sf_release_steal_overflow():
+    SF_STEAL_RECURSION.get().decr()
+
 # The thread local queue of tasks which have not yet been submitted for
 # execution
 SF_TASK_QUEUE=sf_taskQueue()
@@ -252,6 +298,10 @@ class super_future(Future):
 
     def steal(self,nap=False):
         if not SF_DO_STEALING:
+            return True
+        if not sf_check_steal_overflow():
+            sf_release_steal_overflow()
+            c_log("Steal Overflowed")
             return True
         # Iterate over the global set of pending super futures
         # Note that the locking logic in the super futures ensure 
@@ -282,6 +332,7 @@ class super_future(Future):
                 c_log("Failed to Steal",str(e))
                 # Just raise and give up
                 raise
+        sf_release_steal_overflow()
         return nap
 
     # - Wrap the closure (toDo) which is the actual task (work to do)
