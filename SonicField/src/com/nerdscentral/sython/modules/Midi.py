@@ -270,7 +270,7 @@ def damp_velocity(midi,key=80,amount=0.75):
         index+=1
     return midiOut
 
-def legato_midi(midi,beat,millis):
+def min_length_midi(midi,beat,millis):
     c_log("Interpretation Pass")
     endAt=len(midi)
     index=0
@@ -278,6 +278,24 @@ def legato_midi(midi,beat,millis):
     while index<endAt:
         ttickOn,ttickOff,tnote,tkey,tvelocity=midi[index]
         millis=float(millis)
+        millis/=float(beat)
+        l=float(ttickOff-ttickOn)
+        if l<millis:
+            midiOut.append([ttickOn,ttickOn+millis,tnote,tkey,tvelocity])
+        else:
+            midiOut.append([ttickOn,ttickOn+millis,tnote,tkey,tvelocity])
+        # iterate the loop
+        index+=1
+    return midiOut
+
+def legato_midi(midi,beat,millis_in):
+    c_log("Interpretation Pass")
+    endAt=len(midi)
+    index=0
+    midiOut=[]
+    while index<endAt:
+        ttickOn,ttickOff,tnote,tkey,tvelocity=midi[index]
+        millis=float(millis_in)
         millis/=float(beat)
         l=float(ttickOff-ttickOn)
         if l<millis:

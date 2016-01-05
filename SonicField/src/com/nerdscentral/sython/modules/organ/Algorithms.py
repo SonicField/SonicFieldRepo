@@ -58,40 +58,42 @@ def do_formant(sig,f1,f2,f3,freq,intensity=4):
     return x
     
 @sf_parallel
-def echo_division(vox_):
-    vox=vox_
-    m1=sf.Magnitude(+vox)
+def echo_division(sig_):
+    sig=sig_
+    m1=sf.Magnitude(+sig)
     if m1==0.0:
-        return vox
-    length=sf.Length(+vox)
+        return sig
+    length=sf.Length(+sig)
     convol=sf.ReadFile("temp/swell.wav")
-    voxW=reverberate(+vox ,convol[0])
-    vox=realise(vox,voxW)
-    c_log("Reference count:",vox.getReferenceCount())
-    m2=sf.Magnitude(+vox)
-    vox=realise(sf.NumericVolume(vox,m1/m2))
-    return vox
+    sigW=reverberate(+sig ,convol[0])
+    sig=realise(sig,sigW)
+    c_log("Reference count:",sig.getReferenceCount())
+    m2=sf.Magnitude(+sig)
+    sig=realise(sf.NumericVolume(sig,m1/m2))
+    return sig
   
 @sf_parallel
-def tremolate(vox_,rate,mag):
-    vox=vox_
-    m1=sf.Magnitude(+vox)
+def tremolate(sig_,rate,mag):
+    sig=sig_
+    m1=sf.Magnitude(+sig)
     if m1==0.0:
-        return vox
-    length=sf.Length(+vox)
+        return sig
+    length=sf.Length(+sig)
     ev=sf.NumericVolume(sf.MakeTriangle(sf.PhasedSineWave(length+64,rate,random.random())),mag)
     ev=sf.Cut(0,length,ev)
     fv=sf.Pcnt2(+ev)
     ev=sf.DirectMix(1.0,ev)
-    vox=sf.FrequencyModulate(vox,fv)
-    vox=sf.Multiply(ev,vox)
+    sig=sf.FrequencyModulate(sig,fv)
+    sig=sf.Multiply(ev,sig)
     convol=sf.ReadFile("temp/swell.wav")
-    voxW=reverberate(+vox ,convol[0])
-    vox=mix(vox,voxW)
-    m2=sf.Magnitude(+vox)
-    vox=realise(sf.NumericVolume(vox,m1/m2))
-    return vox
+    sigW=reverberate(+sig ,convol[0])
+    sig=mix(sig,sigW)
+    m2=sf.Magnitude(+sig)
+    sig=realise(sf.NumericVolume(sig,m1/m2))
+    return sig
 
+# Attempts to remove nyquist aliasing which can develope
+# below the frequency of the note being generated
 @sf_parallel
 def polish(sig,freq):
     if freq > 128:
@@ -118,3 +120,27 @@ def pitch_move(sig):
     else:
         return sig
     return sf.Clean(sf.Resample(move,sig))
+
+@sf_parallel
+def create_vibrato(sig,length,longer_than=0.0,rate=4.5,at=None,depth=0.2,pitch_depth=0.1):
+    if length<longer_than:
+        return sig
+        
+    if at is None:
+        at=length*0.5
+
+    ev=sf.NumericVolume(
+        sf.SineWave(
+            length,
+            rate
+        ),
+        depth
+    )
+    ev=sf.Multiply(
+        ev,
+        sf.NumericShape((0,0),(length*0.5,1),(length,1))
+    )
+    fv=sf.NumericVolume(+ev,pitch_depth)
+    ev=sf.DirectMix(1.0,ev)
+    sig=sf.FrequencyModulate(sig,fv)
+    return sf.Multiply(ev,sig)

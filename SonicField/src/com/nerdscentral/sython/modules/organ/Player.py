@@ -14,12 +14,12 @@ def safe_env(sig,env):
     op=0
     for p,m in env:
         if p-op<16 and p>0:
-            c_log("Warning: envelope to tight: ", env)
+            d_log("Warning: envelope to tight: ", env)
             p=op+16
         op=p
         ne.append([p,m])
     if p>length:
-        c_log("***WARNING: envelop failure *** ",length," -> ",p," diff:", p-length)
+        d_log("***WARNING: envelop failure *** ",length," -> ",p," diff:", p-length)
     return sf.NumericShape(ne)
          
 ################################################################################
@@ -297,7 +297,7 @@ def play_midi(
         mellow              =False
     ):
     notes=[]
-    c_log("Stop: ",voice)
+    d_log("Stop: ",voice)
     for index in range(0,len(midi)):
         if index>0:
             prev=midi[index-1]
@@ -403,7 +403,7 @@ def play_midi(
         else:
             hint+="E"
  
-        c_log("H",hint,"P",pitch,"@",at,"L",length,"V",velocity,"VU",vCUse,"PC",pCorrect)
+        d_log("H",hint,"P",pitch,"@",at,"L",length,"V",velocity,"VU",vCUse,"PC",pCorrect)
         signals = sing(hint,pitch, length,velocity,lr,rl,voice,vCUse,quick_factor,sub_bass,flat_env,pure,raw_bass,decay,bend,mellow)
         dl=30*rl+1000
         dr=38*lr+1000

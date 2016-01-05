@@ -581,4 +581,5 @@ def sf_shutdown():
     shutdown_and_await_termination(SF_POOL, 5)
     
 __builtin__.c_log=c_log
+__builtin__.d_log=d_log
 __builtin__.sf_parallel=sf_parallel

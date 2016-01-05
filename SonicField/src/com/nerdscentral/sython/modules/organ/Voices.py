@@ -6,8 +6,8 @@
 
 from organ.Generators import *
 from Parallel_Helpers import mix
-from organ.Algorithms import do_formant,excite
-from Signal_Generators import phasing_sawtooth,simple_sawtooth
+from organ.Algorithms import do_formant,excite,create_vibrato
+from Signal_Generators import phasing_sawtooth,simple_sawtooth,phasing_triangle
 from Filters import byquad_filter
 from Reverberation import reverberate
 import math
@@ -20,21 +20,7 @@ def vox_humana_inner(length,freq,a,b,c,z1=1.0,z2=1.25):
     )
     length=sf.Length(+vox)
     vox=sf.FixSize(polish(vox,freq)) 
-    ev=sf.Pcnt20(
-        sf.SineWave(
-            length,
-            4.5
-        )
-    )
-    ev=sf.Multiply(
-        ev,
-        sf.NumericShape((0,0),(length*0.5,1),(length,1))
-    )
-    fv=sf.Pcnt12(+ev)
-    ev=sf.DirectMix(1.0,ev)
-    vox=sf.FrequencyModulate(vox,fv)
-    vox=polish(vox,freq)
-    vox=sf.Multiply(ev,vox)
+    vox=create_vibrato(vox,length,longer_than=0.25,rate=4.5)
     vox=do_formant(vox,a,b,c,freq)
     vox=polish(vox,freq)        
     vox=excite(vox,0.2,2.0)
@@ -517,48 +503,6 @@ def warm_bass(length,freq):
     return pitch_move(sig)
 
 @sf_parallel
-def clean_basson(length,freq):
-    sig=sf.FixSize(
-        sf.Power(
-            sf.Clean(
-                mix(
-                    nice_saw(length,freq),
-                    sf.PhasedSineWave(length,freq,random.random())
-                )
-            )
-            ,
-            1.5
-        )
-    )
-    sig=polish(sig,freq)
-    sig=sf.FixSize(sf.Power(sig,1.5))
-    sig=polish(sig,freq)
-    sig=sf.FixSize(sf.Power(sig,1.5))
-    sig=polish(sig,freq)
-    sig=sf.FixSize(sig)
-      
-    sig=sf.RBJPeaking(sig,freq*5,0.5,5)
-    sig=sf.RBJPeaking(sig,freq*7,1,5)
-    sig=sf.RBJNotch  (sig,freq*2,0.5,1)
-    sig=sf.Clean(sig)
-    
-    sig=mix(
-        sf.FixSize(sig),
-        sf.ButterworthLowPass (
-            sf.Multiply(
-                clean_noise(length,freq*9.0),
-                sf.SimpleShape((0,-60),(64,-32),(96,-60),(length,-60))
-            ),
-            freq*9,
-            4
-        )
-    )
-
-    sig=sf.ButterworthLowPass (sig,freq*9,2)
-    sig=polish(sig,freq)
-    return sf.FixSize(sig)
-
-@sf_parallel
 def simple_oboe(length,freq):
     sig=sf.FixSize(
         sf.Power(
@@ -801,5 +745,138 @@ def shawm(length,freq):
     return sf.FixSize(sig)
 
 ###############################################################################
-# END VOICES
+# END BAROQUE VOICES
 ###############################################################################
+
+###############################################################################
+# START FOLK VOICES
+###############################################################################
+
+@sf_parallel
+def folk_basson(length,freq):
+    print length
+    sig=sf.FixSize(
+        sf.Power(
+            phasing_sawtooth(length,freq)
+            ,
+            1.5
+        )
+    )
+    sig=polish(sig,freq)
+    sig=sf.FixSize(sf.Power(sig,1.5))
+    sig=polish(sig,freq)
+    sig=sf.FixSize(sf.Power(sig,1.5))
+    sig=polish(sig,freq)
+    sig=sf.FixSize(sig)
+      
+    sig=sf.RBJPeaking(sig,freq*5,0.5,5)
+    sig=sf.RBJPeaking(sig,freq*7,1,5)
+    sig=sf.RBJNotch  (sig,freq*2,0.5,1)
+    sig=sf.Clean(sig)
+    
+    sig=mix(
+        sf.FixSize(sig),
+        sf.ButterworthLowPass (
+            sf.Multiply(
+                sf.MakeSquare(sf.SineWave(length,freq)),
+                sf.SimpleShape((0,-60),(64,-32),(96,-60),(length,-60))
+            ),
+            freq*9,
+            4
+        )
+    )
+
+    sig=sf.ButterworthLowPass (sig,freq*9,2)
+    sig=polish(sig,freq)
+    return sf.FixSize(sig)
+
+@sf_parallel
+def folk_flute(length,freq):
+    sig=mix(
+        byquad_filter(
+            'low',
+            sf.Mix(
+                phasing_triangle(length,freq),
+                sf.Pcnt1(sf.MakeSquare(sf.SineWave(length,freq*0.9)))
+            ),
+            freq*2.0,
+            2
+        ),
+        sf.Multiply(
+            byquad_filter(
+                'peak',
+                clean_noise(length,freq*0.5),
+                freq,
+                0.5,
+                16
+            ),
+            sf.SimpleShape((0,-60),(64,-28),(128,-40),(length,-40))
+        )
+    )
+    sig=create_vibrato(
+        sig,length,
+        longer_than=0.5,
+        rate=2.5,
+        at=0.45,
+        depth=0.5,
+        pitch_depth=0.02
+    )
+    return sf.FixSize(polish(sig,freq))
+
+@sf_parallel
+def tuned_wind(length,freq):
+
+    sigs=[]
+    for i in range(1,3):
+        sig=byquad_filter(
+            'peak',
+            byquad_filter(
+                'peak',
+                sf.Mix(
+                    clean_noise(length,freq),
+                    sf.Pcnt10(sf.SineWave(length,freq))
+                ),
+                1.0,
+                64
+            ),
+            freq,
+            0.1,
+            64
+        )
+        
+        sig=byquad_filter(
+            'peak',
+            sig,
+            freq,
+            1.0,
+            128
+        )
+    
+        sig=sf.FixSize(excite(sig,1.0,2.0))
+        sig=sf.FixSize(sf.Saturate(sf.NumericVolume(sig,2.0)))
+        sig=create_vibrato(
+            sig,length,
+            longer_than=0.5,
+            rate=2.5,
+            at=0.45,
+            depth=0.5,
+            pitch_depth=0.02
+        )
+        
+        sigs.append(sig)
+    sig=mix(sigs)
+    return sf.FixSize(polish(sig,freq))
+
+@sf_parallel
+def folk_clarinet(length,freq):
+    s1=stopped_pulse(length,freq*1.000)
+    sig=mix(
+        s1,
+        sf.Multiply(
+            nice_saw(length,freq*0.5),
+            sf.SimpleShape((0,-32),(64,-16),(128,-99),(length,-99))
+        )
+    )
+    sig=polish(sig,freq)
+    sig=polish(sf.Saturate(sf.FixSize(sig)),freq)
+    return sf.FixSize(sig)   
