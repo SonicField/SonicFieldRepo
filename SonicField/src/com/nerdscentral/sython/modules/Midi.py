@@ -38,7 +38,7 @@ def key_from_cents(base,key,cents,offset=False):
 def werckmeisterIII(key,base=baroque_base):
     #Pitch:  C   C#     D       Eb      E       F       F#      G       G#      A       A#      B      
     cents=[  0,  90.225,192.18, 294.135,390.225,498.045,588.27, 696.09, 792.18, 888.27, 996.09, 1092.18]
-    return key_from_cents(key,cents)
+    return key_from_cents(base,key,cents)
 
 ################################################################################
 #
@@ -107,7 +107,7 @@ def interpret_midi_bombast(midi,beat):
         midi=sorted(midi, key=lambda tup: tup[0])
         midi=sorted(midi, key=lambda tup: tup[3])
         change=False
-        c_log("Interpretation Pass")
+        d_log("Interpretation Pass")
         endAt=len(midi)-1
         index=0
         midiOut=[]
@@ -126,7 +126,7 @@ def interpret_midi_bombast(midi,beat):
                     if nLen>256 and tPitch<256:
                         finished=True
                         midiOut.append([ttickOn,ntickOff,tnote,tkey,tvelocity])
-                        c_log("Merging: ",this," & ",next)
+                        d_log("Merging: ",this," & ",next)
                         index+=1
                         change=True
     
@@ -141,7 +141,7 @@ def interpret_midi_bombast(midi,beat):
     return midi
 
 def repare_overlap_midi(midi,blip=5):
-    c_log("Interpretation Pass")
+    d_log("Interpretation Pass")
     mute=True
     while mute:
         endAt=len(midi)-1
@@ -150,7 +150,7 @@ def repare_overlap_midi(midi,blip=5):
         midiOut=[]
         this=[]
         next=[]
-        c_log("Demerge pass:",endAt)
+        d_log("Demerge pass:",endAt)
         midi=sorted(midi, key=lambda tup: tup[0])
         midi=sorted(midi, key=lambda tup: tup[3])
         while index<endAt:
@@ -163,13 +163,13 @@ def repare_overlap_midi(midi,blip=5):
             finished=False
             dif=(ttickOff-ttickOn)
             if dif<blip and tkey==nkey and ttickOff>=ntickOn and ttickOff<=ntickOff:
-                c_log("Separating: ",this,next," Diff: ",(ttickOff-ntickOn))
+                d_log("Separating: ",this,next," Diff: ",(ttickOff-ntickOn))
                 midiOut.append([ttickOn ,ntickOn ,tnote,tkey,tvelocity])
                 midiOut.append([ttickOff,ntickOff,nnote,nkey,nvelocity])
                 index+=1
                 mute=True     
             elif  dif<blip:
-                c_log("Removing blip: ",(ttickOff-ttickOn))
+                d_log("Removing blip: ",(ttickOff-ttickOn))
                 index+=1
                 mute=True     
                 continue
@@ -190,13 +190,13 @@ def repare_overlap_midis(midis,blip=5):
         midisOut.append(repare_overlap_midi(midi,blip))
     return midisOut
 
-def interpret_mid_istaccato(midi,beat,gap=256):
+def interpret_mid_istaccato(midi,beat):
     change=True
     while change:
         midi=sorted(midi, key=lambda tup: tup[0])
         midi=sorted(midi, key=lambda tup: tup[3])
         change=False
-        c_log("Interpretation Pass")
+        d_log("Interpretation Pass")
         endAt=len(midi)-1
         index=0
         midiOut=[]
@@ -215,7 +215,7 @@ def interpret_mid_istaccato(midi,beat,gap=256):
                     if nLen>256 and tPitch<256:
                         finished=True
                         midiOut.append([ttickOn,ntickOff,tnote,tkey,tvelocity])
-                        c_log("Merging: ",this," & ",next)
+                        d_log("Merging: ",this," & ",next)
                         index+=1
                         change=True
     
@@ -230,21 +230,21 @@ def interpret_mid_istaccato(midi,beat,gap=256):
     return midi
 
 def delay_midi(midi,beat,millis):
-    c_log("Interpretation Pass")
+    d_log("Interpretation Pass")
     endAt=len(midi)
     index=0
     midiOut=[]
+    millis=float(millis)
+    millis/=float(beat)
     while index<endAt:
         ttickOn,ttickOff,tnote,tkey,tvelocity=midi[index]
-        millis=float(millis)
-        millis/=float(beat)
         midiOut.append((ttickOn+millis,ttickOff+millis,tnote,tkey,tvelocity))
         # iterate the loop
         index+=1
     return midiOut
 
 def fix_velocity_midi(midi,v=100):
-    c_log("Interpretation Pass")
+    d_log("Interpretation Pass")
     endAt=len(midi)
     index=0
     midiOut=[]
@@ -255,7 +255,7 @@ def fix_velocity_midi(midi,v=100):
     return midiOut
 
 def damp_velocity(midi,key=80,amount=0.75):
-    c_log("Interpretation Pass")
+    d_log("Interpretation Pass")
     endAt=len(midi)
     index=0
     midiOut=[]
@@ -271,14 +271,14 @@ def damp_velocity(midi,key=80,amount=0.75):
     return midiOut
 
 def min_length_midi(midi,beat,millis):
-    c_log("Interpretation Pass")
+    d_log("Interpretation Pass")
     endAt=len(midi)
     index=0
     midiOut=[]
+    millis=float(millis)
+    millis/=float(beat)
     while index<endAt:
         ttickOn,ttickOff,tnote,tkey,tvelocity=midi[index]
-        millis=float(millis)
-        millis/=float(beat)
         l=float(ttickOff-ttickOn)
         if l<millis:
             midiOut.append([ttickOn,ttickOn+millis,tnote,tkey,tvelocity])
@@ -288,15 +288,15 @@ def min_length_midi(midi,beat,millis):
         index+=1
     return midiOut
 
-def legato_midi(midi,beat,millis_in):
-    c_log("Interpretation Pass")
+def legato_midi(midi,beat,millis):
+    d_log("Interpretation Pass")
     endAt=len(midi)
     index=0
     midiOut=[]
+    millis=float(millis)
+    millis/=float(beat)
     while index<endAt:
         ttickOn,ttickOff,tnote,tkey,tvelocity=midi[index]
-        millis=float(millis_in)
-        millis/=float(beat)
         l=float(ttickOff-ttickOn)
         if l<millis:
             midiOut.append([ttickOn,ttickOff+l*0.5,tnote,tkey,tvelocity])
@@ -307,14 +307,14 @@ def legato_midi(midi,beat,millis_in):
     return midiOut
 
 def staccato_midi(midi,beat,millis):
-    c_log("Interpretation Pass")
+    d_log("Interpretation Pass")
     endAt=len(midi)
     index=0
     midiOut=[]
+    millis=float(millis)
+    millis/=float(beat)
     while index<endAt:
         ttickOn,ttickOff,tnote,tkey,tvelocity=midi[index]
-        millis=float(millis)
-        millis/=float(beat)
         l=flost(ttickOff-ttickOn)
         if l*2.0<millis:
             midiOut.append([ttickOn,ttickOn+l*0.5,tnote,tkey,tvelocity])
@@ -325,13 +325,13 @@ def staccato_midi(midi,beat,millis):
     return midiOut
 
 def long_as_midi(midi,beat,millis):
-    c_log("Interpretation Pass")
+    d_log("Interpretation Pass")
     endAt=len(midi)
     index=0
     midiOut=[]
+    millis=float(millis)
     while index<endAt:
         ttickOn,ttickOff,tnote,tkey,tvelocity=midi[index]
-        millis=float(millis)
         l=ttickOff-ttickOn
         l*=beat
         if l>=millis:
@@ -342,13 +342,13 @@ def long_as_midi(midi,beat,millis):
     return midiOut
 
 def shorter_than_midi(midi,beat,millis):
-    c_log("Interpretation Pass")
+    d_log("Interpretation Pass")
     endAt=len(midi)
     index=0
     midiOut=[]
+    millis=float(millis)
     while index<endAt:
         ttickOn,ttickOff,tnote,tkey,tvelocity=midi[index]
-        millis=float(millis)
         l=(ttickOff-ttickOn)*beat
         if l<millis:
             midiOut.append([ttickOn,ttickOff,tnote,tkey,tvelocity])
@@ -357,14 +357,14 @@ def shorter_than_midi(midi,beat,millis):
         index+=1
     return midiOut
 
-def scatter_midi(midi,beat,millis):
-    c_log("Interpretation Pass")
+def scatter_midi(midi,beat,millis_in):
+    d_log("Interpretation Pass")
     endAt=len(midi)
     index=0
     midiOut=[]
     while index<endAt:
         ttickOn,ttickOff,tnote,tkey,tvelocity=midi[index]
-        millis=float(millis)
+        millis=float(millis_in)
         millis/=float(beat)
         millis=millis*random.random()
         midiOut.append([ttickOn+millis,ttickOff+millis,tnote,tkey,tvelocity])
@@ -372,7 +372,7 @@ def scatter_midi(midi,beat,millis):
     return midiOut
 
 def find_length_midi(midi,beat):
-    c_log("Interpretation Pass")
+    d_log("Interpretation Pass")
     endAt=len(midi)
     index=0
     midiOut=[]

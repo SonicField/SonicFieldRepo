@@ -1,3 +1,5 @@
+sf.SetSampleRate(192000)
+
 @sf_parallel
 def reverbInner(signal,convol,grainLength):
     mag=sf.Magnitude(+signal)
@@ -80,8 +82,8 @@ elif church:
     (convoll,convolr)=sf.ReadFile("temp/impulses/bh-l.wav")
     (convorl,convorr)=sf.ReadFile("temp/impulses/bh-r.wav")
 else:
-    (convoll,convolr)=sf.ReadFile("temp/impulses/Small-Chamber-L.wav")
-    (convorl,convorr)=sf.ReadFile("temp/impulses/Small-Chamber-R.wav")
+    (convoll,convolr)=sf.ReadFile("temp/impulses/Vocal-Chamber-L.wav")
+    (convorl,convorr)=sf.ReadFile("temp/impulses/Vocal-Chamber-R.wav")
 
 if spring:
     spring=sf.ReadFile("temp/impulses/classic-fs2a.wav")[0]
