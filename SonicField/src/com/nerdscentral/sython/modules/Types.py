@@ -24,7 +24,7 @@ def not_none(x,arg="anonymous"):
 # generator so very low cost to create and use.
 def ensure_signal(x,length):
     not_none(x)
-    if is_singal(x):
+    if is_signal(x):
         return x
     return sf.Constant(length,x)
     

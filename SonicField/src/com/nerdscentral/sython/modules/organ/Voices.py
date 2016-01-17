@@ -20,7 +20,19 @@ def vox_humana_inner(length,freq,a,b,c,z1=1.0,z2=1.25):
     )
     length=sf.Length(+vox)
     vox=sf.FixSize(polish(vox,freq)) 
-    vox=create_vibrato(vox,length,longer_than=0.25,rate=4.5)
+    if length>1024:
+        rt=3.0
+        dp=0.2
+        pdp=0.1
+    else:
+        rt=4.5
+        dp=0.1
+        pdp=0.05
+    if length>2048:
+        a=length*0.75
+    else:
+        a=length*0.5
+    vox=create_vibrato(vox,length,longer_than=512,rate=rt,depth=dp,pitch_depth=pdp,at=a)
     vox=do_formant(vox,a,b,c,freq)
     vox=polish(vox,freq)        
     vox=excite(vox,0.2,2.0)
@@ -30,20 +42,22 @@ def vox_humana_inner(length,freq,a,b,c,z1=1.0,z2=1.25):
         sf.Pcnt75(sf.RBJNotch(+vox,notch,0.5)),
         sf.Pcnt25(vox)
     )
+
     vox=mix(
         sf.Multiply(
-            clean_noise(length,freq*0.5),
-            sf.SimpleShape((0,-60),(64,-28),(128,-40),(length,-40))
+            sf.FixSize(sf.Power(clean_noise(length,freq*0.5),1.5)),
+            sf.SimpleShape((0,-60),(64,-35),(128,-40),(length,-60))
         ),
         vox
     )
+    
     vox=polish(vox,freq)
     vox=sf.RBJPeaking(vox,freq,3,4)
     vox=polish(vox,freq)
     return sf.FixSize(vox)
 
 @sf_parallel
-def vox_humana_femail_soprano(length,freq):
+def vox_humana_femail_soprano_ah(length,freq):
     vox = vox_humana_inner(length,freq,850,1200,2800,2.0,3.0)
     a = sf.BesselLowPass(+vox,freq    ,2)
     b = sf.Power(sf.BesselHighPass(vox,freq*4.0,2),1.25)
@@ -51,6 +65,30 @@ def vox_humana_femail_soprano(length,freq):
     b = sf.ButterworthHighPass(b,freq*1.5 ,6)
     a = sf.ButterworthHighPass(a,freq*0.75,6)
     return mix(sf.Pcnt75(a),sf.Pcnt25(b))
+    
+@sf_parallel
+def vox_humana_femail_soprano_a(length,freq):
+    vox = vox_humana_inner(length,freq,860,2050,2850,1.8,2.5)
+    a = sf.BesselLowPass(+vox,freq    ,2)
+    b = sf.Power(sf.BesselHighPass(vox,freq*4.0,2),1.35)
+    b = sf.Clean(b)
+    b = sf.ButterworthHighPass(b,freq*1.5 ,6)
+    a = sf.ButterworthHighPass(a,freq*0.75,6)
+    return mix(sf.Pcnt75(a),sf.Pcnt25(b))
+
+@sf_parallel
+def vox_humana_femail_soprano_ma(length,freq):
+    vox = vox_humana_femail_soprano_a(length,freq)
+    if length>128:
+        qsh =sf.NumericShape((0,0.1),(120,2),  (length,0.1))
+        msh =sf.NumericShape((0,1.0),(120,1.0),(length,0.0))
+        mshr=sf.NumericShape((0,0.0),(120,0.0),(length,1.0))
+        init=byquad_filter('low',+vox,freq,qsh)
+        vox =sf.Multiply(vox ,mshr)
+        init=sf.Multiply(init,msh)
+        vox =mix(vox,init)
+        vox=sf.FixSize(polish(vox,freq))
+    return vox
 
 def vox_human_mail_soprano(length,freq):
     return vox_humana_inner(length,freq,850,1200,2800)
@@ -740,7 +778,7 @@ def shawm(length,freq):
 
     sig=sf.FixSize(sig)
     sig=byquad_filter('peak',sig,freq*3.0,1,6)
-    sig=byquad_filter('low', sig,freq*6.0,1,6)
+    sig=byquad_filter('low', sig,freq*6.0,1)
     sig=polish(sig,freq)
     return sf.FixSize(sig)
 
@@ -815,9 +853,9 @@ def folk_flute(length,freq):
     )
     sig=create_vibrato(
         sig,length,
-        longer_than=0.5,
+        longer_than=512,
         rate=2.5,
-        at=0.45,
+        at=450,
         depth=0.5,
         pitch_depth=0.02
     )

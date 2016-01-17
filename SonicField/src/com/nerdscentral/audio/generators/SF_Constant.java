@@ -35,7 +35,7 @@ public class SF_Constant implements SFPL_Operator
     @Override
     public String Word()
     {
-        return Messages.getString("SF_NumericShape.0");  //$NON-NLS-1$
+        return Messages.getString("SF_Constant.0"); //$NON-NLS-1$
     }
 
     @Override

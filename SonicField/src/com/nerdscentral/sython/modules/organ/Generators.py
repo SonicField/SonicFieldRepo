@@ -229,18 +229,20 @@ def sing_base(length,freq,z=1.0):
     voxA=[]
     hc=1.0
     freq=float(freq)
-    while hc*freq<20000:
+    while hc*freq<18000:
         hf=hc*freq
-        @sf_parallel
-        def inner():
-            voxI=[]
-            for c in range(1,3):
-                voxI.append(sf.NumericVolume(sf.PhasedSineWave(length,hf+random.random()*10.0,random.random()),(1.0/hc)**z))
-                voxI.append(sf.NumericVolume(sf.PhasedSineWave(length,hf-random.random()*10.0,random.random()),(1.0/hc)**z))
-                voxI.append(sf.NumericVolume(sf.PhasedSineWave(length,hf+random.random()*10.0,random.random()),(1.0/hc)**z))
-                voxI.append(sf.NumericVolume(sf.PhasedSineWave(length,hf-random.random()*10.0,random.random()),(1.0/hc)**z))
-            return mix(voxI)
-        voxA.append(inner())
+        if freq<5000:
+            x=2
+        else:
+            x=1
+        for c in range(0,x):
+            vol = (1.0/hc)**z
+            # cut of at -60 db
+            if vol>1e-06:            
+                voxA.append(sf.NumericVolume(sf.PhasedSineWave(length,hf+random.random()*10.0,random.random()),(1.0/hc)**z))
+                voxA.append(sf.NumericVolume(sf.PhasedSineWave(length,hf-random.random()*10.0,random.random()),(1.0/hc)**z))
+                voxA.append(sf.NumericVolume(sf.PhasedSineWave(length,hf+random.random()*10.0,random.random()),(1.0/hc)**z))
+                voxA.append(sf.NumericVolume(sf.PhasedSineWave(length,hf-random.random()*10.0,random.random()),(1.0/hc)**z))
         hc+=1
         
     vox=mix(voxA)

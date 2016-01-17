@@ -20,7 +20,7 @@
 # If signals are passed into any of frequency, q and/or db_gain then
 # shaped filters will be used if availible.
 
-from Types import is_signal
+from Types import is_signal,ensure_signal
 
 def byquad_filter(f_type,input,frequency,q=1.0,db_gain=6.0):
 
@@ -29,8 +29,8 @@ def byquad_filter(f_type,input,frequency,q=1.0,db_gain=6.0):
         if shaped:
             return sf.ShapedRBJHighPass(
                 input,
-                ensure_signal(frequency),
-                ensure_signal(q)
+                ensure_signal(frequency,sf.Length(+input)),
+                ensure_signal(q,sf.Length(+input))
             )
         else:
             return sf.RBJHighPass(
@@ -44,8 +44,8 @@ def byquad_filter(f_type,input,frequency,q=1.0,db_gain=6.0):
         if shaped:
             return sf.ShapedRBJLowPass(
                 input,
-                ensure_signal(frequency),
-                ensure_signal(q)
+                ensure_signal(frequency,sf.Length(+input)),
+                ensure_signal(q,sf.Length(+input))
             )
         else:
             return sf.RBJLowPass(
@@ -83,8 +83,8 @@ def byquad_filter(f_type,input,frequency,q=1.0,db_gain=6.0):
         if shaped:
             return sf.ShapedRBJNotch(
                 input,
-                ensure_signal(frequency),
-                ensure_signal(q)
+                ensure_signal(frequency,sf.Length(+input)),
+                ensure_signal(q,sf.Length(+input))
             )
         else:
             return sf.RBJNotch(
@@ -98,9 +98,9 @@ def byquad_filter(f_type,input,frequency,q=1.0,db_gain=6.0):
         if shaped:
             return sf.ShapedRBJPeaking(
                 input,
-                ensure_signal(frequency),
-                ensure_signal(q),
-                ensure_signal(db_gain)
+                ensure_signal(frequency,sf.Length(+input)),
+                ensure_signal(q,sf.Length(+input)),
+                ensure_signal(db_gain,sf.Length(+input))
             )
         else:
             return sf.RBJPeaking(
@@ -126,8 +126,8 @@ def byquad_filter(f_type,input,frequency,q=1.0,db_gain=6.0):
         if shaped:
             return sf.ShapedRBJBandPass(
                 input,
-                ensure_signal(frequency),
-                ensure_signal(q)
+                ensure_signal(frequency,sf.Length(+input)),
+                ensure_signal(q,sf.Length(+input))
             )
         else:            
             return sf.RBJBandPass(
@@ -142,8 +142,8 @@ def byquad_filter(f_type,input,frequency,q=1.0,db_gain=6.0):
         # this will make a static filter from a shaped filter
         return sf.ShapedLadderLowPass(
             input,
-            ensure_signal(frequency),
-            ensure_signal(q)
+            ensure_signal(frequency,sf.Length(+input)),
+            ensure_signal(q,sf.Length(+input))
         )
 
     def not_known():
