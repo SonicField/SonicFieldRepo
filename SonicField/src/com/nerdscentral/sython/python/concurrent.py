@@ -164,6 +164,12 @@ SF_POOL    = Executors.newCachedThreadPool()
 # objects disambiguates this to prevent double execution. 
 SF_PENDING   = Collections.newSetFromMap(ConcurrentHashMap(SF_MAX_CONCURRENT*128,0.75,SF_MAX_CONCURRENT+1))
 
+# All parallel jobs get a job number which is globally unique
+# and increasing. This is used for logging and cycle checking
+# and any other house keeping which requires a unique id across
+# jobs.
+SF_JOB_NUMB  = AtomicLong()
+
 # EXECUTION
 # =========
 
@@ -216,8 +222,9 @@ class sf_callable(Callable):
 # execution. Note that this is also a Future for consistency, but its work
 # is delegated to the wrapped future. 
 class sf_futureWrapper(Future):
-    def __init__(self,toDo):
-        self.toDo   = toDo
+    def __init__(self,toDo,job_number):
+        self.toDo=toDo
+        self.job_number=job_number
 
     def __iter__(self):
         return iter(self.get())
@@ -233,8 +240,9 @@ class sf_futureWrapper(Future):
 # when the execute method exits. These are the primary mechanism for preventing
 # The Embrace Of Meh.
 class sf_getter(Future):
-    def __init__(self,toDo):
+    def __init__(self,toDo,job_number):
         self.toDo=toDo
+        self.job_number=job_number
 
     def execute(self):
         c_log("GStart",self.toDo)
@@ -313,10 +321,11 @@ class super_future(Future):
         it=SF_PENDING.iterator()
         while it.hasNext():
             try:
-                c_log("In Steal")
-                # reset back (the back-off sleep time)
-                back=1
                 toSteal=it.next()
+                ojn=toSteal.job_number
+                # reset back (the back-off sleep time)
+                c_log("In Steal",ojn)
+                back=1
                 it.remove()
                 c_log("Steal",toSteal.toDo)
                 # The stollen task must be performed in this thread as 
@@ -349,6 +358,8 @@ class super_future(Future):
     def __init__(self,toDo):
         mutex=ReentrantLock()
         mutex.lock()
+        # This unique number can be used for tracking cycles
+        self.job_number=SF_JOB_NUMB.incrementAndGet()
         self.mutex=mutex
         self.toDo=toDo
         self.submitted=False
@@ -385,7 +396,7 @@ class super_future(Future):
             return
         self.submitted=True
         # Execute
-        self.future=sf_getter(self.toDo)
+        self.future=sf_getter(self.toDo,self.job_number)
         self.mutex.unlock()
         self.future.execute()
     
@@ -412,11 +423,11 @@ class super_future(Future):
         if count<SF_MAX_CONCURRENT:
             # No, so submit to the thread pool for execution
             task=sf_callable(self.toDo)
-            self.future=sf_futureWrapper(SF_POOL.submit(task))
+            self.future=sf_futureWrapper(SF_POOL.submit(task),self.job_number)
             self.mutex.unlock()
         else:
             # Yes, execute in the current thread
-            self.future=sf_getter(self.toDo)
+            self.future=sf_getter(self.toDo,self.job_number)
             self.mutex.unlock()
             self.future.execute()
         c_log("Submitted")
@@ -552,8 +563,14 @@ class sf_parallel(object):
                sf_parallel.recursive_get_futures(value)
                     
     def __call__(self,*args, **kwargs):
-        sf_parallel.recursive_get_futures((args, kwargs))
-                
+        # we need to make sure that all the futures in the current
+        # context are completed before we schedule a new one or 
+        # we risk forming cycles. This might seem highly inefficient
+        # but it does not work out that way due to the lazy execution system
+        #
+        # One might thing that just checking the args is enough but because
+        # functions in python are closures, it is not enough!
+        sf_parallel.recursive_get_futures(locals())
         def closure():
             return self.func(*args, **kwargs)
         c_log('Parallel',self.func,closure) 

@@ -21,7 +21,7 @@ from organ.Voices import \
     folk_basson,\
     tuned_wind
     
-sf.SetSampleRate(96000)
+#sf.SetSampleRate(192000)
 
 def sing(midi_in,beat,temperament,velocity):
     l=725.0
@@ -34,6 +34,51 @@ def sing(midi_in,beat,temperament,velocity):
     left1,right1 = post_process(notes1)
     left2,right2 = post_process(notes2)
     return mix(left1,left2),mix(right1,right2)
+
+def strange_sing(midi_in,beat,temperament,velocity):
+    midi=delay_midi(midi_in,beat,256)
+    notes1=play_midi(
+        midi,
+        beat,
+        temperament,
+        voice=vox_humana_femail_soprano_ah,
+        bend=False,
+        mellow=False,
+        velocity_correct=velocity*1.0,
+        flat_env=False,
+        quick_factor=2.0,
+        pan=0.5
+    )
+    notes2=play_midi(
+        midi_in,
+        beat,
+        temperament,
+        voice=tuned_wind,
+        bend=False,
+        mellow=True,
+        velocity_correct=velocity*0.15,
+        flat_env=True,
+        quick_factor=0.5,
+        pitch_shift=0.25,
+        pan=0.8
+    )
+    notes3=play_midi(
+        midi_in,
+        beat,
+        temperament,
+        voice=tuned_wind,
+        bend=False,
+        mellow=True,
+        velocity_correct=velocity*0.15,
+        flat_env=True,
+        quick_factor=0.5,
+        pitch_shift=0.5,
+        pan=0.2
+    )
+    left1,right1 = post_process(notes1)
+    left2,right2 = post_process(notes2)
+    left3,right3 = post_process(notes3)
+    return mix(left1,left2,left3),mix(right1,right2,right3)
 
 def quick_flute(midi_in,beat,temperament,velocity):
     notes1=play_midi(midi_in,beat,temperament,voice=folk_flute, bend=True,mellow=False ,velocity_correct=velocity*0.5,flat_env=False, quick_factor=1.0,pan=-1)
@@ -132,8 +177,7 @@ midis=read_midi_file("temp/input.mid")
 
 # Length of full piece
 #======================
-length      =   5.5
-#length      =    1.0
+length = 5
 
 # Temperament
 #=============
@@ -153,7 +197,7 @@ beat        =  set_length_midi(midis,length)
 # Repair overlaps?
 midis=repare_overlap_midis(midis)
 
-left,right = sing(midis[1],beat,temperament,1.0)
+left,right = strange_sing(midis[1],beat,temperament,1.0)
 left,right=do_final_mix(left,right)
 sf.WriteFile32((left,right),"temp/temp.wav")
 

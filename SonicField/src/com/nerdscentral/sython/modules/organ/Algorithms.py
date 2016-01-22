@@ -54,7 +54,8 @@ def do_formant(sig,f1,f2,f3,freq,intensity=4):
 
     x=polish(sig,freq)
     x=sf.FixSize(x)
-    x=sf.Check(x)
+    #x=sf.Check(x)
+    x=sf.ErrorsToSilence(x)
     return x
     
 @sf_parallel

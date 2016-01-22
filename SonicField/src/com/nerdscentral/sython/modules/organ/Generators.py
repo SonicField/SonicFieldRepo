@@ -231,18 +231,24 @@ def sing_base(length,freq,z=1.0):
     freq=float(freq)
     while hc*freq<18000:
         hf=hc*freq
+        # at higher frequencies there is less need to
+        # richen the sound so do only one pass of creating the 
+        # waves, but double the volume of each one by two to 
+        # avoid filtering effects
         if freq<5000:
             x=2
+            y=1.0
         else:
             x=1
+            y=2.0
         for c in range(0,x):
             vol = (1.0/hc)**z
-            # cut of at -60 db
-            if vol>1e-06:            
-                voxA.append(sf.NumericVolume(sf.PhasedSineWave(length,hf+random.random()*10.0,random.random()),(1.0/hc)**z))
-                voxA.append(sf.NumericVolume(sf.PhasedSineWave(length,hf-random.random()*10.0,random.random()),(1.0/hc)**z))
-                voxA.append(sf.NumericVolume(sf.PhasedSineWave(length,hf+random.random()*10.0,random.random()),(1.0/hc)**z))
-                voxA.append(sf.NumericVolume(sf.PhasedSineWave(length,hf-random.random()*10.0,random.random()),(1.0/hc)**z))
+            # cut of at -60 db 
+            if vol>0.25e-06:            
+                voxA.append(sf.NumericVolume(sf.PhasedSineWave(length,hf+random.random()*10.0,random.random()),(y/hc)**z))
+                voxA.append(sf.NumericVolume(sf.PhasedSineWave(length,hf-random.random()*10.0,random.random()),(y/hc)**z))
+                voxA.append(sf.NumericVolume(sf.PhasedSineWave(length,hf+random.random()*10.0,random.random()),(y/hc)**z))
+                voxA.append(sf.NumericVolume(sf.PhasedSineWave(length,hf-random.random()*10.0,random.random()),(y/hc)**z))
         hc+=1
         
     vox=mix(voxA)
