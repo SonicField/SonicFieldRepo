@@ -1,4 +1,6 @@
 import traceback
+import inspect
+ 
 from com.nerdscentral.audio import SFSignal
 
 # Set up the module load path and then clean up afterwards
@@ -21,8 +23,8 @@ class SonicField:
             args.insert(0,input)
             input=args
         if TRACE:
-            trace=''.join(traceback.format_stack())
+            trace=''.join(traceback.format_stack(inspect.currentframe().f_back,20))
             SFSignal.setPythonStack(trace)
-            c_log(word+'('+str(input)+')')
+            #c_log(word+'('+str(input)+')')
         ret=self.processors.get(word).Interpret(input,self.context)
         return ret

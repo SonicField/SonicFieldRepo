@@ -1,6 +1,7 @@
 # For Copyright and License see LICENSE.txt and COPYING.txt in the root directory */
 import threading
 import time
+
 from java.util.concurrent import Callable, Future, ConcurrentLinkedQueue, \
                                  ConcurrentHashMap, Executors, TimeUnit
 from java.util.concurrent.locks import ReentrantLock
@@ -170,15 +171,18 @@ SF_PENDING   = Collections.newSetFromMap(ConcurrentHashMap(SF_MAX_CONCURRENT*128
 # jobs.
 SF_JOB_NUMB  = AtomicLong()
 
+# Tracks how many threads are waiting for other threads
+SF_NWAITING  = AtomicLong()
+
 # EXECUTION
 # =========
 
 # Force 'nice' interleaving when logging from multiple threads
 SF_LOG_LOCK=ReentrantLock()
-print "Thread\tQueue\tActive\tTime\tMessage..."
+print "Thread\tQueue\tActive\tWaiting\tTime\tMessage..."
 def d_log(*args):
     SF_LOG_LOCK.lock()
-    print "\t".join(str(x) for x in [Thread.currentThread().getId(),SF_PENDING.size(),SF_POOL.getActiveCount(),(System.currentTimeMillis()-SF_STARTED)] + list(args))
+    print "\t".join(str(x) for x in [Thread.currentThread().getId(),SF_PENDING.size(),SF_POOL.getActiveCount(),SF_NWAITING.get(),(System.currentTimeMillis()-SF_STARTED)] + list(args))
     SF_LOG_LOCK.unlock()
 
 # Define the logger method as more than pass only is tracing is turned on
@@ -231,7 +235,10 @@ class sf_futureWrapper(Future):
     
     def isDone(self):
         return self.toDo.isDone()
-    
+ 
+    def __str__(self):
+        return "FutureWrapper:"+str(self.job_number)
+
     def get(self):
         return self.toDo.get()
 
@@ -245,12 +252,15 @@ class sf_getter(Future):
         self.job_number=job_number
 
     def execute(self):
-        c_log("GStart",self.toDo)
+        c_log("GStart",self.job_number,self.toDo)
         self.result=self.toDo()
-        c_log("GDone")
+        c_log("GDone",self.job_number)
 
     def isDone(self):
         return hasattr(self,'result')
+        
+    def __str__(self):
+        return "Getter:"+str(self.job_number)
 
     def get(self):
         return self.result
@@ -313,7 +323,7 @@ class super_future(Future):
             return True
         if not sf_check_steal_overflow():
             sf_release_steal_overflow()
-            c_log("Steal Overflowed")
+            c_log("Steal Overflowed",self.job_number)
             return True
         # Iterate over the global set of pending super futures
         # Note that the locking logic in the super futures ensure 
@@ -323,9 +333,7 @@ class super_future(Future):
             try:
                 toSteal=it.next()
                 ojn=toSteal.job_number
-                # reset back (the back-off sleep time)
                 c_log("In Steal",ojn)
-                back=1
                 it.remove()
                 c_log("Steal",toSteal.toDo)
                 # The stollen task must be performed in this thread as 
@@ -342,9 +350,11 @@ class super_future(Future):
                     nap=True
             except Exception, e:
                 # All bets are off
-                c_log("Failed to Steal",str(e))
-                # Just raise and give up
-                raise
+                d_log("Failed to Steal:",self.job_number,str(e))
+                import sys,traceback
+                print >> sys.stderr, traceback.format_exc(e)
+                # no point wasting time trying to continue
+                System.exit(1)
         sf_release_steal_overflow()
         return nap
 
@@ -400,7 +410,7 @@ class super_future(Future):
         self.mutex.unlock()
         self.future.execute()
     
-    # Normal (non work stealing) submition of this task. This might or might not
+    # Normal (non work stealing) submission of this task. This might or might not
     # result in immediate execution. If the total number of active executors is
     # at the limit then the task will execute in the calling thread via a
     # sf_getter (see directSubmit for more details). Otherwise, the task is 
@@ -479,11 +489,11 @@ class super_future(Future):
         # not to 'waste' the thread. This if block is setting up the
         # log/tracking information
         if not self.future.isDone():
-            c_log("Sleep")
+            c_log("Sleep",self)
             nap=True
         else:
             nap=False
-            c_log("Get")
+            c_log("Get",self)
         # back control increasing backoff of the thread trying to work steal.
         # This is not the most efficient solution but as Sonic Field tasks are
         # generally large, this approach is OK for the current use. We back of
@@ -497,6 +507,7 @@ class super_future(Future):
         # of tasks forms this will loop/sleep for ever.
         #
         x=0
+        wOn=False
         while not self.future.isDone():
             nap=self.steal(nap)
             # If the thread would block again or we are not able to steal as
@@ -504,14 +515,24 @@ class super_future(Future):
             if nap==True:
                 if x%10==100:
                     c_log("Non Pending")
-                Thread.sleep(back)
+                if back==100:
+                    # Hacky way of detecting deadlock eventually
+                    w=SF_NWAITING.incrementAndGet()
+                    c_log('Waiting on',self,"->",self.future,w)
+                    for i in range(0,10):
+                        if w>SF_POOL.getActiveCount():
+                            c_log('Deadlock')
+                        Thread.sleep(10)                  
+                    SF_NWAITING.decrementAndGet()
+                else:                
+                    Thread.sleep(back)
                 back+=1
                 if back>100:
-                    c_log('Waiting on',self.future)
                     back=100
-
+            else:
+                back=1
             x+=1
-            
+        
         # To get here we know this get will not block
         r = self.future.get()
         c_log("Wake")
@@ -530,6 +551,9 @@ class super_future(Future):
     # this super future appears to be its embedded task
     def __iter__(self):
         return iter(self.get())
+        
+    def __str__(self):
+        return "SuperFuture:"+str(self.job_number)
             
     # Similarly for resource control for the + and - reference counting 
     # semantics for SF_Signal objects
@@ -563,7 +587,6 @@ class sf_parallel(object):
                sf_parallel.recursive_get_futures(value)
                     
     def __call__(self,*args, **kwargs):
-        #sf_parallel.recursive_get_futures((args, kwargs))
         # we need to make sure that all the futures in the current
         # context are completed before we schedule a new one or 
         # we risk forming cycles. This might seem highly inefficient
@@ -571,7 +594,8 @@ class sf_parallel(object):
         #
         # One might thing that just checking the args is enough but because
         # functions in python are closures, it is not enough!
-        sf_parallel.recursive_get_futures(locals())
+        if SF_DO_STEALING:
+            sf_parallel.recursive_get_futures(locals())
         def closure():
             return self.func(*args, **kwargs)
         c_log('Parallel',self.func,closure) 

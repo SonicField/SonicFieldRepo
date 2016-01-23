@@ -497,21 +497,29 @@ public class SFData extends SFSignal implements Serializable
         catch (RuntimeException e)
         {
             printResourceError(Messages.getString("SFData.16"), new ResTracker(this.javaCreated, this.pythonCreated)); //$NON-NLS-1$
-            throw e;
+            Thread.dumpStack();
+            System.exit(1);
         }
     }
 
     private static void printResourceError(String message, ResTracker data)
     {
-        System.out.println(message);
-        System.out.println(Messages.getString("SFData.17")); //$NON-NLS-1$
-        for (StackTraceElement x : data.j.getStackTrace())
+        System.err.println(message);
+        try
         {
-            if (x.getClassName().contains(".reflect.")) break; //$NON-NLS-1$
-            System.out.println(x.getClassName() + "!" + x.getFileName() + ":" + x.getLineNumber()); //$NON-NLS-1$ //$NON-NLS-2$
+            System.err.println(Messages.getString("SFData.17")); //$NON-NLS-1$
+            for (StackTraceElement x : data.j.getStackTrace())
+            {
+                if (x.getClassName().contains(".reflect.")) break; //$NON-NLS-1$
+                System.err.println(x.getClassName() + "!" + x.getFileName() + ":" + x.getLineNumber()); //$NON-NLS-1$ //$NON-NLS-2$
+            }
+            System.err.println(Messages.getString("SFData.18")); //$NON-NLS-1$
+            System.err.println(data.p);
         }
-        System.out.println(Messages.getString("SFData.18")); //$NON-NLS-1$
-        System.out.println(data.p);
+        catch (Throwable t)
+        {
+            System.err.println(Messages.getString("SFData.6") + t.getMessage()); //$NON-NLS-1$
+        }
     }
 
     @Override

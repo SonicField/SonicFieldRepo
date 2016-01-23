@@ -27,6 +27,7 @@ public class SF_Check implements SFPL_Operator, SFPL_RefPassThrough
     @Override
     public Object Interpret(Object input, SFPL_Context context) throws SFPL_RuntimeException
     {
+        boolean ok = true;
         try (SFSignal in = Caster.makeSFSignal(input);)
         {
             int len = in.getLength();
@@ -34,11 +35,14 @@ public class SF_Check implements SFPL_Operator, SFPL_RefPassThrough
             for (int i = 0; i < len; ++i)
             {
                 double q = in.getSample(i);
-                if (Double.isInfinite(q)) throw new SFPL_RuntimeException(Messages.getString("SFPLSonicFieldLib.1") + i); //$NON-NLS-1$
-                if (Double.isNaN(q)) throw new SFPL_RuntimeException(Messages.getString("SFPLSonicFieldLib.2") + i); //$NON-NLS-1$
+                if (Double.isInfinite(q) || Double.isNaN(q))
+                {
+                    System.err.println("Note error at: " + i + " " + Double.isFinite(q) + "," + Double.isNaN(q));
+                    ok = false;
+                    break;
+                }
             }
-
-            return Caster.incrReference(in);
+            return ok;
         }
     }
 }

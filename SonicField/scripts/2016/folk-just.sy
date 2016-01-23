@@ -31,7 +31,6 @@ def sing(midi_in,beat,temperament,velocity):
     print len(midi1),len(midi2)
     notes1 = play_midi(midi1,beat,temperament,voice=vox_humana_femail_soprano_ah, bend=True,mellow=True,velocity_correct=velocity*1.0,flat_env=False, quick_factor=1.0,pan=0.2)
     notes2 = play_midi(midi2,beat,temperament,voice=vox_humana_femail_soprano_ma, bend=True,mellow=True,velocity_correct=velocity*1.0,flat_env=False, quick_factor=1.5,pan=0.8)
-    left1,right1 = post_process(notes1)
     left2,right2 = post_process(notes2)
     return mix(left1,left2),mix(right1,right2)
 
@@ -49,6 +48,8 @@ def strange_sing(midi_in,beat,temperament,velocity):
         quick_factor=2.0,
         pan=0.5
     )
+    left1,right1 = post_process(notes1)
+    sf.WriteFile32((+left1,+right1),"temp/sung.wav")
     notes2=play_midi(
         midi_in,
         beat,
@@ -62,6 +63,8 @@ def strange_sing(midi_in,beat,temperament,velocity):
         pitch_shift=0.25,
         pan=0.8
     )
+    left2,right2 = post_process(notes2)
+    sf.WriteFile32((+left2,+right2),"temp/flute1.wav")
     notes3=play_midi(
         midi_in,
         beat,
@@ -75,9 +78,9 @@ def strange_sing(midi_in,beat,temperament,velocity):
         pitch_shift=0.5,
         pan=0.2
     )
-    left1,right1 = post_process(notes1)
-    left2,right2 = post_process(notes2)
     left3,right3 = post_process(notes3)
+    sf.WriteFile32((+left3,+right3),"temp/flute2.wav")
+
     return mix(left1,left2,left3),mix(right1,right2,right3)
 
 def quick_flute(midi_in,beat,temperament,velocity):
@@ -177,7 +180,7 @@ midis=read_midi_file("temp/input.mid")
 
 # Length of full piece
 #======================
-length = 5
+length = 6.0
 
 # Temperament
 #=============

@@ -7,14 +7,13 @@ def resonate(left_,right_,del1,del2):
     right = sf.Concatenate(right_,sf.Silence(120000))
     +left
     +right
-    @sf_parallel
+    
     def a():
         return sf.Mix(
             sf.Pcnt90(sf.Finalise(sf.ResonantFilter(left  ,0.9,0.5,del1[0]))),
             sf.Pcnt10(sf.Finalise(sf.ResonantFilter(right ,0.9,0.5,del1[1])))
         )
         
-    @sf_parallel
     def b():
         return sf.Mix(
             sf.Pcnt90(sf.Finalise(sf.ResonantFilter(right ,0.9,0.5,del2[0]))),

@@ -67,9 +67,9 @@ right=sf.Concatenate(sf.Silence(1024),right)
 #
 ####################################
 
-bright  = True
+bright  = False
 vBright = False
-church  = False
+church  = True
 ambient = False
 post    = True
 spring  = False

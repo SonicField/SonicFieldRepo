@@ -22,10 +22,15 @@ def excite(sig_,mix_ammount,power):
 def find_nearest_overtone(fMatch,freq):
     q=float(fMatch)/float(freq)
     q=int(q)
+    if q==0:
+        return q==1
     return freq*q
 
 @sf_parallel
 def do_formant(sig,f1,f2,f3,freq,intensity=4):
+    if not sf.Check(+sig):
+        d_log('Incomming broken')
+    y=+sig
     f1b=f1
     f2b=find_nearest_overtone(f2,freq)
     f3b=find_nearest_overtone(f3,freq)
@@ -54,8 +59,12 @@ def do_formant(sig,f1,f2,f3,freq,intensity=4):
 
     x=polish(sig,freq)
     x=sf.FixSize(x)
-    #x=sf.Check(x)
-    x=sf.ErrorsToSilence(x)
+    if not sf.Check(+x):
+        -x
+        x=y
+        d_log('Formant Failed',f1,f2,f3,freq,intensity)
+    else:
+        -y
     return x
     
 @sf_parallel

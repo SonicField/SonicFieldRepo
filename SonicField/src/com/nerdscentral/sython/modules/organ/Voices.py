@@ -64,7 +64,7 @@ def vox_humana_femail_soprano_ah(length,freq):
     b = sf.Clean(b)
     b = sf.ButterworthHighPass(b,freq*1.5 ,6)
     a = sf.ButterworthHighPass(a,freq*0.75,6)
-    return mix(sf.Pcnt75(a),sf.Pcnt25(b))
+    return sf.Realise(mix(sf.Pcnt75(a),sf.Pcnt25(b)))
     
 @sf_parallel
 def vox_humana_femail_soprano_a(length,freq):

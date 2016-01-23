@@ -1,5 +1,7 @@
 from Midi import *
 from Reverberation import granular_reverberate,reverberate
+from java.util.concurrent.atomic import AtomicLong
+NOTE_COUNTER=AtomicLong()
 
 ################################################################################
 # Take an envelope description (tuple of time,numeric-volume pairs) and ensure
@@ -48,6 +50,8 @@ def safe_env(sig,env):
 @sf_parallel
 def sing(hint,pitch,lengthIn,v,vl,vr,voice,velocity_correct_,quick_factor,
          sub_bass,flat_env,pure,raw_bass,decay,bend,mellow):
+         
+    d_log('Playing note:',NOTE_COUNTER.incrementAndGet(),voice)
     velocity_correct=velocity_correct_
     length=lengthIn
     tp=0
@@ -298,6 +302,7 @@ def play_midi(
     ):
     notes=[]
     d_log("Stop: ",voice)
+    d_log('Total notes:',len(midi))
     for index in range(0,len(midi)):
         if index>0:
             prev=midi[index-1]

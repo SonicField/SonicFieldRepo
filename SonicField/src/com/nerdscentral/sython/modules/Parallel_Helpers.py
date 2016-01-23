@@ -2,7 +2,7 @@
 # of singals or a list of signal,time lists and does the right thing and
 # will run in parallel etc. 
 
-@sf_parallel
+#@sf_parallel
 def mix(*args):
     if len(args)==1:
         notes=args[0]
@@ -17,7 +17,7 @@ def mix(*args):
 
 # Mixes if required and converts to a realised form for further processing
 
-@sf_parallel
+#@sf_parallel
 def realise(*args):
     if len(args)>1:
         return mix(args)
@@ -27,7 +27,7 @@ def realise(*args):
 # Mixes if required and finalises which means to convert to an maximum diviation
 # from zero or + or - 1 and remove all frequencies above half nyquist.
 
-@sf_parallel
+#@sf_parallel
 def finalise(*args):
     if len(args)>1:
         return sf.Finalise(mix(args))

@@ -27,26 +27,28 @@ def granular_reverberate(signal,ratio,delay,density,length=50,stretch=1,vol=1,ra
     out=sf.Realise(mix(out))
     out=sf.Realise(sf.NumericVolume(out,vol))
     return out
+    
+@sf_parallel
+def reverberate_inner(signal,convol,grain_length):
+    mag=sf.Magnitude(+signal)
+    if mag>0:
+        signal_=sf.Concatenate(signal,sf.Silence(grain_length))
+        len=sf.Length(+signal_)
+        signal_=sf.FrequencyDomain(signal_)
+        signal_=sf.CrossMultiply(convol,signal_)
+        signal_=sf.TimeDomain(signal_)
+        newMag=sf.Magnitude(+signal_)
+        signal_=sf.NumericVolume(signal_,mag/newMag)        
+        # tail out clicks due to amplitude at end of signal
+        return sf.Realise(sf.Clean(sf.Cut(0,len,signal_)))
+    else:
+        -convol
+        return sf.Realise(signal)
 
 @sf_parallel
 def reverberate(signal,convol):
     c_log("Reverberate")
-    @sf_parallel
-    def reverberate_inner(signal,convol,grain_length):
-        mag=sf.Magnitude(+signal)
-        if mag>0:
-            signal_=sf.Concatenate(signal,sf.Silence(grain_length))
-            len=sf.Length(+signal_)
-            signal_=sf.FrequencyDomain(signal_)
-            signal_=sf.CrossMultiply(convol,signal_)
-            signal_=sf.TimeDomain(signal_)
-            newMag=sf.Magnitude(+signal_)
-            signal_=sf.NumericVolume(signal_,mag/newMag)        
-            # tail out clicks due to amplitude at end of signal
-            return sf.Realise(sf.Clean(sf.Cut(0,len,signal_)))
-        else:
-            -convol
-            return sf.Realise(signal)
+
     grain_length = sf.Length(+convol)
     convol_=sf.FrequencyDomain(sf.Concatenate(convol,sf.Silence(grain_length)))
     signal_=sf.Concatenate(signal,sf.Silence(grain_length))
