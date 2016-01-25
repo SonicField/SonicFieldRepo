@@ -178,12 +178,30 @@ SF_NWAITING  = AtomicLong()
 # =========
 
 # Force 'nice' interleaving when logging from multiple threads
-SF_LOG_LOCK=ReentrantLock()
+
+class SFLock():
+    def __init__(self):
+        self.lock_=ReentrantLock()
+    
+    def lock(self):
+        self.lock_.lock()
+        
+    def unlock(self):
+        self.lock_.unlock()
+        
+    def __enter__(self):
+        self.lock()
+        return self
+    
+    def __exit__(self, type, value, traceback):
+        self.unlock()
+
+SF_LOG_LOCK=SFLock()
+
 print "Thread\tQueue\tActive\tWaiting\tTime\tMessage..."
 def d_log(*args):
-    SF_LOG_LOCK.lock()
-    print "\t".join(str(x) for x in [Thread.currentThread().getId(),SF_PENDING.size(),SF_POOL.getActiveCount(),SF_NWAITING.get(),(System.currentTimeMillis()-SF_STARTED)] + list(args))
-    SF_LOG_LOCK.unlock()
+    with SF_LOG_LOCK:
+        print "\t".join(str(x) for x in [Thread.currentThread().getId(),SF_PENDING.size(),SF_POOL.getActiveCount(),SF_NWAITING.get(),(System.currentTimeMillis()-SF_STARTED)] + list(args))
 
 # Define the logger method as more than pass only is tracing is turned on
 if TRACE:
@@ -208,6 +226,20 @@ class sf_safeQueue(ConcurrentLinkedQueue):
         SF_PENDING.add(what)
         self.add(what)
 
+# Die straight away if anything goes wrong
+# Sonic Field has no concept of recovering from exceptions which 
+# reach teh schedular
+def dieNow():
+    import sys,traceback
+    e=sys.exc_info()
+    # All bets are off
+    d_log("Failed to execute:",self.job_number,str(e))
+    print >> sys.stderr, traceback.format_exc(e)
+    # no point wasting time trying to continue
+    # TODO dump stack traces of all threads in a nice
+    # way when this happens.
+    System.exit(1)
+
 # Python implements Callable to alow Python closers to be executed in Java
 # thread pools
 class sf_callable(Callable):
@@ -217,10 +249,13 @@ class sf_callable(Callable):
     # This method is that which causes a task to be executed. It actually
     # executes the Python closure which defines the work to be done
     def call(self):
-        c_log("FStart",self.toDo)
-        ret=self.toDo()
-        c_log("FDone")
-        return ret
+        try:
+            c_log("FStart",self.toDo)
+            ret=self.toDo()
+            c_log("FDone")
+            return ret
+        except:
+            dieNow()
 
 # Holds the Future created by submitting a sf_callable to the SF_POOL for
 # execution. Note that this is also a Future for consistency, but its work
@@ -252,9 +287,12 @@ class sf_getter(Future):
         self.job_number=job_number
 
     def execute(self):
-        c_log("GStart",self.job_number,self.toDo)
-        self.result=self.toDo()
-        c_log("GDone",self.job_number)
+        try:
+            c_log("GStart",self.job_number,self.toDo)
+            self.result=self.toDo()
+            c_log("GDone",self.job_number)
+        except:
+            dieNow()
 
     def isDone(self):
         return hasattr(self,'result')
@@ -348,13 +386,8 @@ class super_future(Future):
                     break
                 else:
                     nap=True
-            except Exception, e:
-                # All bets are off
-                d_log("Failed to Steal:",self.job_number,str(e))
-                import sys,traceback
-                print >> sys.stderr, traceback.format_exc(e)
-                # no point wasting time trying to continue
-                System.exit(1)
+            except:
+                dieNow()
         sf_release_steal_overflow()
         return nap
 
@@ -366,16 +399,15 @@ class super_future(Future):
     #   is part of the mechanism which prevents work stealing resulting in a
     #   task being executed twice.
     def __init__(self,toDo):
-        mutex=ReentrantLock()
-        mutex.lock()
-        # This unique number can be used for tracking cycles
-        self.job_number=SF_JOB_NUMB.incrementAndGet()
-        self.mutex=mutex
-        self.toDo=toDo
-        self.submitted=False
-        queue=SF_TASK_QUEUE.get()
-        queue.append(self)
-        mutex.unlock()
+        mutex=SFLock()
+        with mutex:
+            # This unique number can be used for tracking cycles
+            self.job_number=SF_JOB_NUMB.incrementAndGet()
+            self.mutex=mutex
+            self.toDo=toDo
+            self.submitted=False
+            queue=SF_TASK_QUEUE.get()
+            queue.append(self)
 
     # Testing Only
     # ============
@@ -400,14 +432,13 @@ class super_future(Future):
     # etc.
     def directSubmit(self):
         # Ensure this cannot be executed twice
-        self.mutex.lock()
-        if self.submitted:
-            self.mutex.unlock()
-            return
-        self.submitted=True
-        # Execute
-        self.future=sf_getter(self.toDo,self.job_number)
-        self.mutex.unlock()
+        with self.mutex:
+            if self.submitted:
+                self.mutex.unlock()
+                return
+            self.submitted=True
+            # Execute
+            self.future=sf_getter(self.toDo,self.job_number)
         self.future.execute()
     
     # Normal (non work stealing) submission of this task. This might or might not
@@ -421,33 +452,31 @@ class super_future(Future):
     # from the thread local queue of pending tasks.
     def submit(self):
         # Ensure this cannot be submitted twice
-        self.mutex.lock()
-        if self.submitted:
-            self.mutex.unlock()
-            return
-        self.submitted=True
-        
-        # See if we have reached the parallel execution soft limit
-        count=SF_POOL.getActiveCount()
-        c_log("Submit")
-        if count<SF_MAX_CONCURRENT:
-            # No, so submit to the thread pool for execution
-            task=sf_callable(self.toDo)
-            self.future=sf_futureWrapper(SF_POOL.submit(task),self.job_number)
-            self.mutex.unlock()
-        else:
+        with self.mutex:
+            if self.submitted:
+                return
+            self.submitted=True
+            
+            # See if we have reached the parallel execution soft limit
+            count=SF_POOL.getActiveCount()
+            c_log("Submit")
+            if count<SF_MAX_CONCURRENT:
+                # No, so submit to the thread pool for execution
+                task=sf_callable(self.toDo)
+                self.future=sf_futureWrapper(SF_POOL.submit(task),self.job_number)
+                c_log("Submitted")
+                return
             # Yes, execute in the current thread
             self.future=sf_getter(self.toDo,self.job_number)
-            self.mutex.unlock()
-            self.future.execute()
-        c_log("Submitted")
+        # Execute outside the lock
+        self.future.execute()
+        c_log("Direct Submitted")
 
     # Submit all the tasks in the current thread local queue of tasks. This is
     # lazy executor. This gets called when we need results. 
     def submitAll(self):
-        self.mutex.lock()
-        s=self.submitted
-        self.mutex.unlock()
+        with self.mutex:
+            s=self.submitted
         if s:
             c_log('Submitted already',self)
         # drain the thread local queue before submitting so 
