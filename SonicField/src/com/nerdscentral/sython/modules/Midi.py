@@ -46,10 +46,10 @@ def werckmeisterIII(key,base=baroque_base):
 # the Well Tempered Clavier.
 #
 ################################################################################
-def bach_lehman(keybase=baroque_base):
+def bach_lehman(key,base=baroque_base):
     #Pitch:  C   C#     D       Eb      E       F       F#      G       G#      A       A#      B
     cents=[5.9  ,3.9   ,2      ,3.9   ,-2      ,7.8    ,2      ,3.9    ,3.9    ,0      ,3.9    ,0]
-    return key_from_cents(key,cents,True)
+    return key_from_cents(base,key,cents,True)
 
 ################################################################################
 #

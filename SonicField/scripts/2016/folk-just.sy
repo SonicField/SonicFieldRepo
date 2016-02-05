@@ -24,13 +24,15 @@ from organ.Voices import \
 #sf.SetSampleRate(192000)
 
 def sing(midi_in,beat,temperament,velocity):
-    l=725.0
+    l=200.0
     midi1=long_as_midi(midi_in,beat,l)
+    midi1=legato_midi(midi1,beat,64)
     midi2=shorter_than_midi(midi_in,beat,l)
-    midi2=legato_midi(midi2,beat,128)
+    midi2=legato_midi(midi2,beat,32)
     print len(midi1),len(midi2)
     notes1 = play_midi(midi1,beat,temperament,voice=vox_humana_femail_soprano_ah, bend=True,mellow=True,velocity_correct=velocity*1.0,flat_env=False, quick_factor=1.0,pan=0.2)
     notes2 = play_midi(midi2,beat,temperament,voice=vox_humana_femail_soprano_ma, bend=True,mellow=True,velocity_correct=velocity*1.0,flat_env=False, quick_factor=1.5,pan=0.8)
+    left1,right1 = post_process(notes1)
     left2,right2 = post_process(notes2)
     return mix(left1,left2),mix(right1,right2)
 
@@ -84,8 +86,8 @@ def strange_sing(midi_in,beat,temperament,velocity):
     return mix(left1,left2,left3),mix(right1,right2,right3)
 
 def quick_flute(midi_in,beat,temperament,velocity):
-    notes1=play_midi(midi_in,beat,temperament,voice=folk_flute, bend=True,mellow=False ,velocity_correct=velocity*0.5,flat_env=False, quick_factor=1.0,pan=-1)
-    notes2=play_midi(midi_in,beat,temperament,voice=tuned_wind, bend=True,mellow=False,velocity_correct=velocity*0.5,flat_env=False, quick_factor=1.0,pan=-1)
+    notes1=play_midi(midi1,beat,temperament,voice=folk_flute, bend=True,mellow=False,velocity_correct=velocity*0.5,flat_env=False, quick_factor=1.0,pan=-1)
+    notes2=play_midi(midi2,beat,temperament,voice=tuned_wind, bend=True,mellow=False,velocity_correct=velocity*0.5,flat_env=False, quick_factor=1.0,pan=-1)
     left1,right1 = post_process(notes1)
     left2,right2 = post_process(notes2)
     return mix(left1,left2),mix(right1,right2)
@@ -143,12 +145,23 @@ def third_lead(midi_in,beat,temperament,velocity):
     notes1=play_midi(midi_in,beat,temperament,voice=tuned_wind, bend=True,mellow=False, velocity_correct=velocity*1.0,flat_env=False, quick_factor=0.5,pan=-1)
     return post_process(notes1)
 
+def bright_lead(midi_in,beat,temperament,velocity):
+    notes1=play_midi(midi_in,beat,temperament,voice=plucked_glass, bend=True,decay=1500,mellow=False,velocity_correct=velocity*1.0,flat_env=False, quick_factor=0.5,pan=-1)
+    midi=scatter_midi(midi_in,beat,128)
+    notes2=play_midi(midi,beat,temperament,voice=bright_plucked_glass, bend=True,decay=1250,mellow=False,velocity_correct=velocity*0.33,flat_env=True,quick_factor=0.5,pan=0.20,pitch_shift=4.0,pitch_add=1)
+    midi=scatter_midi(midi_in,beat,128)
+    notes3=play_midi(midi,beat,temperament,voice=plucked_glass,decay=5000,bend=True,mellow=False,velocity_correct=velocity*0.2,flat_env=True,quick_factor=1.0,pan=0.80,pitch_add=-1)
+
+    left1,right1=post_process(notes1)
+    left2,right2=post_process(notes2)
+    left3,right3=post_process(notes3)
+    return mix(left1,left2,left3),mix(right1,right2,right3)
+    
 def second_lead(midi_in,beat,temperament,velocity):
-    midi=interpret_mid_istaccato(midi_in,beat,gap=64)
-    notes1=play_midi(midi,beat,temperament,voice=plucked_glass, bend=True,decay=1500,mellow=False,velocity_correct=velocity*1.0,flat_env=False, quick_factor=0.1,pan=-1)
-    midi=scatter_midi(midi_in,beat,millis=128)
+    notes1=play_midi(midi_in,beat,temperament,voice=plucked_glass, bend=True,decay=1500,mellow=False,velocity_correct=velocity*1.0,flat_env=False, quick_factor=0.1,pan=-1)
+    midi=scatter_midi(midi_in,beat,128)
     notes2=play_midi(midi,beat,temperament,voice=bright_plucked_glass, bend=True,decay=1250,mellow=True,velocity_correct=velocity*0.25,flat_env=True,quick_factor=0.1,pan=0.20,pitch_shift=2.0,pitch_add=1)
-    midi=scatter_midi(midi_in,beat,millis=128)
+    midi=scatter_midi(midi_in,beat,128)
     notes3=play_midi(midi,beat,temperament,voice=plucked_glass,decay=5000,bend=True,mellow=True,velocity_correct=velocity*0.2,flat_env=False,quick_factor=0.5,pan=0.80,pitch_add=-1)
 
     left1,right1=post_process(notes1)
@@ -180,13 +193,13 @@ midis=read_midi_file("temp/input.mid")
 
 # Length of full piece
 #======================
-length = 6.0
+length = 3.5
 
 # Temperament
 #=============
-temperament = werckmeisterIII
+#temperament = werckmeisterIII
 #temperament = just_intonation
-#temperament = bach_lehman
+temperament = bach_lehman
 #temperament = equal_temperament
 
 # Do Not Change
@@ -200,7 +213,7 @@ beat        =  set_length_midi(midis,length)
 # Repair overlaps?
 midis=repare_overlap_midis(midis)
 
-left,right = strange_sing(midis[1],beat,temperament,1.0)
+left,right = bright_lead(midis[1],beat,temperament,1.0)
 left,right=do_final_mix(left,right)
 sf.WriteFile32((left,right),"temp/temp.wav")
 

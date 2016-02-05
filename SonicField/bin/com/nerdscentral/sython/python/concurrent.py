@@ -233,7 +233,7 @@ def dieNow():
     import sys,traceback
     e=sys.exc_info()
     # All bets are off
-    d_log("Failed to execute:",self.job_number,str(e))
+    d_log("Failed to execute:",str(e))
     print >> sys.stderr, traceback.format_exc(e)
     # no point wasting time trying to continue
     # TODO dump stack traces of all threads in a nice
@@ -434,7 +434,6 @@ class super_future(Future):
         # Ensure this cannot be executed twice
         with self.mutex:
             if self.submitted:
-                self.mutex.unlock()
                 return
             self.submitted=True
             # Execute
