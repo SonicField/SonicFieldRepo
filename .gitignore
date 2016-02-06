@@ -1,9 +1,10 @@
-
 .metadata*
 *.class
 *.jar
 *.wav
 *.midi
+*.pyc
+*.log
 SonicField/bin
 SonicField/impulses
 SonicField/temp
