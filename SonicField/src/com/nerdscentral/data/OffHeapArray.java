@@ -174,7 +174,7 @@ public final class OffHeapArray extends UnsafeProvider implements AutoCloseable
         unsafe.setMemory(address, length, value);
     }
 
-    public final void initialise(IndexedByte provider)
+    public final void initialiseIByte(IndexedByte provider)
     {
         for (long i = 0; i < length; ++i)
         {
@@ -182,7 +182,7 @@ public final class OffHeapArray extends UnsafeProvider implements AutoCloseable
         }
     }
 
-    public final void initialise(IndexedShort provider)
+    public final void initialiseIShort(IndexedShort provider)
     {
         for (long i = 0; i < length; i += LENGTH_OF_SHORT)
         {
@@ -190,7 +190,7 @@ public final class OffHeapArray extends UnsafeProvider implements AutoCloseable
         }
     }
 
-    public final void initialise(IndexedInt provider)
+    public final void initialiseIInt(IndexedInt provider)
     {
         for (long i = 0; i < length; i += LENGTH_OF_INT)
         {
@@ -198,7 +198,7 @@ public final class OffHeapArray extends UnsafeProvider implements AutoCloseable
         }
     }
 
-    public final void initialise(IndexedLong provider)
+    public final void initialiseILong(IndexedLong provider)
     {
         for (long i = 0; i < length; i += LENGTH_OF_LONG)
         {
@@ -206,7 +206,7 @@ public final class OffHeapArray extends UnsafeProvider implements AutoCloseable
         }
     }
 
-    public final void initialise(IndexedFloat provider)
+    public final void initialiseIFloat(IndexedFloat provider)
     {
         for (long i = 0; i < length; i += LENGTH_OF_FLOAT)
         {
@@ -214,7 +214,7 @@ public final class OffHeapArray extends UnsafeProvider implements AutoCloseable
         }
     }
 
-    public final void initialise(IndexedDouble provider)
+    public final void initialiseIDouble(IndexedDouble provider)
     {
         for (long i = 0; i < length; i += LENGTH_OF_DOUBLE)
         {

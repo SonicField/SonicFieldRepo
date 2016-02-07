@@ -66,6 +66,26 @@ public class MidiFunctions
         smLookup.put(ShortMessage.TIMING_CLOCK, "timing_clock"); //$NON-NLS-1$
         smLookup.put(ShortMessage.TUNE_REQUEST, "tune_request"); //$NON-NLS-1$
     }
+    
+    private static HashMap<Integer, String> metaLookup = new HashMap<>();
+    static
+    {
+	metaLookup.put(0x00,"sequence_number"); //$NON-NLS-1$
+	metaLookup.put(0x01,"text"); //$NON-NLS-1$
+	metaLookup.put(0x02,"copyright"); //$NON-NLS-1$
+	metaLookup.put(0x03,"squency_name"); //$NON-NLS-1$
+	metaLookup.put(0x04,"instrument_name"); //$NON-NLS-1$
+	metaLookup.put(0x05,"lyric"); //$NON-NLS-1$
+	metaLookup.put(0x06,"marker"); //$NON-NLS-1$
+	metaLookup.put(0x07,"cue"); //$NON-NLS-1$
+	metaLookup.put(0x20,"channel"); //$NON-NLS-1$
+	metaLookup.put(0x2F,"end"); //$NON-NLS-1$
+	metaLookup.put(0x51,"tempo"); //$NON-NLS-1$
+	metaLookup.put(0x54,"smpte"); //$NON-NLS-1$
+	metaLookup.put(0x58,"time_signature"); //$NON-NLS-1$
+	metaLookup.put(0x59,"key_signature"); //$NON-NLS-1$
+	metaLookup.put(0x7F,"other"); //$NON-NLS-1$
+    }
 
     public static Sequence preProcessChannels(Sequence seqIn) throws InvalidMidiDataException
     {
@@ -228,9 +248,14 @@ public class MidiFunctions
                 else if (message instanceof MetaMessage)
                 {
                     MetaMessage mm = (MetaMessage) message;
+		    String type=metaLookup.get(mm.getType());
+		    if(type==null)
+		    {
+			type="unknown";
+		    }
                     Map<String, Object> row = new ConcurrentHashMap<>();
                     row.put("command", "meta"); //$NON-NLS-1$ //$NON-NLS-2$
-                    row.put("type", mm.getType());//$NON-NLS-1$
+                    row.put("type",type) ;//$NON-NLS-1$
                     row.put("data", mm.getData()); //$NON-NLS-1$
                     row.put("length", mm.getLength()); //$NON-NLS-1$
                     row.put("status", mm.getStatus()); //$NON-NLS-1$

@@ -9,21 +9,21 @@
 # -XX:+UseCompressedKlassPointers \
 # -XX:+PrintCompilation \
 
-sar 1 60 > sar.log &
-
 java \
-    --Xmx12G \
-    -Xms12G \
-    -DsonicFieldTemp=/Users/alexanderturner/temp \
-    -DsonicFieldThreads=8 \
-    -DsonicFieldSwapLimit=4.0  \
-    -XX:+UseConcMarkSweepGC \
-    -XX:+UseCompressedOops \
-    -XX:ParallelGCThreads=8 \
-    -XX:+CMSParallelRemarkEnabled \
-    -XX:CMSInitiatingOccupancyFraction=30 \
-    -XX:+UseCMSInitiatingOccupancyOnly \
- -classpath bin;jython-standalone-2.5.3.jar com.nerdscentral.sfpl.Synthon $1
+    -DsonicFieldTemp=/Volumes/Swap \
+    -Dsython.threads=16 \
+    -Xmx4G \
+    -Dsython.linear=false \
+    -Dsython.trace=false \
+    -Dsython.modules=/Users/alexanderturner/SonicFieldRepo/SonicField/src/com/nerdscentral/sython/modules \
+    -XX:+UseParallelGC \
+    -Dsython.steal=true \
+    -DsonicFieldDirectMemory=true \
+    -XX:MaxDirectMemorySize=8g \
+    -XX:MaxInlineSize=128 \
+    -XX:InlineSmallCode=1024 \
+    -Xms100m \
+    -classpath bin:jars/jython-standalone-2.7.0.jar com.nerdscentral.sython.Sython $1
 
 # To run on Windows simply copy this file to a batch file and put all the class path on 
 # one line separated by ; rather than :

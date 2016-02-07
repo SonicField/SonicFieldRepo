@@ -37,7 +37,6 @@ public class SF_WriteSignal implements SFPL_Operator, SFPL_RefPassThrough
                 {
                     ds.writeDouble(data.getSample(i));
                 }
-                ds.close();
             }
             catch (Exception e)
             {
