@@ -3,8 +3,9 @@
 #########
 
 import os
-from organ.Player import *
-from organ.Post   import *
+import Midi
+import organ.Player as Player
+from organ.Post   import do_final_mix,post_process
 from organ.Voices import \
     vox_humana_femail_soprano_ah,\
     vox_humana_femail_soprano_a,\
@@ -19,26 +20,27 @@ from organ.Voices import \
     plucked_glass,\
     folk_clarinet,\
     folk_basson,\
-    tuned_wind
-    
-#sf.SetSampleRate(192000)
+    tuned_wind,\
+    orchestral_oboe,\
+    cello,\
+    nordic_cello
 
 def sing(midi_in,beat,temperament,velocity):
     l=200.0
-    midi1=long_as_midi(midi_in,beat,l)
-    midi1=legato_midi(midi1,beat,64)
-    midi2=shorter_than_midi(midi_in,beat,l)
-    midi2=legato_midi(midi2,beat,32)
+    midi1=Midi.long_as(midi_in,beat,l)
+    midi1=Midi.legato(midi1,beat,64)
+    midi2=Midi.shorter_than(midi_in,beat,l)
+    midi2=Midi.legato(midi2,beat,32)
     print len(midi1),len(midi2)
-    notes1 = play_midi(midi1,beat,temperament,voice=vox_humana_femail_soprano_ah, bend=True,mellow=True,velocity_correct=velocity*1.0,flat_env=False, quick_factor=1.0,pan=0.2)
-    notes2 = play_midi(midi2,beat,temperament,voice=vox_humana_femail_soprano_ma, bend=True,mellow=True,velocity_correct=velocity*1.0,flat_env=False, quick_factor=1.5,pan=0.8)
+    notes1 = Player.play(midi1,beat,temperament,voice=vox_humana_femail_soprano_ah, bend=True,mellow=True,velocity_correct=velocity*1.0,flat_env=False, quick_factor=1.0,pan=0.2)
+    notes2 = Player.play(midi2,beat,temperament,voice=vox_humana_femail_soprano_ma, bend=True,mellow=True,velocity_correct=velocity*1.0,flat_env=False, quick_factor=1.5,pan=0.8)
     left1,right1 = post_process(notes1)
     left2,right2 = post_process(notes2)
     return mix(left1,left2),mix(right1,right2)
 
 def strange_sing(midi_in,beat,temperament,velocity):
-    midi=delay_midi(midi_in,beat,256)
-    notes1=play_midi(
+    midi=Midi.delay(midi_in,beat,256)
+    notes1=Player.play(
         midi,
         beat,
         temperament,
@@ -52,7 +54,7 @@ def strange_sing(midi_in,beat,temperament,velocity):
     )
     left1,right1 = post_process(notes1)
     sf.WriteFile32((+left1,+right1),"temp/sung.wav")
-    notes2=play_midi(
+    notes2=Player.play(
         midi_in,
         beat,
         temperament,
@@ -67,7 +69,7 @@ def strange_sing(midi_in,beat,temperament,velocity):
     )
     left2,right2 = post_process(notes2)
     sf.WriteFile32((+left2,+right2),"temp/flute1.wav")
-    notes3=play_midi(
+    notes3=Player.play(
         midi_in,
         beat,
         temperament,
@@ -86,15 +88,15 @@ def strange_sing(midi_in,beat,temperament,velocity):
     return mix(left1,left2,left3),mix(right1,right2,right3)
 
 def quick_flute(midi_in,beat,temperament,velocity):
-    notes1=play_midi(midi1,beat,temperament,voice=folk_flute, bend=True,mellow=False,velocity_correct=velocity*0.5,flat_env=False, quick_factor=1.0,pan=-1)
-    notes2=play_midi(midi2,beat,temperament,voice=tuned_wind, bend=True,mellow=False,velocity_correct=velocity*0.5,flat_env=False, quick_factor=1.0,pan=-1)
+    notes1=Player.play(midi1,beat,temperament,voice=folk_flute, bend=True,mellow=False,velocity_correct=velocity*0.5,flat_env=False, quick_factor=1.0,pan=-1)
+    notes2=Player.play(midi2,beat,temperament,voice=tuned_wind, bend=True,mellow=False,velocity_correct=velocity*0.5,flat_env=False, quick_factor=1.0,pan=-1)
     left1,right1 = post_process(notes1)
     left2,right2 = post_process(notes2)
     return mix(left1,left2),mix(right1,right2)
     
 def slow_flute(midi_in,beat,temperament,velocity):
-    midi=delay_midi(midi_in,beat,256)
-    notes1=play_midi(
+    midi=Midi.delay(midi_in,beat,256)
+    notes1=Player.play(
         midi,
         beat,
         temperament,
@@ -106,7 +108,7 @@ def slow_flute(midi_in,beat,temperament,velocity):
         quick_factor=2.0,
         pan=0.5
     )
-    notes2=play_midi(
+    notes2=Player.play(
         midi_in,
         beat,
         temperament,
@@ -119,7 +121,7 @@ def slow_flute(midi_in,beat,temperament,velocity):
         pitch_shift=0.25,
         pan=0.8
     )
-    notes3=play_midi(
+    notes3=Player.play(
         midi_in,
         beat,
         temperament,
@@ -138,19 +140,19 @@ def slow_flute(midi_in,beat,temperament,velocity):
     return mix(left1,left2,left3),mix(right1,right2,right3)
 
 def first_lead(midi_in,beat,temperament,velocity):
-    notes1=play_midi(midi_in,beat,temperament,voice=folk_flute, bend=True,mellow=True, velocity_correct=velocity*1.0,flat_env=False, quick_factor=0.5,pan=-1)
+    notes1=Player.play(midi_in,beat,temperament,voice=folk_flute, bend=True,mellow=True, velocity_correct=velocity*1.0,flat_env=False, quick_factor=0.5,pan=-1)
     return post_process(notes1)
 
 def third_lead(midi_in,beat,temperament,velocity):
-    notes1=play_midi(midi_in,beat,temperament,voice=tuned_wind, bend=True,mellow=False, velocity_correct=velocity*1.0,flat_env=False, quick_factor=0.5,pan=-1)
+    notes1=Player.play(midi_in,beat,temperament,voice=tuned_wind, bend=True,mellow=False, velocity_correct=velocity*1.0,flat_env=False, quick_factor=0.5,pan=-1)
     return post_process(notes1)
 
 def bright_lead(midi_in,beat,temperament,velocity):
-    notes1=play_midi(midi_in,beat,temperament,voice=plucked_glass, bend=True,decay=1500,mellow=False,velocity_correct=velocity*1.0,flat_env=False, quick_factor=0.5,pan=-1)
-    midi=scatter_midi(midi_in,beat,128)
-    notes2=play_midi(midi,beat,temperament,voice=bright_plucked_glass, bend=True,decay=1250,mellow=False,velocity_correct=velocity*0.33,flat_env=True,quick_factor=0.5,pan=0.20,pitch_shift=4.0,pitch_add=1)
-    midi=scatter_midi(midi_in,beat,128)
-    notes3=play_midi(midi,beat,temperament,voice=plucked_glass,decay=5000,bend=True,mellow=False,velocity_correct=velocity*0.2,flat_env=True,quick_factor=1.0,pan=0.80,pitch_add=-1)
+    notes1=Player.play(midi_in,beat,temperament,voice=plucked_glass, bend=True,decay=1500,mellow=False,velocity_correct=velocity*1.0,flat_env=False, quick_factor=0.5,pan=-1)
+    midi=Midi.scatter(midi_in,beat,128)
+    notes2=Player.play(midi,beat,temperament,voice=bright_plucked_glass, bend=True,decay=1250,mellow=False,velocity_correct=velocity*0.33,flat_env=True,quick_factor=0.5,pan=0.20,pitch_shift=4.0,pitch_add=1)
+    midi=Midi.scatter(midi_in,beat,128)
+    notes3=Player.play(midi,beat,temperament,voice=plucked_glass,decay=5000,bend=True,mellow=False,velocity_correct=velocity*0.2,flat_env=True,quick_factor=1.0,pan=0.80,pitch_add=-1)
 
     left1,right1=post_process(notes1)
     left2,right2=post_process(notes2)
@@ -158,11 +160,11 @@ def bright_lead(midi_in,beat,temperament,velocity):
     return mix(left1,left2,left3),mix(right1,right2,right3)
     
 def second_lead(midi_in,beat,temperament,velocity):
-    notes1=play_midi(midi_in,beat,temperament,voice=plucked_glass, bend=True,decay=1500,mellow=False,velocity_correct=velocity*1.0,flat_env=False, quick_factor=0.1,pan=-1)
-    midi=scatter_midi(midi_in,beat,128)
-    notes2=play_midi(midi,beat,temperament,voice=bright_plucked_glass, bend=True,decay=1250,mellow=True,velocity_correct=velocity*0.25,flat_env=True,quick_factor=0.1,pan=0.20,pitch_shift=2.0,pitch_add=1)
-    midi=scatter_midi(midi_in,beat,128)
-    notes3=play_midi(midi,beat,temperament,voice=plucked_glass,decay=5000,bend=True,mellow=True,velocity_correct=velocity*0.2,flat_env=False,quick_factor=0.5,pan=0.80,pitch_add=-1)
+    notes1=Player.play(midi_in,beat,temperament,voice=plucked_glass, bend=True,decay=1500,mellow=False,velocity_correct=velocity*1.0,flat_env=False, quick_factor=0.1,pan=-1)
+    midi=Midi.scatter(midi_in,beat,128)
+    notes2=Player.play(midi,beat,temperament,voice=bright_plucked_glass, bend=True,decay=1250,mellow=True,velocity_correct=velocity*0.25,flat_env=True,quick_factor=0.1,pan=0.20,pitch_shift=2.0,pitch_add=1)
+    midi=Midi.scatter(midi_in,beat,128)
+    notes3=Player.play(midi,beat,temperament,voice=plucked_glass,decay=5000,bend=True,mellow=True,velocity_correct=velocity*0.2,flat_env=False,quick_factor=0.5,pan=0.80,pitch_add=-1)
 
     left1,right1=post_process(notes1)
     left2,right2=post_process(notes2)
@@ -170,26 +172,39 @@ def second_lead(midi_in,beat,temperament,velocity):
     return mix(left1,left2,left3),mix(right1,right2,right3)
 
 def first_bass(midi_in,beat,temperament,velocity):
-    notes1=play_midi(midi_in,beat,temperament,voice=folk_clarinet, bend=False,mellow=False, velocity_correct=velocity*1.0,flat_env=True, quick_factor=0.5,pan=0.25)
-    notes2=play_midi(midi_in,beat,temperament,voice=folk_clarinet, bend=False,mellow=False, velocity_correct=velocity*1.0,flat_env=True, quick_factor=0.5,pan=0.75)
+    notes1=Player.play(midi_in,beat,temperament,voice=folk_clarinet, bend=False,mellow=False, velocity_correct=velocity*1.0,flat_env=True, quick_factor=0.5,pan=0.25)
+    notes2=Player.play(midi_in,beat,temperament,voice=folk_clarinet, bend=False,mellow=False, velocity_correct=velocity*1.0,flat_env=True, quick_factor=0.5,pan=0.75)
 
     left1,right1 = post_process_echo(notes1)
     left2,right2 = post_process_echo(notes2)
     return mix(left1,left2),mix(right1,right2)
         
 def first_harmony(midi_in,beat,temperament,velocity):
-    midi=scatter_midi(midi_in,beat,32)
-    notes1=play_midi(midi,beat,temperament,voice=folk_basson,bend=True,mellow=False,velocity_correct=velocity*1.0,flat_env=True, quick_factor=1.0,pan=-0.7)
+    midi=Midi.scatter(midi_in,beat,32)
+    notes1=Player.play(midi,beat,temperament,voice=folk_basson,bend=True,mellow=False,velocity_correct=velocity*1.0,flat_env=True, quick_factor=1.0,pan=-0.7)
 
     return post_process(notes1)
 
-notes  = []
+def celloish(midi_in,beat,temperament,velocity):
+    #midi=Midi.legato(midi_in,beat,100)
+    #midi=Midi.scatter(midi,beat,16)
+    #notes1=Player.play(midi,beat,temperament,voice=folk_basson,bend=False,mellow=True,velocity_correct=velocity*0.5,flat_env=True, quick_factor=1.0,pitch_shift=2.0,pitch_add=3)
+    #midi=Midi.legato(midi_in,beat,200)
+    #midi=Midi.scatter(midi,beat,16)
+    notes2=Player.play(midi_in,beat,temperament,voice=nordic_cello,bend=True,mellow=False,velocity_correct=velocity*1.0,flat_env=False, quick_factor=1.0,pure=True,raw_bass=True)
+
+    #left1,right1=post_process(notes1)
+    #left2,right2=post_process(notes2)
+    #return mix(left1,left2),mix(right1,right2)
+    return post_process(notes2)
+    
+Notes  = []
 ########################################
 # Timing configuration and temperament #
 ########################################
 
 #midis=read_midi_file("temp/pontchar.mid")
-midis=read_midi_file("temp/input.mid")
+midis=Midi.read_midi_file("temp/input.mid")
 
 # Length of full piece
 #======================
@@ -197,25 +212,79 @@ length = 3.5
 
 # Temperament
 #=============
-#temperament = werckmeisterIII
+temperament = Midi.werckmeisterIII
 #temperament = just_intonation
-temperament = bach_lehman
+#temperament = Midi.bach_lehman
 #temperament = equal_temperament
 
 # Do Not Change
 #===============
-beat        =  set_length_midi(midis,length)
+
+midis=Midi.repare_overlap(midis)
+midis = Midi.tempo(midis)
+beat  = Midi.set_length(midis,length)
 
 ###########
 # Voicing #
 ###########
 
-# Repair overlaps?
-midis=repare_overlap_midis(midis)
+# Make it all one voice
+out=[]
+for midi in midis:
+    out+=midi
+out=sorted(out, key=lambda event: event.tick)
 
-left,right = bright_lead(midis[1],beat,temperament,1.0)
+# dilate notes to inspect individually
+#for event in out:
+#    diff=event.tick_off-event.tick
+#    event.tick*=3
+#    event.tick_off=event.tick+diff
+
+'''
+left,right = celloish(out,beat,temperament,1.0)
 left,right=do_final_mix(left,right)
+sf.WriteSignal(+left, "temp/left")
+sf.WriteSignal(+right,"temp/right")
 sf.WriteFile32((left,right),"temp/temp.wav")
+'''
+
+left =sf.ReadSignal("temp/left")
+right=sf.ReadSignal("temp/right")
+modEnvl=Midi.controllerEnvelope(out,'modwheel',beat,+left)
+modEnvr=Midi.controllerEnvelope(out,'modwheel',beat,+right)
+# remove transients from signal use bessel filter
+# to retain the phase of the modulation
+modEnvl=sf.BesselLowPass(modEnvl,16,2)
+modEnvr=sf.BesselLowPass(modEnvr,16,2)
+sf.WriteFile32((+modEnvl,+modEnvr),"temp/env.wav")
+
+@sf_parallel
+def doVib(env,signal):
+    l=sf.Length(+signal)
+    trem=sf.FixSize(
+        sf.MakeTriangle(
+            sf.FixSize(
+                sf.Mix(
+                    sf.SineWave(l,4.1),
+                    sf.SineWave(l,3.9)
+                )
+            )
+        )
+    )
+    trem=sf.Multiply(+env,trem)
+    vib=+trem
+    trem=sf.DirectMix(1,sf.Pcnt50(trem))
+    signal=sf.Multiply(trem,signal)
+    vib=sf.DirectMix(1,sf.NumericVolume(vib,0.01))
+    signal=sf.Resample(vib,signal)
+    return sf.Finalise(signal)
+
+left=doVib(modEnvl,left)
+right=doVib(modEnvr,right)
+
+sf.WriteSignal(+left, "temp/left_v")
+sf.WriteSignal(+right,"temp/right_v")
+sf.WriteFile32((left,right),"temp/temp_v.wav")
 
 '''
 # Produce sounds

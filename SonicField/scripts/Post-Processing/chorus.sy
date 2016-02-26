@@ -13,6 +13,7 @@ def bandRand(min,max):
     r=r+min
     return r
 
+@sf_parallel
 def chorus(
     left,
     right,
@@ -22,13 +23,14 @@ def chorus(
     minRate  =  0.05,
     nChorus  =  4.0,
     minVol   =  0.7,
-    maxVol   =  1.0):    
+    maxVol   =  1.0):
     def inner(signal_):
         def inner_():
             signal=sf.Clean(signal_)
             sigs=[]
             l=sf.Length(+signal)
-            for inst in range(0,nChorus):
+            for inst in range(0,int(nChorus)):
+                @sf_parallel
                 def in_inner():
                     print "Do"
                     lfo=sf.PhasedSineWave(l,bandRand(minRate,maxRate),random.random())
@@ -40,11 +42,11 @@ def chorus(
                     nsg=sf.Multiply(lfo,nsg)
                     print "Done"
                     return sf.Finalise(nsg)
-                sigs.append(sf_do(in_inner))
+                sigs.append(in_inner())
             ret=sf.Finalise(sf.Mix(sigs))
             -signal
             return ret
-        return sf_do(inner_)
+        return inner_()
     
     return inner(left),inner(right)
     
@@ -53,14 +55,14 @@ def chorus(
 #right = sf.RBJHighPass(right,4000,2)
 
 left1,right1=chorus(
-    left,
-    right,
+    +left,
+    +right,
     minDepth =  0.0,
     maxDepth = 10.0,
     minVol   =  1.0,
     maxVol   =  1.0,
-    nChorus  =  9.0)
-    
+    nChorus  =  4.0)
+'''    
 left2,right2=chorus(
     +left1,
     +right1,
@@ -76,5 +78,9 @@ left  = sf.Mix(left1 ,left2)
 right = sf.Mix(right1,right2)
 left  = sf.Finalise(sf.RBJPeaking(left ,64,1,8))
 right = sf.Finalise(sf.RBJPeaking(right,64,1,8))
+'''
+
+left  = sf.Finalise(sf.RBJPeaking(sf.Mix(left,left1)  ,128,1,8))
+right = sf.Finalise(sf.RBJPeaking(sf.Mix(right,right1),128,1,8))
 
 sf.WriteFile32((left,right),"temp/c.wav")

@@ -1,5 +1,7 @@
 import math
-
+import random
+from Signal_Generators import phasing_sawtooth
+from Reverberation import reverberate
 # Get IRs
 violinIRs = sf.ViolinBodyIRs(())
 violaIRs  = sf.ViolaBodyIRs(())
@@ -23,20 +25,22 @@ bassIRs   = sf.BassBodyIRs(())
 # vibAmount   = quantity of vibrato (0 to 1 sensible)
 # vibRate     = rate of vibrato in cycles per second
 
+# TODO remove this
+def sf_do(what):
+    return what()
+
 @sf_parallel
-def nordic_string(pitch,e,a,d,dat,s,sat,r,whiteAmount,vibStart,vibMiddle,vibAmount,vibRate=2.0):
+def nordic_string(pitch,e,a,d,dat,s,sat,r,whiteAmount,vibStart,vibMiddle,vibAmount,vibRate=2.0,bright=True):
     
     def raw_string(length,pitch):
         def raw_stringA(l,p):
-            def raw_stringAIn():
-                return phasing_sawtooth(l,p)
-            return sf_do(raw_stringAIn)
+            return phasing_sawtooth(l,p)
         pitch=float(pitch)
         s1=raw_stringA(length,pitch)
         s2=raw_stringA(length,pitch*2.0)
         s3=raw_stringA(length,pitch*4.0)
         s4=sf.WhiteNoise(length)
-        signal=sf.Normalise(
+        signal=sf.FixSize(
             sf.Mix(
                 sf.Pcnt20(s4),
                 sf.Pcnt50(s1),
@@ -56,7 +60,7 @@ def nordic_string(pitch,e,a,d,dat,s,sat,r,whiteAmount,vibStart,vibMiddle,vibAmou
             sf.DirectMix(1,sf.NumericVolume(multi,0.001)),
             signal
         )
-        return sf.Realise(sf.Normalise(sf.Clean(signal)))
+        return sf.Realise(sf.FixSize(sf.Clean(signal)))
     
     
     def play_string_clean(a,length,pitch,whiteAmount):
@@ -65,35 +69,39 @@ def nordic_string(pitch,e,a,d,dat,s,sat,r,whiteAmount,vibStart,vibMiddle,vibAmou
         
         signal=0
         if(pitch>500):
-            signal=sf.Normalise(sf.Mix(sf_do(rsd),sf_do(rsd),sf_do(rsd)))
+            signal=sf.FixSize(sf.Mix(sf_do(rsd),sf_do(rsd),sf_do(rsd)))
         else:
-            signal=sf.Normalise(sf.Mix(sf_do(rsd),sf_do(rsd)))
-        if(pitch>440):    
-            signal=sf.ButterworthHighPass(signal,pitch*0.5,6)
-            signal=sf.ButterworthHighPass(signal,2000,1)
-            signal=sf.ButterworthLowPass(signal,8000,1)
-        if(pitch<128):
-            signal=sf.ButterworthHighPass(signal,pitch*0.5,1)
-            signal=sf.ButterworthHighPass(signal,500,1)
-            signal=sf.ButterworthLowPass(signal,2000,1)
-        else:
-            signal=sf.ButterworthHighPass(signal,pitch*0.5,3)
-            signal=sf.ButterworthHighPass(signal,1500,1)
-            signal=sf.ButterworthLowPass(signal,4000,1)
-    
-        signal=sf.ButterworthLowPass(signal,pitch*10.0,1)
+            signal=sf.FixSize(sf.Mix(sf_do(rsd),sf_do(rsd)))
+
+        if not bright:
+            if(pitch>440):    
+                signal=sf.ButterworthHighPass(signal,pitch*0.5,6)
+                signal=sf.ButterworthHighPass(signal,2000,1)
+                signal=sf.ButterworthLowPass(signal,8000,1)
+            if(pitch<128):
+                signal=sf.ButterworthHighPass(signal,pitch*0.5,1)
+                signal=sf.ButterworthHighPass(signal,500,1)
+                signal=sf.ButterworthLowPass(signal,2000,1)
+            else:
+                signal=sf.ButterworthHighPass(signal,pitch*0.5,3)
+                signal=sf.ButterworthHighPass(signal,1500,1)
+                signal=sf.ButterworthLowPass(signal,4000,1)
+        
+            signal=sf.ButterworthLowPass(signal,pitch*10.0,1)
+            
         signal=sf.Mix(
             sf.Pcnt25(+signal),
             sf.Pcnt75(sf.RBJNotch(signal,pitch,0.5))
         )    
+
         white=sf.WhiteNoise(length)
         white=sf.ButterworthHighPass(white,pitch*2.0,2)
         white=sf.ButterworthLowPass(white,pitch*6.0,1)
-        white=sf.Normalise(white)
+        white=sf.FixSize(white)
         white=sf.Multiply(white,+signal)
         white=sf.NumericVolume(white,whiteAmount)
         signal=sf.NumericVolume(signal,1.0-whiteAmount)
-        signal=sf.Normalise(sf.Mix(signal,white))
+        signal=sf.FixSize(sf.Mix(signal,white))
     
         sq=sf.Mix(
             sf.PhasedSineWave(length,pitch*0.95,random.random()),
@@ -106,6 +114,10 @@ def nordic_string(pitch,e,a,d,dat,s,sat,r,whiteAmount,vibStart,vibMiddle,vibAmou
         signal=sf.Multiply(enva,signal)
     
         signal=sf.Mix(sq,sf.FixSize(signal))
+
+        env=sf.NumericShape((0,0),(16,1),(length-16,1),(length,0))
+        signal=sf.Multiply(env,signal)
+        
         sigs=[]
         bodies=[]
         if(pitch<128):
@@ -114,11 +126,19 @@ def nordic_string(pitch,e,a,d,dat,s,sat,r,whiteAmount,vibStart,vibMiddle,vibAmou
             bodies=celloIRs
         else:
             bodies=violinIRs
+
+        if bright:
+            bs=[]
+            for b in bodies:
+                bs.append(sf.Power(b,1.25))
+            bodies=bs
+            signal=sf.Power(signal,1.5)
         
-        for body in violinIRs:
+        for body in bodies:
             sigs.append(reverberate(+signal,+body))  
         -signal
-        signal=sf.Normalise(sf.Mix(sigs))
+
+        signal=sf.FixSize(sf.Mix(sigs))
         return signal
 
     c_log("Performing Note: ",pitch,e,a,d,dat,s,sat,r,whiteAmount,vibStart,vibMiddle,vibAmount,vibRate)
@@ -140,7 +160,7 @@ def nordic_string(pitch,e,a,d,dat,s,sat,r,whiteAmount,vibStart,vibMiddle,vibAmou
     sigs=[]
     for x in range(0,5):
         sigs.append(play_string_clean(a,r,pitch,whiteAmount))
-    signal=sf.Normalise(sf.Mix(sigs))
+    signal=sf.FixSize(sf.Mix(sigs))
     signal=sf.Multiply(signal,env)
     if(vibAmount>0):
         l=sf.Length(+signal)
@@ -156,11 +176,14 @@ def nordic_string(pitch,e,a,d,dat,s,sat,r,whiteAmount,vibStart,vibMiddle,vibAmou
     
     if(pitch>128):
         signal=sf.ButterworthHighPass(signal,pitch*0.75,6)
-        signal=sf.BesselLowPass(signal,pitch,1)
+        if not bright:
+            signal=sf.BesselLowPass(signal,pitch,1)
     else:
         signal=sf.ButterworthHighPass(signal,pitch*0.75,3)
         
-        return sf.Realise(sf.Normalise(sf.Clean(signal)))
+    env=sf.NumericShape((0,0),(16,1),(r-16,1),(r,0))
+    signal=sf.Multiply(env,signal)
+    return sf.Realise(sf.FixSize(sf.Clean(signal)))
 
 @sf_parallel
 def nordic_string_super_soft(pitch,length,volume):
@@ -189,7 +212,7 @@ def nordic_string_super_soft(pitch,length,volume):
         volume
     )
     env   = sf.NumericShape((0,0),(length*0.25,1),(length,1))
-    return sf.Finalisesf.Multiply(env,sig))
+    return sf.Finalise(sf.Multiply(env,sig))
 
 @sf_parallel
 def nordic_string__soft_short(pitch,length,volume):
@@ -229,23 +252,62 @@ def nordic_string_hard_long(pitch,length,volume):
             w=0.1
         else:
             w=0.05
-    return sf.Clean(sf.NumericVolume(
-        nordic_string(
-            pitch,
-            32,                 # e
-            64,                 # a
-            length*0.25,        # d
-            1.0,                # d at
-            length*0.75,        # s
-            0.75,               # s at
-            length,             # r
-            w,                  # white amount  
-            length*0.25,        # vib start
-            length*0.75,        # vib middle
-            0.5                 # vib amount - no vib in this case
-        ),
-        volume
-    ))
+    sig=nordic_string(
+        pitch,
+        32,                 # e
+        64,                 # a
+        length*0.25,        # d
+        1.0,                # d at
+        length*0.75,        # s
+        0.75,               # s at
+        length,             # r
+        w,                  # white amount  
+        length*0.25,        # vib start
+        length*0.75,        # vib middle
+        0.5                 # vib amount - no vib in this case
+    )
+    return sf.Clean(sf.NumericVolume(sig,volume))
+
+@sf_parallel
+def nordic_string_voice(pitch,length,volume):
+    if(pitch<256):
+        w=0.1
+    else:
+        if(pitch<720):
+            w=0.1
+        else:
+            w=0.05
+    if length<256:
+        a=16
+        b=32
+        d=64
+        s=length*0.75
+        r=length
+        # no vi
+        vs=500
+        vm=600
+        va=0
+    elif length<512:
+        a=32,
+        b=64,
+        d=192,
+        s=
+        
+    sig=nordic_string(
+        pitch,
+        32,                 # e
+        64,                 # a
+        128,                # d
+        1.0,                # d at
+        length,             # s
+        0.75,               # s at
+        length*1.25,        # r
+        w,                  # white amount  
+        length*0.25,        # vib start
+        length*0.75,        # vib middle
+        0.5                 # vib amount - no vib in this case
+    )
+    return sf.Clean(sf.NumericVolume(sig,volume))
 
 @sf_parallel
 def nordic_string_hard_short(pitch,length,volume):
@@ -289,7 +351,7 @@ def nordic_string_pluck(pitch,length,volume):
             length*0.50,        # vib start
             length*0.90,        # vib middle
             1                   # vib amount - no vib in this case
-        )
+    )
     envH=sf.NumericShape((0,0),(32,1),(length,0))
     envL=sf.NumericShape((0,1),(32,0),(length,1))
     sig=sig.get()

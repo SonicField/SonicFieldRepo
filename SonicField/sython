@@ -10,7 +10,7 @@
 # -XX:+PrintCompilation \
 
 java \
-    -DsonicFieldTemp=/Volumes/Swap \
+    -DsonicFieldTemp=/tmp \
     -Dsython.threads=16 \
     -Xmx4G \
     -Dsython.linear=false \
@@ -18,7 +18,7 @@ java \
     -Dsython.modules=/Users/alexanderturner/SonicFieldRepo/SonicField/src/com/nerdscentral/sython/modules \
     -XX:+UseParallelGC \
     -Dsython.steal=true \
-    -DsonicFieldDirectMemory=true \
+    -DsonicFieldDirectMemory=false \
     -XX:MaxDirectMemorySize=8g \
     -XX:MaxInlineSize=128 \
     -XX:InlineSmallCode=1024 \

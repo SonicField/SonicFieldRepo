@@ -44,6 +44,29 @@ public class MidiFunctions
     public static final int                 RESET           = 0x79;
     public static final int                 NOTE_ON         = 0x90;
     public static final int                 NOTE_OFF        = 0x80;
+    private static HashMap<Integer, String> controllerLookup= new HashMap<>();
+    static
+    {
+	controllerLookup.put(MODWHEEL,  "modwheel");   //$NON-NLS-1$ 
+	controllerLookup.put(BREATH,    "breath");     //$NON-NLS-1$ 
+	controllerLookup.put(FOOT,      "foot");       //$NON-NLS-1$ 
+	controllerLookup.put(VOLUME,    "volume");     //$NON-NLS-1$ 
+	controllerLookup.put(BALANCE,   "balance");    //$NON-NLS-1$ 
+	controllerLookup.put(PAN,       "pan");        //$NON-NLS-1$ 
+	controllerLookup.put(PORTAMENTO,"portamento"); //$NON-NLS-1$ 
+	controllerLookup.put(SOSTENUTO, "sostenuto");  //$NON-NLS-1$ 
+	controllerLookup.put(RESET,     "reset");      //$NON-NLS-1$ 
+    }
+    private static String getController(int numb)
+    {
+	String ret=controllerLookup.get(numb);
+	if(ret==null)
+	{
+	    ret="unknown";
+	}
+	return ret;
+    }
+    
     private static HashMap<Integer, String> smLookup        = new HashMap<>();
     static
     {
@@ -161,7 +184,6 @@ public class MidiFunctions
                             row.put("velocity", (double) velocity); //$NON-NLS-1$
                             row.put("track", (double) trackNumber); //$NON-NLS-1$
                             row.put("channel", (double) sm.getChannel()); //$NON-NLS-1$
-                            row.put("event", event); //$NON-NLS-1$
                             stack.push(row);
                             if (stack.size() > 1)
                             {
@@ -194,8 +216,7 @@ public class MidiFunctions
                             }
                             else
                             {
-                                row.put("tick-off", (double) event.getTick()); //$NON-NLS-1$
-                                row.put("event-off", event); //$NON-NLS-1$
+                                row.put("tick_off", (double) event.getTick()); //$NON-NLS-1$
                                 column.add(row);
                             }
                         }
@@ -211,8 +232,7 @@ public class MidiFunctions
                         else
                         {
                             Map<String, Object> row = stack.pop();
-                            row.put("tick-off", (double) event.getTick()); //$NON-NLS-1$
-                            row.put("event-off", event); //$NON-NLS-1$
+                            row.put("tick_off", (double) event.getTick()); //$NON-NLS-1$
                             column.add(row);
                         }
                     }
@@ -225,10 +245,19 @@ public class MidiFunctions
                         row.put("type", command); //$NON-NLS-1$
                         row.put("track", (double) trackNumber); //$NON-NLS-1$
                         row.put("channel", (double) sm.getChannel()); //$NON-NLS-1$
-                        row.put("data1", (double) sm.getData1()); //$NON-NLS-1$
-                        row.put("data2", (double) sm.getData2()); //$NON-NLS-1$
+			if(command.equals("control_change")) //$NON-NLS-1$
+			{
+			    row.put("controller",getController(sm.getData1())); //$NON-NLS-1$
+			    row.put("amount",sm.getData2()); //$NON-NLS-1$
+			}else if(command.equals("pitch_bend")){ //$NON-NLS-1$
+			    row.put("amount",sm.getData1()<<8 | sm.getData2()); //$NON-NLS-1$
+			    // TODO interpret more commands completely rather than leaving
+			    // raw
+			}else{
+			    row.put("data1", (double) sm.getData1()); //$NON-NLS-1$
+			    row.put("data2", (double) sm.getData2()); //$NON-NLS-1$
+			}
                         row.put("tick", (double) event.getTick()); //$NON-NLS-1$
-                        row.put("event", event); //$NON-NLS-1$
                         column.add(row);
                     }
                 }
@@ -242,8 +271,7 @@ public class MidiFunctions
                     row.put("status", sxm.getStatus()); //$NON-NLS-1$
                     row.put("track", (double) trackNumber); //$NON-NLS-1$
                     row.put("tick", (double) event.getTick()); //$NON-NLS-1$
-                    row.put("event", event); //$NON-NLS-1$
-                    column.add(row);
+                     column.add(row);
                 }
                 else if (message instanceof MetaMessage)
                 {
@@ -260,7 +288,6 @@ public class MidiFunctions
                     row.put("length", mm.getLength()); //$NON-NLS-1$
                     row.put("status", mm.getStatus()); //$NON-NLS-1$
                     row.put("tick", (double) event.getTick()); //$NON-NLS-1$
-                    row.put("event", event); //$NON-NLS-1$
                     column.add(row);
                 }
                 else

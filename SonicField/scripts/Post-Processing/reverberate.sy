@@ -1,4 +1,4 @@
-sf.SetSampleRate(192000)
+#sf.SetSampleRate(192000)
 
 @sf_parallel
 def reverbInner(signal,convol,grainLength):
@@ -67,13 +67,15 @@ right=sf.Concatenate(sf.Silence(1024),right)
 #
 ####################################
 
-bright  = True
+dry     = True
+bright  = False
 vBright = False
 church  = False
 ambient = False
 post    = True
-spring  = True
-bboost  = False
+spring  = False
+bboost  = True
+mix     = 0.5
   
 if ambient:  
     (convoll,convolr)=sf.ReadFile("temp/impulses/v-grand-l.wav")
@@ -98,13 +100,17 @@ if spring:
     )
 
 if bboost:
-    left =sf.RBJLowShelf(left,256,1,6)
-    right=sf.RBJLowShelf(right,256,1,6)
-    
-convoll=excite(convoll,0.75,2.0)
-convolr=excite(convolr,0.75,2.0)
-convorl=excite(convorl,0.75,2.0)
-convorr=excite(convorr,0.75,2.0)
+    left =sf.RBJPeaking(left,100,1,6)
+    right=sf.RBJPeaking(right,100,1,6)
+
+    #left =sf.RBJLowShelf(left,256,1,6)
+    #right=sf.RBJLowShelf(right,256,1,6)
+
+if bright or vBright:
+    convoll=excite(convoll,0.75,2.0)
+    convolr=excite(convolr,0.75,2.0)
+    convorl=excite(convorl,0.75,2.0)
+    convorr=excite(convorr,0.75,2.0)
 
 ll  = reverberate(+left ,convoll)
 lr  = reverberate(+left ,convolr)
@@ -113,10 +119,9 @@ rr  = reverberate(+right,convorr)
 wleft =sf.FixSize(sf.Mix(ll,rl))
 wright=sf.FixSize(sf.Mix(rr,lr))
 
-wright = excite(wright,0.15,1.11)
-wleft  = excite(wleft ,0.15,1.11)
-
 if bright:
+    wright = excite(wright,0.15,1.11)
+    wleft  = excite(wleft ,0.15,1.11)
     right  = excite(right,0.15,1.05)
     left   = excite(left ,0.15,1.05)
 if vBright:
@@ -125,37 +130,41 @@ if vBright:
 
 sf.WriteFile32((sf.FixSize(+wleft),sf.FixSize(+wright)),"temp/wet.wav")
 
-wleft =sf.FixSize(sf.Mix(sf.Pcnt15(+left),sf.Pcnt85(wleft)))
-wright =sf.FixSize(sf.Mix(sf.Pcnt15(+right),sf.Pcnt85(wright)))
+wleft  =sf.FixSize(sf.Mix(sf.NumericVolume(+left,mix ),sf.NumericVolume(wleft,1.0-mix)))
+wright =sf.FixSize(sf.Mix(sf.NumericVolume(+right,mix),sf.NumericVolume(wright,1.0-mix)))
 
 sf.WriteFile32((+wleft,+wright),"temp/mix.wav")
 
-if ambient:
-    (convoll,convolr)=sf.ReadFile("temp/impulses/ultra-l.wav")
-    (convorl,convorr)=sf.ReadFile("temp/impulses/ultra-r.wav")
-elif church:
-    (convoll,convolr)=sf.ReadFile("temp/impulses/v-grand-l.wav")
-    (convorl,convorr)=sf.ReadFile("temp/impulses/v-grand-r.wav")
-else:
-    (convoll,convolr)=sf.ReadFile("temp/impulses/bh-l.wav")
-    (convorl,convorr)=sf.ReadFile("temp/impulses/bh-r.wav")
+if not dry:
+    if ambient:
+        (convoll,convolr)=sf.ReadFile("temp/impulses/ultra-l.wav")
+        (convorl,convorr)=sf.ReadFile("temp/impulses/ultra-r.wav")
+    elif church:
+        (convoll,convolr)=sf.ReadFile("temp/impulses/v-grand-l.wav")
+        (convorl,convorr)=sf.ReadFile("temp/impulses/v-grand-r.wav")
+    else:
+        (convoll,convolr)=sf.ReadFile("temp/impulses/bh-l.wav")
+        (convorl,convorr)=sf.ReadFile("temp/impulses/bh-r.wav")
 
-left  = sf.BesselLowPass(left  ,392,1)
-right = sf.BesselLowPass(right,392,1)
-ll  = reverberate(+left ,convoll)
-lr  = reverberate( left ,convolr)
-rl  = reverberate(+right,convorl)
-rr  = reverberate( right,convorr)
-vwleft =sf.FixSize(sf.Mix(ll,rl))
-vwright=sf.FixSize(sf.Mix(rr,lr))
-sf.WriteFile32((sf.FixSize(+vwleft),sf.FixSize(+vwright)),"temp/vwet.wav")
-wleft =sf.FixSize(sf.Mix(wleft ,sf.Pcnt20(vwleft )))
-wright=sf.FixSize(sf.Mix(wright,sf.Pcnt20(vwright)))
-sf.WriteSignal(+wleft ,"temp/grand-l.sig")
-sf.WriteSignal(+wright,"temp/grand-r.sig")
-wleft  = sf.Normalise(wleft)
-wright = sf.Normalise(wright)
-sf.WriteFile32((wleft,wright),"temp/grand.wav")
+    left  = sf.BesselLowPass(left  ,392,1)
+    right = sf.BesselLowPass(right,392,1)
+    ll  = reverberate(+left ,convoll)
+    lr  = reverberate( left ,convolr)
+    rl  = reverberate(+right,convorl)
+    rr  = reverberate( right,convorr)
+    vwleft =sf.FixSize(sf.Mix(ll,rl))
+    vwright=sf.FixSize(sf.Mix(rr,lr))
+    sf.WriteFile32((sf.FixSize(+vwleft),sf.FixSize(+vwright)),"temp/vwet.wav")
+    wleft =sf.FixSize(sf.Mix(wleft ,sf.Pcnt20(vwleft )))
+    wright=sf.FixSize(sf.Mix(wright,sf.Pcnt20(vwright)))
+    sf.WriteSignal(+wleft ,"temp/grand-l.sig")
+    sf.WriteSignal(+wright,"temp/grand-r.sig")
+    wleft  = sf.Normalise(wleft)
+    wright = sf.Normalise(wright)
+    sf.WriteFile32((wleft,wright),"temp/grand.wav")
+else:
+    sf.WriteSignal(left ,"temp/grand-l.sig")
+    sf.WriteSignal(right,"temp/grand-r.sig")
 
 if post:
     print "Warming"

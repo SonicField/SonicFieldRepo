@@ -1,6 +1,7 @@
-from Midi import *
 from Reverberation import granular_reverberate,reverberate
 from java.util.concurrent.atomic import AtomicLong
+import random
+
 NOTE_COUNTER=AtomicLong()
 
 ################################################################################
@@ -268,21 +269,38 @@ def sing(hint,pitch,lengthIn,v,vl,vr,voice,velocity_correct_,quick_factor,
 # decay:        use decay - see sing
 # bend:         use bend - see sing
 # mellow:       use mellow - see sing
+# simple:       use simple midi mode (see below), default True
+# controllers:  in complex midi mode use these functions as controllers#
 #
-# midi channels are lists of tuples. The tuples have this structure:
+# Notes
+# =====
 #
-#  tickOn,tickOff,note,key,velocity
+# midi channles are list of MidiEvent objects:
 #
-#  tickOn:   absolute time in ticks of note start (see beat)
-#  tickOff:  absolute time in ticks of note end (see beat)
-#  note:     text description of the note - ignored
-#  key:      numeric description of the note - passed to temperament 
-#            to get pitch
-#  velocity: the volume/velocity between 0 and 100
+# See Midi.py for the defintion of MidiEvent objects.
+#
+# In this mode we have controllers and meta events. Sysex as currently ignored.
+# The only meta event which is considered is temp.
+#
+# Controllers are named using the standard midi names all under control_change
+# as type:
+#
+#  modewheel
+#  breath
+#  foot
+#  portamento_time
+#  volume
+#  balance
+#  pan
+#  portamento
+#  sostenuto
+#  reset
+#
+#
 ################################################################################
 
 @sf_parallel
-def play_midi(
+def play(
         midi,
         beat,
         temperament,
@@ -298,7 +316,8 @@ def play_midi(
         pitch_add           =0.0,
         decay               =False,
         bend                =False,
-        mellow              =False
+        mellow              =False,
+        controllers         ={}
     ):
     notes=[]
     d_log("Stop: ",voice)
@@ -307,13 +326,20 @@ def play_midi(
         if index>0:
             prev=midi[index-1]
         else:
-            prev=()
+            prev=None
         if index<len(midi)-1:
             next=midi[index+1]
         else:
-            next=()
+            next=None
         current=midi[index]
-        tickOn,tickOff,note,key,velocity = current
+        if current.isNote():
+            tickOn   = current.tick
+            tickOff  = current.tick_off
+            key      = current.key
+            velocity = current.velocity
+        else:
+            continue
+            
         at=tickOn*beat
         length=(tickOff-tickOn)*beat
         if key==0:
@@ -386,8 +412,8 @@ def play_midi(
         # N=normal
         # E=end
         hint=""
-        if len(prev):
-            to,tf,n,k,v=prev
+        if prev and prev.isNote():
+            to,tf,n,k,v=prev.getNote()
             lp=(tf-to)*beat
             ep=tf*beat
             # quick close previous note
@@ -397,8 +423,8 @@ def play_midi(
                 hint+="N"
         else:
             hint+="S"
-        if len(next):
-            to,tf,n,k,v=next
+        if next and next.isNote():
+            to,tf,n,k,v=next.getNote()
             sn=to*beat
             # quick close previous note
             if sn-at < 100+length and length<256:

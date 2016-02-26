@@ -9,8 +9,16 @@ from Parallel_Helpers import mix
 from organ.Algorithms import do_formant,excite,create_vibrato
 from Signal_Generators import phasing_sawtooth,simple_sawtooth,phasing_triangle
 from Filters import byquad_filter
-from Reverberation import reverberate
+from Reverberation import convolve,reverberate
 import math
+import random
+
+# Get IRs
+violinIRs = sf.ViolinBodyIRs(())
+violaIRs  = sf.ViolaBodyIRs(())
+celloIRs  = sf.CelloBodyIRs(())
+bassIRs   = sf.BassBodyIRs(())
+
 
 @sf_parallel
 def vox_humana_inner(length,freq,a,b,c,z1=1.0,z2=1.25):
@@ -202,6 +210,20 @@ def viola(length,freq):
             clean_noise(length,freq*0.5),
             sf.SimpleShape((0,-60),(64,-20),(128,-36),(length,-36))
         )
+    )
+    sig=sf.FixSize(polish(sig,freq))
+    return pitch_move(sig)
+
+@sf_parallel
+def cello(length,freq):
+    sig=string(length,freq)
+    sig=create_vibrato(
+        sig,length,
+        longer_than=512,
+        rate=2.5,
+        at=450,
+        depth=0.25,
+        pitch_depth=0.02
     )
     sig=sf.FixSize(polish(sig,freq))
     return pitch_move(sig)
@@ -792,7 +814,6 @@ def shawm(length,freq):
 
 @sf_parallel
 def folk_basson(length,freq):
-    print length
     sig=sf.FixSize(
         sf.Power(
             phasing_sawtooth(length,freq)
@@ -918,3 +939,221 @@ def folk_clarinet(length,freq):
     sig=polish(sig,freq)
     sig=polish(sf.Saturate(sf.FixSize(sig)),freq)
     return sf.FixSize(sig)   
+
+def _nordic_string(
+        freq=None,
+        length=None,
+        e=32,
+        a=64,
+        whiteAmount=0.1,
+        vibStart=None,
+        vibMiddle=None,
+        vibAmount=0,
+        vibRate=2.0,
+        bright=True,
+        body=None
+    ):
+
+    if freq is None:
+        raise ValueError('Must provide freq')
+
+    if length is None:
+        raise ValueError('Must provide length')
+
+    if vibAmount != 0:
+        if vibMiddle is None:
+            raise ValueError('Must provide vibMiddle if vibAmount')
+        if vibStart is None:
+            raise ValueError('Must provide vibStart if vibAmount')
+    
+    def raw_string(length,freq):
+        def raw_stringA(l,p):
+            return phasing_sawtooth(l,p)
+        freq=float(freq)
+        s1=raw_stringA(length,freq)
+        s2=raw_stringA(length,freq*2.0)
+        s3=raw_stringA(length,freq*4.0)
+        s4=sf.WhiteNoise(length)
+        signal=sf.FixSize(
+            sf.Mix(
+                sf.Pcnt20(s4),
+                sf.Pcnt50(s1),
+                sf.Pcnt20(s2),
+                sf.Pcnt10(s3)
+            )
+        )
+        signal=sf.Clean(sf.ResonantFilter(signal,0.95,0.15,sf.Period(freq)))
+        multi=sf.Finalise(
+            sf.DirectRelength(
+                sf.ButterworthLowPass(sf.WhiteNoise(length/500.0),2500,6),
+                0.001
+            )
+        )
+        multi=sf.Cut(0,sf.Length(+signal),multi)
+        signal=sf.Resample(
+            sf.DirectMix(1,sf.NumericVolume(multi,0.001)),
+            signal
+        )
+        return sf.Realise(sf.FixSize(sf.Clean(signal)))
+    
+    
+    def play_string_clean(a,length,freq,whiteAmount,body):
+        def rsd():
+            return raw_string(length,freq)
+        
+        signal=0
+        if(freq>500):
+            signal=sf.FixSize(sf.Mix(rsd(),rsd(),rsd()))
+        else:
+            signal=sf.FixSize(sf.Mix(rsd(),rsd()))
+
+        if not bright:
+            if(freq>440):    
+                signal=sf.ButterworthHighPass(signal,freq*0.5,6)
+                signal=sf.ButterworthHighPass(signal,2000,1)
+                signal=sf.ButterworthLowPass(signal,8000,1)
+            if(freq<128):
+                signal=sf.ButterworthHighPass(signal,freq*0.5,1)
+                signal=sf.ButterworthHighPass(signal,500,1)
+                signal=sf.ButterworthLowPass(signal,2000,1)
+            else:
+                signal=sf.ButterworthHighPass(signal,freq*0.5,3)
+                signal=sf.ButterworthHighPass(signal,1500,1)
+                signal=sf.ButterworthLowPass(signal,4000,1)
+        
+            signal=sf.ButterworthLowPass(signal,freq*10.0,1)
+            
+        signal=sf.Mix(
+            sf.Pcnt25(+signal),
+            sf.Pcnt75(sf.RBJNotch(signal,freq,0.5))
+        )    
+
+        white=sf.WhiteNoise(length)
+        white=sf.ButterworthHighPass(white,freq*2.0,2)
+        white=sf.ButterworthLowPass(white,freq*6.0,1)
+        white=sf.FixSize(white)
+        white=sf.Multiply(white,+signal)
+        white=sf.NumericVolume(white,whiteAmount)
+        signal=sf.NumericVolume(signal,1.0-whiteAmount)
+        signal=sf.FixSize(sf.Mix(signal,white))
+    
+        sq=sf.Mix(
+            sf.PhasedSineWave(length,freq*0.95,random.random()),
+            sf.PhasedSineWave(length,freq*1.05,random.random())
+        )
+        envb=sf.NumericShape((0,0.25),(a,0),(length,0))
+        sq=sf.Multiply(envb,sf.FixSize(sq))
+    
+        enva=sf.NumericShape((0,0.75),(a,1),(length,1))
+        signal=sf.Multiply(enva,signal)
+    
+        signal=sf.Mix(sq,sf.FixSize(signal))
+        
+        sigs=[]
+        bodies=[]
+        if body is None:
+            if(freq<128):
+                bodies=bassIRs
+            elif(freq<440):
+                bodies=celloIRs
+            else:
+                bodies=violinIRs
+        else:
+            bodies={
+                'bass'  : bassIRs,
+                'cello' : celloIRs,
+                'violin': violinIRs
+            }[body]
+
+        if bright:
+            bs=[]
+            for b in bodies:
+                bs.append(sf.Power(b,1.25))
+            bodies=bs
+            if freq<256:
+                signal=sf.Power(signal,1.5)
+            elif freq<512:
+                signal=sf.Power(signal,1.25)
+            elif freq<1024:
+                signal=sf.Power(signal,1.15)
+            else:
+                signal=sf.Power(signal,1.05)
+        
+        env=sf.NumericShape((0,0),(16,1),(length-16,1),(length,0))
+        signal=sf.Multiply(env,signal)
+
+        for body in bodies:
+            sigs.append(convolve(+signal,+body))
+            
+        signal=sf.Mix(
+             sf.FixSize(sf.Mix(sigs)),
+             sf.NumericVolume(sf.FixSize(signal),0.05)
+        )
+        
+        return sf.FixSize(sf.Clean(signal))
+
+    sigs=[]
+    for x in range(0,5):
+        sigs.append(play_string_clean(a,length,freq,whiteAmount,body))
+    signal=sf.FixSize(sf.Mix(sigs))
+
+    trueLen=sf.Length(+signal)
+    envA=sf.SimpleShape(
+        (0,-60),
+        (e,0),
+        (trueLen,0)
+    )
+    envB=sf.NumericShape(
+        (0,0),
+        (a,1),
+        (trueLen,1)
+    )
+    env=sf.Multiply(envA,envB)
+    
+    signal=sf.Multiply(signal,env)
+    if(vibAmount>0):
+        l=trueLen
+        env=sf.NumericShape((0,0),(vibStart,0),(vibMiddle,1),(length,0.75),(l,0))
+        env=sf.NumericVolume(env,vibAmount)
+        trem=sf.SineWave(l,2.0+random.random())
+        trem=sf.Multiply(env,trem)
+        vib=+trem
+        trem=sf.DirectMix(1,sf.Pcnt50(trem))
+        signal=sf.Multiply(trem,signal)
+        vib=sf.DirectMix(1,sf.NumericVolume(vib,0.01))
+        signal=sf.Resample(vib,signal)
+    
+    if(freq>128):
+        signal=sf.ButterworthHighPass(signal,freq*0.75,6)
+        if not bright:
+            signal=sf.BesselLowPass(signal,freq,1)
+    else:
+        signal=sf.ButterworthHighPass(signal,freq*0.75,3)
+        
+    return sf.Realise(sf.FixSize(sf.Clean(signal)))
+
+@sf_parallel
+def nordic_cello(length,freq,vibAbove=250):
+    params={
+        'freq'      :freq,
+        'length'     :length,
+        'e'          :32,
+        'a'          :64,
+        'whiteAmount':0.1 if freq < 720 else 0.05,
+        'vibStart'   :None,
+        'vibMiddle'  :None,
+        'vibAmount'  :0,
+        'vibRate'    :2.0+random.random()*0.5,
+        'bright'     :True,
+        'body'       :'cello'
+    }
+
+    # Vibrato on longer nodes
+    if length > vibAbove:
+        # TODO feels a bit crushed - more stages?
+        params['vibStart'] = length*0.5  if length>600 else vibAbove*0.75
+        params['vibMiddle']= length*0.75 if length>600 else vibAbove
+        params['vibAmount']= 0.5 if length > 1000 else 0.25
+
+    return _nordic_string(**params)
+    
