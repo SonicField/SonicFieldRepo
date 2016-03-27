@@ -1,22 +1,31 @@
-def excite(sig_,mix,power):
-    def exciteInner():
-        sig=sig_
-        m=sf.Magnitude(+sig)
-        sigh=sf.BesselHighPass(+sig,500,2)
-        mh=sf.Magnitude(+sigh)
-        sigh=sf.Power(sigh,power)
-        sigh=sf.Clean(sigh)
-        sigh=sf.BesselHighPass(sigh,1000,2)
-        nh=sf.Magnitude(+sigh)
-        sigh=sf.NumericVolume(sigh,mh/nh)
-        sig=sf.Mix(sf.NumericVolume(sigh,mix),sf.NumericVolume(sig,1.0-mix))
+from Reverberation import convolve,reverberate
+
+@sf_parallel
+def excite(sig_,mix,power,sat,satMix):
+    sig=sig_
+    m=sf.Magnitude(+sig)
+    sigh=sf.BesselHighPass(+sig,500,2)
+    mh=sf.Magnitude(+sigh)
+    sigh=sf.Power(sigh,power)
+    sigh=sf.Clean(sigh)
+    sigh=sf.BesselHighPass(sigh,1000,2)
+    nh=sf.Magnitude(+sigh)
+    sigh=sf.NumericVolume(sigh,mh/nh)
+    sig=sf.Mix(sf.NumericVolume(sigh,mix),sf.NumericVolume(sig,1.0-mix))
+    if sat:
         n=sf.Magnitude(+sig)
-        return sf.Realise(sf.NumericVolume(sig,m/n))
-    return sf_do(exciteInner)
+	sig=sf.Realise(sf.NumericVolume(sig,sat*m/n))
+	sigst=sf.Saturate(+sig)
+	sig=sf.Mix(sf.NumericVolume(sigst,satMix),sf.NumericVolume(sig,1.0-satMix))
+    n=sf.Magnitude(+sig)
+    return sf.Realise(sf.NumericVolume(sig,m/n))
     
 (left,right)=sf.ReadFile("temp/a.wav")
-left =excite(left ,0.5,1.05)
-right=excite(right,0.5,1.05)
+left =excite(left ,0.5,1.05,1.5,0.75)
+right=excite(right,0.5,1.05,1.5,0.75)
+con=sf.ReadFile("temp/RCA_44BX_2.wav")[0]
+left =reverberate(left, +con)
+right=reverberate(right,+con)
 left  = sf.Finalise(left)
 right = sf.Finalise(right)
 sf.WriteFile32((left,right),"temp/c.wav")

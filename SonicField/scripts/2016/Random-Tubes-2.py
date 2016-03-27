@@ -141,8 +141,8 @@ def run(
         r          = rlen
 
         # for plucked glass
-        if a>25:
-            a=25
+        #if a>25:
+        #    a=25
 
         velocity_correction = 1/pitchScale
         
@@ -219,17 +219,16 @@ def run(
 
 random.seed()
 mins = 20
-voce = [plucked_glass for x in range(0,6)]
+voce = [voice1 for x in range(0,8)]
 scnt = len(voce)
 sigs = [
     run(voce[x],64*pow(2,x),1024*(scnt-x),mins,vOver = 1.0/(x+1.0))
     for x in range(0,scnt)
 ]
 
-print sigs
 sigs = (
-    sf.Finalise(sf.Mix([sig[0]  for sig in sigs])),
-    sf.Finalise(sf.Mix([sig[1]  for sig in sigs]))
+    sf.Finalise(sf.Mix([sig[0] for sig in sigs])),
+    sf.Finalise(sf.Mix([sig[1] for sig in sigs]))
 )
 
 sf.WriteFile32(sigs,"temp/rand.wav")

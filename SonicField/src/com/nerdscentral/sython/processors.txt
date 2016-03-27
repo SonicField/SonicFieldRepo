@@ -104,6 +104,7 @@ com.nerdscentral.audio.pitch.SF_ShapedBiquadNotch
 com.nerdscentral.audio.pitch.SF_ShapedBiquadPeak
 com.nerdscentral.audio.pitch.SF_ShapedLadder
 com.nerdscentral.audio.pitch.SF_TimeDomain
+com.nerdscentral.audio.time.SF_AnalogueChorus
 com.nerdscentral.audio.time.SF_FilteredResonateFilter
 com.nerdscentral.audio.time.SF_MultipleResonantFilter
 com.nerdscentral.audio.time.SF_MultipleTruncateSilence

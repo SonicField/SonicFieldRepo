@@ -8,6 +8,7 @@ import com.nerdscentral.sython.Caster;
 import com.nerdscentral.sython.SFPL_Context;
 import com.nerdscentral.sython.SFPL_Operator;
 import com.nerdscentral.sython.SFPL_RuntimeException;
+import com.nerdscentral.audio.SFConstants;
 
 public class SF_Constant implements SFPL_Operator
 {
@@ -42,6 +43,6 @@ public class SF_Constant implements SFPL_Operator
     public Object Interpret(Object input, SFPL_Context context) throws SFPL_RuntimeException
     {
         List<Object> l = Caster.makeBunch(input);
-        return new Generator(Caster.makeInt(l.get(0)), Caster.makeDouble(l.get(1)));
+        return new Generator((int)(Caster.makeDouble(l.get(0))*SFConstants.SAMPLE_RATE_MS), Caster.makeDouble(l.get(1)));
     }
 }
