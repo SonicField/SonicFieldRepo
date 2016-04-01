@@ -1,6 +1,6 @@
 sf.SetSampleRate(96000)
 
-import Reverberation
+from Reverberation import granular_reverberate,reverberate
 from Parallel_Helpers import mix,finalise
 
 #sf_parallel
@@ -10,9 +10,9 @@ def doRev(signal,revSignal):
         granular_reverberate(+signal ,0.125,563.0/2.5, 16,512,4,1.0,0.1),
         granular_reverberate(+signal ,0.25 ,241.0/2.5, 32,128,4,1.0,0.3),
         granular_reverberate(+signal ,1.0  ,307.0/2.5, 64,128,4,0.5,0.5,0.5),
-        granular_reverberate(+signal ,4.0  ,487.0/2.5, 64,128,4,0.5,1.5,0.25),
+        granular_reverberate( signal ,4.0  ,487.0/2.5, 64,128,4,0.5,1.5,0.25)
     )
-    
+
     return reverberate(sig,revSignal)
         
 left,right=sf.ReadFile("temp/input.wav")
