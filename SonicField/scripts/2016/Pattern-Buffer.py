@@ -10,10 +10,10 @@ from Filters import byquad_filter
 from organ.Generators import clean_noise
 from Parallel_Helpers import mix,realise
 from organ.Algorithms import do_formant,excite,create_vibrato
-from organ.Voices import celest_flute as voice2
-from organ.Voices import folk_flute as voice3
+from organ.Voices import celest_flute 
 import random
 import math
+import Signal_Generators
 
 def makeNote():
     pass
@@ -55,6 +55,27 @@ def brittle(length,freq):
     sig=sf.Finalise(sig)
     return sig
 
+def ring(length, pitch):
+    print "Ring: " + str(pitch) + "/" + str(length)
+    sig1 = sf.SineWave(length,pitch*1.2)
+    sig2 = sf.SineWave(length,pitch*1.2 + 1)
+    env  = sf.SimpleShape((0,-60),(125,0),(length,-30))
+    
+    sig1 = sf.Multiply(+env,sig1)
+    sig1 = sf.Pcnt90(sf.DirectMix(1,sig1))
+    sig3 = sf.PhaseModulatedSineWave(pitch,sig1)
+    sig3 = sf.Multiply(+env,sig3)
+
+    sig2 = sf.Multiply(+env,sig2)
+    sig2 = sf.Pcnt90(sf.DirectMix(1,sig2))
+    sig4 = sf.PhaseModulatedSineWave(pitch,sig2)
+    sig4 = sf.Multiply(env,sig4)
+    
+    sig5 = sf.Volume(sf.Mix(sig3,sig4),6)
+    sig=sf.Saturate(sig5)
+    sig=sf.ResonantFilter(sig,0.99,0.05,1000.0/pitch)
+    return sf.Realise(sf.Normalise(sig))
+
 @sf_parallel
 def generate(
         voice,
@@ -69,7 +90,7 @@ def generate(
     sig = voice(r,pitch)
 
     env = sf.NumericShape(
-        (0,pitch),
+        (0,pitch*8),
         (a,pitch*4),
         ((a+d)*0.5,pitch*8),
         (d,pitch*4),
@@ -89,7 +110,7 @@ def generate(
     sig = sf.ShapedLadderLowPass(sig,env,res)
 
     env = sf.NumericShape(
-        (0,0),
+        (0,0.1),
         (a,0.25),
         ((a+d)*0.5,1.0),
         (d,0.4*random.random()+0.1),
@@ -101,9 +122,10 @@ def generate(
     # must be longer than the max delay
     sig=sf.Concatenate(sig,sf.Silence(200))
     
-    dhz = 4.0 + random.random()
+    dhz = 2.0
     dly = 1000.0/float(dhz);
-    mod = sf.SineWave(sf.Length(+sig),0.25+random.random()*0.1)
+    mod = sf.SineWave(sf.Length(+sig),0.25)
+    mod = sf.NumericVolume(mod,dly/10)
     sig = sf.AnalogueChorus(sig,dly,mod,0.80,1.0)
     sgs = [ sf.FixSize(s) for s in sig ]
     
@@ -217,7 +239,7 @@ def run(
     def post(notes,i):
         r = []
         for s,v,a in notes:
-            r += [(sf.NumericVolume(s.get()[i],v),a)]
+            r += [(sf.NumericVolume(s.get()[i],v),a*2.0)]
         return r
     
     return (
@@ -226,10 +248,10 @@ def run(
     )
 
 random.seed()
-mins = 60.0
-voce = [brittle]*5
+mins = 35.0
+voce = [ring]*6
 scnt = len(voce)
-sped = 1024.0*8.0
+sped = 1024.0*4.0
 sigs = [
     run(
         voce[x],
@@ -250,13 +272,16 @@ sigs = (
 @sf_parallel
 def spatialise(sig):
     dly = sped
-    mod = sf.MakeTriangle(sf.SineWave(sf.Length(+sig),0.9))
+    mod = Signal_Generators.LimitedTriangle(sf.Length(+sig),0.111,10)
+    mod = sf.Finalise(mod)
     mod = sf.NumericVolume(mod,sped/10.0)
-    sig = sf.AnalogueChorus(sig,dly,mod,0.85,0.8)
+    sig = sf.AnalogueChorus(sig,dly,mod,0.65,0.8)
     return [ sf.FixSize(s) for s in sig ]
 
-lr = spatialise(sigs[0]).get()
-rl = spatialise(sigs[1]).get()
+lr = spatialise(sigs[0])
+rl = spatialise(sigs[1])
+lr = lr.get()
+rl = rl.get()
 ll = sf.MixAt(
     (lr[0],0),
     (sf.Pcnt10(lr[1]),30)
@@ -268,10 +293,11 @@ rr = sf.MixAt(
 sigs = [
     sf.Finalise(
         sf.Multiply(
-            sf.SimpleShape(
-                (0,-90),
+            sf.NumericShape(
+                (0,0),
                 (100,0),
-                (sf.Length(+sig),0)
+                (125,1),
+                (sf.Length(+sig),1)
             ),sig
         )
     ) for sig in (ll,rr)]

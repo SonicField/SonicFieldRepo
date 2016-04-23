@@ -70,12 +70,12 @@ right=sf.Concatenate(sf.Silence(1024),right)
 dry     = False
 bright  = True
 vBright = False
-church  = False
-ambient = True
+church  = True
+ambient = False
 post    = True
 spring  = True
-bboost  = True
-mix     = 0.5
+bboost  = False
+mix     = 0.25
   
 if ambient:  
     (convoll,convolr)=sf.ReadFile("temp/impulses/v-grand-l.wav")

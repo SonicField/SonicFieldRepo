@@ -10,9 +10,9 @@
 # -XX:+PrintCompilation \
 
 java \
-    -DsonicFieldTemp=/Volumes/Swap \
+    -DsonicFieldTemp=/tmp \
     -Dsython.threads=16 \
-    -Xmx4G \
+    -Xmx7G \
     -Dsython.linear=false \
     -Dsython.trace=false \
     -Dsython.modules=/Users/alexanderturner/SonicFieldRepo/SonicField/src/com/nerdscentral/sython/modules \

@@ -1,3 +1,4 @@
+import math
 sf.SetSampleRate(96000)
 if not 'random' in dir():
     import random
@@ -50,19 +51,38 @@ def chorus(
     
     return inner(left),inner(right)
     
-(left,right)=sf.ReadFile("temp/dog.wav")
-#left  = sf.RBJHighPass(left ,4000,2)
-#right = sf.RBJHighPass(right,4000,2)
+sig = sf.ReadFile("temp/input.wav")[0]
+
+@sf_parallel
+def spatialise(sig):
+    osg = +sig
+    
+    dhz = 0.5
+    dly = 1000.0/float(dhz)
+    md1 = sf.SineWave(sf.Length(+sig),math.pow(2.0,0.5)*0.090)
+    md2 = sf.Pcnt25(sf.SineWave(sf.Length(+sig),math.pow(2.0,0.5)*0.085))
+    md1 = sf.NumericVolume(sf.Mix(md1,md2),1000)
+    sgs = sf.AnalogueChorus(sig,dly,md1,1.1,0.8)
+
+    dly = 250.0
+    md1 = sf.SineWave(sf.Length(+osg),0.1)
+    md1 = sf.NumericVolume(+md1,100)
+    osg = sf.AnalogueChorus(osg,dly,md1,0.8,0.8)
+
+    return[ sf.FixSize(sf.Mix(s)) for s in zip(sgs,osg) ]
+    
+left,right = spatialise(sig)
 
 left1,right1=chorus(
     +left,
     +right,
-    minDepth =  0.0,
-    maxDepth = 10.0,
-    minVol   =  1.0,
+    minDepth = 10.0,
+    maxDepth = 40.0,
+    minVol   =  0.7,
     maxVol   =  1.0,
-    nChorus  =  4.0)
-'''    
+    nChorus  =  8.0)
+
+'''
 left2,right2=chorus(
     +left1,
     +right1,
@@ -76,9 +96,10 @@ left2,right2=chorus(
 
 left  = sf.Mix(left1 ,left2)
 right = sf.Mix(right1,right2)
+'''
 left  = sf.Finalise(sf.RBJPeaking(left ,64,1,8))
 right = sf.Finalise(sf.RBJPeaking(right,64,1,8))
-'''
+
 
 left  = sf.Finalise(sf.RBJPeaking(sf.Mix(left,left1)  ,128,1,8))
 right = sf.Finalise(sf.RBJPeaking(sf.Mix(right,right1),128,1,8))

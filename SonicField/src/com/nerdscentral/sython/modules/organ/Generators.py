@@ -246,10 +246,10 @@ def sing_base(length,freq,z=1.0):
             # cut of at -60 db 
             if vol>0.25e-06:
                 vol*=y
-                voxA.append(sf.NumericVolume(sf.PhasedSineWave(length,hf+random.random()*10.0,random.random()),vol))
-                voxA.append(sf.NumericVolume(sf.PhasedSineWave(length,hf-random.random()*10.0,random.random()),vol))
-                voxA.append(sf.NumericVolume(sf.PhasedSineWave(length,hf+random.random()*10.0,random.random()),vol))
-                voxA.append(sf.NumericVolume(sf.PhasedSineWave(length,hf-random.random()*10.0,random.random()),vol))
+                voxA.append(sf.NumericVolume(sf.PhasedTableSineWave(length,hf+random.random()*10.0,random.random()),vol))
+                voxA.append(sf.NumericVolume(sf.PhasedTableSineWave(length,hf-random.random()*10.0,random.random()),vol))
+                voxA.append(sf.NumericVolume(sf.PhasedTableSineWave(length,hf+random.random()*10.0,random.random()),vol))
+                voxA.append(sf.NumericVolume(sf.PhasedTableSineWave(length,hf-random.random()*10.0,random.random()),vol))
         hc+=1
 
     vox=mix(voxA)       

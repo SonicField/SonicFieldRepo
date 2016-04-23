@@ -70,7 +70,7 @@ public final class SFMaths
     static
     {
 
-        size = 10000;
+        size = 100000;
         table = new double[size];
         step = 2d * Math.PI / size;
         invStep = 1.0f / step;
