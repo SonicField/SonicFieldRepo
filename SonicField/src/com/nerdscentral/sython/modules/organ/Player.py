@@ -1,4 +1,4 @@
-from Reverberation import granular_reverberate,reverberate
+from Reverberation import granular_reverberate,reverberate,convolve
 from java.util.concurrent.atomic import AtomicLong
 import random
 
@@ -231,7 +231,7 @@ def sing(hint,pitch,lengthIn,v,vl,vr,voice,velocity_correct_,quick_factor,
         q=256
     cnv=sf.Cut(5000,5000+q,cnv)
     cnv=sf.Multiply(cnv,sf.NumericShape((0,0),(32,1),(q,0)))
-    sigr=reverberate(+sig,cnv)
+    sigr=convolve(+sig,cnv)
     sigr=sf.Multiply(
         safe_env(sigr,[(0,0),(256,1),(sf.Length(+sigr),1.5)]),
         sigr
@@ -322,6 +322,7 @@ def play(
     notes=[]
     d_log("Stop: ",voice)
     d_log('Total notes:',len(midi))
+    oldI = 0
     for index in range(0,len(midi)):
         if index>0:
             prev=midi[index-1]
@@ -438,6 +439,11 @@ def play(
         signals = sing(hint,pitch, length,velocity,lr,rl,voice,vCUse,quick_factor,sub_bass,flat_env,pure,raw_bass,decay,bend,mellow)
         dl=30*rl+1000
         dr=38*lr+1000
+        l=len(notes)
+        if l > oldI + 8:
+            for x in range(oldI,l):
+                notes[x][0].get()
+            oldI = l
         notes.append((signals,at+dl,at+dr))
     return notes
 

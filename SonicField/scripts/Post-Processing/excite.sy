@@ -20,7 +20,7 @@ def excite(sig_,mix,power,sat,satMix):
     n=sf.Magnitude(+sig)
     return sf.Realise(sf.NumericVolume(sig,m/n))
     
-(left,right)=sf.ReadFile("temp/a.wav")
+(left,right)=sf.ReadFile("temp/c.wav")
 left =excite(left ,0.5,1.05,1.5,0.75)
 right=excite(right,0.5,1.05,1.5,0.75)
 con=sf.ReadFile("temp/RCA_44BX_2.wav")[0]
@@ -28,4 +28,4 @@ left =reverberate(left, +con)
 right=reverberate(right,+con)
 left  = sf.Finalise(left)
 right = sf.Finalise(right)
-sf.WriteFile32((left,right),"temp/c.wav")
+sf.WriteFile32((left,right),"temp/d.wav")

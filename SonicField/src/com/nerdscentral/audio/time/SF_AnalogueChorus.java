@@ -41,6 +41,11 @@ public class SF_AnalogueChorus implements SFPL_Operator
 	){
 	    try(SFData in = SFData.realise(inR))
 	    {
+		double filt = 5000.0;
+		if(lin.size()>4)
+		{
+		    filt=Caster.makeDouble(lin.get(5));
+		}			
 		if(inR instanceof SFData)
 		{
 		    in.__pos__();
@@ -51,8 +56,13 @@ public class SF_AnalogueChorus implements SFPL_Operator
 		double r = in.getLength();
 		double feedForward = 1.0 - feedBack;
 		FilterType type = FilterType.LOWPASS;
+		if(filt>15000)
+		{
+		    type = FilterType.ALLPASS;
+		    filt = 5000.0;
+		}
 	        SFRBJFilter filter = new SFRBJFilter();
-		filter.calc_filter_coeffs(type, 5000.0, 1.0, 0);
+		filter.calc_filter_coeffs(type, filt, 1.0, 0);
 
 		try (
 		     SFSignal buff = in.replicateEmpty();
@@ -65,7 +75,7 @@ public class SF_AnalogueChorus implements SFPL_Operator
 		    }
 		    // reboot the filter
 		    filter = new SFRBJFilter();
-		    filter.calc_filter_coeffs(type, 5000.0, 1.0, 0);
+		    filter.calc_filter_coeffs(type, filt, 1.0, 0);
 		    int last = 0;
 		    for (int n = 0; n < r; ++n)
 		    {

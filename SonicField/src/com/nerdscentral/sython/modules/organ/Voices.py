@@ -7,7 +7,7 @@
 from organ.Generators import *
 from Parallel_Helpers import mix
 from organ.Algorithms import do_formant,excite,create_vibrato
-from Signal_Generators import phasing_sawtooth,simple_sawtooth,phasing_triangle
+from Signal_Generators import phasing_sawtooth,simple_sawtooth,phasing_triangle, limited_triangle
 from Filters import byquad_filter
 from Reverberation import convolve,reverberate
 import math
@@ -1157,3 +1157,8 @@ def nordic_cello(length,freq,vibAbove=250):
 
     return _nordic_string(**params)
     
+def pure_sine(length,freq):
+    return sf.Realise(sf.PhasedTableSineWave(length,freq,random.random()))
+
+def pure_triangle(length,freq):
+    return sf.Realise(limited_triangle(length,freq,12))

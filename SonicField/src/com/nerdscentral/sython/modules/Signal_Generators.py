@@ -51,9 +51,11 @@ def phasing_triangle(length,pitch):
         it+=2.0
     return sf.Finalise(sf.Mix(signals))
 
-def LimitedTriangle(length,pitch,harmonics):
+def limited_triangle(length,pitch,harmonics):
     pitch=float(pitch)
     limit=float(harmonics)*pitch
+    if limit>18000:
+        limit=18000
     signals=[]
     v=1
     opitch=pitch

@@ -53,6 +53,8 @@ def excite(sig_,mix,power):
 ####################################
 
 (left,right)=sf.ReadFile("temp/dry.wav")
+#left  = sf.ReadSignal("temp/c_left")
+#right = sf.ReadSignal("temp/c_right")
 
 left =sf.Multiply(sf.NumericShape((0,0),(64,1),(sf.Length(+left ),1)),left )
 right=sf.Multiply(sf.NumericShape((0,0),(64,1),(sf.Length(+right),1)),right)
@@ -67,15 +69,18 @@ right=sf.Concatenate(sf.Silence(1024),right)
 #
 ####################################
 
-dry     = False
-bright  = True
+dry     = True
+clear   = False
+bright  = False
 vBright = False
-church  = True
+church  = False
 ambient = False
-post    = True
+megaThe = False
+terys   = True
+post    = False
 spring  = True
-bboost  = False
-mix     = 0.25
+bboost  = True
+mix     = 0.0
   
 if ambient:  
     (convoll,convolr)=sf.ReadFile("temp/impulses/v-grand-l.wav")
@@ -90,13 +95,29 @@ else:
 if spring:
     spring=sf.ReadFile("temp/impulses/classic-fs2a.wav")[0]
     convoll=sf.Mix(
-        convoll,
+       convoll,
         +spring
     )
     
     convorr=sf.Mix(
         convorr,
         sf.Invert(spring)
+    )
+
+if megaThe:
+    ml,mr=sf.ReadFile("temp/impulses/mega-thederal.wav")
+    convoll=sf.Finalise(
+        sf.Mix(
+            convoll,
+            ml
+        )
+    )
+    
+    convorr=sf.Finalise(
+        sf.Mix(
+            convorr,
+            mr
+        )
     )
 
 if bboost:
@@ -106,7 +127,7 @@ if bboost:
     #left =sf.RBJLowShelf(left,256,1,6)
     #right=sf.RBJLowShelf(right,256,1,6)
 
-if bright or vBright:
+if bright or vBright or clear:
     convoll=excite(convoll,0.75,2.0)
     convolr=excite(convolr,0.75,2.0)
     convorl=excite(convorl,0.75,2.0)
@@ -163,8 +184,9 @@ if not dry:
     wright = sf.Normalise(wright)
     sf.WriteFile32((wleft,wright),"temp/grand.wav")
 else:
-    sf.WriteSignal(left ,"temp/grand-l.sig")
-    sf.WriteSignal(right,"temp/grand-r.sig")
+    if post:
+        sf.WriteSignal(left ,"temp/grand-l.sig")
+        sf.WriteSignal(right,"temp/grand-r.sig")
 
 if post:
     print "Warming"

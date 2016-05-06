@@ -1,4 +1,10 @@
 #!/bin/bash
+
+# First - ensure any changes to the Java are compiled up
+if ! ant; then
+    exit 1
+fi
+
 # An Example shell script for launching Synthon from the command line.
 # This will work on Linux or OSX
 
@@ -10,19 +16,19 @@
 # -XX:+PrintCompilation \
 
 java \
-    -DsonicFieldTemp=/tmp \
-    -Dsython.threads=16 \
-    -Xmx7G \
+    -DsonicFieldTemp=/Volumes/Swap \
+    -Dsython.threads=8 \
+    -Xmx2G \
     -Dsython.linear=false \
     -Dsython.trace=false \
     -Dsython.modules=/Users/alexanderturner/SonicFieldRepo/SonicField/src/com/nerdscentral/sython/modules \
     -XX:+UseParallelGC \
     -Dsython.steal=true \
-    -DsonicFieldDirectMemory=False \
-    -XX:MaxDirectMemorySize=8g \
+    -DsonicFieldDirectMemory=True \
+    -XX:MaxDirectMemorySize=2g \
     -XX:MaxInlineSize=128 \
     -XX:InlineSmallCode=1024 \
-    -Xms100m \
+    -Xms256m \
     -classpath bin:jars/jython-standalone-2.7.0.jar com.nerdscentral.sython.Sython $1
 
 # To run on Windows simply copy this file to a batch file and put all the class path on 
