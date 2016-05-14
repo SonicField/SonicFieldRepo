@@ -69,7 +69,7 @@ right=sf.Concatenate(sf.Silence(1024),right)
 #
 ####################################
 
-dry     = True
+dry     = False
 clear   = False
 bright  = False
 vBright = False

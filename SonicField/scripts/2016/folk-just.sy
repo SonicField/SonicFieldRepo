@@ -30,7 +30,8 @@ from organ.Voices import \
     nordic_cello, \
     upper_accent, \
     pure_triangle, \
-    pure_sine
+    pure_sine, \
+    simple_bell
 
 def sing(midi_in,beat,temperament,velocity):
     l=200.0
@@ -251,8 +252,16 @@ def first_harmony(midi_in,beat,temperament,velocity):
     return post_process(notes1)
 
 def space_sine(midi_in,beat,temperament,velocity):
-    notes1=Player.play(midi_in,beat,temperament,voice=pure_sine,bend=False,mellow=False,velocity_correct=velocity*1.0,flat_env=True, quick_factor=1.0)
+    notes1=Player.play(midi_in,beat,temperament,voice=pure_sine,bend=False,mellow=False,velocity_correct=velocity*1.0,flat_env=False, quick_factor=1.0)
     return post_process(notes1)
+
+def pure_glass(midi_in,beat,temperament,velocity):
+    notes1=Player.play(midi_in,beat,temperament,voice=plucked_glass,bend=True,mellow=True,velocity_correct=velocity*1.0,flat_env=False, quick_factor=0.1)
+    return post_process(notes1)    
+
+def pure_bell(midi_in,beat,temperament,velocity):
+    notes1=Player.play(midi_in,beat,temperament,voice=simple_bell,bend=False,mellow=True,velocity_correct=velocity*1.0,flat_env=True, quick_factor=0.0, pure=True)
+    return post_process(notes1)    
 
 def space_accented(midi_in,beat,temperament,velocity):
     notes1=Player.play(midi_in,beat,temperament,voice=pure_sine,bend=False,mellow=False,velocity_correct=velocity*1.0, flat_env=True, quick_factor=1.0)
@@ -284,7 +293,7 @@ midis=Midi.read_midi_file("temp/input.mid")
 
 # Length of full piece
 #======================
-length = 63
+length = 32
 
 # Temperament
 #=============
@@ -332,7 +341,7 @@ out = o2
 out = out[0:8]
 '''
 
-left,right = [sf.Finalise(sig) for sig in space_accented(out,beat,temperament,1.0)]
+left,right = [sf.Finalise(sig) for sig in pure_bell(out,beat,temperament,1.0)]
 
 if useModWheel:
     left  = sf.ReadSignal("temp/left")

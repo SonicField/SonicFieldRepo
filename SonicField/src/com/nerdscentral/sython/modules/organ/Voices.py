@@ -1156,9 +1156,96 @@ def nordic_cello(length,freq,vibAbove=250):
         params['vibAmount']= 0.5 if length > 1000 else 0.25
 
     return _nordic_string(**params)
-    
+
 def pure_sine(length,freq):
     return sf.Realise(sf.PhasedTableSineWave(length,freq,random.random()))
 
 def pure_triangle(length,freq):
     return sf.Realise(limited_triangle(length,freq,12))
+
+@sf_parallel
+def simple_bell(length,pitch):
+    length = length * 0.75
+    sig1 = sf.SineWave(length,pitch*1.2)
+    sig2 = sf.SineWave(length,pitch*1.2 + 1)
+    env  = sf.SimpleShape((0,-60),(125,0),(length,-30))
+    
+    sig1 = sf.Multiply(+env,sig1)
+    sig1 = sf.Pcnt90(sf.DirectMix(1,sig1))
+    sig3 = sf.PhaseModulatedSineWave(pitch,sig1)
+    sig3 = sf.Multiply(+env,sig3)
+
+    sig2 = sf.Multiply(+env,sig2)
+    sig2 = sf.Pcnt90(sf.DirectMix(1,sig2))
+    sig4 = sf.PhaseModulatedSineWave(pitch,sig2)
+    sig4 = sf.Multiply(env,sig4)
+    
+    sig5 = sf.Volume(sf.Mix(sig3,sig4),6)
+    sig=sf.Saturate(sig5)
+    #sig=sf.ResonantFilter(sig,0.99,0.05,1000.0/pitch)
+    return sf.Realise(sf.Finalise(sig))
+
+@sf_parallel
+def strange_bell(length,pitch):
+    print "Ring: " + str(pitch) + "/" + str(length)
+    sig1 = sf.SineWave(length,pitch*1.2)
+    sig2 = sf.SineWave(length,pitch*1.2 + 1)
+    env  = sf.SimpleShape((0,0),(256,-10),(length,-99))
+    
+    sig1 = sf.Multiply(+env,sig1)
+    sig1 = sf.Pcnt90(sf.DirectMix(1,sig1))
+    sig3 = sf.PhaseModulatedSineWave(pitch,sig1)
+    sig3 = sf.Multiply(+env,sig3)
+
+    sig2 = sf.Multiply(+env,sig2)
+    sig2 = sf.Pcnt90(sf.DirectMix(1,sig2))
+    sig4 = sf.PhaseModulatedSineWave(pitch,sig2)
+    sig4 = sf.Multiply(env,sig4)
+    
+    sig5 = sf.Volume(sf.Mix(sig3,sig4),6)
+    sig=sf.Saturate(sig5)
+    sig=sf.Concatenate(+sig,sf.Silence(sf.Length(sig)))
+    sig=sf.ResonantFilter(sig,0.99,0.01,1000.0/pitch)
+    sig=sf.Cut(128,sf.Length(+sig),sig)
+    return sf.Realise(sf.Finalise(sig))
+
+@sf_parallel
+def clear_bell(length,pitch,dullness=0):
+    length+=128
+    print "Ring: " ,length,pitch,dullness
+    signal1=sf.SineWave(length,pitch-2)
+    signal2=sf.SineWave(length,pitch+2)
+    fm1=sf.DB48(sf.SineWave(length,pitch*1.2))
+    fm2=sf.DB48(sf.SineWave(length,pitch*1.3))
+    
+    signal=sf.Mix(
+        sf.FrequencyModulate(signal1,fm1),
+        sf.FrequencyModulate(signal2,fm2)
+    )
+    signal=sf.Normalise(signal)
+    
+    wn=sf.ButterworthLowPass(sf.WhiteNoise(100),pitch,2)
+    wn=sf.Multiply(wn,sf.NumericShape((0,0),(20,1),(100,0)))
+    
+    signal=sf.Mix(signal,wn)
+    signal=sf.Normalise(signal)
+    
+    env=sf.SimpleShape(
+        (0,-99),
+        (50,0),
+        (length-128,-60),
+        (length,-99)
+    )
+    
+    signal=sf.Multiply(
+        signal,
+        env
+    )
+    
+    signal=sf.ButterworthHighPass(signal,pitch*2,2)
+    if dullness>0:
+        return sf.Finalise(sf.BesselLowPass(signal,pitch,dullness))
+    else:
+        return sf.Finalise(signal)
+    
+

@@ -1,3 +1,24 @@
+def simple_bell(pitch,length):
+    print "Ring: " + str(pitch) + "/" + str(length)
+    sig1 = sf.SineWave(length,pitch*1.2)
+    sig2 = sf.SineWave(length,pitch*1.2 + 1)
+    env  = sf.SimpleShape((0,-60),(125,0),(length,-30))
+    
+    sig1 = sf.Multiply(+env,sig1)
+    sig1 = sf.Pcnt90(sf.DirectMix(1,sig1))
+    sig3 = sf.PhaseModulatedSineWave(pitch,sig1)
+    sig3 = sf.Multiply(+env,sig3)
+
+    sig2 = sf.Multiply(+env,sig2)
+    sig2 = sf.Pcnt90(sf.DirectMix(1,sig2))
+    sig4 = sf.PhaseModulatedSineWave(pitch,sig2)
+    sig4 = sf.Multiply(env,sig4)
+    
+    sig5 = sf.Volume(sf.Mix(sig3,sig4),6)
+    sig=sf.Saturate(sig5)
+    sig=sf.ResonantFilter(sig,0.99,0.05,1000.0/pitch)
+    return sf.Realise(sf.Normalise(sig))
+
 def strange_bell(length,pitch):
     print "Ring: " + str(pitch) + "/" + str(length)
     sig1 = sf.SineWave(length,pitch*1.2)

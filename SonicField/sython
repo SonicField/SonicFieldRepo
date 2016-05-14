@@ -16,19 +16,21 @@ fi
 # -XX:+PrintCompilation \
 
 java \
-    -DsonicFieldTemp=/Volumes/Swap \
+    -XX:+UseCompressedOops \
+    -XX:+UseCompressedClassPointers \
+    -DsonicFieldTemp=/tmp \
     -Dsython.threads=8 \
-    -Xmx2G \
+    -Xmx1G \
     -Dsython.linear=false \
     -Dsython.trace=false \
     -Dsython.modules=/Users/alexanderturner/SonicFieldRepo/SonicField/src/com/nerdscentral/sython/modules \
     -XX:+UseParallelGC \
     -Dsython.steal=true \
-    -DsonicFieldDirectMemory=True \
-    -XX:MaxDirectMemorySize=2g \
+    -DsonicFieldDirectMemory=true \
+    -XX:MaxDirectMemorySize=11g \
     -XX:MaxInlineSize=128 \
     -XX:InlineSmallCode=1024 \
-    -Xms256m \
+    -Xms128m \
     -classpath bin:jars/jython-standalone-2.7.0.jar com.nerdscentral.sython.Sython $1
 
 # To run on Windows simply copy this file to a batch file and put all the class path on 

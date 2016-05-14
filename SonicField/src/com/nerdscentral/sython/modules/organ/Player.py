@@ -120,49 +120,52 @@ def sing(hint,pitch,lengthIn,v,vl,vr,voice,velocity_correct_,quick_factor,
     pHint=hint[0]
     nHint=hint[1]
     shine=False
-    if tp==0:
-        if pHint=="T":
-            q=32
+    if quick_factor:
+        if tp==0:
+            if pHint=="T":
+                q=32
+            else:
+                q=64
+            if nHint=="T":
+                p=32
+            else:
+                p=64
+            q*=quick_factor
+            env=safe_env(sig,[(0,0),(q,1),(192-p,0.5),(length,0)])
+            if hint=="TT":
+                velocity_correct*=0.8
+            elif hint=="NN" and pitch>660:
+                shine=True
+                velocity_correct*=0.5        
+        elif tp==1 or flat_env:
+            if pHint=="T":
+                q=48
+            else:
+                q=96
+            if nHint=="T":
+                p=64
+            else:
+                p=128
+            q*=quick_factor
+            env=safe_env(sig,[(0,0),(q,0.75),(length-p,1.0),(length,0)])
+            if hint=="TT":
+                velocity_correct*=0.8            
+            if hint=="TT":
+                velocity_correct*=0.8
+            elif hint=="NN" and pitch>880:
+                shine=True
+                velocity_correct*=0.6
+        elif tp==2:
+            env=safe_env(sig,[(0,0),(96*quick_factor,0.75),(length-256,1.0),(length,0)])
+        elif tp==3:
+            if length<1280:
+                env=safe_env(sig,[(0,0),(64*quick_factor,0.5),(256,1),(512,0.75),((length-512)/2.0+512,0.5),(length,0)])
+            else:
+                env=safe_env(sig,[(0,0),(64*quick_factor,0.5),(256,1),(512,0.75),(length-512,0.75),(length,0)])
         else:
-            q=64
-        if nHint=="T":
-            p=32
-        else:
-            p=64
-        q*=quick_factor
-        env=safe_env(sig,[(0,0),(q,1),(192-p,0.5),(length,0)])
-        if hint=="TT":
-            velocity_correct*=0.8
-        elif hint=="NN" and pitch>660:
-            shine=True
-            velocity_correct*=0.5        
-    elif tp==1 or flat_env:
-        if pHint=="T":
-            q=48
-        else:
-            q=96
-        if nHint=="T":
-            p=64
-        else:
-            p=128
-        q*=quick_factor
-        env=safe_env(sig,[(0,0),(q,0.75),(length-p,1.0),(length,0)])
-        if hint=="TT":
-            velocity_correct*=0.8            
-        if hint=="TT":
-            velocity_correct*=0.8
-        elif hint=="NN" and pitch>880:
-            shine=True
-            velocity_correct*=0.6
-    elif tp==2:
-        env=safe_env(sig,[(0,0),(96*quick_factor,0.75),(length-256,1.0),(length,0)])
-    elif tp==3:
-        if length<1280:
-            env=safe_env(sig,[(0,0),(64*quick_factor,0.5),(256,1),(512,0.75),((length-512)/2.0+512,0.5),(length,0)])
-        else:
-            env=safe_env(sig,[(0,0),(64*quick_factor,0.5),(256,1),(512,0.75),(length-512,0.75),(length,0)])
+            env=safe_env(sig,[(0,0),(64*quick_factor,0.25),(512,1),(length/2,0.75),(length,0)])
     else:
-        env=safe_env(sig,[(0,0),(64*quick_factor,0.25),(512,1),(length/2,0.75),(length,0)])
+        env=safe_env(sig,[(0,1),(length,1)])
 
     if bend:
         mod=sf.NumericShape((0,0.995),(length,1.005))

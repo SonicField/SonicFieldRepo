@@ -55,8 +55,8 @@ def chorus(
 #left,right= sf.ReadFile("temp/test.wav")
 left  = sf.ReadSignal("temp/left_v")
 right = sf.ReadSignal("temp/right_v")
-left  = sf.Cut(0,60000,left)
-right = sf.Cut(0,60000,right)
+#left  = sf.Cut(0,60000,left)
+#right = sf.Cut(0,60000,right)
 @sf_parallel
 def spatialise(osg):
     osi = sf.Invert(+osg)
