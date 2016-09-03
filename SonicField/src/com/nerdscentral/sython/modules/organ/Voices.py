@@ -883,6 +883,66 @@ def folk_flute(length,freq):
     return sf.FixSize(polish(sig,freq))
 
 @sf_parallel
+def distant_wind_(length, freq):
+    base = clean_noise(length,freq*4.0)
+    env = []
+    # Super imposted last two postions does not matter.
+    v = 0.5
+    t = 0
+    while t < length:
+        if random.random() > 0.5:
+            v *= 1.1
+            if v > 1.0:
+                v = 0.9
+        else:
+            v *= 0.9
+        env += [(t, v)]
+        # Constrained random walk envelope in 100 ms steps.
+        t += 100
+
+    base = sf.Multiply(sf.NumericShape(env), base)
+    out = []
+    xq = 1.8 if freq > 640 else 2.0 if freq > 256 else 2.5 if freq > 128 else 3.0
+    xq *= 1.25
+    for q in (16, 32, 48):
+        out += [
+            byquad_filter(
+                'peak',
+                +base,
+                freq,
+                0.5,
+                q * xq
+            )
+        ]
+    -base
+    out = sf.Mix(out)
+    out = sf.ButterworthLowPass(out, freq*1.25, 6)
+    if freq > 256:
+        out = sf.Power(out, 1.25)
+    else:
+        out = sf.Power(out, 1.05)
+    return sf.FixSize(polish(out, freq))
+
+def distant_wind(length, freq):
+    sigs = []
+    harms = range(1, 15)
+    for harm in harms:
+        hfreq = harm * freq
+        if hfreq > 18000.0:
+            break
+        sigs += [distant_wind_(length, hfreq)]
+
+    harms.reverse()
+    pw = 4.0 if freq > 320 else 2.0
+    for harm in harms:
+        sig = sigs.pop()
+        sig = sf.NumericVolume(sig, 1.0 / ( pow(harm, 4.0)))
+        sigs.insert(0, sig)
+
+    out = sf.Mix(sigs)
+    return sf.FixSize(polish(out, freq))
+        
+@sf_parallel
 def tuned_wind(length,freq):
 
     sigs=[]

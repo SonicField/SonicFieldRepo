@@ -1,4 +1,4 @@
-(left,right)=sf.ReadFile("temp/dog.wav")
+(left,right)=sf.ReadFile("temp/input.wav")
 
 @sf_parallel
 def resonate(left_,right_,del1,del2):

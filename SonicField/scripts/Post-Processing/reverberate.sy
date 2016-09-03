@@ -71,15 +71,15 @@ right=sf.Concatenate(sf.Silence(1024),right)
 
 dry     = False
 clear   = False
-bright  = False
+bright  = True
 vBright = False
-church  = False
-ambient = False
+church  = True
+ambient = True
 megaThe = False
 terys   = True
 post    = False
 spring  = True
-bboost  = True
+bboost  = False
 mix     = 0.0
   
 if ambient:  

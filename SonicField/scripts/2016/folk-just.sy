@@ -31,7 +31,8 @@ from organ.Voices import \
     upper_accent, \
     pure_triangle, \
     pure_sine, \
-    simple_bell
+    simple_bell, \
+    distant_wind
 
 def sing(midi_in,beat,temperament,velocity):
     l=200.0
@@ -94,6 +95,21 @@ def strange_sing(midi_in,beat,temperament,velocity):
     sf.WriteFile32((+left3,+right3),"temp/flute2.wav")
 
     return mix(left1,left2,left3),mix(right1,right2,right3)
+
+def distant(midi_in,beat,temperament,velocity):
+    notes1=Player.play(
+        midi_in,
+        beat,
+        temperament,
+        voice=distant_wind,
+        bend=True,
+        mellow=False,
+        velocity_correct=velocity*1.5,
+        flat_env=True,
+        quick_factor=1.5,
+        pan = -1
+    )
+    return post_process(notes1)
 
 def quick_flute(midi_in,beat,temperament,velocity):
     notes1=Player.play(midi1,beat,temperament,voice=folk_flute, bend=True,mellow=False,velocity_correct=velocity*0.5,flat_env=False, quick_factor=1.0,pan=-1)
@@ -263,6 +279,15 @@ def pure_bell(midi_in,beat,temperament,velocity):
     notes1=Player.play(midi_in,beat,temperament,voice=simple_bell,bend=False,mellow=True,velocity_correct=velocity*1.0,flat_env=True, quick_factor=0.0, pure=True)
     return post_process(notes1)    
 
+def space_accented_wind(midi_in,beat,temperament,velocity):
+    notes1=Player.play(midi_in,beat,temperament,voice=tuned_wind,bend=False,mellow=False,velocity_correct=velocity*0.02, flat_env=False,  quick_factor=6.0)
+    notes2=Player.play(midi_in,beat,temperament,voice=sweet_flute,bend=False,mellow=True,velocity_correct=velocity*0.50, flat_env=False, quick_factor=2.0)
+    notes3=Player.play(midi_in,beat,temperament,voice=pure_sine, bend=False,mellow=False,velocity_correct=velocity*0.02, flat_env=False, quick_factor=3.0, pitch_shift=8.0)
+    left1,right1 = post_process(notes1)
+    left2,right2 = post_process(notes2)
+    left3,right3 = post_process_tremolate(notes3)
+    return mix(left1,left2,left3),mix(right1,right2,right3)
+    
 def space_accented(midi_in,beat,temperament,velocity):
     notes1=Player.play(midi_in,beat,temperament,voice=pure_sine,bend=False,mellow=False,velocity_correct=velocity*1.0, flat_env=True, quick_factor=1.0)
     notes2=Player.play(midi_in,beat,temperament,voice=pure_sine,bend=False,mellow=False,velocity_correct=velocity*0.02, flat_env=False, quick_factor=3.0, pitch_shift=8.0)
@@ -293,7 +318,7 @@ midis=Midi.read_midi_file("temp/input.mid")
 
 # Length of full piece
 #======================
-length = 32
+length = 15
 
 # Temperament
 #=============
@@ -331,17 +356,15 @@ out = sorted(out, key=lambda event: event.tick)
 
 
 # Truncate
-
 '''
 o2 = []
 for o in out:
     if o.isNote():
         o2.append(o)
 out = o2
-out = out[0:8]
+out = out[0:256]
 '''
-
-left,right = [sf.Finalise(sig) for sig in pure_bell(out,beat,temperament,1.0)]
+left,right = [sf.Finalise(sig) for sig in distant(out,beat,temperament,1.0)]
 
 if useModWheel:
     left  = sf.ReadSignal("temp/left")

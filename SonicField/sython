@@ -18,16 +18,16 @@ fi
 java \
     -XX:+UseCompressedOops \
     -XX:+UseCompressedClassPointers \
-    -DsonicFieldTemp=/tmp \
+    -DsonicFieldTemp=/Volumes/Swap \
     -Dsython.threads=8 \
-    -Xmx1G \
+    -Xmx2G \
     -Dsython.linear=false \
     -Dsython.trace=false \
     -Dsython.modules=/Users/alexanderturner/SonicFieldRepo/SonicField/src/com/nerdscentral/sython/modules \
     -XX:+UseParallelGC \
     -Dsython.steal=true \
     -DsonicFieldDirectMemory=true \
-    -XX:MaxDirectMemorySize=11g \
+    -XX:MaxDirectMemorySize=8g \
     -XX:MaxInlineSize=128 \
     -XX:InlineSmallCode=1024 \
     -Xms128m \

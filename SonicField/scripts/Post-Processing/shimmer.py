@@ -52,7 +52,7 @@ def chorus(
     
     return inner(left),inner(right)
     
-#left,right= sf.ReadFile("temp/test.wav")
+#left,right= sf.ReadFile("temp/input.wav")
 left  = sf.ReadSignal("temp/left_v")
 right = sf.ReadSignal("temp/right_v")
 #left  = sf.Cut(0,60000,left)
@@ -87,6 +87,7 @@ def doWork(left,right):
         (sf.Pcnt10(right2),40)
     )
 
+    '''
     left,right=chorus(
         left,
         right,
@@ -96,6 +97,7 @@ def doWork(left,right):
         maxVol   =  1.0,
         nChorus  = 16.0
     )
+    '''
     return left,right
 
 lefts  = sf.Granulate(left ,60*5000,0)
