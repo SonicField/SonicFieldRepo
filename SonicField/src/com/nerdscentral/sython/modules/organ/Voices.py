@@ -12,6 +12,7 @@ from Filters import byquad_filter
 from Reverberation import convolve,reverberate
 import math
 import random
+import functools
 
 # Get IRs
 violinIRs = sf.ViolinBodyIRs(())
@@ -882,8 +883,7 @@ def folk_flute(length,freq):
     )
     return sf.FixSize(polish(sig,freq))
 
-@sf_parallel
-def distant_wind_(length, freq):
+def _distant_wind(length, freq, qCorrect = 1.25):
     base = clean_noise(length,freq*4.0)
     env = []
     # Super imposted last two postions does not matter.
@@ -903,7 +903,7 @@ def distant_wind_(length, freq):
     base = sf.Multiply(sf.NumericShape(env), base)
     out = []
     xq = 1.8 if freq > 640 else 2.0 if freq > 256 else 2.5 if freq > 128 else 3.0
-    xq *= 1.25
+    xq *= qCorrect
     for q in (16, 32, 48):
         out += [
             byquad_filter(
@@ -916,24 +916,28 @@ def distant_wind_(length, freq):
         ]
     -base
     out = sf.Mix(out)
-    out = sf.ButterworthLowPass(out, freq*1.25, 6)
-    if freq > 256:
-        out = sf.Power(out, 1.25)
-    else:
-        out = sf.Power(out, 1.05)
-    return sf.FixSize(polish(out, freq))
+    return sf.ButterworthLowPass(out, freq*1.25, 6)
 
 def distant_wind(length, freq):
+
+    @sf_parallel
+    def doWind(lenth, hfreg):
+        out = _distant_wind(length, freq)
+        if freq > 256:
+            out = sf.Power(out, 1.25)
+        else:
+            out = sf.Power(out, 1.05)
+            return sf.FixSize(polish(out, freq))
+
     sigs = []
     harms = range(1, 15)
     for harm in harms:
         hfreq = harm * freq
         if hfreq > 18000.0:
             break
-        sigs += [distant_wind_(length, hfreq)]
+        sigs += [doWind(length, hfreq)]
 
     harms.reverse()
-    pw = 4.0 if freq > 320 else 2.0
     for harm in harms:
         sig = sigs.pop()
         sig = sf.NumericVolume(sig, 1.0 / ( pow(harm, 4.0)))
@@ -941,6 +945,46 @@ def distant_wind(length, freq):
 
     out = sf.Mix(sigs)
     return sf.FixSize(polish(out, freq))
+
+def additive_resonance(power, qCorrect, saturate, rollOff, length, freq):
+
+    @sf_parallel
+    def doWind(lenth, hfreg):
+        out = _distant_wind(length, freq)
+        if freq > 256:
+            out = sf.Power(out, pow(1.25, power))
+        else:
+            out = sf.Power(out, pow(1.05, power))
+            return sf.FixSize(polish(out, freq))
+        if saturate:
+            os = sf.Saturate(st.NumericVolume(sf.FixSize(+out)), 2.0)
+            out = sf.Mix(sf.NumericVolume(out, 1.0-saturate), sf.NumericVolume(os, saturate))
+        return sf.FixSize(out)
+        
+    sigs = []
+    harms = []
+    for harm in range(1, 100):
+        harms.append(harm)
+        hfreq = harm * freq
+        if hfreq > 18000.0:
+            break
+        sigs += [doWind(length, hfreq)]
+
+    # Remember that this cannot act as a a closure around a signal!
+    @sf_parallel
+    def stage2(harms, sigs):
+        harms.reverse()
+        for harm in harms:
+            sig = sigs.pop()
+            sig = sf.NumericVolume(sig, 1.0 / ( pow(harm, rollOff)))
+            sigs.insert(0, sig)
+            out = sf.Mix(sigs)
+            return sf.FixSize(polish(out, freq))   
+
+    return stage2(harms, sigs)
+
+def make_addtive_resonance(power = 1.0 , qCorrect = 1.25 , saturate = 0.0, rollOff = 4.0):
+    return functools.partial(additive_resonance, power, qCorrect, saturate, rollOff)
         
 @sf_parallel
 def tuned_wind(length,freq):

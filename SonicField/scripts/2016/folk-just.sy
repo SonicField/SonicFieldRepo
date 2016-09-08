@@ -32,7 +32,8 @@ from organ.Voices import \
     pure_triangle, \
     pure_sine, \
     simple_bell, \
-    distant_wind
+    distant_wind, \
+    make_addtive_resonance
 
 def sing(midi_in,beat,temperament,velocity):
     l=200.0
@@ -102,6 +103,22 @@ def distant(midi_in,beat,temperament,velocity):
         beat,
         temperament,
         voice=distant_wind,
+        bend=True,
+        mellow=False,
+        velocity_correct=velocity*1.5,
+        flat_env=True,
+        quick_factor=1.5,
+        pan = -1
+    )
+    return post_process(notes1)
+
+def distant_a(midi_in,beat,temperament,velocity):
+    plr = make_addtive_resonance(qCorrect=3.0, rollOff=2.0)
+    notes1=Player.play(
+        midi_in,
+        beat,
+        temperament,
+        voice=plr,
         bend=True,
         mellow=False,
         velocity_correct=velocity*1.5,
@@ -314,7 +331,7 @@ Notes  = []
 ########################################
 
 #midis=read_midi_file("temp/pontchar.mid")
-midis=Midi.read_midi_file("temp/input.mid")
+midis=Midi.read_midi_file("temp/bwv653.mid")
 
 # Length of full piece
 #======================
@@ -343,10 +360,12 @@ beat  = Midi.set_length(midis,length)
 ###########
 
 # Make it all one voice
-out=[]
-for midi in midis:
-    out += midi
-out = sorted(out, key=lambda event: event.tick)
+#out=[]
+#for midi in midis:
+#    out += midi
+#out = sorted(out, key=lambda event: event.tick)
+
+out = midis[4]
 
 # dilate notes to inspect individually
 #for event in out:
@@ -356,15 +375,15 @@ out = sorted(out, key=lambda event: event.tick)
 
 
 # Truncate
-'''
+
 o2 = []
 for o in out:
     if o.isNote():
         o2.append(o)
 out = o2
 out = out[0:256]
-'''
-left,right = [sf.Finalise(sig) for sig in distant(out,beat,temperament,1.0)]
+
+left,right = [sf.Finalise(sig) for sig in distant_a(out,beat,temperament,1.0)]
 
 if useModWheel:
     left  = sf.ReadSignal("temp/left")
