@@ -33,7 +33,8 @@ from organ.Voices import \
     pure_sine, \
     simple_bell, \
     distant_wind, \
-    make_addtive_resonance
+    make_addtive_resonance, \
+    oboe_filter
 
 def sing(midi_in,beat,temperament,velocity):
     l=200.0
@@ -113,20 +114,25 @@ def distant(midi_in,beat,temperament,velocity):
     return post_process(notes1)
 
 def distant_a(midi_in,beat,temperament,velocity):
-    plr = make_addtive_resonance(qCorrect=3.0, rollOff=2.0)
+    l = 512
+    midi1=Midi.long_as(midi_in, beat, l)
+    midi1=Midi.legato(midi1, beat, 256)
+    midi2=Midi.shorter_than(midi_in, beat, l)
+    midi2=Midi.legato(midi2, beat, 64)
+    plr = make_addtive_resonance(qCorrect=3.0, rollOff=1.0, saturate=0.1, power=2.0, post=oboe_filter)
     notes1=Player.play(
-        midi_in,
+        midi1,
         beat,
         temperament,
         voice=plr,
-        bend=True,
+        bend=False,
         mellow=False,
         velocity_correct=velocity*1.5,
         flat_env=True,
-        quick_factor=1.5,
+        quick_factor=1.0,
         pan = -1
     )
-    return post_process(notes1)
+    return post_process_tremolate(notes1)
 
 def quick_flute(midi_in,beat,temperament,velocity):
     notes1=Player.play(midi1,beat,temperament,voice=folk_flute, bend=True,mellow=False,velocity_correct=velocity*0.5,flat_env=False, quick_factor=1.0,pan=-1)
@@ -365,7 +371,7 @@ beat  = Midi.set_length(midis,length)
 #    out += midi
 #out = sorted(out, key=lambda event: event.tick)
 
-out = midis[4]
+out = midis[1]
 
 # dilate notes to inspect individually
 #for event in out:
@@ -381,7 +387,7 @@ for o in out:
     if o.isNote():
         o2.append(o)
 out = o2
-out = out[0:256]
+out = out[0:2]
 
 left,right = [sf.Finalise(sig) for sig in distant_a(out,beat,temperament,1.0)]
 
