@@ -26,7 +26,7 @@ java \
     -Dsython.modules=/Users/alexanderturner/SonicFieldRepo/SonicField/src/com/nerdscentral/sython/modules \
     -XX:+UseParallelGC \
     -Dsython.steal=true \
-    -DsonicFieldDirectMemory=False \
+    -DsonicFieldDirectMemory=True \
     -XX:MaxDirectMemorySize=2g \
     -XX:MaxInlineSize=128 \
     -XX:InlineSmallCode=1024 \

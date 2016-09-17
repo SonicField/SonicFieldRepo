@@ -34,7 +34,8 @@ from organ.Voices import \
     simple_bell, \
     distant_wind, \
     make_addtive_resonance, \
-    oboe_filter
+    oboe_filter, \
+    violin_filter
 
 def sing(midi_in,beat,temperament,velocity):
     l=200.0
@@ -113,15 +114,63 @@ def distant(midi_in,beat,temperament,velocity):
     )
     return post_process(notes1)
 
-def distant_a(midi_in,beat,temperament,velocity):
+def distant_bass(midi_in,beat,temperament,velocity):
     l = 512
-    midi1=Midi.long_as(midi_in, beat, l)
-    midi1=Midi.legato(midi1, beat, 256)
-    midi2=Midi.shorter_than(midi_in, beat, l)
-    midi2=Midi.legato(midi2, beat, 64)
-    plr = make_addtive_resonance(qCorrect=3.0, rollOff=1.0, saturate=0.1, power=2.0, post=oboe_filter)
+    plr = make_addtive_resonance(qCorrect=1.0, rollOff=2.0, saturate=0.5, power=1.1)
     notes1=Player.play(
-        midi1,
+        midi_in,
+        beat,
+        temperament,
+        voice=plr,
+        bend=False,
+        mellow=False,
+        velocity_correct=velocity,
+        flat_env=True,
+        quick_factor=1.5,
+        pure=True,
+        pan = -1
+    )
+    return post_process(notes1)
+
+def distant_string(midi_in,beat,temperament,velocity):
+    l = 512
+    plr = make_addtive_resonance(qCorrect=2.0, rollOff=1.5, power=1.0, post=violin_filter)
+    notes1=Player.play(
+        midi_in,
+        beat,
+        temperament,
+        voice=plr,
+        bend=True,
+        mellow=False,
+        velocity_correct=velocity*1.5,
+        flat_env=True,
+        quick_factor=1.0,
+        pan = -1
+    )
+    return post_process(notes1)
+
+def distant_oboe(midi_in,beat,temperament,velocity):
+    plr = make_addtive_resonance(qCorrect=2.0, rollOff=1.5, saturate=0.1, power=1.4, post=oboe_filter)
+    notes1=Player.play(
+        midi_in,
+        beat,
+        temperament,
+        voice=plr,
+        bend=False,
+        mellow=False,
+        velocity_correct=velocity*1.5,
+        flat_env=True,
+        quick_factor=0.5,
+        pure=True,
+        pan = -1
+    )
+    return post_process_tremolate(notes1)
+
+def distant_oboe2(midi_in,beat,temperament,velocity):
+    midi=Midi.legato(midi_in,beat,200)
+    plr = make_addtive_resonance(qCorrect=1.5, rollOff=1.5, saturate=0.1, power=1.4, post=oboe_filter)
+    notes1=Player.play(
+        midi,
         beat,
         temperament,
         voice=plr,
@@ -130,9 +179,10 @@ def distant_a(midi_in,beat,temperament,velocity):
         velocity_correct=velocity*1.5,
         flat_env=True,
         quick_factor=1.0,
+        pure=True,
         pan = -1
     )
-    return post_process_tremolate(notes1)
+    return post_process(notes1)
 
 def quick_flute(midi_in,beat,temperament,velocity):
     notes1=Player.play(midi1,beat,temperament,voice=folk_flute, bend=True,mellow=False,velocity_correct=velocity*0.5,flat_env=False, quick_factor=1.0,pan=-1)
@@ -337,11 +387,11 @@ Notes  = []
 ########################################
 
 #midis=read_midi_file("temp/pontchar.mid")
-midis=Midi.read_midi_file("temp/bwv653.mid")
+midis=Midi.read_midi_file("temp/accent.mid")
 
 # Length of full piece
 #======================
-length = 15
+length = 10
 
 # Temperament
 #=============
@@ -358,8 +408,7 @@ useModWheel = False
 #===============
 
 midis = Midi.repare_overlap(midis)
-midis = Midi.tempo(midis)
-beat  = Midi.set_length(midis,length)
+#midis = Midi.tempo(midis)
 
 ###########
 # Voicing #
@@ -380,16 +429,18 @@ out = midis[1]
 #    event.tick_off=event.tick+diff
 
 
-# Truncate
-
+# Purify
 o2 = []
 for o in out:
     if o.isNote():
         o2.append(o)
 out = o2
-out = out[0:2]
+beat = Midi.set_length([out],length)
 
-left,right = [sf.Finalise(sig) for sig in distant_a(out,beat,temperament,1.0)]
+# Truncate
+#out = out[0:15]
+
+left,right = [sf.Finalise(sig) for sig in distant_oboe(out,beat,temperament,1.0)]
 
 if useModWheel:
     left  = sf.ReadSignal("temp/left")
@@ -427,6 +478,6 @@ if useModWheel:
     left=doVib(modEnvl,left)
     right=doVib(modEnvr,right)
 
-sf.WriteSignal(+left, "temp/left_v")
-sf.WriteSignal(+right,"temp/right_v")
-sf.WriteFile32((left,right),"temp/temp_v.wav")
+sf.WriteSignal(+left, "temp/left_v_acc")
+sf.WriteSignal(+right,"temp/right_v_acc")
+sf.WriteFile32((left,right),"temp/temp_v_acc.wav")
