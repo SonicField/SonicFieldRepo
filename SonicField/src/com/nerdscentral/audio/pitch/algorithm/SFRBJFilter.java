@@ -40,6 +40,26 @@ public class SFRBJFilter
         return yn;
     }
 
+    public double limitedFilter(double in0)
+    {
+        // filter
+        double yn = b0a0 * in0 + b1a0 * in1 + b2a0 * in2 - a1a0 * ou1 - a2a0 * ou2;
+	double ay = yn < 0 ? -yn : yn;
+	if(ay > 1.0)
+	{
+	    yn = yn < 0 ? -1.0 : 1.0;
+	}
+	
+        // push in/out buffers
+        in2 = in1;
+        in1 = in0;
+        ou2 = ou1;
+        ou1 = yn;
+
+        // return output
+        return yn;
+    }
+
     public enum FilterType
     {
         LOWPASS, HIGHPASS, BANDPASS_SKIRT, BANDPASS_PEAK, NOTCH, ALLPASS, PEAK, LOWSHELF, HIGHSHELF

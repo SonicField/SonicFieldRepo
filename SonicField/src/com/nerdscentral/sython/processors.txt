@@ -77,6 +77,7 @@ com.nerdscentral.audio.pitch.SF_BiquadAllPass
 com.nerdscentral.audio.pitch.SF_BiquadBandPass
 com.nerdscentral.audio.pitch.SF_BiquadHighPass
 com.nerdscentral.audio.pitch.SF_BiquadHighShelf
+com.nerdscentral.audio.pitch.SF_BiquadLimitedPeak
 com.nerdscentral.audio.pitch.SF_BiquadLowPass
 com.nerdscentral.audio.pitch.SF_BiquadLowShelf
 com.nerdscentral.audio.pitch.SF_BiquadNotch

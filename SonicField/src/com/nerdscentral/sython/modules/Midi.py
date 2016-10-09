@@ -469,7 +469,12 @@ def read_midi_file(name):
                         d+=256
                     dd*=256
                     dd+=d
-                    e['data']=float(dd)
+                    try:
+                        e['data']=float(dd)
+                    except OverflowError as er:
+                        print 'Over flow error: %s', str(er)
+                    e['data'] = 0
+
             if not command=='note':
                 e['tick_off']=e['tick']
 

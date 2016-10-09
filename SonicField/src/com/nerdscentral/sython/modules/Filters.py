@@ -7,15 +7,16 @@
 # Note that this processor is already parallelised
 #
 # Filter Types
-#        'high'       : byquad filter high
-#        'low'        : byquad filter low
-#        'high shelf' : byquad filter high shelf
-#        'low shelf'  : byquad filter low shelf
-#        'notch'      : byquad filter notch
-#        'peak'       : byquad filter peak
-#        'all'        : byquad filter all
-#        'band'       : byquad filter band
-#        'ladder'     : ladder filter
+#        'high'        : byquad filter high
+#        'low'         : byquad filter low
+#        'high shelf'  : byquad filter high shelf
+#        'low shelf'   : byquad filter low shelf
+#        'notch'       : byquad filter notch
+#        'peak'        : byquad filter peak
+#        'limitedpeak' : byquad filter limited peak
+#        'all'         : byquad filter all
+#        'band'        : byquad filter band
+#        'ladder'      : ladder filter
 #
 # If signals are passed into any of frequency, q and/or db_gain then
 # shaped filters will be used if availible.
@@ -105,6 +106,17 @@ def byquad_filter(f_type,input,frequency,q=1.0,db_gain=6.0):
                 db_gain
             )
 
+    def byquad_filter_limited_peak():
+        if shaped:
+            raise Exception(f_type,'Not currently available as shaped')
+        else:
+            return sf.RBJLimitedPeaking(
+                input,
+                frequency,
+                q,
+                db_gain
+            )
+        
     def byquad_filter_all():
         if shaped:
             raise Exception(f_type,'Not currently available as shaped')
@@ -145,15 +157,16 @@ def byquad_filter(f_type,input,frequency,q=1.0,db_gain=6.0):
     shaped=is_signal(frequency) or is_signal(q)
 
     run={
-        'high'       : byquad_filter_high,
-        'low'        : byquad_filter_low,
-        'high_shelf' : byquad_filter_high_shelf,
-        'low_shelf'  : byquad_filter_low_shelf,
-        'notch'      : byquad_filter_notch,
-        'peak'       : byquad_filter_peak,
-        'all'        : byquad_filter_all,
-        'band'       : byquad_filter_band,
-        'ladder'     : ladder_filter
+        'high'         : byquad_filter_high,
+        'low'          : byquad_filter_low,
+        'high_shelf'   : byquad_filter_high_shelf,
+        'low_shelf'    : byquad_filter_low_shelf,
+        'notch'        : byquad_filter_notch,
+        'peak'         : byquad_filter_peak,
+        'limited peak' : byquad_filter_limited_peak,
+        'all'          : byquad_filter_all,
+        'band'         : byquad_filter_band,
+        'ladder'       : ladder_filter
     }.get(f_type,not_known)
     c_log(run)
     return run()

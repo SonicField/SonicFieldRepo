@@ -88,7 +88,7 @@ def tremolate(sig_,rate,mag):
     m1=sf.Magnitude(+sig)
     if m1==0.0:
         return sig
-    length=sf.Length(+sig)
+    Length=sf.Length(+sig)
     ev=sf.NumericVolume(sf.MakeTriangle(sf.PhasedSineWave(length+64,rate,random.random())),mag)
     ev=sf.Cut(0,length,ev)
     fv=sf.Pcnt2(+ev)
