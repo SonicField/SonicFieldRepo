@@ -49,7 +49,7 @@ def convolve(signal,convolution):
     ls=sf.Length(+signal)
     lc=sf.Length(+convolution)
     convol_=sf.FrequencyDomain(sf.Concatenate(convolution,sf.Silence(ls)))
-    return reverberate_inner(signal,convol_,lc)
+    return sf.Finalise(reverberate_inner(signal,convol_,lc))
     
 @sf_parallel
 def reverberate(signal,convol):

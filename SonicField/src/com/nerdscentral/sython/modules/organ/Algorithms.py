@@ -2,7 +2,7 @@ import math
 import random
 import sys
 from Parallel_Helpers import mix,realise,finalise
-from Reverberation import reverberate
+from Reverberation import convolve
 
 @sf_parallel
 def excite(sig_,mix_ammount,power):
@@ -75,7 +75,7 @@ def echo_division(sig_):
         return sig
     length=sf.Length(+sig)
     convol=sf.ReadFile("temp/swell.wav")
-    sigW=reverberate(+sig ,convol[0])
+    sigW=convolve(+sig ,convol[0])
     sig=realise(sig,sigW)
     c_log("Reference count:",sig.getReferenceCount())
     m2=sf.Magnitude(+sig)
@@ -88,7 +88,7 @@ def tremolate(sig_,rate,mag):
     m1=sf.Magnitude(+sig)
     if m1==0.0:
         return sig
-    Length=sf.Length(+sig)
+    length=sf.Length(+sig)
     ev=sf.NumericVolume(sf.MakeTriangle(sf.PhasedSineWave(length+64,rate,random.random())),mag)
     ev=sf.Cut(0,length,ev)
     fv=sf.Pcnt2(+ev)
@@ -96,7 +96,7 @@ def tremolate(sig_,rate,mag):
     sig=sf.FrequencyModulate(sig,fv)
     sig=sf.Multiply(ev,sig)
     convol=sf.ReadFile("temp/swell.wav")
-    sigW=reverberate(+sig ,convol[0])
+    sigW=convolve(+sig ,convol[0])
     sig=mix(sig,sigW)
     m2=sf.Magnitude(+sig)
     sig=realise(sf.NumericVolume(sig,m1/m2))

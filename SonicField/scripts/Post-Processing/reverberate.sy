@@ -78,9 +78,9 @@ ambient = False
 megaThe = False
 terys   = False
 post    = False
-spring  = True
+spring  = False
 bboost  = False
-mix     = 0.25
+mix     = 0.00
   
 if ambient:  
     (convoll,convolr)=sf.ReadFile("temp/impulses/v-grand-l.wav")

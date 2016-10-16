@@ -98,7 +98,7 @@ def distant_wind(length, freq):
     out = sf.Mix(sigs)
     return sf.FixSize(polish(out, freq))
 
-def additive_resonance(power, qCorrect, saturate, rollOff, post, limit, seed, flat, length, freq):
+def additive_resonance(power, qCorrect, saturate, rollOff, post, limit, seed, flat, harmonics, length, freq):
 
     @sf_parallel
     def doWind(lenth, hfq):
@@ -111,7 +111,7 @@ def additive_resonance(power, qCorrect, saturate, rollOff, post, limit, seed, fl
         
     sigs = []
     harms = []
-    for harm in range(1, 100):
+    for harm in harmonics:
         hfreq = harm * freq
         if hfreq > 18000.0:
             break
@@ -140,10 +140,13 @@ def additive_resonance(power, qCorrect, saturate, rollOff, post, limit, seed, fl
     return post(ret, length, freq) if post else ret
 
 def make_addtive_resonance(power = 1.1 , qCorrect = 1.25 , saturate = 0.0, rollOff = 4.0,
-                           post = None, limit = False, seed = -60, flat = True):
-    return functools.partial(additive_resonance, power, qCorrect, saturate, rollOff, post, limit, seed, flat)
+                           post = None, limit = False, seed = -60, flat = True, harmonics = xrange(1,100)):
+    return functools.partial(additive_resonance, power, qCorrect, saturate, rollOff, post, limit, seed, flat, harmonics)
 
 def oboe_filter(sig, length, freq):
+    # Clip off extreme spectra leakage (which in can have big negative compenents).
+    env = sf.NumericShape((0, 0), (5, 1), (length-5, 1), (length, 0))
+    sig = sf.Multiply(env, sig)
     sig = sf.RBJPeaking(sig, freq*3, 0.2, 5)
     sig = sf.RBJPeaking(sig, freq*5, 0.5, 4)
     sig = sf.RBJPeaking(sig, freq*7, 1, 4)
@@ -191,6 +194,48 @@ def tremulus_oboe_filter(sig, length, freq):
     ev=sf.DirectMix(1.0, ev)
     sig=sf.FrequencyModulate(sig, ev)
     return sf.FixSize(sig)
+
+def tremulus_diapason_filter(sig, length, freq):
+    rate = 3.0
+    # Clip off extreme spectra leakage (which in can have big negative compenents).
+    env = sf.NumericShape((0, 0), (5, 1), (length-5, 1), (length, 0))
+    sig = sf.Multiply(env, sig)
+    # Filter gentally to keep the singal stable
+    sig = sf.RBJLimitedPeaking(sig, freq*2, 0.5, 1.0)
+    sig = sf.RBJLowPass(sig, freq*3, 1.0)
+    br = freq * 9
+    if br > 5000.0:
+       br = 5000.0
+    sig = sf.RBJLowPass(sig, br, 1.0)
+    sig = sf.FixSize(sig)
+    shape = sf.SineWave(length, rate)
+    shape = sf.NumericVolume(shape, 0.5)
+    shape = sf.DirectMix(1.0, shape)
+    filt = byquad_filter('high', +sig, freq * 4)
+    filt = sf.Multiply(filt, +shape)
+    sig = sf.Mix(sig, filt)
+    mag = 0.01
+    ev=sf.NumericVolume(shape, mag)
+    ev=sf.DirectMix(1.0, ev)
+    sig=sf.FrequencyModulate(sig, ev)
+    return sf.FixSize(sig)
+
+def tremulus_flute_filter(sig, length, freq):
+    rate = 3.0
+    # Clip off extreme spectra leakage (which in can have big negative compenents).
+    env = sf.NumericShape((0, 0), (5, 1), (length-5, 1), (length, 0))
+    sig = sf.Multiply(env, sig)
+    shape = sf.SineWave(length, rate)
+    shape = sf.NumericVolume(shape, 0.5)
+    shape = sf.DirectMix(1.0, shape)
+    filt = byquad_filter('high', +sig, freq * 2)
+    filt = sf.Multiply(filt, +shape)
+    sig = sf.Mix(sig, filt)
+    mag = 0.01
+    ev=sf.NumericVolume(shape, mag)
+    ev=sf.DirectMix(1.0, ev)
+    sigf=sf.FrequencyModulate(+sig, ev)
+    return sf.FixSize(sf.Mix(sig, sigf))
 
 @sf_parallel
 def violin_filter(sig, length, freq):
