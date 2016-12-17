@@ -14,7 +14,7 @@ import org.python.core.PyDictionary;
 import org.python.core.PyObject;
 import org.python.util.PythonInterpreter;
 
-import com.nerdscentral.audio.SFData;
+import com.nerdscentral.audio.core.SFData;
 import com.nerdscentral.audio.utilities.SFP_DBs;
 import com.nerdscentral.audio.utilities.SFP_Pcnt;
 

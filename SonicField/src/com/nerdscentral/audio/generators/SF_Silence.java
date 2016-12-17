@@ -1,10 +1,9 @@
 /* For Copyright and License see LICENSE.txt and COPYING.txt in the root directory */
 package com.nerdscentral.audio.generators;
 
-import com.nerdscentral.audio.SFConstants;
-import com.nerdscentral.audio.SFSimpleGenerator;
+import com.nerdscentral.audio.core.SFConstants;
+import com.nerdscentral.audio.core.SFSimpleGenerator;
 import com.nerdscentral.sython.Caster;
-import com.nerdscentral.sython.SFPL_Context;
 import com.nerdscentral.sython.SFPL_Operator;
 import com.nerdscentral.sython.SFPL_RuntimeException;
 
@@ -39,7 +38,7 @@ public class SF_Silence implements SFPL_Operator
     private static final long serialVersionUID = 1L;
 
     @Override
-    public Object Interpret(final Object input, final SFPL_Context context) throws SFPL_RuntimeException
+    public Object Interpret(final Object input) throws SFPL_RuntimeException
     {
         double length = Caster.makeDouble(input);
         return new Generator((int) (length * SFConstants.SAMPLE_RATE_MS));

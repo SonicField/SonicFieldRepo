@@ -4,13 +4,12 @@ package com.nerdscentral.audio.combine;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.nerdscentral.audio.SFConstants;
-import com.nerdscentral.audio.SFData;
-import com.nerdscentral.audio.SFMultipleTranslator;
-import com.nerdscentral.audio.SFSignal;
+import com.nerdscentral.audio.core.SFConstants;
+import com.nerdscentral.audio.core.SFData;
+import com.nerdscentral.audio.core.SFMultipleTranslator;
+import com.nerdscentral.audio.core.SFSignal;
 import com.nerdscentral.sython.Caster;
 import com.nerdscentral.sython.SFMaths;
-import com.nerdscentral.sython.SFPL_Context;
 import com.nerdscentral.sython.SFPL_Operator;
 import com.nerdscentral.sython.SFPL_RuntimeException;
 
@@ -71,7 +70,7 @@ public class SF_MixAt implements SFPL_Operator
 
     @Override
     // Manual reasource manangement - note this is not exception safe
-    public Object Interpret(final Object input, final SFPL_Context context) throws SFPL_RuntimeException
+    public Object Interpret(final Object input) throws SFPL_RuntimeException
     {
         List<Object> inList = Caster.makeBunch(input);
         int nMembers = inList.size();

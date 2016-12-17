@@ -9,8 +9,8 @@ import javax.sound.midi.Sequence;
 import javax.sound.midi.Sequencer;
 import javax.sound.midi.Track;
 
-import com.nerdscentral.audio.SFConstants;
-import com.nerdscentral.audio.SFSignal;
+import com.nerdscentral.audio.core.SFConstants;
+import com.nerdscentral.audio.core.SFSignal;
 import com.nerdscentral.audio.pitch.algorithm.SFInLineIIRFilter;
 
 @SuppressWarnings("rawtypes")

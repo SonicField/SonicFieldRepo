@@ -3,11 +3,10 @@ package com.nerdscentral.audio.pitch;
 
 import java.util.List;
 
-import com.nerdscentral.audio.SFSignal;
+import com.nerdscentral.audio.core.SFSignal;
 import com.nerdscentral.audio.pitch.algorithm.SFFilterGenerator;
 import com.nerdscentral.audio.pitch.algorithm.SFFilterGenerator.NPoleFilterDef;
 import com.nerdscentral.sython.Caster;
-import com.nerdscentral.sython.SFPL_Context;
 import com.nerdscentral.sython.SFPL_Operator;
 import com.nerdscentral.sython.SFPL_RuntimeException;
 
@@ -23,7 +22,7 @@ public class SF_NLowPass extends SFNPoleFilterOperator implements SFPL_Operator
     }
 
     @Override
-    public Object Interpret(Object input, SFPL_Context context) throws SFPL_RuntimeException
+    public Object Interpret(Object input) throws SFPL_RuntimeException
     {
         List<Object> l = Caster.makeBunch(input);
         try (SFSignal x = Caster.makeSFSignal(l.get(0)))

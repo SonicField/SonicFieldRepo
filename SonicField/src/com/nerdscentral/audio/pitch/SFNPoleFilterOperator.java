@@ -3,7 +3,7 @@ package com.nerdscentral.audio.pitch;
 
 import java.util.List;
 
-import com.nerdscentral.audio.SFSignal;
+import com.nerdscentral.audio.core.SFSignal;
 import com.nerdscentral.audio.pitch.algorithm.SFFilterGenerator;
 
 public class SFNPoleFilterOperator

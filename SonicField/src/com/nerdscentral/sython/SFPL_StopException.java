@@ -23,7 +23,7 @@ public class SFPL_StopException extends SFPL_RuntimeException
      */
     public SFPL_StopException(final Object toForward, final int x)
     {
-        super(Messages.getString("cSFPL_StopException.0"));   //$NON-NLS-1$
+        super(Messages.getString(Messages.getString("SFPL_StopException.0"))); //$NON-NLS-1$
         this.operand = toForward;
         this.count = x;
     }

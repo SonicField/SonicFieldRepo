@@ -4,9 +4,8 @@ package com.nerdscentral.audio.combine;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.nerdscentral.audio.SFSignal;
+import com.nerdscentral.audio.core.SFSignal;
 import com.nerdscentral.sython.Caster;
-import com.nerdscentral.sython.SFPL_Context;
 import com.nerdscentral.sython.SFPL_Operator;
 import com.nerdscentral.sython.SFPL_RuntimeException;
 
@@ -28,7 +27,7 @@ public class SF_Mix implements SFPL_Operator
     private final static Double   zero             = new Double(0);
 
     @Override
-    public Object Interpret(final Object input, final SFPL_Context context) throws SFPL_RuntimeException
+    public Object Interpret(final Object input) throws SFPL_RuntimeException
     {
         // Defer to MixAt where all the optimisation for mixing can happen
         List<Object> il = Caster.makeBunch(input);
@@ -43,7 +42,7 @@ public class SF_Mix implements SFPL_Operator
             pair.add(zero);
             out.add(pair);
         }
-        return mixer.Interpret(out, context);
+        return mixer.Interpret(out);
     }
 
     @Override

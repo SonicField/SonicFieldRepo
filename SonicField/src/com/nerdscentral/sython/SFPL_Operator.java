@@ -23,11 +23,9 @@ public interface SFPL_Operator extends Serializable
      * 
      * @param input
      *            the operand passed into this operator
-     * @param context
-     *            the current execution context
      * @return the operand passed forward from this operator
      * @throws SFPL_RuntimeException
      */
-    public Object Interpret(Object input, SFPL_Context context) throws SFPL_RuntimeException;
+    public Object Interpret(Object input) throws SFPL_RuntimeException;
 
 }

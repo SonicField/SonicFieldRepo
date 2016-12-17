@@ -1,6 +1,6 @@
 package com.nerdscentral.audio.pitch.algorithm;
 
-import com.nerdscentral.audio.SFConstants;
+import com.nerdscentral.audio.core.SFConstants;
 
 /*
  * RBJ Filters from C++ version by arguru[AT]smartelectronix[DOT]com based on eq filter cookbook by Robert Bristow-Johnson

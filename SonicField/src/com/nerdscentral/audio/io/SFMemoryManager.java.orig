@@ -18,8 +18,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.nerdscentral.audio.SFConstants;
-import com.nerdscentral.audio.SFData;
+import com.nerdscentral.audio.core.SFConstants;
+import com.nerdscentral.audio.core.SFData;
 import com.nerdscentral.sfpl.Messages;
 import com.nerdscentral.sfpl.SFPL_Context;
 import com.nerdscentral.sfpl.SFPL_Operator;

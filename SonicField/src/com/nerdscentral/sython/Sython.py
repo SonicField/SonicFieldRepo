@@ -10,7 +10,7 @@ sys.path.append(System.getProperty('sython.modules'))
 del sys.modules['sys']
 del sys.modules['java.lang']
 
-# This si the code which actually calls Sonic Field operators
+# This is the code which actually calls Sonic Field operators
 class SonicField:
     def __init__(self,procs):
         from com.nerdscentral.sython import SFPL_Context
@@ -25,6 +25,5 @@ class SonicField:
         if TRACE:
             trace=''.join(traceback.format_stack(inspect.currentframe().f_back,20))
             SFSignal.setPythonStack(trace)
-            #c_log(word+'('+str(input)+')')
         ret=self.processors.get(word).Interpret(input,self.context)
         return ret

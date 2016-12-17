@@ -2,11 +2,10 @@ package com.nerdscentral.audio.volume;
 
 import java.util.List;
 
-import com.nerdscentral.audio.SFConstants;
-import com.nerdscentral.audio.SFSignal;
+import com.nerdscentral.audio.core.SFConstants;
+import com.nerdscentral.audio.core.SFSignal;
 import com.nerdscentral.sython.Caster;
 import com.nerdscentral.sython.SFMaths;
-import com.nerdscentral.sython.SFPL_Context;
 import com.nerdscentral.sython.SFPL_Operator;
 import com.nerdscentral.sython.SFPL_RuntimeException;
 
@@ -45,7 +44,7 @@ public class SF_Follow implements SFPL_Operator
     }
 
     @Override
-    public Object Interpret(Object input, SFPL_Context context) throws SFPL_RuntimeException
+    public Object Interpret(Object input) throws SFPL_RuntimeException
     {
         List<Object> lin = Caster.makeBunch(input);
         double attack = Caster.makeDouble(lin.get(1));

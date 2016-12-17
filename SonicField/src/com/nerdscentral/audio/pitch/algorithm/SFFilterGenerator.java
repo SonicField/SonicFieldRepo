@@ -17,7 +17,7 @@ import static java.lang.Math.log;
 import static java.lang.Math.sqrt;
 import static java.lang.Math.tan;
 
-import com.nerdscentral.audio.SFConstants;
+import com.nerdscentral.audio.core.SFConstants;
 
 /**
  * This code is based on a rewrite of code by Tony Fisher RIP

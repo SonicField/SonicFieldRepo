@@ -1,8 +1,8 @@
 /* For Copyright and License see LICENSE.txt and COPYING.txt in the root directory */
 package com.nerdscentral.audio.amps;
 
-import com.nerdscentral.audio.SFData;
-import com.nerdscentral.audio.SFSignal;
+import com.nerdscentral.audio.core.SFData;
+import com.nerdscentral.audio.core.SFSignal;
 import com.nerdscentral.sython.SFMaths;
 import com.nerdscentral.sython.SFPL_RuntimeException;
 
