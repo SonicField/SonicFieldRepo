@@ -99,8 +99,8 @@ public class Sython
             try (PythonInterpreter interp = new PythonInterpreter())
             {
                 try (
-                    InputStream pis = Sython.class.getClassLoader().getResourceAsStream(
-                                    "com/nerdscentral/sython/processors.txt");
+                    InputStream pis = Sython.class.getClassLoader()
+                                    .getResourceAsStream("com/nerdscentral/sython/processors.txt");
                     InputStreamReader pir = new InputStreamReader(pis);
                     BufferedReader bpir = new BufferedReader(pir);)
                 {
@@ -142,55 +142,25 @@ public class Sython
                     interp.set("sf", sf);
                     interp.exec("__builtin__.sf=sf");
                 }
-                // Loading sython modules
-                try (
-                    InputStream pis = Sython.class.getClassLoader().getResourceAsStream(
-                                    "com/nerdscentral/sython/python/modules.txt");
-                    InputStreamReader pir = new InputStreamReader(pis);
-                    BufferedReader bpir = new BufferedReader(pir);)
-                {
-                    String lin;
-                    // lin = null;
-                    while ((lin = bpir.readLine()) != null)
-                    {
-                        if (lin.trim().length() > 0)
-                        {
-                            try (
-                                InputStream pis1 = Sython.class.getClassLoader().getResourceAsStream(
-                                                "com/nerdscentral/sython/python/" + lin);
-                                InputStreamReader pir1 = new InputStreamReader(pis1);
-                                BufferedReader bpir1 = new BufferedReader(pir1);)
-                            {
-                                String lin1 = null;
-                                interp.exec("print \"Running: " + lin + "\"");
-                                StringBuilder contents = new StringBuilder();
-                                while ((lin1 = bpir1.readLine()) != null)
-                                {
-                                    contents.append(lin1);
-                                    contents.append(System.lineSeparator());
-                                }
-                                interp.exec(contents.toString());
-                            }
-                        }
-                    }
 
-                    interp.exec("import __builtin__");
-                    interp.exec("__builtin__.sf=sf");
-                    interp.exec("print \"Switching To Python Mode\"");
-                    interp.exec("print \"========================\"");
-                    long t0 = System.currentTimeMillis();
-                    for (String f : args)
-                    {
-                        interp.execfile(f);
-                    }
-                    interp.exec("sf_shutdown()");
-                    interp.exec("print \"========================\"");
-                    interp.exec("print \"------- All DONE -------\"");
-                    long t1 = System.currentTimeMillis();
-                    System.out.println("Total Processing Took: " + ((t1 - t0) / 1000) + " seconds");
-                    SFData.dumpNotCollected();
+                interp.exec("import __builtin__");
+                interp.exec("__builtin__.sf=sf");
+                interp.exec("import sython.concurrent");
+                interp.exec("print \"Switching To Python Mode\"");
+                interp.exec("print \"========================\"");
+                long t0 = System.currentTimeMillis();
+                for (String f : args)
+                {
+                    interp.exec(f);
                 }
+                interp.exec("sython.concurrent.sf_shutdown()");
+                interp.exec("print \"========================\"");
+                interp.exec("print \"------- All DONE -------\"");
+                long t1 = System.currentTimeMillis();
+                System.out.println("Total Processing Took: " + ((t1 - t0) / 1000) + " seconds");
+                SFData.dumpNotCollected();
             }
+
         }
         catch (Throwable t)
         {

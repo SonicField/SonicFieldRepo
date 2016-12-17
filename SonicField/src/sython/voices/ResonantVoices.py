@@ -4,11 +4,18 @@
 #
 ###############################################################################
 
-from sython.Parallel_Helpers import mix
-from sython.organ.Algorithms import do_formant,excite,create_vibrato
-from Signal_Generators import phasing_sawtooth,simple_sawtooth,phasing_triangle, limited_triangle
-from Filters import byquad_filter
-from Reverberation import convolve,reverberate
+from sython.utils.Parallel_Helpers import mix
+from sython.utils.Algorithms import do_formant
+from sython.utils.Algorithms import excite
+from sython.utils.Algorithms import create_vibrato
+from sython.utils.Algorithms import polish
+from sython.voices.Signal_Generators import phasing_sawtooth
+from sython.voices.Signal_Generators import simple_sawtooth
+from sython.voices.Signal_Generators import phasing_triangle
+from sython.voices.Signal_Generators import limited_triangle
+from sython.voices.Signal_Generators import clean_noise
+from sython.utils.Filters import byquad_filter
+from sython.utils.Reverberation import convolve
 import math
 import random
 import functools
@@ -308,7 +315,7 @@ def _vox_filter(vox, freq, a, b, c):
 
 @sf_parallel
 def femail_soprano_ah_filter(vox, length, freq):
-    vox = vox_humana_inner(vox, length, freq, 850, 1200, 2800, 2.0, 3.0)
+    vox = _vox_filter(vox, freq, 850, 1200, 2800)
     a = sf.BesselLowPass(+vox,freq    ,2)
     b = sf.Power(sf.BesselHighPass(vox, freq*4.0, 2), 1.25)
     b = sf.Clean(b)
@@ -318,7 +325,7 @@ def femail_soprano_ah_filter(vox, length, freq):
     
 @sf_parallel
 def femail_soprano_a_filter(vox,length,freq):
-    vox = vox_humana_inner(vox, length,freq,860,2050,2850,1.8,2.5)
+    vox = _vox_filter(vox, freq, 860, 2050, 2850)
     a = sf.BesselLowPass(+vox,freq    ,2)
     b = sf.Power(sf.BesselHighPass(vox,freq*4.0,2),1.35)
     b = sf.Clean(b)

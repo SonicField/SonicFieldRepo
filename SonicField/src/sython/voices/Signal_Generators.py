@@ -67,3 +67,20 @@ def limited_triangle(length,pitch,harmonics):
         it+=2.0
         inv*=-1.0
     return sf.Finalise(sf.Mix(signals))
+
+@sf_parallel
+def clean_noise(length,freq):
+    return sf.FixSize(
+        sf.FixSize(
+            sf.BesselLowPass(
+                sf.ButterworthHighPass(
+                    sf.Clean(sf.WhiteNoise(length)),
+                    freq*0.25,
+                    4
+                ),
+                2000,
+                1
+            )       
+        )
+    )
+

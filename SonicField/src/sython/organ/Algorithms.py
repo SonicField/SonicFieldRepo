@@ -40,18 +40,6 @@ def tremolate(sig_,rate,mag):
     sig=realise(sf.NumericVolume(sig,m1/m2))
     return sig
 
-# Attempts to remove nyquist aliasing which can develope
-# below the frequency of the note being generated
-@sf_parallel
-def polish(sig,freq):
-    if freq > 128:
-        sig=sf.ButterworthHighPass(sig,freq*0.66,6)
-    elif freq > 64:
-        sig=sf.ButterworthHighPass(sig,freq*0.66,4)
-    else:
-        sig=sf.ButterworthHighPass(sig,freq*0.66,2)   
-    return sf.Clean(sig)
-
 @sf_parallel
 def pitch_move(sig):
     l=sf.Length(+sig)

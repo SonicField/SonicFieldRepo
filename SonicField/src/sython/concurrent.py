@@ -12,7 +12,7 @@ from java.lang import Thread
 from java.util import Collections
 from java.util.concurrent import TimeUnit
 from java.util.concurrent.atomic import AtomicLong, AtomicBoolean
-from com.nerdscentral.audio import SFConstants
+from com.nerdscentral.audio.core import SFConstants
 
 """
 Work Stealing Lazy Task Scheduler By Dr Alexander J Turner
@@ -651,7 +651,8 @@ def sf_shutdown():
             pool.shutdownNow()
             Thread.currentThread().interrupt()
     shutdown_and_await_termination(SF_POOL, 5)
-    
+
+import __builtin__
 __builtin__.c_log=c_log
 __builtin__.d_log=d_log
 __builtin__.sf_parallel=sf_parallel

@@ -208,22 +208,6 @@ def stopped_pulse(length,frequency):
             sf.NumericVolume(sf.PhasedSineWave(length,frequency*11.0,p),1.0/8.0)
         )
     return sf.FixSize(sig)
-    
-@sf_parallel
-def clean_noise(length,freq):
-    return sf.FixSize(
-        sf.FixSize(
-            sf.BesselLowPass(
-                sf.ButterworthHighPass(
-                    sf.Clean(sf.WhiteNoise(length)),
-                    freq*0.25,
-                    4
-                ),
-                2000,
-                1
-            )       
-        )
-    )
 
 @sf_parallel
 def sing_base(length,freq,z=1.0):

@@ -4,7 +4,7 @@
 
 # Methods for managing and recognising Sonic Field important types.
 
-from com.nerdscentral.audio import SFSignal
+from com.nerdscentral.audio.core import SFSignal
 
 # Returns true if the passed argument is a SFSignal 
 # returns false otherwise.

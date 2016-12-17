@@ -2,6 +2,7 @@ import math
 import random
 import sys
 from sython.concurrent import sf_parallel
+from Parallel_Helpers import mix, realise, finalise
 
 @sf_parallel
 def excite(sig_,mix_ammount,power):
@@ -89,3 +90,15 @@ def create_vibrato(sig,length,longer_than=0.0,rate=4.5,at=None,depth=0.2,pitch_d
     ev=sf.DirectMix(1.0,ev)
     sig=sf.FrequencyModulate(sig,fv)
     return sf.Multiply(ev,sig)
+
+# Attempts to remove nyquist aliasing which can develope
+# below the frequency of the note being generated
+@sf_parallel
+def polish(sig,freq):
+    if freq > 128:
+        sig=sf.ButterworthHighPass(sig,freq*0.66,6)
+    elif freq > 64:
+        sig=sf.ButterworthHighPass(sig,freq*0.66,4)
+    else:
+        sig=sf.ButterworthHighPass(sig,freq*0.66,2)   
+    return sf.Clean(sig)

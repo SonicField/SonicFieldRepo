@@ -23,7 +23,7 @@ java \
     -Xmx2G \
     -Dsython.linear=false \
     -Dsython.trace=false \
-    -Dsython.modules=/Users/alexanderturner/SonicFieldRepo/SonicField/src/com/nerdscentral/sython/modules \
+    -Dsython.modules=/Users/alexanderturner/SonicFieldRepo/SonicField/src \
     -XX:+UseParallelGC \
     -Dsython.steal=true \
     -DsonicFieldDirectMemory=True \
@@ -31,7 +31,8 @@ java \
     -XX:MaxInlineSize=128 \
     -XX:InlineSmallCode=1024 \
     -Xms128m \
-    -classpath bin:jars/jython-standalone-2.7.0.jar com.nerdscentral.sython.Sython $1
+    -classpath bin:jars/jython-standalone-2.7.0.jar com.nerdscentral.sython.Sython \
+    "import ${1}; ${1}.main()"
 
 # To run on Windows simply copy this file to a batch file and put all the class path on 
 # one line separated by ; rather than :
