@@ -23,26 +23,23 @@ public class SF_ConvolveForward implements SFPL_Operator
     public Object Interpret(Object input) throws SFPL_RuntimeException
     {
         List<Object> inList = Caster.makeBunch(input);
-        try (SFSignal sample = Caster.makeSFSignal(inList.get(0)); SFSignal shape = Caster.makeSFSignal(inList.get(1)))
+        SFSignal sample = Caster.makeSFSignal(inList.get(0));
+        SFSignal shape = Caster.makeSFSignal(inList.get(1));
+        int ll = sample.getLength();
+        int ls = shape.getLength();
+        SFData ret = SFData.build(ll + ls);
+        for (int x = 0; x < ll; ++x)
         {
-            int ll = sample.getLength();
-            int ls = shape.getLength();
-            try (SFData ret = SFData.build(ll + ls))
+            double r = 0;
+            for (int y = 0; y < ls; ++y)
             {
-                for (int x = 0; x < ll; ++x)
-                {
-                    double r = 0;
-                    for (int y = 0; y < ls; ++y)
-                    {
-                        int p = x + y;
-                        if (p >= ll) break;
-                        r = (r + sample.getSample(p) * shape.getSample(ls - y));
-                    }
-                    ret.setSample(x, r);
-                }
-                return Caster.prep4Ret(ret);
+                int p = x + y;
+                if (p >= ll) break;
+                r = (r + sample.getSample(p) * shape.getSample(ls - y));
             }
+            ret.setSample(x, r);
         }
+        return ret;
     }
 
 }

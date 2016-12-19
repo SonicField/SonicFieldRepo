@@ -277,19 +277,6 @@ def violin_filter(sig, length, freq):
 def _vox_filter(vox, freq, a, b, c):
     length=sf.Length(+vox)
     vox=sf.FixSize(polish(vox,freq)) 
-    if length>1024:
-        rt=3.0
-        dp=0.2
-        pdp=0.1
-    else:
-        rt=4.5
-        dp=0.1
-        pdp=0.05
-    if length>2048:
-        a=length*0.75
-    else:
-        a=length*0.5
-    vox=create_vibrato(vox, length, longer_than=512, rate=rt, depth=dp, pitch_depth=pdp, at=a)
     vox=do_formant(vox, a, b, c, freq)
     vox=polish(vox, freq)        
     vox=excite(vox, 0.2, 2.0)
@@ -299,14 +286,20 @@ def _vox_filter(vox, freq, a, b, c):
         sf.Pcnt75(sf.RBJNotch(+vox, notch, 0.5)),
         sf.Pcnt25(vox)
     )
-
-    vox=mix(
-        sf.Multiply(
-            sf.FixSize( sf.Power( clean_noise(length, freq*0.5), 1.5)),
-            sf.SimpleShape((0, -60), (64, -35), (128, -40), (length, -60))
-        ),
-        vox
-    )
+    
+    if length>1024:
+        rate = 3.0
+        depth = 0.05
+        pDepth = 0.1
+    else:
+        rt = 2.5
+        depth = 0.025
+        pDepth = 0.05
+    if length > 2048:
+        at = length*0.75
+    else:
+        at = length*0.5
+    vox=create_vibrato(vox, length, longer_than=512, rate=rate, depth=depth, pitch_depth=pDepth, at=at)
     
     vox=polish(vox, freq)
     vox=sf.RBJPeaking(vox, freq, 3, 4)
@@ -315,13 +308,14 @@ def _vox_filter(vox, freq, a, b, c):
 
 @sf_parallel
 def femail_soprano_ah_filter(vox, length, freq):
+    print length, freq
     vox = _vox_filter(vox, freq, 850, 1200, 2800)
-    a = sf.BesselLowPass(+vox,freq    ,2)
-    b = sf.Power(sf.BesselHighPass(vox, freq*4.0, 2), 1.25)
-    b = sf.Clean(b)
-    b = sf.ButterworthHighPass(b, freq*1.5 ,6)
-    a = sf.ButterworthHighPass(a, freq*0.75 ,6)
-    return sf.Realise(mix(sf.Pcnt75(a), sf.Pcnt25(b)))
+    lower = sf.BesselLowPass(+vox,freq    ,2)
+    higher = sf.Power(sf.BesselHighPass(vox, freq*4.0, 2), 1.25)
+    higher = sf.Clean(higher)
+    higher = sf.ButterworthHighPass(higher, freq*1.5 ,6)
+    lower = sf.ButterworthHighPass(lower, freq*0.75 ,6)
+    return sf.Realise(mix(sf.Pcnt95(lower), sf.Pcnt5(higher)))
     
 @sf_parallel
 def femail_soprano_a_filter(vox,length,freq):

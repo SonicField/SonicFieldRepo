@@ -82,8 +82,6 @@ public class SF_MixAt implements SFPL_Operator
             List<Object> dataList = Caster.makeBunch(each);
             double offset = Caster.makeDouble(dataList.get(1)) * SFConstants.SAMPLE_RATE_MS;
             offsets.add((int) SFMaths.floor(offset));
-            @SuppressWarnings("resource")
-            // Closed explicity - not exception safe
             SFSignal signal = Caster.makeSFSignal(dataList.get(0));
             signals.add(signal);
             allRealised = allRealised && signal.isRealised();
@@ -94,10 +92,6 @@ public class SF_MixAt implements SFPL_Operator
             return largeMix(signals, offsets);
         }
         Translator ret = new Translator(signals, offsets);
-        for (SFSignal s : signals)
-        {
-            s.close();
-        }
         return ret;
     }
 
@@ -119,7 +113,6 @@ public class SF_MixAt implements SFPL_Operator
             int at = offsets.get(i);
             SFSignal in = signals.get(i);
             out.operateOnto(at, in, SFData.OPERATION.ADD);
-            in.close();
         }
         return out;
     }

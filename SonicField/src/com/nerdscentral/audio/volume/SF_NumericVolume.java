@@ -46,14 +46,9 @@ public class SF_NumericVolume implements SFPL_Operator
     public Object Interpret(final Object input) throws SFPL_RuntimeException
     {
         List<Object> inList = Caster.makeBunch(input);
-        try (SFSignal data = Caster.makeSFSignal(inList.get(0));)
-        {
-            double scale = Caster.makeDouble(inList.get(1));
-            try (SFSignal x = new Translator(data, scale))
-            {
-                return Caster.prep4Ret(x);
-            }
-        }
+        SFSignal data = Caster.makeSFSignal(inList.get(0));
+        double scale = Caster.makeDouble(inList.get(1));
+        return new Translator(data, scale);
     }
 
     @Override

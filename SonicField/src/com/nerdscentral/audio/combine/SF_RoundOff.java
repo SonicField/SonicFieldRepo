@@ -19,35 +19,28 @@ public class SF_RoundOff implements SFPL_Operator
     @Override
     public Object Interpret(final Object input) throws SFPL_RuntimeException
     {
-        try (SFSignal data = Caster.makeSFSignal(input);)
+        SFSignal data = Caster.makeSFSignal(input);
+        if (data.getLength() < rollOffSamples * 2)
         {
-            if (data.getLength() < rollOffSamples * 2)
-            {
-                try (SFSignal ret = SFData.build(data.getLength()))
-                {
-                    return Caster.prep4Ret(ret);
-                }
-            }
-            int len = data.getLength() - rollOffSamples;
-            try (SFSignal out = data.replicateEmpty();)
-            {
-                for (int i = 0; i < rollOffSamples; ++i)
-                {
-                    out.setSample(i + len, data.getSample(i) * (1) / rollOffSamples);
-                }
-
-                for (int i = rollOffSamples; i < len; ++i)
-                {
-                    out.setSample(i, data.getSample(i));
-                }
-
-                for (int i = 0; i < rollOffSamples; ++i)
-                {
-                    out.setSample(i + len, data.getSample(i + len) * (rollOffSamples - i) / rollOffSamples);
-                }
-                return Caster.prep4Ret(out);
-            }
+            return SFData.build(data.getLength());
         }
+        int len = data.getLength() - rollOffSamples;
+        SFSignal out = data.replicateEmpty();
+        for (int i = 0; i < rollOffSamples; ++i)
+        {
+            out.setSample(i + len, data.getSample(i) * (1) / rollOffSamples);
+        }
+
+        for (int i = rollOffSamples; i < len; ++i)
+        {
+            out.setSample(i, data.getSample(i));
+        }
+
+        for (int i = 0; i < rollOffSamples; ++i)
+        {
+            out.setSample(i + len, data.getSample(i + len) * (rollOffSamples - i) / rollOffSamples);
+        }
+        return out;
     }
 
     @Override

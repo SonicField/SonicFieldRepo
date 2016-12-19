@@ -66,19 +66,14 @@ public class SF_WaveShaper implements SFPL_Operator
         {
             coefficients[i] = Caster.makeDouble(in.get(i));
         }
-        try (SFSignal data = Caster.makeSFSignal(in.get(6)))
-        {
-            // this replicates for us
-            double e0 = coefficients[0];
-            double e1 = coefficients[1];
-            double e2 = coefficients[2];
-            double e3 = coefficients[3];
-            double e4 = coefficients[4];
-            double e5 = coefficients[5];
-            try (Translator x = new Translator(data, e0, e1, e2, e3, e4, e5))
-            {
-                return Caster.prep4Ret(x);
-            }
-        }
+        SFSignal data = Caster.makeSFSignal(in.get(6));
+        // this replicates for us
+        double e0 = coefficients[0];
+        double e1 = coefficients[1];
+        double e2 = coefficients[2];
+        double e3 = coefficients[3];
+        double e4 = coefficients[4];
+        double e5 = coefficients[5];
+        return new Translator(data, e0, e1, e2, e3, e4, e5);
     }
 }

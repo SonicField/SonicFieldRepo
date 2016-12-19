@@ -46,21 +46,11 @@ public class SF_Multiply implements SFPL_Operator
         list.add(Caster.makeSFSignal(l.get(1)));
         if (list.get(0).isRealised() && list.get(1).isRealised())
         {
-            try (SFData data = (SFData) list.get(0).replicate())
-            {
-                data.operateOnto(0, list.get(1), SFData.OPERATION.MULTIPLY);
-                for (SFSignal s : list)
-                {
-                    s.close();
-                }
-                return Caster.prep4Ret(data);
-            }
+            SFData data = (SFData) list.get(0).replicate();
+            data.operateOnto(0, list.get(1), SFData.OPERATION.MULTIPLY);
+            return data;
         }
         Translator ret = new Translator(list);
-        for (SFSignal s : list)
-        {
-            s.close();
-        }
         return ret;
     }
 

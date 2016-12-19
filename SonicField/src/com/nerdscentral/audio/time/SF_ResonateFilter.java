@@ -24,30 +24,26 @@ public class SF_ResonateFilter implements SFPL_Operator
     public Object Interpret(Object input) throws SFPL_RuntimeException
     {
         List<Object> lin = Caster.makeBunch(input);
-        try (SFSignal in = Caster.makeSFSignal(lin.get(0)))
+        SFSignal in = Caster.makeSFSignal(lin.get(0));
+        double vResonant = Caster.makeDouble(lin.get(1));
+        double vOriginal = Caster.makeDouble(lin.get(2));
+        double delay = Caster.makeDouble(lin.get(3));
+        SFSignal out = in.replicate();
+        double r = in.getLength();
+        int delaySamples = (int) (delay * SFConstants.SAMPLE_RATE_MS);
+        for (int n = 0; n < delaySamples; ++n)
         {
-            double vResonant = Caster.makeDouble(lin.get(1));
-            double vOriginal = Caster.makeDouble(lin.get(2));
-            double delay = Caster.makeDouble(lin.get(3));
-            try (SFSignal out = in.replicate())
+            out.setSample(n, out.getSample(n) * vOriginal);
+        }
+        for (int n = 0; n < r; ++n)
+        {
+            double q = out.getSample(n);
+            int index = n + delaySamples;
+            if (index < r)
             {
-                double r = in.getLength();
-                int delaySamples = (int) (delay * SFConstants.SAMPLE_RATE_MS);
-                for (int n = 0; n < delaySamples; ++n)
-                {
-                    out.setSample(n, out.getSample(n) * vOriginal);
-                }
-                for (int n = 0; n < r; ++n)
-                {
-                    double q = out.getSample(n);
-                    int index = n + delaySamples;
-                    if (index < r)
-                    {
-                        out.setSample(index, out.getSample(index) * vOriginal + q * vResonant);
-                    }
-                }
-                return Caster.prep4Ret(out);
+                out.setSample(index, out.getSample(index) * vOriginal + q * vResonant);
             }
         }
+        return out;
     }
 }

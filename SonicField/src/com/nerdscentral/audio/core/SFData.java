@@ -15,16 +15,14 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
-import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
-
-import sun.misc.Unsafe;
 
 import com.nerdscentral.audio.Messages;
 import com.nerdscentral.data.OffHeapArray;
 import com.nerdscentral.data.UnsafeProvider;
 import com.nerdscentral.sython.SFPL_RuntimeException;
+
+import sun.misc.Unsafe;
 
 /**
  * @author a1t
@@ -59,14 +57,17 @@ public class SFData extends SFSignal implements Serializable
     }
 
     // Directory to send swap files to
-    private static final String                             SONIC_FIELD_TEMP        = "sonicFieldTemp";               //$NON-NLS-1$
-    private static final String                             SONIC_FIELD_SAFE_MEMORY = "sonicFieldSaferMemory";        //$NON-NLS-1$
-    private static final String                             SONIC_FIELD_DIRECT      = "sonicFieldDirectMemory";       //$NON-NLS-1$
-    private static final String                             SONIC_FIELD_TRUE        = "true";                         //$NON-NLS-1$
+    private static final String                             SONIC_FIELD_TEMP        = "sonicFieldTemp";                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  //$NON-NLS-1$
+    private static final String                             SONIC_FIELD_SAFE_MEMORY = "sonicFieldSaferMemory";                                                                                                                                                                                                                                                                                                                                                                                //$NON-NLS-1$
+    private static final String                             SONIC_FIELD_DIRECT      = "sonicFieldDirectMemory";                                                                                                                                                                                                                                                                                                                                  //$NON-NLS-1$
+    private static final String                             SONIC_FIELD_TRUE        = "true";                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              //$NON-NLS-1$
 
     private static final long                               CHUNK_SHIFT             = 16;
     private static final long                               CHUNK_LEN               = (long) Math.pow(2, CHUNK_SHIFT);
     private static final long                               CHUNK_MASK              = CHUNK_LEN - 1;
+    private static final long                               FILE_SCALE_DEN          = 4;
+    private static final long                               FILE_SCALE_NUM          = 5;
+
     private static final long                               serialVersionUID        = 1L;
     private final int                                       length;
     private volatile boolean                                killed                  = false;
@@ -75,29 +76,14 @@ public class SFData extends SFSignal implements Serializable
     private ByteBufferWrapper[]                             chunks;
     private static FileChannel[]                            channelMapper;
     private static int                                      fileRoundRobbin         = 0;
-    private final NotCollectedException                     javaCreated;
-    private final String                                    pythonCreated;
     private final long                                      chunkIndex;
     // shadows chunkIndex for memory management as chunkIndex must
     // be final to enable optimisation
     private long                                            allocked;
+    private static long                                     maxFileSize             = SFConstants.ONE_GIG;
     private static ConcurrentLinkedDeque<ByteBufferWrapper> freeChunks              = new ConcurrentLinkedDeque<>();
     private static final boolean                            saferMemory;
     private static final boolean                            mapped;
-
-    private static class ResTracker
-    {
-        public ResTracker(NotCollectedException javaCreated, String pythonCreated)
-        {
-            j = javaCreated;
-            p = pythonCreated;
-        }
-
-        NotCollectedException j;
-        String                p;
-    }
-
-    private final static ConcurrentHashMap<SFData, ResTracker> resourceTracker = new ConcurrentHashMap<>();
 
     static
     {
@@ -131,7 +117,7 @@ public class SFData extends SFSignal implements Serializable
                 tempDir[index] = new File(tdName);
                 try
                 {
-                    coreFile[index] = File.createTempFile("SonicFieldSwap" + pid, ".mem", tempDir[index]);  //$NON-NLS-1$//$NON-NLS-2$            
+                    coreFile[index] = File.createTempFile("SonicFieldSwap" + pid, ".mem", tempDir[index]);  //$NON-NLS-1$//$NON-NLS-2$
                     coreFile[index].deleteOnExit();
                     // Now create the actual file
                     coreFileAccessor[index] = new RandomAccessFile(coreFile[index], "rw"); //$NON-NLS-1$
@@ -148,19 +134,6 @@ public class SFData extends SFSignal implements Serializable
         {
             // Used for sync only
             coreFile = new File[1];
-        }
-    }
-
-    public static void dumpNotCollected()
-    {
-        if (resourceTracker.size() != 0)
-        {
-            System.out.println(Messages.getString("SFData.14")); //$NON-NLS-1$
-            System.out.println(Messages.getString("SFData.15")); //$NON-NLS-1$
-            for (Entry<SFData, ResTracker> x : resourceTracker.entrySet())
-            {
-                printResourceError(Messages.getString("SFData.19"), x.getValue()); //$NON-NLS-1$
-            }
         }
     }
 
@@ -188,28 +161,13 @@ public class SFData extends SFSignal implements Serializable
         }
         if (countDown > 0)
         {
-            synchronized (coreFile)
-            {
-                while (countDown > 0)
-                {
-                    ByteBuffer chunk;
-                    if (mapped)
-                    {
-                        long from = coreFile[fileRoundRobbin].length();
-                        chunk = channelMapper[fileRoundRobbin].map(MapMode.READ_WRITE, from, CHUNK_LEN << 3l);
-                        if (++fileRoundRobbin >= coreFile.length) fileRoundRobbin = 0;
-                    }
-                    else
-                    {
-                        chunk = ByteBuffer.allocateDirect((int) (CHUNK_LEN << 3l));
-                    }
-                    chunk.order(ByteOrder.nativeOrder());
-                    chunks[chunkCount] = new ByteBufferWrapper(chunk);
-                    ++chunkCount;
-                    countDown -= CHUNK_LEN;
-                }
-            }
+            mapMoreData(countDown, chunkCount);
         }
+        getChunkAddresses();
+    }
+
+    private void getChunkAddresses()
+    {
         // now we have the chunks we get the address of the underlying memory
         // of each and place that in the off heap lookup so we no longer reference
         // them via objects but purely as raw memory
@@ -218,6 +176,40 @@ public class SFData extends SFSignal implements Serializable
         {
             unsafe.putAddress(chunkIndex + offSet, chunk.address);
             offSet += 8;
+        }
+    }
+
+    private void mapMoreData(long countDown, int chunkCount)
+                    throws IOException, NoSuchMethodException, IllegalAccessException, InvocationTargetException
+    {
+        synchronized (coreFile)
+        {
+            while (countDown > 0)
+            {
+                ByteBuffer chunk;
+                if (mapped)
+                {
+                    long from = coreFile[fileRoundRobbin].length();
+                    @SuppressWarnings("resource")
+                    FileChannel channel = channelMapper[fileRoundRobbin];
+                    chunk = channel.map(MapMode.READ_WRITE, from, CHUNK_LEN << 3l);
+                    if (++fileRoundRobbin >= coreFile.length) fileRoundRobbin = 0;
+                    if (channel.size() > maxFileSize)
+                    {
+                        System.gc();
+                        maxFileSize = (maxFileSize * FILE_SCALE_NUM) / FILE_SCALE_DEN;
+                        System.out.println("Increased Max File: " + maxFileSize); //$NON-NLS-1$
+                    }
+                }
+                else
+                {
+                    chunk = ByteBuffer.allocateDirect((int) (CHUNK_LEN << 3l));
+                }
+                chunk.order(ByteOrder.nativeOrder());
+                chunks[chunkCount] = new ByteBufferWrapper(chunk);
+                ++chunkCount;
+                countDown -= CHUNK_LEN;
+            }
         }
     }
 
@@ -234,12 +226,12 @@ public class SFData extends SFSignal implements Serializable
     @Override
     public void release()
     {
+        clear();
         for (ByteBufferWrapper chunk : chunks)
         {
             freeChunks.push(chunk);
         }
         chunks = null;
-        resourceTracker.remove(this);
         if (saferMemory) freeUnsafeMemory();
     }
 
@@ -273,19 +265,6 @@ public class SFData extends SFSignal implements Serializable
                 throw new RuntimeException(e);
             }
             this.length = l;
-            if (SFConstants.TRACE)
-            {
-                NotCollectedException nc = new NotCollectedException();
-                nc.fillInStackTrace();
-                pythonCreated = getPythonStack();
-                resourceTracker.put(this, new ResTracker(nc, pythonCreated));
-                javaCreated = nc;
-            }
-            else
-            {
-                pythonCreated = null;
-                javaCreated = null;
-            }
         }
         catch (Throwable t)
         {
@@ -412,7 +391,8 @@ public class SFData extends SFSignal implements Serializable
         int pos2 = pos;
         if (pos2 + data2.getLength() > length)
         {
-            System.out.println(Messages.getString("SFData.9") + pos2 + Messages.getString("SFData.10") + data2.getLength() + Messages.getString("SFData.11") + length); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+            System.out.println(Messages.getString("SFData.9") + pos2 + Messages.getString("SFData.10") + data2.getLength() //$NON-NLS-1$ //$NON-NLS-2$
+                            + Messages.getString("SFData.11") + length);  //$NON-NLS-1$
             throw new SFPL_RuntimeException(Messages.getString("SFData.0")); //$NON-NLS-1$
         }
         long end = pos2 + data2.getLength();
@@ -468,59 +448,6 @@ public class SFData extends SFSignal implements Serializable
             output.setSample(i, in.getSample(i));
         }
         return output;
-    }
-
-    @Override
-    public void finalize()
-    {
-        if (referenceCount.get() != 0)
-        {
-            System.err.println(Messages.getString("SFData.13")); //$NON-NLS-1$
-            System.err.println(pythonCreated);
-            if (javaCreated != null) javaCreated.printStackTrace();
-        }
-        if (!saferMemory)
-        {
-            freeUnsafeMemory();
-        }
-    }
-
-    /* (non-Javadoc)
-     * @see com.nerdscentral.audio.SFSignal#close()
-     */
-    @Override
-    public void close() throws RuntimeException
-    {
-        try
-        {
-            super.close();
-        }
-        catch (RuntimeException e)
-        {
-            printResourceError(Messages.getString("SFData.16"), new ResTracker(this.javaCreated, this.pythonCreated)); //$NON-NLS-1$
-            Thread.dumpStack();
-            System.exit(1);
-        }
-    }
-
-    private static void printResourceError(String message, ResTracker data)
-    {
-        System.err.println(message);
-        try
-        {
-            System.err.println(Messages.getString("SFData.17")); //$NON-NLS-1$
-            for (StackTraceElement x : data.j.getStackTrace())
-            {
-                if (x.getClassName().contains(".reflect.")) break; //$NON-NLS-1$
-                System.err.println(x.getClassName() + "!" + x.getFileName() + ":" + x.getLineNumber()); //$NON-NLS-1$ //$NON-NLS-2$
-            }
-            System.err.println(Messages.getString("SFData.18")); //$NON-NLS-1$
-            System.err.println(data.p);
-        }
-        catch (Throwable t)
-        {
-            System.err.println(Messages.getString("SFData.6") + t.getMessage()); //$NON-NLS-1$
-        }
     }
 
     @Override

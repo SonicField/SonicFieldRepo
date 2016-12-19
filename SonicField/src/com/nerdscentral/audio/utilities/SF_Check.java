@@ -30,21 +30,20 @@ public class SF_Check implements SFPL_Operator, SFPL_RefPassThrough
     public Object Interpret(Object input) throws SFPL_RuntimeException
     {
         boolean ok = true;
-        try (SFSignal in = Caster.makeSFSignal(input);)
-        {
-            int len = in.getLength();
+        SFSignal in = Caster.makeSFSignal(input);
+        int len = in.getLength();
 
-            for (int i = 0; i < len; ++i)
+        for (int i = 0; i < len; ++i)
+        {
+            double q = in.getSample(i);
+            if (Double.isInfinite(q) || Double.isNaN(q))
             {
-                double q = in.getSample(i);
-                if (Double.isInfinite(q) || Double.isNaN(q))
-                {
-                    System.err.println("Note error at: " + i + " " + Double.isFinite(q) + "," + Double.isNaN(q));
-                    ok = false;
-                    break;
-                }
+                System.err.println(Messages.getString("SF_Check.0") + i + Messages.getString("SF_Check.1") + Double.isFinite(q) //$NON-NLS-1$ //$NON-NLS-2$
+                                + Messages.getString("SF_Check.2") + Double.isNaN(q));  //$NON-NLS-1$
+                ok = false;
+                break;
             }
-            return ok;
         }
+        return ok;
     }
 }

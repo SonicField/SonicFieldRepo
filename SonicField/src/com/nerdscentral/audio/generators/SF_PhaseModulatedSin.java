@@ -26,19 +26,15 @@ public class SF_PhaseModulatedSin implements SFPL_Operator
     {
         final List<Object> l = Caster.makeBunch(input);
         final double frequency = Caster.makeDouble(l.get(0));
-        try (final SFSignal phase = (Caster.makeSFSignal(l.get(1))))
+        final SFSignal phase = (Caster.makeSFSignal(l.get(1)));
+        int size = phase.getLength();
+        SFData data = SFData.build(size);
+        final double PI2 = SFMaths.PI * 2.0d;
+        // Use the periodic nature of a sin wave to save cpu
+        for (int i = 0; i < size; ++i)
         {
-            int size = phase.getLength();
-            try (SFData data = SFData.build(size))
-            {
-                final double PI2 = SFMaths.PI * 2.0d;
-                // Use the periodic nature of a sin wave to save cpu
-                for (int i = 0; i < size; ++i)
-                {
-                    data.setSample(i, SFMaths.sin((i * PI2 * frequency / SFConstants.SAMPLE_RATE) + (PI2 * phase.getSample(i))));
-                }
-                return Caster.prep4Ret(data);
-            }
+            data.setSample(i, SFMaths.sin((i * PI2 * frequency / SFConstants.SAMPLE_RATE) + (PI2 * phase.getSample(i))));
         }
+        return data;
     }
 }

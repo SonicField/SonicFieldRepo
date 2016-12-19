@@ -21,9 +21,7 @@ public class SF_Length implements SFPL_Operator
     @Override
     public Object Interpret(Object input) throws SFPL_RuntimeException
     {
-        try (SFSignal sig = Caster.makeSFSignal(input))
-        {
-            return sig.getLength() * 1000d / SFConstants.SAMPLE_RATE;
-        }
+        SFSignal sig = Caster.makeSFSignal(input);
+        return sig.getLength() * 1000d / SFConstants.SAMPLE_RATE;
     }
 }

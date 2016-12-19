@@ -22,27 +22,22 @@ public class SF_Cut implements SFPL_Operator
     public Object Interpret(final Object input) throws SFPL_RuntimeException
     {
         List<Object> inList = Caster.makeBunch(input);
-        try (
 
-        SFSignal data = Caster.makeSFSignal(inList.get(2));)
+        SFSignal data = Caster.makeSFSignal(inList.get(2));
+        double start = Caster.makeDouble(inList.get(0));
+        double end = Caster.makeDouble(inList.get(1));
+        int istart = (int) (start * SFConstants.SAMPLE_RATE_MS);
+        int iend = (int) (end * SFConstants.SAMPLE_RATE_MS);
+        if (iend >= data.getLength())
         {
-            double start = Caster.makeDouble(inList.get(0));
-            double end = Caster.makeDouble(inList.get(1));
-            int istart = (int) (start * SFConstants.SAMPLE_RATE_MS);
-            int iend = (int) (end * SFConstants.SAMPLE_RATE_MS);
-            if (iend >= data.getLength())
-            {
-                iend = data.getLength() - 1;
-            }
-            try (SFData out = SFData.build(iend - istart);)
-            {
-                for (int i = istart; i < iend; ++i)
-                {
-                    out.setSample(i - istart, data.getSample(i));
-                }
-                return Caster.prep4Ret(out);
-            }
+            iend = data.getLength() - 1;
         }
+        SFData out = SFData.build(iend - istart);
+        for (int i = istart; i < iend; ++i)
+        {
+            out.setSample(i - istart, data.getSample(i));
+        }
+        return out;
     }
 
     @Override

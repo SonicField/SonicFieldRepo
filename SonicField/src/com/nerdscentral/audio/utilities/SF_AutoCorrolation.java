@@ -20,25 +20,20 @@ public class SF_AutoCorrolation implements SFPL_Operator
     @Override
     public Object Interpret(Object input) throws SFPL_RuntimeException
     {
-        try (SFSignal orig = Caster.makeSFSignal(input))
+        SFSignal orig = Caster.makeSFSignal(input);
+        int len = orig.getLength();
+        int window = len / 2;
+        SFData r = SFData.build(window);
+        double sum;
+        for (int i = 0; i < window; i++)
         {
-            int len = orig.getLength();
-            int window = len / 2;
-            try (SFData r = SFData.build(window))
+            sum = 0;
+            for (int j = 0; j < window - i; j++)
             {
-                double sum;
-
-                for (int i = 0; i < window; i++)
-                {
-                    sum = 0;
-                    for (int j = 0; j < window - i; j++)
-                    {
-                        sum += orig.getSample(j) * orig.getSample(j + i);
-                    }
-                    r.setSample(i, sum);
-                }
-                return Caster.prep4Ret(r);
+                sum += orig.getSample(j) * orig.getSample(j + i);
             }
+            r.setSample(i, sum);
         }
+        return r;
     }
 }

@@ -38,10 +38,8 @@ public class SF_Saturate implements SFPL_Operator
     @Override
     public Object Interpret(Object input) throws SFPL_RuntimeException
     {
-        try (SFSignal in = Caster.makeSFSignal(input))
-        {
-            return new Translator(in);
-        }
+        SFSignal in = Caster.makeSFSignal(input);
+        return new Translator(in);
     }
 
 }

@@ -24,23 +24,20 @@ public class SF_RectangularJoin implements SFPL_Operator
     public Object Interpret(Object input) throws SFPL_RuntimeException
     {
         List<Object> l = Caster.makeBunch(input);
-        try (SFSignal sampleA = Caster.makeSFSignal(l.get(0)); SFSignal sampleB = Caster.makeSFSignal(l.get(1)))
+        SFSignal sampleA = Caster.makeSFSignal(l.get(0));
+        SFSignal sampleB = Caster.makeSFSignal(l.get(1));
+        int lenA = sampleA.getLength();
+        int lenB = sampleB.getLength();
+        int len = lenA > lenB ? lenA : lenB;
+        SFData out = SFData.build(len);
+        for (int i = 0; i < len; i += 2)
         {
-            int lenA = sampleA.getLength();
-            int lenB = sampleB.getLength();
-            int len = lenA > lenB ? lenA : lenB;
-            try (SFData out = SFData.build(len))
-            {
-                for (int i = 0; i < len; i += 2)
-                {
-                    double a = i >= lenA ? 0 : sampleA.getSample(i);
-                    double b = i >= lenB ? 0 : sampleB.getSample(i);
-                    int j = i + 1;
-                    out.setSample(i, a);
-                    out.setSample(j, b);
-                }
-                return Caster.prep4Ret(out);
-            }
+            double a = i >= lenA ? 0 : sampleA.getSample(i);
+            double b = i >= lenB ? 0 : sampleB.getSample(i);
+            int j = i + 1;
+            out.setSample(i, a);
+            out.setSample(j, b);
         }
+        return out;
     }
 }

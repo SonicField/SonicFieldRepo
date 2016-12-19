@@ -20,10 +20,8 @@ public class SF_WaveMaximise implements SFPL_Operator
     @Override
     public Object Interpret(Object input) throws SFPL_RuntimeException
     {
-        try (SFSignal data = Caster.makeSFSignal(input); SFSignal out = SFAmpAlgorithms.maximise(data))
-        {
-            return Caster.prep4Ret(out);
-        }
+        SFSignal data = Caster.makeSFSignal(input);
+        return SFAmpAlgorithms.maximise(data);
     }
 
 }

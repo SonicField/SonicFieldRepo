@@ -36,18 +36,13 @@ public class SF_CleanFix implements SFPL_Operator
     @Override
     public Object Interpret(final Object input) throws SFPL_RuntimeException
     {
-        try (SFSignal sig = Caster.makeSFSignal(input))
-        {
-            try (SFData dataIn = SFData.realise(sig); SFData dataOut = dataIn.replicateEmpty();)
-            {
-                if (dataIn == sig) dataIn.incrReferenceCount();
-
-                double max = SF_Clean.decimateFilter(dataIn, dataOut);
-                max = 1 / max;
-                Translator ret = new Translator(dataOut, max);
-                return ret;
-            }
-        }
+        SFSignal sig = Caster.makeSFSignal(input);
+        SFData dataIn = SFData.realise(sig);
+        SFData dataOut = dataIn.replicateEmpty();
+        double max = SF_Clean.decimateFilter(dataIn, dataOut);
+        max = 1 / max;
+        Translator ret = new Translator(dataOut, max);
+        return ret;
     }
 
     @Override

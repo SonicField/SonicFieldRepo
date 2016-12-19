@@ -17,59 +17,55 @@ public class SF_FrequencyModulate implements SFPL_Operator
     public Object Interpret(final Object input) throws SFPL_RuntimeException
     {
         List<Object> l = Caster.makeBunch(input);
-        try (SFSignal shape = Caster.makeSFSignal(l.get(1)); SFSignal sampleA = Caster.makeSFSignal(l.get(0));)
+        SFSignal shape = Caster.makeSFSignal(l.get(1));
+        SFSignal sampleA = Caster.makeSFSignal(l.get(0));
+        if (sampleA.getLength() != shape.getLength()) throw new SFPL_RuntimeException(Messages.getString("SF_Resample.1"));  //$NON-NLS-1$
+        int len = sampleA.getLength();
+        SFSignal ret = sampleA.replicateEmpty();
+        double pos = 0;
+        // Perform a dry run to get the required timing correction
+        for (int i = 0; i < len; ++i)
         {
-            if (sampleA.getLength() != shape.getLength()) throw new SFPL_RuntimeException(Messages.getString("SF_Resample.1"));  //$NON-NLS-1$
-            int len = sampleA.getLength();
-            try (SFSignal ret = sampleA.replicateEmpty())
+            // ret.setSample(i, sampleA.getSampleCubic(pos));
+            double sn = shape.getSample(i);
+            if (sn > 0)
             {
-                double pos = 0;
-                // Perform a dry run to get the required timing correction
-                for (int i = 0; i < len; ++i)
-                {
-                    // ret.setSample(i, sampleA.getSampleCubic(pos));
-                    double sn = shape.getSample(i);
-                    if (sn > 0)
-                    {
-                        sn += 1.0d;
-                    }
-                    else if (sn == 0)
-                    {
-                        sn = 1.0d;
-                    }
-                    else
-                    {
-                        sn = -sn + 1.0d;
-                        sn = 1.0d / sn;
-                    }
-                    pos += sn;
-                }
-                double correction = (len - 1) / pos;
-                // Now do it for real
-                pos = 0;
-                for (int i = 0; i < len; ++i)
-                {
-                    ret.setSample(i, sampleA.getSampleCubic(pos * correction));
-                    double sn = shape.getSample(i);
-                    if (sn > 0)
-                    {
-                        sn += 1.0d;
-                    }
-                    else if (sn == 0)
-                    {
-                        sn = 1.0d;
-                    }
-                    else
-                    {
-                        sn = -sn + 1.0d;
-                        sn = 1.0d / sn;
-                    }
-                    pos += sn;
-                }
-
-                return Caster.prep4Ret(ret);
+                sn += 1.0d;
             }
+            else if (sn == 0)
+            {
+                sn = 1.0d;
+            }
+            else
+            {
+                sn = -sn + 1.0d;
+                sn = 1.0d / sn;
+            }
+            pos += sn;
         }
+        double correction = (len - 1) / pos;
+        // Now do it for real
+        pos = 0;
+        for (int i = 0; i < len; ++i)
+        {
+            ret.setSample(i, sampleA.getSampleCubic(pos * correction));
+            double sn = shape.getSample(i);
+            if (sn > 0)
+            {
+                sn += 1.0d;
+            }
+            else if (sn == 0)
+            {
+                sn = 1.0d;
+            }
+            else
+            {
+                sn = -sn + 1.0d;
+                sn = 1.0d / sn;
+            }
+            pos += sn;
+        }
+        return ret;
     }
 
     @Override

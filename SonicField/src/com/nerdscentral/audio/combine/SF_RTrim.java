@@ -20,25 +20,21 @@ public class SF_RTrim implements SFPL_Operator
     @Override
     public Object Interpret(final Object input) throws SFPL_RuntimeException
     {
-        try (SFSignal dataIn = Caster.makeSFSignal(input);)
+        SFSignal dataIn = Caster.makeSFSignal(input);
+        int start = 0;
+        int len = dataIn.getLength();
+        int end = len - 1;
+        for (; end > start; --end)
         {
-            int start = 0;
-            int len = dataIn.getLength();
-            int end = len - 1;
-            for (; end > start; --end)
-            {
-                if (SFMaths.abs(dataIn.getSample(end)) > SFConstants.NOISE_FLOOR) break;
-            }
-            ++end;
-            try (SFData out = SFData.build(end - start);)
-            {
-                for (int i = start; i < end; ++i)
-                {
-                    out.setSample(i - start, dataIn.getSample(i));
-                }
-                return Caster.prep4Ret(out);
-            }
+            if (SFMaths.abs(dataIn.getSample(end)) > SFConstants.NOISE_FLOOR) break;
         }
+        ++end;
+        SFData out = SFData.build(end - start);
+        for (int i = start; i < end; ++i)
+        {
+            out.setSample(i - start, dataIn.getSample(i));
+        }
+        return out;
     }
 
     @Override

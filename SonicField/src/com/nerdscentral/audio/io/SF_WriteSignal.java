@@ -26,26 +26,24 @@ public class SF_WriteSignal implements SFPL_Operator, SFPL_RefPassThrough
     public Object Interpret(final Object input) throws SFPL_RuntimeException
     {
         List<Object> inList = Caster.makeBunch(input);
-        try (SFSignal data = Caster.makeSFSignal(inList.get(0));)
+        SFSignal data = Caster.makeSFSignal(inList.get(0));
+        String fileName = Caster.makeString(inList.get(1));
+        File file = new File(fileName);
+        try (
+            FileOutputStream fs = new FileOutputStream(file);
+            DataOutputStream ds = new DataOutputStream(new BufferedOutputStream(fs)))
         {
-            String fileName = Caster.makeString(inList.get(1));
-            File file = new File(fileName);
-            try (
-                FileOutputStream fs = new FileOutputStream(file);
-                DataOutputStream ds = new DataOutputStream(new BufferedOutputStream(fs)))
+            ds.writeInt(data.getLength());
+            for (int i = 0; i < data.getLength(); ++i)
             {
-                ds.writeInt(data.getLength());
-                for (int i = 0; i < data.getLength(); ++i)
-                {
-                    ds.writeDouble(data.getSample(i));
-                }
+                ds.writeDouble(data.getSample(i));
             }
-            catch (Exception e)
-            {
-                throw new SFPL_RuntimeException(Messages.getString("SF_WriteSignal.1"), e);  //$NON-NLS-1$
-            }
-            return data;
         }
+        catch (Exception e)
+        {
+            throw new SFPL_RuntimeException(Messages.getString("SF_WriteSignal.1"), e);  //$NON-NLS-1$
+        }
+        return data;
     }
 
     @Override

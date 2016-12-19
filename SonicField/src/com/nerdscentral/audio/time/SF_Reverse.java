@@ -34,10 +34,8 @@ public class SF_Reverse implements SFPL_Operator
     @Override
     public Object Interpret(final Object input) throws SFPL_RuntimeException
     {
-        try (SFSignal in = Caster.makeSFSignal(input))
-        {
-            return new Translator(in);
-        }
+        SFSignal in = Caster.makeSFSignal(input);
+        return new Translator(in);
     }
 
     @Override

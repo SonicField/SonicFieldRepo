@@ -29,33 +29,31 @@ public class SF_Monitor implements SFPL_Operator, SFPL_RefPassThrough
     @Override
     public Object Interpret(Object input) throws SFPL_RuntimeException
     {
-        try (SFSignal data = Caster.makeSFSignal(input); SFSignal dataIn = SF_Normalise.doNormalisation(data);)
+        SFSignal data = Caster.makeSFSignal(input);
+        SFSignal dataIn = SF_Normalise.doNormalisation(data);
+        try
         {
-
-            try
+            AudioFormat af = new AudioFormat((float) SFConstants.SAMPLE_RATE, 16, 1, true, true);
+            DataLine.Info info = new DataLine.Info(SourceDataLine.class, af);
+            SourceDataLine source = (SourceDataLine) AudioSystem.getLine(info);
+            source.open(af);
+            source.start();
+            byte[] buf = new byte[dataIn.getLength() * 2];
+            for (int i = 0; i < buf.length; ++i)
             {
-                AudioFormat af = new AudioFormat((float) SFConstants.SAMPLE_RATE, 16, 1, true, true);
-                DataLine.Info info = new DataLine.Info(SourceDataLine.class, af);
-                SourceDataLine source = (SourceDataLine) AudioSystem.getLine(info);
-                source.open(af);
-                source.start();
-                byte[] buf = new byte[dataIn.getLength() * 2];
-                for (int i = 0; i < buf.length; ++i)
-                {
-                    short sample = (short) (dataIn.getSample(i / 2) * 32767.0);
-                    buf[i] = (byte) (sample >> 8);
-                    buf[++i] = (byte) (sample & 0xFF);
-                }
-                source.write(buf, 0, buf.length);
-                source.drain();
-                source.stop();
-                source.close();
-                return Caster.prep4Ret(data);
+                short sample = (short) (dataIn.getSample(i / 2) * 32767.0);
+                buf[i] = (byte) (sample >> 8);
+                buf[++i] = (byte) (sample & 0xFF);
             }
-            catch (Exception e)
-            {
-                throw new SFPL_RuntimeException(Messages.getString("SF_Monitor.1"), e); //$NON-NLS-1$
-            }
+            source.write(buf, 0, buf.length);
+            source.drain();
+            source.stop();
+            source.close();
+            return data;
+        }
+        catch (Exception e)
+        {
+            throw new SFPL_RuntimeException(Messages.getString("SF_Monitor.1"), e); //$NON-NLS-1$
         }
     }
 }

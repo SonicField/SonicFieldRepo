@@ -22,29 +22,24 @@ public class SF_FrequencyDomain implements SFPL_Operator
     @Override
     public Object Interpret(Object input) throws SFPL_RuntimeException
     {
-        try (SFSignal signal = Caster.makeSFSignal(input))
+        SFSignal signal = Caster.makeSFSignal(input);
+        int Nx = signal.getLength();
+        int NFFT = (int) Math.pow(2.0, Math.ceil(Math.log(Nx) / Math.log(2.0)));
+        try (
+            OffHeapArray out = OffHeapArray.doubleArray(NFFT << 1);
+            OffHeapArray re = OffHeapArray.doubleArray(NFFT);
+            OffHeapArray im = OffHeapArray.doubleArray(NFFT))
         {
-
-            int Nx = signal.getLength();
-            int NFFT = (int) Math.pow(2.0, Math.ceil(Math.log(Nx) / Math.log(2.0)));
-            try (
-                OffHeapArray out = OffHeapArray.doubleArray(NFFT << 1);
-                OffHeapArray re = OffHeapArray.doubleArray(NFFT);
-                OffHeapArray im = OffHeapArray.doubleArray(NFFT))
+            out.initialise();
+            re.initialise();
+            im.initialise();
+            for (int i = 0; i < Nx; ++i)
             {
-                out.initialise();
-                re.initialise();
-                im.initialise();
-                for (int i = 0; i < Nx; ++i)
-                {
-                    re.setDouble(i, signal.getSample(i));
-                }
-                FFTbase.fft(re, im, out, true);
-                try (SFData ret = SFData.build(out, NFFT))
-                {
-                    return Caster.prep4Ret(ret);
-                }
+                re.setDouble(i, signal.getSample(i));
             }
+            FFTbase.fft(re, im, out, true);
+            SFData ret = SFData.build(out, NFFT);
+            return ret;
         }
     }
 }

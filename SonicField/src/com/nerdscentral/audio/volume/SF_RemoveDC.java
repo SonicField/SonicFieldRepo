@@ -24,21 +24,20 @@ public class SF_RemoveDC implements SFPL_Operator
     @Override
     public Object Interpret(final Object input) throws SFPL_RuntimeException
     {
-        try (SFSignal in = Caster.makeSFSignal(input); SFSignal data = in.replicateEmpty())
+        SFSignal in = Caster.makeSFSignal(input);
+        SFSignal data = in.replicateEmpty();
+        // remove DC
+        double dc = 0;
+        for (int i = 0; i < data.getLength(); ++i)
         {
-            // remove DC
-            double dc = 0;
-            for (int i = 0; i < data.getLength(); ++i)
-            {
-                dc += data.getSample(i);
-            }
-            dc = dc / data.getLength();
-            for (int i = 0; i < data.getLength(); ++i)
-            {
-                data.setSample(i, in.getSample(i) - dc);
-            }
-            return Caster.prep4Ret(data);
+            dc += data.getSample(i);
         }
+        dc = dc / data.getLength();
+        for (int i = 0; i < data.getLength(); ++i)
+        {
+            data.setSample(i, in.getSample(i) - dc);
+        }
+        return data;
     }
 
     @Override

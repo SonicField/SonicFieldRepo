@@ -19,16 +19,11 @@ public class SF_Clean implements SFPL_Operator
     @Override
     public Object Interpret(final Object input) throws SFPL_RuntimeException
     {
-        try (SFSignal sig = Caster.makeSFSignal(input))
-        {
-            try (SFData dataIn = SFData.realise(sig); SFData dataOut = dataIn.replicateEmpty();)
-            {
-                if (dataIn == sig) dataIn.incrReferenceCount();
-
-                decimateFilter(dataIn, dataOut);
-                return Caster.prep4Ret(dataOut);
-            }
-        }
+        SFSignal sig = Caster.makeSFSignal(input);
+        SFData dataIn = SFData.realise(sig);
+        SFData dataOut = dataIn.replicateEmpty();
+        decimateFilter(dataIn, dataOut);
+        return dataOut;
     }
 
     public static double decimateFilter(SFData dataIn, SFData dataOut)

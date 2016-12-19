@@ -62,7 +62,7 @@ public class MidiFunctions
 	String ret=controllerLookup.get(numb);
 	if(ret==null)
 	{
-	    ret="unknown";
+	    ret="unknown"; //$NON-NLS-1$
 	}
 	return ret;
     }
@@ -191,7 +191,7 @@ public class MidiFunctions
                                 for (Map<String, Object> s : stack)
                                 {
                                     StringBuilder out = new StringBuilder();
-                                    for (Entry<String, Object> kv : row.entrySet())
+                                    for (Entry<String, Object> kv : s.entrySet())
                                     {
                                         out.append(kv.getKey());
                                         out.append("="); //$NON-NLS-1$
@@ -279,7 +279,7 @@ public class MidiFunctions
 		    String type=metaLookup.get(mm.getType());
 		    if(type==null)
 		    {
-			type="unknown";
+			type="unknown"; //$NON-NLS-1$
 		    }
                     Map<String, Object> row = new ConcurrentHashMap<>();
                     row.put("command", "meta"); //$NON-NLS-1$ //$NON-NLS-2$

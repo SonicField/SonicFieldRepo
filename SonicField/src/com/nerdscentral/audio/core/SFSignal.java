@@ -1,20 +1,17 @@
 /* For Copyright and License see LICENSE.txt and COPYING.txt in the root directory */
 package com.nerdscentral.audio.core;
 
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.nerdscentral.audio.Messages;
 import com.nerdscentral.audio.pitch.CubicInterpolator;
 import com.nerdscentral.sython.SFMaths;
 import com.nerdscentral.sython.SFPL_RuntimeException;
 
-public abstract class SFSignal implements AutoCloseable
+public abstract class SFSignal
 {
 
-    private final static AtomicLong uniqueId       = new AtomicLong(0);
+    private final static AtomicLong uniqueId = new AtomicLong(0);
     private final long              myId;
-    protected final AtomicInteger   referenceCount = new AtomicInteger(1);
 
     public abstract boolean isKilled();
 
@@ -32,6 +29,16 @@ public abstract class SFSignal implements AutoCloseable
     protected SFSignal()
     {
         myId = uniqueId.incrementAndGet();
+    }
+
+    public SFSignal __pos__()
+    {
+        return this;
+    }
+
+    public SFSignal __neg__()
+    {
+        return this;
     }
 
     /**
@@ -126,41 +133,6 @@ public abstract class SFSignal implements AutoCloseable
 
     public abstract void release();
 
-    @Override
-    public void close() throws RuntimeException
-    {
-        int c = referenceCount.decrementAndGet();
-        if (c == 0) release();
-        else if (c < 0) throw new RuntimeException(Messages.getString("SFSignal.1")); //$NON-NLS-1$
-    }
-
-    public void incrReferenceCount()
-    {
-        referenceCount.incrementAndGet();
-    }
-
-    public SFSignal __pos__()
-    {
-        incrReferenceCount();
-        return this;
-    }
-
-    public SFSignal __neg__()
-    {
-        close();
-        return this;
-    }
-
-    public int getReferenceCount()
-    {
-        return referenceCount.get();
-    }
-
-    public void decrReferenceCount()
-    {
-        referenceCount.decrementAndGet();
-    }
-
     public static String getPythonStack()
     {
         return pythonStack.get();
@@ -180,5 +152,11 @@ public abstract class SFSignal implements AutoCloseable
     public boolean isRealised()
     {
         return false;
+    }
+
+    @Override
+    public void finalize()
+    {
+        release();
     }
 }

@@ -31,9 +31,7 @@ public class SF_Realise implements SFPL_Operator, SFPL_RefPassThrough
         {
             return input;
         }
-        try (SFSignal in = Caster.makeSFSignal(input); SFData ret = SFData.realise(in);)
-        {
-            return Caster.incrReference(ret);
-        }
+        SFSignal in = Caster.makeSFSignal(input);
+        return SFData.realise(in);
     }
 }

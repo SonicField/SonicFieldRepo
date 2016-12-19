@@ -20,9 +20,7 @@ public class SF_MakeSubOctave implements SFPL_Operator
     @Override
     public Object Interpret(Object input) throws SFPL_RuntimeException
     {
-        try (SFSignal data = Caster.makeSFSignal(input); SFSignal out = SFAmpAlgorithms.makeSubOctave(data))
-        {
-            return Caster.prep4Ret(out);
-        }
+        SFSignal data = Caster.makeSFSignal(input);
+        return SFAmpAlgorithms.makeSubOctave(data);
     }
 }

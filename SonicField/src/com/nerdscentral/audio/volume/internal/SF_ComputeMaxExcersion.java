@@ -23,18 +23,15 @@ public class SF_ComputeMaxExcersion implements SFPL_Operator
     @Override
     public Object Interpret(Object input) throws SFPL_RuntimeException
     {
-        try (SFSignal data = Caster.makeSFSignal(input);)
+        SFSignal data = Caster.makeSFSignal(input);
+        double maxExcersion = 0;
+        int len = data.getLength();
+        for (int i = 0; i < len; ++i)
         {
-            double maxExcersion = 0;
-            int len = data.getLength();
-            for (int i = 0; i < len; ++i)
-            {
-                double thisExcersion = data.getSample(i);
-                if (thisExcersion < 0) thisExcersion = -thisExcersion;
-                if (thisExcersion > maxExcersion) maxExcersion = thisExcersion;
-            }
-            return maxExcersion;
+            double thisExcersion = data.getSample(i);
+            if (thisExcersion < 0) thisExcersion = -thisExcersion;
+            if (thisExcersion > maxExcersion) maxExcersion = thisExcersion;
         }
+        return maxExcersion;
     }
-
 }

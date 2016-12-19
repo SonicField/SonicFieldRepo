@@ -32,7 +32,6 @@ public class SF_ErrorsToSilence implements SFPL_Operator
         }
         if (errors)
         {
-            in.decrReferenceCount();
             return SFData.build(in.getLength());
         }
         return in;

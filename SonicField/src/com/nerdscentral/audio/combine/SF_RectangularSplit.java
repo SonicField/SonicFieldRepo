@@ -24,23 +24,20 @@ public class SF_RectangularSplit implements SFPL_Operator
     @Override
     public Object Interpret(Object input) throws SFPL_RuntimeException
     {
-        try (SFSignal sample = Caster.makeSFSignal(input);)
+        SFSignal sample = Caster.makeSFSignal(input);
+        int len = sample.getLength();
+        SFSignal real = SFData.build(len);
+        SFSignal imaginary = SFData.build(len);
+        int j = 0;
+        for (int i = 0; i < len; i += 2)
         {
-            int len = sample.getLength();
-            try (SFSignal real = SFData.build(len); SFSignal imaginary = SFData.build(len);)
-            {
-                int j = 0;
-                for (int i = 0; i < len; i += 2)
-                {
-                    real.setSample(j, sample.getSample(i));
-                    imaginary.setSample(j, sample.getSample(i + 1));
-                    ++j;
-                }
-                List<Object> ret = new ArrayList<>();
-                ret.add(real);
-                ret.add(imaginary);
-                return Caster.prep4Ret(ret);
-            }
+            real.setSample(j, sample.getSample(i));
+            imaginary.setSample(j, sample.getSample(i + 1));
+            ++j;
         }
+        List<Object> ret = new ArrayList<>();
+        ret.add(real);
+        ret.add(imaginary);
+        return ret;
     }
 }

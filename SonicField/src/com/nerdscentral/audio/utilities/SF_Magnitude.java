@@ -21,16 +21,14 @@ public class SF_Magnitude implements SFPL_Operator
     @Override
     public Object Interpret(Object input) throws SFPL_RuntimeException
     {
-        try (SFSignal signal = Caster.makeSFSignal(input))
+        SFSignal signal = Caster.makeSFSignal(input);
+        int length = signal.getLength();
+        double ret = 0;
+        for (int index = 0; index < length; ++index)
         {
-            int length = signal.getLength();
-            double ret = 0;
-            for (int index = 0; index < length; ++index)
-            {
-                double x = signal.getSample(index);
-                ret += x * x;
-            }
-            return SFMaths.pow(ret, 0.5);
+            double x = signal.getSample(index);
+            ret += x * x;
         }
+        return SFMaths.pow(ret, 0.5);
     }
 }

@@ -125,27 +125,23 @@ public class SF_ShapedLadder implements SFPL_Operator
     public Object Interpret(Object input) throws SFPL_RuntimeException
     {
         List<Object> in = Caster.makeBunch(input);
-        try (
-            SFSignal dataIn = Caster.makeSFSignal(in.get(0));
-            SFSignal shape = Caster.makeSFSignal(in.get(1));
-            SFSignal resonance = Caster.makeSFSignal(in.get(2));
-            SFSignal ret = dataIn.replicateEmpty();)
+        SFSignal dataIn = Caster.makeSFSignal(in.get(0));
+        SFSignal shape = Caster.makeSFSignal(in.get(1));
+        SFSignal resonance = Caster.makeSFSignal(in.get(2));
+        SFSignal ret = dataIn.replicateEmpty();
+        int length = dataIn.getLength();
+        if (shape.getLength() != length || resonance.getLength() != length)
         {
-            int length = dataIn.getLength();
-            if (shape.getLength() != length || resonance.getLength() != length)
-            {
-                throw new SFPL_RuntimeException(Messages.getString("SF_Ladder.1")); //$NON-NLS-1$
-            }
-            InnerFilter filter = new InnerFilter();
-            filter.init();
-            for (int index = 0; index < length; ++index)
-            {
-                filter.setRes(resonance.getSample(index));
-                filter.setCutoff(shape.getSample(index));
-                ret.setSample(index, filter.process(dataIn.getSample(index)));
-            }
-            return Caster.prep4Ret(ret);
+            throw new SFPL_RuntimeException(Messages.getString("SF_Ladder.1")); //$NON-NLS-1$
         }
+        InnerFilter filter = new InnerFilter();
+        filter.init();
+        for (int index = 0; index < length; ++index)
+        {
+            filter.setRes(resonance.getSample(index));
+            filter.setCutoff(shape.getSample(index));
+            ret.setSample(index, filter.process(dataIn.getSample(index)));
+        }
+        return ret;
     }
-
 }

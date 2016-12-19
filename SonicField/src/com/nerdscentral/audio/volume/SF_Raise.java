@@ -41,10 +41,9 @@ public class SF_Raise implements SFPL_Operator
     {
         List<Object> l = Caster.makeBunch(input);
         double pw = Caster.makeDouble(l.get(1));
-        try (SFSignal in = (Caster.makeSFSignal(l.get(0))); SFSignal ret = new Translate(in, pw);)
-        {
-            return Caster.prep4Ret(ret);
-        }
+        SFSignal in = Caster.makeSFSignal(l.get(0));
+        return new Translate(in, pw);
+
     }
 
     @Override

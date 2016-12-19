@@ -21,31 +21,28 @@ public class SF_ShapedPower implements SFPL_Operator
     public Object Interpret(final Object input) throws SFPL_RuntimeException
     {
         List<Object> l = Caster.makeBunch(input);
-        try (SFSignal shape = Caster.makeSFSignal(l.get(1)); SFSignal in = (Caster.makeSFSignal(l.get(0))))
+        SFSignal shape = Caster.makeSFSignal(l.get(1));
+        SFSignal in = (Caster.makeSFSignal(l.get(0)));
+        int length = in.getLength();
+        if (length != shape.getLength())
         {
-            int length = in.getLength();
-            if (length != shape.getLength())
+            throw new SFPL_RuntimeException(Messages.getString("SFP_ShapedPower.0")); //$NON-NLS-1$
+        }
+        SFSignal out = in.replicateEmpty();
+        for (int i = 0; i < length; ++i)
+        {
+            double pw = shape.getSample(i);
+            double q = in.getSample(i);
+            if (q < 0)
             {
-                throw new SFPL_RuntimeException(Messages.getString("SFP_ShapedPower.0")); //$NON-NLS-1$
+                out.setSample(i, -SFMaths.pow(-q, pw));
             }
-            try (SFSignal out = in.replicateEmpty())
+            else
             {
-                for (int i = 0; i < length; ++i)
-                {
-                    double pw = shape.getSample(i);
-                    double q = in.getSample(i);
-                    if (q < 0)
-                    {
-                        out.setSample(i, -SFMaths.pow(-q, pw));
-                    }
-                    else
-                    {
-                        out.setSample(i, SFMaths.fastPow(q, pw));
-                    }
-                }
-                return Caster.prep4Ret(out);
+                out.setSample(i, SFMaths.fastPow(q, pw));
             }
         }
+        return out;
     }
 
     @Override

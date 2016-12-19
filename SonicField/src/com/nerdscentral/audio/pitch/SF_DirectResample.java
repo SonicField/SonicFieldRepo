@@ -17,21 +17,17 @@ public class SF_DirectResample implements SFPL_Operator
     public Object Interpret(final Object input) throws SFPL_RuntimeException
     {
         List<Object> l = Caster.makeBunch(input);
-        try (SFSignal sampleA = Caster.makeSFSignal(l.get(0)))
+        SFSignal sampleA = Caster.makeSFSignal(l.get(0));
+        double rate = Caster.makeDouble(l.get(1));
+        int len = sampleA.getLength();
+        SFSignal ret = sampleA.replicateEmpty();
+        double pos = 0;
+        for (int i = 0; i < len; ++i)
         {
-            double rate = Caster.makeDouble(l.get(1));
-            int len = sampleA.getLength();
-            try (SFSignal ret = sampleA.replicateEmpty())
-            {
-                double pos = 0;
-                for (int i = 0; i < len; ++i)
-                {
-                    ret.setSample(i, sampleA.getSampleCubic(pos));
-                    pos = pos + rate;
-                }
-                return Caster.prep4Ret(ret);
-            }
+            ret.setSample(i, sampleA.getSampleCubic(pos));
+            pos = pos + rate;
         }
+        return ret;
     }
 
     @Override

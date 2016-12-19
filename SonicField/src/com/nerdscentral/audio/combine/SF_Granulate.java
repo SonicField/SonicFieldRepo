@@ -109,58 +109,48 @@ public class SF_Granulate implements SFPL_Operator
     public Object Interpret(final Object input) throws SFPL_RuntimeException
     {
         List<Object> lin = Caster.makeBunch(input);
-        try (SFSignal data = Caster.makeSFSignal(lin.get(0));)
+        SFSignal data = Caster.makeSFSignal(lin.get(0));
+
+        int rollOffSamples = (int) (Caster.makeDouble(lin.get(1)) * SFConstants.SAMPLE_RATE_MS);
+        int randSamples = lin.size() > 2 ? (int) (Caster.makeDouble(lin.get(2)) * SFConstants.SAMPLE_RATE_MS) : 0;
+        rollOffSamples /= 2;
+        List<Object> retOuter = new ArrayList<>();
+        int len = data.getLength();
+        int start = 0;
+        while (true)
         {
-            int rollOffSamples = (int) (Caster.makeDouble(lin.get(1)) * SFConstants.SAMPLE_RATE_MS);
-            int randSamples = lin.size() > 2 ? (int) (Caster.makeDouble(lin.get(2)) * SFConstants.SAMPLE_RATE_MS) : 0;
-            rollOffSamples /= 2;
-            List<Object> retOuter = new ArrayList<>();
-            int len = data.getLength();
-            int start = 0;
-            while (true)
+            int rollOffSamplesOld = rollOffSamples;
+            rollOffSamples += SFMaths.random() * randSamples;
+            int k = rollOffSamples * 2;
+            int end = start + k;
+            BaseTranslator trans = null;
+            if (start == 0)
             {
-                int rollOffSamplesOld = rollOffSamples;
-                rollOffSamples += SFMaths.random() * randSamples;
-                int k = rollOffSamples * 2;
-                int end = start + k;
-                BaseTranslator trans = null;
-                if (start == 0)
-                {
-                    try (BaseTranslator x = new BaseTranslator(data, start, rollOffSamples);)
-                    {
-                        Caster.prep4Ret(x);
-                        trans = x;
-                    }
-                }
-                else if (end >= len)
-                {
-                    try (BaseTranslator x = new EndTranslator(data, start, rollOffSamples);)
-                    {
-                        Caster.prep4Ret(x);
-                        trans = x;
-                    }
-                }
-                else
-                {
-                    try (BaseTranslator x = new MiddleTranslator(data, start, rollOffSamples);)
-                    {
-                        Caster.prep4Ret(x);
-                        trans = x;
-                    }
-                }
-                // add to retout,
-                List<Object> thisRet = new ArrayList<>(2);
-                thisRet.add(trans);
-                thisRet.add(start / SFConstants.SAMPLE_RATE_MS);
-                retOuter.add(thisRet);
-                // All done
-                if (end >= len) break;
-                // move on by rolloutsamples
-                start += rollOffSamples;
-                rollOffSamples = rollOffSamplesOld;
+                BaseTranslator x = new BaseTranslator(data, start, rollOffSamples);
+                trans = x;
             }
-            return retOuter;
+            else if (end >= len)
+            {
+                BaseTranslator x = new EndTranslator(data, start, rollOffSamples);
+                trans = x;
+            }
+            else
+            {
+                BaseTranslator x = new MiddleTranslator(data, start, rollOffSamples);
+                trans = x;
+            }
+            // add to retout,
+            List<Object> thisRet = new ArrayList<>(2);
+            thisRet.add(trans);
+            thisRet.add(start / SFConstants.SAMPLE_RATE_MS);
+            retOuter.add(thisRet);
+            // All done
+            if (end >= len) break;
+            // move on by rolloutsamples
+            start += rollOffSamples;
+            rollOffSamples = rollOffSamplesOld;
         }
+        return retOuter;
     }
 
     @Override

@@ -38,17 +38,16 @@ public class SF_Clip implements SFPL_Operator
     @Override
     public Object Interpret(final Object input) throws SFPL_RuntimeException
     {
-        try (SFSignal in = Caster.makeSFSignal(input); SFData out = in.replicateEmpty();)
+        SFSignal in = Caster.makeSFSignal(input);
+        SFData out = in.replicateEmpty();
+        for (int i = 0; i < in.getLength(); ++i)
         {
-            for (int i = 0; i < in.getLength(); ++i)
-            {
-                double q = in.getSample(i);
-                if (q < -1) q = -1;
-                else if (q > 1) q = 1;
-                out.setSample(i, q);
-            }
-            return Caster.prep4Ret(out);
+            double q = in.getSample(i);
+            if (q < -1) q = -1;
+            else if (q > 1) q = 1;
+            out.setSample(i, q);
         }
+        return out;
     }
 
     @Override

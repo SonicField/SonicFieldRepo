@@ -34,12 +34,12 @@ public class SF_StereoMonitor implements SFPL_Operator, SFPL_RefPassThrough
     {
         List<Object> lin = Caster.makeBunch(input);
         if (lin.size() != 2) throw new SFPL_RuntimeException(Messages.getString("SF_StereoMonitor.1")); //$NON-NLS-1$
-        try (
+        try
+        {
             SFSignal dataIn1a = Caster.makeSFSignal(lin.get(0));
             SFSignal dataIn2a = Caster.makeSFSignal(lin.get(1));
             SFSignal dataIn1 = SF_Normalise.doNormalisation(dataIn1a);
-            SFSignal dataIn2 = SF_Normalise.doNormalisation(dataIn2a))
-        {
+            SFSignal dataIn2 = SF_Normalise.doNormalisation(dataIn2a);
 
             AudioFormat af = new AudioFormat((float) SFConstants.SAMPLE_RATE, 16, 2, true, true);
             DataLine.Info info = new DataLine.Info(SourceDataLine.class, af);
@@ -69,8 +69,8 @@ public class SF_StereoMonitor implements SFPL_Operator, SFPL_RefPassThrough
             source.stop();
             source.close();
             List<SFSignal> ret = new ArrayList<>();
-            ret.add((SFSignal) Caster.prep4Ret(dataIn1a));
-            ret.add((SFSignal) Caster.prep4Ret(dataIn2a));
+            ret.add(dataIn1a);
+            ret.add(dataIn2a);
             return ret;
         }
         catch (Exception e)

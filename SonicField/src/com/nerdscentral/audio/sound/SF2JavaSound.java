@@ -63,8 +63,8 @@ public final class SF2JavaSound
         return ret;
     }
 
-    public final static SFLineListener playFile(String fileName, Mixer mixer) throws UnsupportedAudioFileException,
-                    IOException, LineUnavailableException
+    public final static SFLineListener playFile(String fileName, Mixer mixer)
+                    throws UnsupportedAudioFileException, IOException, LineUnavailableException
     {
         InputStream in = new FileInputStream(fileName);
         BufferedInputStream bin = new BufferedInputStream(in);
@@ -97,8 +97,8 @@ public final class SF2JavaSound
         }
     }
 
-    public final static List<SFSignal> readFile(String fileName) throws SFPL_RuntimeException, UnsupportedAudioFileException,
-                    IOException
+    public final static List<SFSignal> readFile(String fileName)
+                    throws SFPL_RuntimeException, UnsupportedAudioFileException, IOException
     {
         InputStream in = new FileInputStream(fileName);
         BufferedInputStream bin = new BufferedInputStream(in);
@@ -155,8 +155,8 @@ public final class SF2JavaSound
         throw new SFPL_RuntimeException(Messages.getString("SF2JavaSound.0")); //$NON-NLS-1$
     }
 
-    public static void WriteWav(String fileName, List<Object> channels, boolean hiRes) throws IOException, SFWavFileException,
-                    SFPL_RuntimeException
+    public static void WriteWav(String fileName, List<Object> channels, boolean hiRes)
+                    throws IOException, SFWavFileException, SFPL_RuntimeException
     {
         int sampleRate = (int) SFConstants.SAMPLE_RATE; // Samples per second
         int nChannels = channels.size();
@@ -168,7 +168,6 @@ public final class SF2JavaSound
         int numFrames = 0;
         for (int channelRR = 0; channelRR < nChannels; ++channelRR)
         {
-            @SuppressWarnings("resource")
             SFSignal data = Caster.makeSFSignal(channels.get(0));
             int l = data.getLength();
             if (l > numFrames) numFrames = l;
@@ -201,7 +200,6 @@ public final class SF2JavaSound
             {
                 for (int channelRR = 0; channelRR < nChannels; ++channelRR)
                 {
-                    @SuppressWarnings("resource")
                     SFSignal d = datas.get(channelRR);
                     double dd = d.getLength() > frameCounter ? d.getSample(frameCounter) : 0;
                     buffer[channelRR][s] = dd;
@@ -212,12 +210,6 @@ public final class SF2JavaSound
             wavFile.writeFrames(buffer, toWrite);
         }
 
-        for (int channelRR = 0; channelRR < nChannels; ++channelRR)
-        {
-            SFSignal d = datas.get(channelRR);
-            // Manually clean resournce
-            d.close();
-        }
         // Close the wavFile
         wavFile.close();
     }

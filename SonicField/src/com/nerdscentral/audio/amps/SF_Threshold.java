@@ -31,10 +31,8 @@ public class SF_Threshold implements SFPL_Operator
     {
         List<Object> bunch = Caster.makeBunch(input);
         double data2 = Caster.makeDouble(bunch.get(1));
-        try (SFSignal data1 = Caster.makeSFSignal(bunch.get(0)); SFSignal out = SFAmpAlgorithms.threshold(data1, data2);)
-        {
-            return Caster.prep4Ret(out);
-        }
+        SFSignal data1 = Caster.makeSFSignal(bunch.get(0));
+        return SFAmpAlgorithms.threshold(data1, data2);
     }
 
 }

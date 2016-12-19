@@ -170,13 +170,13 @@ public class MidiPlayer implements MetaEventListener, java.lang.AutoCloseable, C
                 {
                     if (i == controlTrack || i == voiceTrack)
                     {
-                        System.out.println("Setting " + i + " solo");
+                        System.out.println(Messages.getString("MidiPlayer.11") + i + Messages.getString("MidiPlayer.12")); //$NON-NLS-1$ //$NON-NLS-2$
                         sequencer.setTrackMute(i, false);
                         sequencer.setTrackSolo(i, true);
                     }
                     else
                     {
-                        System.out.println("Setting " + i + " mute");
+                        System.out.println(Messages.getString("MidiPlayer.13") + i + Messages.getString("MidiPlayer.14")); //$NON-NLS-1$ //$NON-NLS-2$
                         sequencer.setTrackMute(i, true);
                         sequencer.setTrackSolo(i, false);
                     }

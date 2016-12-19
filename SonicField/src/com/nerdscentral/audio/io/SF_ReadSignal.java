@@ -89,7 +89,7 @@ public class SF_ReadSignal implements SFPL_Operator
             }
             catch (ArrayIndexOutOfBoundsException e)
             {
-                // System.err.println("Exceptiion: " + e.getMessage());
+                // System.err.println("Exception: " + e.getMessage());
                 updateBuffer(index);
                 toSeek = index;
                 toSeek = toSeek * 8 + 4;
@@ -124,6 +124,7 @@ public class SF_ReadSignal implements SFPL_Operator
      */
     private static final long serialVersionUID = 1L;
 
+    @SuppressWarnings("resource")
     @Override
     public Object Interpret(final Object input) throws SFPL_RuntimeException
     {

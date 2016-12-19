@@ -18,27 +18,23 @@ public class SF_MaxDeviation implements SFPL_Operator
     public Object Interpret(final Object input) throws SFPL_RuntimeException
     {
         List<Object> l = Caster.makeBunch(input);
-        try (SFSignal sampleA = Caster.makeSFSignal(l.get(0)))
+        SFSignal sampleA = Caster.makeSFSignal(l.get(0));
+        double max = Caster.makeDouble(l.get(1));
+        int len = sampleA.getLength();
+        SFSignal ret = sampleA.replicateEmpty();
+        double value = 0;
+        for (int i = 0; i < len; ++i)
         {
-            double max = Caster.makeDouble(l.get(1));
-            int len = sampleA.getLength();
-            try (SFSignal ret = sampleA.replicateEmpty())
+            double next = sampleA.getSample(i);
+            double diff = next - value;
+            if (SFMaths.abs(diff) > max)
             {
-                double value = 0;
-                for (int i = 0; i < len; ++i)
-                {
-                    double next = sampleA.getSample(i);
-                    double diff = next - value;
-                    if (SFMaths.abs(diff) > max)
-                    {
-                        diff = diff > 0 ? max : -max;
-                    }
-                    value += diff;
-                    ret.setSample(i, value);
-                }
-                return Caster.prep4Ret(ret);
+                diff = diff > 0 ? max : -max;
             }
+            value += diff;
+            ret.setSample(i, value);
         }
+        return ret;
     }
 
     @Override

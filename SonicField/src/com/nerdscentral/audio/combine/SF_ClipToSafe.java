@@ -22,30 +22,22 @@ public class SF_ClipToSafe implements SFPL_Operator
         SFSignal data = Caster.makeSFSignal(input);
         if (data.getLength() < rollOffSamples)
         {
-            try (SFData x = SFData.build(data.getLength()))
-            {
-                return Caster.prep4Ret(x);
-            }
+            return SFData.build(data.getLength());
+
         }
         int len = data.getLength() - rollOffSamples;
-        try (SFSignal out = data.replicateEmpty();)
+        SFSignal out = data.replicateEmpty();
+        double dc = data.getSample(0);
+        for (int i = 0; i < len; ++i)
         {
-            double dc = data.getSample(0);
-            for (int i = 0; i < len; ++i)
-            {
-                out.setSample(i, data.getSample(i) - (dc * (len - i) / len));
-            }
+            out.setSample(i, data.getSample(i) - (dc * (len - i) / len));
+        }
 
-            for (int i = 0; i < rollOffSamples; ++i)
-            {
-                out.setSample(i + len, data.getSample(i + len) * (rollOffSamples - i) / rollOffSamples);
-            }
-            return Caster.prep4Ret(out);
-        }
-        finally
+        for (int i = 0; i < rollOffSamples; ++i)
         {
-            data.__neg__();
+            out.setSample(i + len, data.getSample(i + len) * (rollOffSamples - i) / rollOffSamples);
         }
+        return out;
     }
 
     @Override

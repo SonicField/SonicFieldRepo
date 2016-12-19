@@ -21,26 +21,22 @@ public class SF_TimeShift implements SFPL_Operator
     public Object Interpret(final Object input) throws SFPL_RuntimeException
     {
         List<Object> lin = Caster.makeBunch(input);
-        try (SFSignal in = Caster.makeSFSignal(lin.get(0)); SFSignal shift = Caster.makeSFSignal(lin.get(1)))
+        SFSignal in = Caster.makeSFSignal(lin.get(0));
+        SFSignal shift = Caster.makeSFSignal(lin.get(1));
+        SFSignal y = in.replicateEmpty();
+        int length = y.getLength();
+        if (shift.getLength() < length) length = shift.getLength();
+        for (int index = 0; index < length; ++index)
         {
-            try (SFSignal y = in.replicateEmpty())
-            {
-
-                int length = y.getLength();
-                if (shift.getLength() < length) length = shift.getLength();
-                for (int index = 0; index < length; ++index)
-                {
-                    double pos = index + SFConstants.SAMPLE_RATE_MS * shift.getSample(index);
-                    y.setSample(index, in.getSampleCubic(pos));
-                }
-                length = y.getLength();
-                for (int index = shift.getLength(); index < length; ++length)
-                {
-                    y.setSample(index, in.getSample(index));
-                }
-                return Caster.prep4Ret(y);
-            }
+            double pos = index + SFConstants.SAMPLE_RATE_MS * shift.getSample(index);
+            y.setSample(index, in.getSampleCubic(pos));
         }
+        length = y.getLength();
+        for (int index = shift.getLength(); index < length; ++length)
+        {
+            y.setSample(index, in.getSample(index));
+        }
+        return y;
     }
 
     @Override

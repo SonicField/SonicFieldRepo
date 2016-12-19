@@ -18,7 +18,7 @@ fi
 java \
     -XX:+UseCompressedOops \
     -XX:+UseCompressedClassPointers \
-    -DsonicFieldTemp=/tmp \
+    -DsonicFieldTemp=/Volumes/External1/ \
     -Dsython.threads=8 \
     -Xmx2G \
     -Dsython.linear=false \

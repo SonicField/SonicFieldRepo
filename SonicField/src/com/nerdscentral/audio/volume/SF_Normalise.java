@@ -47,43 +47,35 @@ public class SF_Normalise implements SFPL_Operator
     @Override
     public Object Interpret(final Object input) throws SFPL_RuntimeException
     {
-        try (SFSignal data = Caster.makeSFSignal(input))
-        {
-            return doNormalisation(data);
-        }
+        SFSignal data = Caster.makeSFSignal(input);
+        return doNormalisation(data);
     }
 
     public static SFSignal doNormalisation(SFSignal signalIn)
     {
         double dc = 0;
 
-        try (SFData data = SFData.realise(signalIn);)
+        SFData data = SFData.realise(signalIn);
+        int len = data.getLength();
+        for (int i = 0; i < len; ++i)
         {
-            // If we keep the input then we increase its reference
-            // so when what ever calls doNormalisation reduces it all
-            // is OK. IE this behaves as though the return is always new
-            if (data == signalIn) data.incrReferenceCount();
-            int len = data.getLength();
-            for (int i = 0; i < len; ++i)
-            {
-                dc = dc + data.getSample(i);
-            }
-            dc /= data.getLength();
-            dc = -dc;
-
-            double max = 0;
-            for (int i = 0; i < len; ++i)
-            {
-                double d = SFMaths.abs(data.getSample(i) + dc);
-                if (d > max)
-                {
-                    max = d;
-                }
-            }
-            max = 1 / max;
-            Translator ret = new Translator(data, dc, max);
-            return ret;
+            dc = dc + data.getSample(i);
         }
+        dc /= data.getLength();
+        dc = -dc;
+
+        double max = 0;
+        for (int i = 0; i < len; ++i)
+        {
+            double d = SFMaths.abs(data.getSample(i) + dc);
+            if (d > max)
+            {
+                max = d;
+            }
+        }
+        max = 1 / max;
+        Translator ret = new Translator(data, dc, max);
+        return ret;
     }
 
     @Override

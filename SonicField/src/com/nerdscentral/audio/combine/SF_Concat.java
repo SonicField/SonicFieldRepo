@@ -33,23 +33,19 @@ public class SF_Concat implements SFPL_Operator
             len += (Caster.makeSFSignal(sfd).getLength());
         }
         if (len > Integer.MAX_VALUE) throw new SFPL_RuntimeException(Messages.getString("SF_Concat.3"));  //$NON-NLS-1$
-        try (SFData out = SFData.build(len))
+        SFData out = SFData.build(len);
+        len = 0;
+        for (Object sfd : inList)
         {
-            len = 0;
-            for (Object sfd : inList)
+            SFSignal thisData = Caster.makeSFSignal(sfd);
+            int thisLen = thisData.getLength();
+            for (int i = 0; i < thisLen; ++i)
             {
-                try (SFSignal thisData = Caster.makeSFSignal(sfd))
-                {
-                    int thisLen = thisData.getLength();
-                    for (int i = 0; i < thisLen; ++i)
-                    {
-                        out.setSample(i + len, thisData.getSample(i));
-                    }
-                    len += thisLen;
-                }
+                out.setSample(i + len, thisData.getSample(i));
             }
-            return Caster.prep4Ret(out);
+            len += thisLen;
         }
+        return out;
     }
 
     @Override

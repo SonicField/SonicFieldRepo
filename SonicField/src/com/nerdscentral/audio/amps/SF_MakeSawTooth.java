@@ -20,10 +20,8 @@ public class SF_MakeSawTooth implements SFPL_Operator
     @Override
     public Object Interpret(Object input) throws SFPL_RuntimeException
     {
-        try (SFSignal data = Caster.makeSFSignal(input); SFSignal out = SFAmpAlgorithms.makeSawTooth(data))
-        {
-            return Caster.prep4Ret(out);
-        }
+        SFSignal data = Caster.makeSFSignal(input);
+        return SFAmpAlgorithms.makeSawTooth(data);
     }
 
 }

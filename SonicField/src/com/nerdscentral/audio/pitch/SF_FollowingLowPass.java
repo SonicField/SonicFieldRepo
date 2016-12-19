@@ -55,17 +55,13 @@ public class SF_FollowingLowPass implements SFPL_Operator
         List<Object> lin = Caster.makeBunch(input);
         double attack = Caster.makeDouble(lin.get(1));
         double release = Caster.makeDouble(lin.get(2));
-        try (SFSignal signal = Caster.makeSFSignal(lin.get(0)))
+        SFSignal signal = Caster.makeSFSignal(lin.get(0));
+        Follower fol = new Follower(attack, release);
+        SFSignal ret = signal.replicateEmpty();
+        for (int index = 0; index < signal.getLength(); ++index)
         {
-            Follower fol = new Follower(attack, release);
-            try (SFSignal ret = signal.replicateEmpty())
-            {
-                for (int index = 0; index < signal.getLength(); ++index)
-                {
-                    ret.setSample(index, fol.step(signal.getSample(index)));
-                }
-                return Caster.prep4Ret(ret);
-            }
+            ret.setSample(index, fol.step(signal.getSample(index)));
         }
+        return ret;
     }
 }

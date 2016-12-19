@@ -52,10 +52,8 @@ public class SFP_DBs implements SFPL_Operator
     @Override
     public Object Interpret(Object input) throws SFPL_RuntimeException
     {
-        try (SFSignal in = Caster.makeSFSignal(input); SFSignal ret = new Translator(in, volume))
-        {
-            return Caster.prep4Ret(ret);
-        }
+        SFSignal in = Caster.makeSFSignal(input);
+        return new Translator(in, volume);
     }
 
     public static List<SFP_DBs> getAll()

@@ -26,22 +26,20 @@ public class SF_Resample implements SFPL_Operator
     public Object Interpret(final Object input) throws SFPL_RuntimeException
     {
         List<Object> l = Caster.makeBunch(input);
-        try (SFSignal shape = Caster.makeSFSignal(l.get(0)); SFSignal sampleA = Caster.makeSFSignal(l.get(1)))
+        SFSignal shape = Caster.makeSFSignal(l.get(0));
+        SFSignal sampleA = Caster.makeSFSignal(l.get(1));
+        if (sampleA.getLength() != shape.getLength()) throw new SFPL_RuntimeException(Messages.getString("SF_Resample.1"));  //$NON-NLS-1$
+        int len = sampleA.getLength();
+        SFSignal ret = sampleA.replicateEmpty();
+        double pos = 0;
+        for (int i = 0; i < len; ++i)
         {
-            if (sampleA.getLength() != shape.getLength()) throw new SFPL_RuntimeException(Messages.getString("SF_Resample.1"));  //$NON-NLS-1$
-            int len = sampleA.getLength();
-            try (SFSignal ret = sampleA.replicateEmpty())
-            {
-                double pos = 0;
-                for (int i = 0; i < len; ++i)
-                {
-                    ret.setSample(i, sampleA.getSampleCubic(pos));
-                    double sn = shape.getSample(i);
-                    pos += sn;
-                }
-                return Caster.prep4Ret(ret);
-            }
+            ret.setSample(i, sampleA.getSampleCubic(pos));
+            double sn = shape.getSample(i);
+            pos += sn;
         }
+        return ret;
+
     }
 
     @Override

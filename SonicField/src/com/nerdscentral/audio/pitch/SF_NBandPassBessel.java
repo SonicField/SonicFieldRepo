@@ -25,18 +25,14 @@ public class SF_NBandPassBessel extends SFNPoleFilterOperator implements SFPL_Op
     public Object Interpret(Object input) throws SFPL_RuntimeException
     {
         List<Object> l = Caster.makeBunch(input);
-        try (SFSignal x = Caster.makeSFSignal(l.get(0)))
-        {
-            double frequencyA = Caster.makeDouble(l.get(1));
-            double frequencyB = Caster.makeDouble(l.get(2));
-            double order = Caster.makeDouble(l.get(3));
-            if (order > 6) throw new SFPL_RuntimeException(Messages.getString("SFFilter_NBandPass.1") + ((int) order)); //$NON-NLS-1$
-            NPoleFilterDef fd = SFFilterGenerator.computeBesselNBP(frequencyA, frequencyB, (int) order);
-            try (SFSignal y = x.replicateEmpty())
-            {
-                filterLoop(x, y, fd, fd.getGainfc());
-                return Caster.prep4Ret(y);
-            }
-        }
+        SFSignal x = Caster.makeSFSignal(l.get(0));
+        double frequencyA = Caster.makeDouble(l.get(1));
+        double frequencyB = Caster.makeDouble(l.get(2));
+        double order = Caster.makeDouble(l.get(3));
+        if (order > 6) throw new SFPL_RuntimeException(Messages.getString("SFFilter_NBandPass.1") + ((int) order)); //$NON-NLS-1$
+        NPoleFilterDef fd = SFFilterGenerator.computeBesselNBP(frequencyA, frequencyB, (int) order);
+        SFSignal y = x.replicateEmpty();
+        filterLoop(x, y, fd, fd.getGainfc());
+        return y;
     }
 }

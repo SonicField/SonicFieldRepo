@@ -26,27 +26,21 @@ public class SF_ShapedBiquadPeak implements SFPL_Operator
     {
         List<Object> l = Caster.makeBunch(input);
         SFRBJFilter filter = new SFRBJFilter();
-        try (
-            SFSignal x = Caster.makeSFSignal(l.get(0));
-            SFSignal frequency = Caster.makeSFSignal(l.get(1));
-            SFSignal q = Caster.makeSFSignal(l.get(2)))
+        SFSignal x = Caster.makeSFSignal(l.get(0));
+        SFSignal frequency = Caster.makeSFSignal(l.get(1));
+        SFSignal q = Caster.makeSFSignal(l.get(2));
+        SFSignal db_gain = Caster.makeSFSignal(l.get(3));
+        FilterType type = FilterType.PEAK;
+        SFSignal y = x.replicateEmpty();
+        int length = y.getLength();
+        for (int index = 0; index < length; ++index)
         {
-            SFSignal db_gain = Caster.makeSFSignal(l.get(3));
-            FilterType type = FilterType.PEAK;
-            try (SFSignal y = x.replicateEmpty())
+            if (index % 100 == 0)
             {
-                int length = y.getLength();
-                for (int index = 0; index < length; ++index)
-                {
-                    if (index % 100 == 0)
-                    {
-                        filter.calc_filter_coeffs(type, frequency.getSample(index), q.getSample(index),
-                                        db_gain.getSample(index));
-                    }
-                    y.setSample(index, filter.filter(x.getSample(index)));
-                }
-                return Caster.prep4Ret(y);
+                filter.calc_filter_coeffs(type, frequency.getSample(index), q.getSample(index), db_gain.getSample(index));
             }
+            y.setSample(index, filter.filter(x.getSample(index)));
         }
+        return y;
     }
 }

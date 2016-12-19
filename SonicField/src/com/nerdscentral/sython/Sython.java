@@ -14,7 +14,6 @@ import org.python.core.PyDictionary;
 import org.python.core.PyObject;
 import org.python.util.PythonInterpreter;
 
-import com.nerdscentral.audio.core.SFData;
 import com.nerdscentral.audio.utilities.SFP_DBs;
 import com.nerdscentral.audio.utilities.SFP_Pcnt;
 
@@ -158,7 +157,6 @@ public class Sython
                 interp.exec("print \"------- All DONE -------\"");
                 long t1 = System.currentTimeMillis();
                 System.out.println("Total Processing Took: " + ((t1 - t0) / 1000) + " seconds");
-                SFData.dumpNotCollected();
             }
 
         }

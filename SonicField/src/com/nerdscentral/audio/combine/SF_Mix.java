@@ -34,8 +34,6 @@ public class SF_Mix implements SFPL_Operator
         ArrayList<ArrayList<Object>> out = new ArrayList<>(il.size());
         for (Object o : il)
         {
-            @SuppressWarnings("resource")
-            // Resource managed by mixer - see later
             SFSignal s = Caster.makeSFSignal(o);
             ArrayList<Object> pair = new ArrayList<>(2);
             pair.add(s);

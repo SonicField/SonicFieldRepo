@@ -26,22 +26,18 @@ public class SF_BiquadLowShelf implements SFPL_Operator
     {
         List<Object> l = Caster.makeBunch(input);
         SFRBJFilter filter = new SFRBJFilter();
-        try (SFSignal x = Caster.makeSFSignal(l.get(0)))
+        SFSignal x = Caster.makeSFSignal(l.get(0));
+        double frequency = Caster.makeDouble(l.get(1));
+        double q = Caster.makeDouble(l.get(2));
+        double db_gain = Caster.makeDouble(l.get(3));
+        FilterType type = FilterType.LOWSHELF;
+        filter.calc_filter_coeffs(type, frequency, q, db_gain);
+        SFSignal y = x.replicateEmpty();
+        int length = y.getLength();
+        for (int index = 0; index < length; ++index)
         {
-            double frequency = Caster.makeDouble(l.get(1));
-            double q = Caster.makeDouble(l.get(2));
-            double db_gain = Caster.makeDouble(l.get(3));
-            FilterType type = FilterType.LOWSHELF;
-            filter.calc_filter_coeffs(type, frequency, q, db_gain);
-            try (SFSignal y = x.replicateEmpty())
-            {
-                int length = y.getLength();
-                for (int index = 0; index < length; ++index)
-                {
-                    y.setSample(index, filter.filter(x.getSample(index)));
-                }
-                return Caster.prep4Ret(y);
-            }
+            y.setSample(index, filter.filter(x.getSample(index)));
         }
+        return y;
     }
 }

@@ -16,24 +16,21 @@ public class SF_ToGrain implements SFPL_Operator
     @Override
     public Object Interpret(final Object input) throws SFPL_RuntimeException
     {
-        try (SFSignal data = Caster.makeSFSignal(input);)
+        SFSignal data = Caster.makeSFSignal(input);
+        int rollOffSamples = data.getLength() / 2;
+        int len = data.getLength() - rollOffSamples;
+        SFSignal out = data.replicateEmpty();
+        for (int i = 0; i < rollOffSamples + 1; ++i)
         {
-            int rollOffSamples = data.getLength() / 2;
-            int len = data.getLength() - rollOffSamples;
-            try (SFSignal out = data.replicateEmpty();)
-            {
-                for (int i = 0; i < rollOffSamples + 1; ++i)
-                {
-                    out.setSample(i, data.getSample(i) * i / rollOffSamples);
-                }
-
-                for (int i = 0; i < rollOffSamples; ++i)
-                {
-                    out.setSample(i + len, data.getSample(i + len) * (rollOffSamples - i) / rollOffSamples);
-                }
-                return Caster.prep4Ret(out);
-            }
+            out.setSample(i, data.getSample(i) * i / rollOffSamples);
         }
+
+        for (int i = 0; i < rollOffSamples; ++i)
+        {
+            out.setSample(i + len, data.getSample(i + len) * (rollOffSamples - i) / rollOffSamples);
+        }
+        return out;
+
     }
 
     @Override

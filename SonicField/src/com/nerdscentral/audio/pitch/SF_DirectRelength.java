@@ -18,22 +18,18 @@ public class SF_DirectRelength implements SFPL_Operator
     public Object Interpret(final Object input) throws SFPL_RuntimeException
     {
         List<Object> l = Caster.makeBunch(input);
-        try (SFSignal sampleA = Caster.makeSFSignal(l.get(0)))
+        SFSignal sampleA = Caster.makeSFSignal(l.get(0));
+        double rate = Caster.makeDouble(l.get(1));
+        int lengthIn = sampleA.getLength();
+        int len = (int) (lengthIn / rate);
+        SFData ret = SFData.build(len);
+        double pos = 0;
+        for (int i = 0; i < len && pos < lengthIn; ++i)
         {
-            double rate = Caster.makeDouble(l.get(1));
-            int lengthIn = sampleA.getLength();
-            int len = (int) (lengthIn / rate);
-            try (SFData ret = SFData.build(len))
-            {
-                double pos = 0;
-                for (int i = 0; i < len && pos < lengthIn; ++i)
-                {
-                    ret.setSample(i, sampleA.getSampleCubic(pos));
-                    pos = pos + rate;
-                }
-                return Caster.prep4Ret(ret);
-            }
+            ret.setSample(i, sampleA.getSampleCubic(pos));
+            pos = pos + rate;
         }
+        return ret;
     }
 
     @Override

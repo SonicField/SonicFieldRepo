@@ -20,16 +20,14 @@ public class SF_MinValue implements SFPL_Operator
     @Override
     public Object Interpret(Object input) throws SFPL_RuntimeException
     {
-        try (SFSignal signal = Caster.makeSFSignal(input))
+        SFSignal signal = Caster.makeSFSignal(input);
+        int length = signal.getLength();
+        double ret = Double.MAX_VALUE;
+        for (int index = 0; index < length; ++index)
         {
-            int length = signal.getLength();
-            double ret = Double.MAX_VALUE;
-            for (int index = 0; index < length; ++index)
-            {
-                double x = signal.getSample(index);
-                if (x < ret) ret = x;
-            }
-            return ret;
+            double x = signal.getSample(index);
+            if (x < ret) ret = x;
         }
+        return ret;
     }
 }

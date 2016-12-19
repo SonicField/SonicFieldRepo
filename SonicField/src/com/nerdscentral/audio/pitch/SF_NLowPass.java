@@ -25,18 +25,13 @@ public class SF_NLowPass extends SFNPoleFilterOperator implements SFPL_Operator
     public Object Interpret(Object input) throws SFPL_RuntimeException
     {
         List<Object> l = Caster.makeBunch(input);
-        try (SFSignal x = Caster.makeSFSignal(l.get(0)))
-        {
-            double frequency = Caster.makeDouble(l.get(1));
-            double order = Caster.makeDouble(l.get(2));
-            if (order > 11) throw new SFPL_RuntimeException(Messages.getString("SFFilter_NLowPass.1") + ((int) order)); //$NON-NLS-1$
-            NPoleFilterDef fd = SFFilterGenerator.computeButterworthNLP(frequency, (int) order);
-            try (SFSignal y = x.replicateEmpty())
-            {
-                filterLoop(x, y, fd, fd.getGaindc());
-                return Caster.prep4Ret(y);
-            }
-        }
+        SFSignal x = Caster.makeSFSignal(l.get(0));
+        double frequency = Caster.makeDouble(l.get(1));
+        double order = Caster.makeDouble(l.get(2));
+        if (order > 11) throw new SFPL_RuntimeException(Messages.getString("SFFilter_NLowPass.1") + ((int) order)); //$NON-NLS-1$
+        NPoleFilterDef fd = SFFilterGenerator.computeButterworthNLP(frequency, (int) order);
+        SFSignal y = x.replicateEmpty();
+        filterLoop(x, y, fd, fd.getGaindc());
+        return y;
     }
-
 }

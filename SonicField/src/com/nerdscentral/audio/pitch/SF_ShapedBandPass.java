@@ -28,50 +28,46 @@ public class SF_ShapedBandPass extends SFNPoleFilterOperator implements SFPL_Ope
     public Object Interpret(Object input) throws SFPL_RuntimeException
     {
         List<Object> l = Caster.makeBunch(input);
-        try (
-            SFSignal x = Caster.makeSFSignal(l.get(0));
-            SFSignal frequencyAShape = Caster.makeSFSignal(l.get(1));
-            SFSignal frequencyBShape = Caster.makeSFSignal(l.get(2));)
+
+        SFSignal x = Caster.makeSFSignal(l.get(0));
+        SFSignal frequencyAShape = Caster.makeSFSignal(l.get(1));
+        SFSignal frequencyBShape = Caster.makeSFSignal(l.get(2));
+        double order = Caster.makeDouble(l.get(3));
+        double frequencyA = 0;
+        double frequencyB = 0;
+        SFSignal y = x.replicateEmpty();
+        List<SFFilterGenerator.NPoleFilterDefListNode> filters = new ArrayList<>();
+        int length = frequencyAShape.getLength();
+        if (frequencyBShape.getLength() != length)
         {
-            double order = Caster.makeDouble(l.get(3));
-            double frequencyA = 0;
-            double frequencyB = 0;
-            try (SFSignal y = x.replicateEmpty();)
+            throw new SFPL_RuntimeException(Messages.getString("SF_ShapedBandPass.1")); //$NON-NLS-1$
+        }
+        if (x.getLength() != length)
+        {
+            throw new SFPL_RuntimeException(Messages.getString("SF_ShapedBandPass.2")); //$NON-NLS-1$
+        }
+        for (int index = 0; index < length; ++index)
+        {
+            double a = frequencyAShape.getSample(index);
+            double b = frequencyBShape.getSample(index);
+            double ar = a / frequencyA;
+            if (ar < 1.0) ar = 1.0 / ar;
+            double br = b / frequencyB;
+            if (br < 1.0) br = 1.0 / br;
+            if (index == 0 || ar > minDifference || br > minDifference)
             {
-                List<SFFilterGenerator.NPoleFilterDefListNode> filters = new ArrayList<>();
-                int length = frequencyAShape.getLength();
-                if (frequencyBShape.getLength() != length)
-                {
-                    throw new SFPL_RuntimeException(Messages.getString("SF_ShapedBandPass.1")); //$NON-NLS-1$
-                }
-                if (x.getLength() != length)
-                {
-                    throw new SFPL_RuntimeException(Messages.getString("SF_ShapedBandPass.2")); //$NON-NLS-1$
-                }
-                for (int index = 0; index < length; ++index)
-                {
-                    double a = frequencyAShape.getSample(index);
-                    double b = frequencyBShape.getSample(index);
-                    double ar = a / frequencyA;
-                    if (ar < 1.0) ar = 1.0 / ar;
-                    double br = b / frequencyB;
-                    if (br < 1.0) br = 1.0 / br;
-                    if (index == 0 || ar > minDifference || br > minDifference)
-                    {
-                        // recalculate
-                        frequencyA = a;
-                        frequencyB = b;
-                        // System.out.println("" + a + "," + b);
-                        NPoleFilterDef fd = SFFilterGenerator.computeButterworthNBP(frequencyA, frequencyB, (int) order);
-                        NPoleFilterDefListNode node = new NPoleFilterDefListNode();
-                        node.setDefinition(fd);
-                        node.setPosition(index);
-                        filters.add(node);
-                    }
-                }
-                filterLoop(x, y, filters);
-                return Caster.prep4Ret(y);
+                // recalculate
+                frequencyA = a;
+                frequencyB = b;
+                // System.out.println("" + a + "," + b);
+                NPoleFilterDef fd = SFFilterGenerator.computeButterworthNBP(frequencyA, frequencyB, (int) order);
+                NPoleFilterDefListNode node = new NPoleFilterDefListNode();
+                node.setDefinition(fd);
+                node.setPosition(index);
+                filters.add(node);
             }
         }
+        filterLoop(x, y, filters);
+        return y;
     }
 }

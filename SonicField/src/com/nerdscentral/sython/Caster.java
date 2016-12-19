@@ -22,14 +22,14 @@ public class Caster
     static
     {
         typeDescriptors = new Object[] { //
-        Messages.getString("Caster.0"), SFSignal.class, //$NON-NLS-1$
-            Messages.getString("Caster.1"), double.class,//$NON-NLS-1$
-            Messages.getString("Caster.4"), boolean.class, //$NON-NLS-1$
-            Messages.getString("Caster.5"), String.class, //$NON-NLS-1$
-            Messages.getString("Caster.7"), SFInLineIIRFilter.class, //$NON-NLS-1$
-            Messages.getString("Caster.9"), Sequence.class, //$NON-NLS-1$
-            Messages.getString("Caster.11"), Sequencer.class,  //$NON-NLS-1$
-            Messages.getString("Caster.10"), Track.class }; //$NON-NLS-1$
+                Messages.getString("Caster.0"), SFSignal.class, //$NON-NLS-1$
+                Messages.getString("Caster.1"), double.class,//$NON-NLS-1$
+                Messages.getString("Caster.4"), boolean.class, //$NON-NLS-1$
+                Messages.getString("Caster.5"), String.class, //$NON-NLS-1$
+                Messages.getString("Caster.7"), SFInLineIIRFilter.class, //$NON-NLS-1$
+                Messages.getString("Caster.9"), Sequence.class, //$NON-NLS-1$
+                Messages.getString("Caster.11"), Sequencer.class,  //$NON-NLS-1$
+                Messages.getString("Caster.10"), Track.class }; //$NON-NLS-1$
         typeDescriptionLookup = new HashMap<>();
         for (int i = 0; i < typeDescriptors.length; i += 2)
         {
@@ -222,26 +222,9 @@ public class Caster
         }
     }
 
-    public static Object prep4Ret(Object in) throws SFPL_RuntimeException
+    public static SFSignal incrReference(SFSignal ret)
     {
-        if (in instanceof List)
-        {
-            for (Object o : (List) in)
-            {
-                prep4Ret(o);
-            }
-        }
-        else if (in instanceof SFSignal)
-        {
-            ((SFSignal) in).incrReferenceCount();
-        }
-        return in;
-    }
-
-    public static SFSignal incrReference(SFSignal input)
-    {
-        input.incrReferenceCount();
-        return input;
+        return ret;
     }
 
 }

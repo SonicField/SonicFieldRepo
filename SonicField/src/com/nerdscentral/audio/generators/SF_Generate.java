@@ -7,7 +7,6 @@ import com.nerdscentral.audio.core.SFConstants;
 import com.nerdscentral.audio.core.SFData;
 import com.nerdscentral.audio.core.SFSignal;
 import com.nerdscentral.audio.core.SFSimpleGenerator;
-import com.nerdscentral.audio.pitch.SF_FrequencyDomain;
 import com.nerdscentral.sython.Caster;
 import com.nerdscentral.sython.SFPL_Operator;
 import com.nerdscentral.sython.SFPL_RuntimeException;
@@ -19,10 +18,9 @@ public class SF_Generate implements SFPL_Operator
     public static class Generator extends SFSimpleGenerator
     {
 
-        final SFData                            waveTable;
-        private final double                    upscale;
-        private final int                       size;
-        private final static SF_FrequencyDomain toFreq = new SF_FrequencyDomain();
+        final SFData         waveTable;
+        private final double upscale;
+        private final int    size;
 
         @Override
         public void release()
@@ -44,7 +42,6 @@ public class SF_Generate implements SFPL_Operator
             // to upscale more and if it is shorter then less
             this.upscale = up * wt.getLength() / SFConstants.SAMPLE_RATE;
             waveTable = SFData.realise(wt);
-            wt.decrReferenceCount();
         }
 
         @Override
@@ -72,10 +69,7 @@ public class SF_Generate implements SFPL_Operator
         final double upscale = Caster.makeDouble(l.get(1));
         final double duration = (Caster.makeDouble(l.get(0))) / 1000.0d;
         final int size = (int) (duration * SFConstants.SAMPLE_RATE);
-        try (Generator g = new Generator(size, upscale, waveTable))
-        {
-            return Caster.prep4Ret(g);
-        }
+        return new Generator(size, upscale, waveTable);
     }
 
 }

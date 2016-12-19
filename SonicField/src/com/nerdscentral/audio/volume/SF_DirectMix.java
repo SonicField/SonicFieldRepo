@@ -40,13 +40,8 @@ public class SF_DirectMix implements SFPL_Operator
     {
         List<Object> l = Caster.makeBunch(input);
         double constant = Caster.makeDouble(l.get(0));
-        try (SFSignal in = (Caster.makeSFSignal(l.get(1)));)
-        {
-            try (SFSignal f = new Translator(in, constant))
-            {
-                return Caster.prep4Ret(f);
-            }
-        }
+        SFSignal in = (Caster.makeSFSignal(l.get(1)));
+        return new Translator(in, constant);
     }
 
     @Override

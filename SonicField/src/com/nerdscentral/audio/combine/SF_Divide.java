@@ -51,10 +51,6 @@ public class SF_Divide implements SFPL_Operator
         list.add(Caster.makeSFSignal(l.get(0)));
         list.add(Caster.makeSFSignal(l.get(1)));
         Translator ret = new Translator(list);
-        for (SFSignal s : list)
-        {
-            s.close();
-        }
         return ret;
     }
 }

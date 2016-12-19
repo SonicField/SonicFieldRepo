@@ -25,20 +25,18 @@ public class SF_ShapedSinWave implements SFPL_Operator
         final SFSignal frequency = Caster.makeSFSignal(input);
         int length = frequency.getLength();
         // float[] f = new float[length];
-        try (SFData data = SFData.build(length);)
+        SFData data = SFData.build(length);
+        final double PI2 = SFMaths.PI * 2.0d;
+        final double scal = 0.1 * PI2 / SFConstants.SAMPLE_RATE;
+        double pos = 0;
+        // 10:1 over sample
+        int llen = length * 10;
+        for (int i = 0; i < llen; ++i)
         {
-            final double PI2 = SFMaths.PI * 2.0d;
-            final double scal = 0.1 * PI2 / SFConstants.SAMPLE_RATE;
-            double pos = 0;
-            // 10:1 over sample
-            int llen = length * 10;
-            for (int i = 0; i < llen; ++i)
-            {
-                int index = i / 10;
-                if (i % 10 == 0) data.setSample(index, Math.sin(pos));
-                pos += frequency.getSampleCubic(index) * scal;
-            }
-            return Caster.prep4Ret(data);
+            int index = i / 10;
+            if (i % 10 == 0) data.setSample(index, Math.sin(pos));
+            pos += frequency.getSampleCubic(index) * scal;
         }
+        return data;
     }
 }

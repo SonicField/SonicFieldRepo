@@ -13,50 +13,6 @@ public abstract class SFMultipleTranslator extends SFGenerator
         // no-op
     }
 
-    @Override
-    public void close() throws RuntimeException
-    {
-        for (SFSignal x : signals)
-        {
-            x.close();
-        }
-    }
-
-    @Override
-    public void incrReferenceCount() throws RuntimeException
-    {
-        for (SFSignal x : signals)
-        {
-            x.incrReferenceCount();
-        }
-    }
-
-    @Override
-    public SFSignal __pos__()
-    {
-        for (SFSignal x : signals)
-        {
-            x.__pos__();
-        }
-        return this;
-    }
-
-    @Override
-    public SFSignal __neg__()
-    {
-        for (SFSignal x : signals)
-        {
-            x.__neg__();
-        }
-        return this;
-    }
-
-    @Override
-    public void decrReferenceCount()
-    {
-        this.__neg__();
-    }
-
     private final List<SFSignal> signals;
     private final int            length;
 
@@ -70,7 +26,6 @@ public abstract class SFMultipleTranslator extends SFGenerator
         return getInputSample(memberIndex, index, 0);
     }
 
-    @SuppressWarnings("resource")
     protected double getInputSample(int memberIndex, int index, double otherwise)
     {
         // Resource managed at class level

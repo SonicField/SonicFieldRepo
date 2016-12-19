@@ -24,19 +24,16 @@ public class SF_ComputeDC implements SFPL_Operator
     @Override
     public Object Interpret(Object input) throws SFPL_RuntimeException
     {
-        try (SFSignal data = Caster.makeSFSignal(input);)
+        SFSignal data = Caster.makeSFSignal(input);
+        double dc = 0;
+        int len = data.getLength();
+        for (int i = 0; i < len; ++i)
         {
-            double dc = 0;
-            int len = data.getLength();
-            for (int i = 0; i < len; ++i)
-            {
-                double d = data.getSample(i);
-                if (Double.isInfinite(d)) throw new SFPL_RuntimeException(Messages.getString("SF_Normalise.0")); //$NON-NLS-1$
-                if (Double.isNaN(d)) throw new SFPL_RuntimeException(Messages.getString("SF_Normalise.1")); //$NON-NLS-1$
-                dc += d;
-            }
-            return dc;
+            double d = data.getSample(i);
+            if (Double.isInfinite(d)) throw new SFPL_RuntimeException(Messages.getString("SF_Normalise.0")); //$NON-NLS-1$
+            if (Double.isNaN(d)) throw new SFPL_RuntimeException(Messages.getString("SF_Normalise.1")); //$NON-NLS-1$
+            dc += d;
         }
+        return dc;
     }
-
 }

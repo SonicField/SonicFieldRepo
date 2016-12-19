@@ -30,13 +30,10 @@ public class SF_ShapedThreshold implements SFPL_Operator
     public Object Interpret(Object input) throws SFPL_RuntimeException
     {
         List<Object> bunch = Caster.makeBunch(input);
-        try (
-            SFSignal data1 = Caster.makeSFSignal(bunch.get(0));
-            SFSignal data2 = Caster.makeSFSignal(bunch.get(1));
-            SFSignal out = SFAmpAlgorithms.shapedThreshold(data1, data2);)
-        {
-            return Caster.prep4Ret(out);
-        }
+        SFSignal data1 = Caster.makeSFSignal(bunch.get(0));
+        SFSignal data2 = Caster.makeSFSignal(bunch.get(1));
+        return SFAmpAlgorithms.shapedThreshold(data1, data2);
+
     }
 
 }

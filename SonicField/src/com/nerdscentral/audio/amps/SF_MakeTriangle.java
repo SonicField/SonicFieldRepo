@@ -20,9 +20,8 @@ public class SF_MakeTriangle implements SFPL_Operator
     @Override
     public Object Interpret(Object input) throws SFPL_RuntimeException
     {
-        try (SFSignal data = Caster.makeSFSignal(input); SFSignal out = SFAmpAlgorithms.makeTriangle(data))
-        {
-            return Caster.prep4Ret(out);
-        }
+        SFSignal data = Caster.makeSFSignal(input);
+        return SFAmpAlgorithms.makeTriangle(data);
+
     }
 }

@@ -6,7 +6,6 @@ import java.util.List;
 import com.nerdscentral.audio.core.SFConstants;
 import com.nerdscentral.audio.core.SFData;
 import com.nerdscentral.audio.core.SFSignal;
-import com.nerdscentral.sython.Caster;
 import com.nerdscentral.sython.SFPL_Operator;
 import com.nerdscentral.sython.SFPL_RuntimeException;
 
@@ -17,7 +16,7 @@ public abstract class SFBodyImpluse implements SFPL_Operator
 
     abstract double[][] getData();
 
-    public List<Object> getArrays() throws SFPL_RuntimeException
+    public List<Object> getArrays()
     {
         double[][] arrays = getData();
         int len = arrays[0].length;
@@ -26,7 +25,8 @@ public abstract class SFBodyImpluse implements SFPL_Operator
         List<Object> ret = new ArrayList<>();
         for (double[] inData : arrays)
         {
-            try (SFSignal signal = SFData.build(outLen); SFSignal in = SFData.build(inData);)
+            SFSignal signal = SFData.build(outLen);
+            SFSignal in = SFData.build(inData);
             {
                 double pos = 0;
                 for (int i = 0; i < outLen; ++i)
@@ -34,7 +34,7 @@ public abstract class SFBodyImpluse implements SFPL_Operator
                     signal.setSample(i, in.getSampleCubic(pos));
                     pos = pos + rate;
                 }
-                ret.add(Caster.prep4Ret(signal));
+                ret.add(signal);
             }
         }
         return ret;
