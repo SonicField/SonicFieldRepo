@@ -159,4 +159,9 @@ public abstract class SFSignal
     {
         release();
     }
+
+    public void preTouch()
+    {
+        // Pass.
+    }
 }

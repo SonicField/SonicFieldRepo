@@ -107,42 +107,38 @@ def distant_wind(length, freq):
 def additive_resonance(power, qCorrect, saturate, rollOff, post, limit, seed, flat, harmonics, length, freq):
 
     @sf_parallel
-    def doWind(lenth, hfq):
+    def doWind(lenth, hfq, vol):
         out = _distant_wind(length, hfq, qCorrect, limit, seed)
         out = sf.Power(out, power)
         if saturate:
             os = sf.Saturate(sf.NumericVolume(sf.FixSize(+out), 2.0))
             out = sf.Mix(sf.NumericVolume(out, 1.0-saturate), sf.NumericVolume(os, saturate))
-        return sf.FixSize(out)
-        
-    sigs = []
+        out = sf.Realise(out)
+        out = sf.NumericVolume(sf.FixSize(out), vol)
+        return sf.Realise(out)
+
     harms = []
-    for harm in harmonics:
+    base = sf.Silence(length)
+    harmonics = list(harmonics)
+    revHarms = [] + harmonics
+    revHarms.reverse()
+    for harm, revHarm in zip(harmonics, revHarms):
         hfreq = harm * freq
         if hfreq > 18000.0:
             break
         harms.append(harm)
+        vol = 1.0 / (pow(revHarm, rollOff))
         if flat:
-            sfw = doWind(length, hfreq)
-            srv = sf.Reverse(doWind(length, hfreq))
-            sigs += [sf.Mix(sfw, srv)]
+            sfw = doWind(length, hfreq, vol)
+            srv = sf.Reverse(doWind(length, hfreq, vol))
+            sig = sf.Mix(sfw, srv)
         else:
-            sigs += [doWind(length, hfreq)]
+            sig = doWind(lenth, hfq, vol)
+        print 'Realising', harm
+        base = sf.Realise(sf.Mix(base, sig))
 
-    # Remember that this cannot act as a a closure around a signal!
-    @sf_parallel
-    def stage2(harms, sigs):
-        ret = []
-        harms.reverse()
-        for harm in harms:
-            sig = sigs.pop()
-            sig = sf.NumericVolume(sig, 1.0 / (pow(harm, rollOff)))
-            ret.append(sig)
-        ret.reverse()
-        out = sf.Mix(ret)
-        return sf.FixSize(polish(out, freq))   
-
-    ret = stage2(harms, sigs)
+    print 'Done Wind'
+    ret = sf.Realise(sf.FixSize(polish(sig,freq)))
     return post(ret, length, freq) if post else ret
 
 def make_addtive_resonance(power = 1.1 , qCorrect = 1.25 , saturate = 0.0, rollOff = 4.0,

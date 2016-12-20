@@ -28,6 +28,7 @@ public class SFConstants
     public static final double                   UPPER_AUDIBLE_LIMIT = 20000;
     public static final double                   UPPER_ALIAS_LIMIT   = 24000;
     public static final double                   NOISE_FLOOR         = 1.0 / 32768.00;
+    public static final int                      PAGE_SIZE_DOUBLES   = 512;
     public static boolean                        TRACE               = false;
 
     static
@@ -113,8 +114,8 @@ public class SFConstants
     public static final double getEqualPitch(String note) throws SFPL_RuntimeException
     {
         Object ret = equalNotes.get(note.toLowerCase());
-        if (ret == null) throw new RuntimeException(
-                        Messages.getString("SFConstants.0") + note + Messages.getString("SFConstants.1")); //$NON-NLS-1$ //$NON-NLS-2$
+        if (ret == null)
+            throw new RuntimeException(Messages.getString("SFConstants.0") + note + Messages.getString("SFConstants.1")); //$NON-NLS-1$ //$NON-NLS-2$
         return Caster.makeDouble(ret);
     }
 
@@ -141,8 +142,8 @@ public class SFConstants
     public static final double getJustPitch(String note) throws SFPL_RuntimeException
     {
         Object ret = justNotes.get(note.toLowerCase());
-        if (ret == null) throw new RuntimeException(
-                        Messages.getString("SFConstants.0") + note + Messages.getString("SFConstants.1")); //$NON-NLS-1$ //$NON-NLS-2$
+        if (ret == null)
+            throw new RuntimeException(Messages.getString("SFConstants.0") + note + Messages.getString("SFConstants.1")); //$NON-NLS-1$ //$NON-NLS-2$
         return Caster.makeDouble(ret);
     }
 

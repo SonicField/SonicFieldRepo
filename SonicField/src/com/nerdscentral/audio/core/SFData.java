@@ -16,6 +16,7 @@ import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.nerdscentral.audio.Messages;
 import com.nerdscentral.data.OffHeapArray;
@@ -57,10 +58,10 @@ public class SFData extends SFSignal implements Serializable
     }
 
     // Directory to send swap files to
-    private static final String                             SONIC_FIELD_TEMP        = "sonicFieldTemp";                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  //$NON-NLS-1$
-    private static final String                             SONIC_FIELD_SAFE_MEMORY = "sonicFieldSaferMemory";                                                                                                                                                                                                                                                                                                                                                                                //$NON-NLS-1$
-    private static final String                             SONIC_FIELD_DIRECT      = "sonicFieldDirectMemory";                                                                                                                                                                                                                                                                                                                                  //$NON-NLS-1$
-    private static final String                             SONIC_FIELD_TRUE        = "true";                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              //$NON-NLS-1$
+    private static final String                             SONIC_FIELD_TEMP        = "sonicFieldTemp";                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      //$NON-NLS-1$
+    private static final String                             SONIC_FIELD_SAFE_MEMORY = "sonicFieldSaferMemory";                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                //$NON-NLS-1$
+    private static final String                             SONIC_FIELD_DIRECT      = "sonicFieldDirectMemory";                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      //$NON-NLS-1$
+    private static final String                             SONIC_FIELD_TRUE        = "true";                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          //$NON-NLS-1$
 
     private static final long                               CHUNK_SHIFT             = 16;
     private static final long                               CHUNK_LEN               = (long) Math.pow(2, CHUNK_SHIFT);
@@ -80,6 +81,8 @@ public class SFData extends SFSignal implements Serializable
     // shadows chunkIndex for memory management as chunkIndex must
     // be final to enable optimisation
     private long                                            allocked;
+    private static final AtomicLong                         totalCount              = new AtomicLong();
+    private static final AtomicLong                         freeCount               = new AtomicLong();
     private static long                                     maxFileSize             = SFConstants.ONE_GIG;
     private static ConcurrentLinkedDeque<ByteBufferWrapper> freeChunks              = new ConcurrentLinkedDeque<>();
     private static final boolean                            saferMemory;
@@ -147,10 +150,19 @@ public class SFData extends SFSignal implements Serializable
             ++chunkCount;
             countDown -= CHUNK_LEN;
         }
-
+        double free = freeCount.get();
+        double total = totalCount.get();
+        freeCount.addAndGet(-chunkCount);
+        boolean gc = false;
+        if (total > 20000.0 && free / total < 0.1)
+        {
+            System.out.println("Going for gc " + free + "," + total + ',' + (free / total));
+            gc = true;
+        }
         countDown = size;
         chunks = new ByteBufferWrapper[chunkCount];
         chunkCount = 0;
+
         while (countDown > 0)
         {
             ByteBufferWrapper chunk = freeChunks.poll();
@@ -159,10 +171,12 @@ public class SFData extends SFSignal implements Serializable
             ++chunkCount;
             countDown -= CHUNK_LEN;
         }
+
         if (countDown > 0)
         {
             mapMoreData(countDown, chunkCount);
         }
+        if (gc) System.gc();
         getChunkAddresses();
     }
 
@@ -194,12 +208,6 @@ public class SFData extends SFSignal implements Serializable
                     FileChannel channel = channelMapper[fileRoundRobbin];
                     chunk = channel.map(MapMode.READ_WRITE, from, CHUNK_LEN << 3l);
                     if (++fileRoundRobbin >= coreFile.length) fileRoundRobbin = 0;
-                    if (channel.size() > maxFileSize)
-                    {
-                        System.gc();
-                        maxFileSize = (maxFileSize * FILE_SCALE_NUM) / FILE_SCALE_DEN;
-                        System.out.println("Increased Max File: " + maxFileSize); //$NON-NLS-1$
-                    }
                 }
                 else
                 {
@@ -208,6 +216,8 @@ public class SFData extends SFSignal implements Serializable
                 chunk.order(ByteOrder.nativeOrder());
                 chunks[chunkCount] = new ByteBufferWrapper(chunk);
                 ++chunkCount;
+                totalCount.addAndGet(1);
+                freeCount.addAndGet(1);
                 countDown -= CHUNK_LEN;
             }
         }
@@ -226,7 +236,7 @@ public class SFData extends SFSignal implements Serializable
     @Override
     public void release()
     {
-        clear();
+        freeCount.addAndGet(chunks.length);
         for (ByteBufferWrapper chunk : chunks)
         {
             freeChunks.push(chunk);
@@ -288,7 +298,9 @@ public class SFData extends SFSignal implements Serializable
 
     public final static SFData build(int l)
     {
-        return new SFData(l);
+        SFData ret = new SFData(l);
+        ret.clear();
+        return ret;
     }
 
     /* (non-Javadoc)
@@ -753,6 +765,28 @@ public class SFData extends SFSignal implements Serializable
                     unsafe.putDouble(address, in.getSample(index) - value);
                 }
                 break;
+            }
+        }
+    }
+
+    @Override
+    public void preTouch()
+    {
+        // Pass.
+        // TODO Auto-generated method stub
+        // Pre-touch the incoming to try and get it memory if possible.
+        // In reverse order so if some if swapped out it is more likely to be
+        // older and so not so much waste.
+        synchronized (coreFile)
+        {
+            for (int pointer = length - 1; pointer > 0; pointer -= SFConstants.PAGE_SIZE_DOUBLES)
+            {
+                // The throw is really just to defeat the optimiser, but why not
+                // take advantage?
+                if (getSample(pointer) == Double.NaN)
+                {
+                    throw new RuntimeException("Nan found whilst pre-touching");
+                }
             }
         }
     }

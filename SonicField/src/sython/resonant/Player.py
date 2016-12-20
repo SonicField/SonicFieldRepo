@@ -12,7 +12,7 @@ def main():
     voxs = test_play()
     voxs = [sf.Multiply(
         vox,
-        sf.SimpleShape((0, -90), (16, -30), (512, 0), (sf.Length(+vox), -60))
+        sf.SimpleShape((0, -90), (16, -30), (512, 0), (sf.Length(+vox) * 0.5, -10), (sf.Length(+vox) * 0.9, -60), (sf.Length(+vox), -90))
     ) for vox in voxs]
     voxs = [sf.FixSize(vox) for vox in voxs]
     vox = sf.MixAt((voxs[0], 0), (voxs[1], 5000))

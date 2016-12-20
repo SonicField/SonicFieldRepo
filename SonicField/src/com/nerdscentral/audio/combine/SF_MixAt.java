@@ -21,7 +21,7 @@ import com.nerdscentral.sython.SFPL_RuntimeException;
  */
 public class SF_MixAt implements SFPL_Operator
 {
-
+    private static Object    sync          = new Object();
     private static final int TRANS_CUTTOFF = 16;
 
     static class Translator extends SFMultipleTranslator
@@ -69,14 +69,13 @@ public class SF_MixAt implements SFPL_Operator
     private static final long serialVersionUID = 1L;
 
     @Override
-    // Manual reasource manangement - note this is not exception safe
     public Object Interpret(final Object input) throws SFPL_RuntimeException
     {
         List<Object> inList = Caster.makeBunch(input);
         int nMembers = inList.size();
         List<SFSignal> signals = new ArrayList<>(nMembers);
         List<Integer> offsets = new ArrayList<>(nMembers);
-        boolean allRealised = true;
+        boolean anyRealised = false;
         for (Object each : inList)
         {
             List<Object> dataList = Caster.makeBunch(each);
@@ -84,10 +83,10 @@ public class SF_MixAt implements SFPL_Operator
             offsets.add((int) SFMaths.floor(offset));
             SFSignal signal = Caster.makeSFSignal(dataList.get(0));
             signals.add(signal);
-            allRealised = allRealised && signal.isRealised();
+            anyRealised = anyRealised || signal.isRealised();
         }
         int count = signals.size();
-        if (allRealised || count > TRANS_CUTTOFF)
+        if (anyRealised || count > TRANS_CUTTOFF)
         {
             return largeMix(signals, offsets);
         }
@@ -107,11 +106,11 @@ public class SF_MixAt implements SFPL_Operator
             if (tl > length) length = tl;
         }
         SFData out = SFData.build(length);
-        out.clear();
         for (int i = 0; i < count; ++i)
         {
             int at = offsets.get(i);
             SFSignal in = signals.get(i);
+            in.preTouch();
             out.operateOnto(at, in, SFData.OPERATION.ADD);
         }
         return out;
