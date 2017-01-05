@@ -12,7 +12,7 @@ from java.lang import Thread
 from java.util import Collections
 from java.util.concurrent import TimeUnit
 from java.util.concurrent.atomic import AtomicLong, AtomicBoolean
-from com.nerdscentral.audio.core import SFConstants
+from com.nerdscentral.audio.core import SFConstants, SFData, SFMemoryZone
 
 """
 Work Stealing Lazy Task Scheduler By Dr Alexander J Turner
@@ -626,8 +626,19 @@ class sf_parallel(object):
         # functions in python are closures, it is not enough!
         if SF_DO_STEALING:
             sf_parallel.recursive_get_futures(locals())
+        
+        # If we are in a memory zone we must propogate that zone to the new thread
+        # of execution.
+        zone = SFData.peekZone()
         def closure():
-            return self.func(*args, **kwargs)
+            if zone:
+                SFData.stackZone(zone);
+            try:
+                return self.func(*args, **kwargs)
+            finally:
+                if zone:
+                    if zone != SFData.unstackZone():
+                        raise ValueError('Memory Zone mismatch')
         c_log('Parallel',self.func,closure) 
         if SF_PENDING.size()> SF_LINEAR_LIMIT or SF_LINEAR:
             return closure()

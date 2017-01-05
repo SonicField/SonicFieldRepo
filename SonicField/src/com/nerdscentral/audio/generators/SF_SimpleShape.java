@@ -30,8 +30,8 @@ public class SF_SimpleShape implements SFPL_Operator
         for (Object o : l)
         {
             List<Object> el = Caster.makeBunch(o);
-            if (el.size() != 2 || !(el.get(0) instanceof Number && el.get(0) instanceof Number)) throw new SFPL_RuntimeException(
-                            Messages.getString("SF_SimpleShape.2"));  //$NON-NLS-1$
+            if (el.size() != 2 || !(el.get(0) instanceof Number && el.get(0) instanceof Number))
+                throw new SFPL_RuntimeException(Messages.getString("SF_SimpleShape.2"));  //$NON-NLS-1$
         }
         totalTime = Caster.makeDouble(Caster.makeBunch(l.get(l.size() - 1)).get(0));
         SFData shape = SFData.build((int) (totalTime * SFConstants.SAMPLE_RATE / 1000.0d));
@@ -50,7 +50,7 @@ public class SF_SimpleShape implements SFPL_Operator
             for (double x = 0; x < min; ++x)
             {
                 double dbs = diff * x / len + startY;
-                shape.setSample(position++, SFConstants.fromDBs(dbs));
+                shape.setSample(position++, SFConstants.slowFromDBs(dbs) /*SFConstants.fromDBs(dbs)*/);
             }
         }
         return shape;

@@ -11,10 +11,11 @@ import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
+import java.util.Stack;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -34,21 +35,89 @@ public class SFData extends SFSignal implements Serializable
     // JIT time alias in effect, maybe remove in the future
     private static final Unsafe unsafe = UnsafeProvider.unsafe;
 
+    private static class MemoryZoneStack extends ThreadLocal<Stack<SFMemoryZone>>
+    {
+        @Override
+        protected Stack<SFMemoryZone> initialValue()
+        {
+            return new Stack<>();
+        }
+    }
+
     private static class ByteBufferWrapper
     {
-        public long       address;
-        @SuppressWarnings("unused")
+        private long              address = 0;
+        private final FileChannel underLyingFile;
+        private final long        fileOffset;
         // buffer is used to hold a reference to the buffer
         // but its data is read via unsafe
-        public ByteBuffer buffer;
+        private MappedByteBuffer  buffer;
 
-        public ByteBufferWrapper(ByteBuffer b) throws NoSuchMethodException, SecurityException, IllegalAccessException,
-                        IllegalArgumentException, InvocationTargetException
+        public long getAddress()
         {
-            Method addM = b.getClass().getMethod("address"); //$NON-NLS-1$
-            addM.setAccessible(true);
-            address = (long) addM.invoke(b);
-            buffer = b;
+            if (address == 0) remap();
+            return address;
+        }
+
+        static Method getAddressMethod;
+        static Method getCleanerMethod;
+        static Method cleanMethod = null;
+
+        private void remap()
+        {
+            try
+            {
+                buffer = underLyingFile.map(MapMode.READ_WRITE, fileOffset, CHUNK_LEN << 3l);
+                if (getAddressMethod == null)
+                {
+                    getAddressMethod = buffer.getClass().getMethod("address");
+                    getAddressMethod.setAccessible(true);
+                    getCleanerMethod = buffer.getClass().getMethod("cleaner");
+                    getCleanerMethod.setAccessible(true);
+                }
+                buffer.order(ByteOrder.nativeOrder());
+                address = (long) getAddressMethod.invoke(buffer);
+                // System.out.println("Remap: " + address);
+            }
+            catch (IOException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
+                            | NoSuchMethodException | SecurityException e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public void unmap()
+        {
+            // System.out.println("Unmap: " + this);
+            try
+            {
+                Object cleaner = getCleanerMethod.invoke(buffer);
+                if (cleaner != null)
+                {
+                    if (cleanMethod == null)
+                    {
+                        cleanMethod = cleaner.getClass().getMethod("clean");
+                    }
+                    cleanMethod.invoke(cleaner);
+                }
+                else
+                {
+                    throw new RuntimeException("Now cleaner method on MappedByteBuffer");
+                }
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+            address = 0;
+        }
+
+        public ByteBufferWrapper(FileChannel file, long offsetInFile) throws SecurityException, IllegalArgumentException
+        {
+            fileOffset = offsetInFile;
+            underLyingFile = file;
+            // Grab the chunk of file now so it does not get used twice in a race.
+            remap();
         }
     }
 
@@ -58,16 +127,15 @@ public class SFData extends SFSignal implements Serializable
     }
 
     // Directory to send swap files to
-    private static final String                             SONIC_FIELD_TEMP        = "sonicFieldTemp";                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      //$NON-NLS-1$
-    private static final String                             SONIC_FIELD_SAFE_MEMORY = "sonicFieldSaferMemory";                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                //$NON-NLS-1$
-    private static final String                             SONIC_FIELD_DIRECT      = "sonicFieldDirectMemory";                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      //$NON-NLS-1$
-    private static final String                             SONIC_FIELD_TRUE        = "true";                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          //$NON-NLS-1$
+    private static final String                             SONIC_FIELD_TEMP        = "sonicFieldTemp";                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              //$NON-NLS-1$
+    private static final String                             SONIC_FIELD_SAFE_MEMORY = "sonicFieldSaferMemory";                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         //$NON-NLS-1$
+    private static final String                             SONIC_FIELD_TRUE        = "true";                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            //$NON-NLS-1$
 
     private static final long                               CHUNK_SHIFT             = 16;
     private static final long                               CHUNK_LEN               = (long) Math.pow(2, CHUNK_SHIFT);
     private static final long                               CHUNK_MASK              = CHUNK_LEN - 1;
-    private static final long                               FILE_SCALE_DEN          = 4;
-    private static final long                               FILE_SCALE_NUM          = 5;
+    private static final double                             HEAP_RATIO              = SFConstants.HEAP_RATIO;
+    private static final double                             HEAP_SIZE_CHUNKS        = SFConstants.HEAP_SIZE / (8 * CHUNK_LEN);
 
     private static final long                               serialVersionUID        = 1L;
     private final int                                       length;
@@ -83,60 +151,50 @@ public class SFData extends SFSignal implements Serializable
     private long                                            allocked;
     private static final AtomicLong                         totalCount              = new AtomicLong();
     private static final AtomicLong                         freeCount               = new AtomicLong();
-    private static long                                     maxFileSize             = SFConstants.ONE_GIG;
     private static ConcurrentLinkedDeque<ByteBufferWrapper> freeChunks              = new ConcurrentLinkedDeque<>();
     private static final boolean                            saferMemory;
-    private static final boolean                            mapped;
+    @SuppressWarnings("synthetic-access")
+    private static final MemoryZoneStack                    memoryZoneStack         = new MemoryZoneStack();
 
     static
     {
         String safe = System.getProperty(SONIC_FIELD_SAFE_MEMORY);
         saferMemory = safe != null && safe.equals(SONIC_FIELD_TRUE);
-        String mapOption = System.getProperty(SONIC_FIELD_DIRECT);
-        mapped = !(mapOption != null && mapOption.equals(SONIC_FIELD_TRUE));
         if (saferMemory) System.out.println(Messages.getString("SFData.4")); //$NON-NLS-1$
-        if (mapped)
+        File tempDir[];
+        String tempEnv = System.getProperty(SONIC_FIELD_TEMP);
+        String[] tdNames = null;
+        if (tempEnv == null)
         {
-            File tempDir[];
-            String tempEnv = System.getProperty(SONIC_FIELD_TEMP);
-            String[] tdNames = null;
-            if (tempEnv == null)
-            {
-                tdNames = new String[] { System.getProperty("java.io.tmpdir") }; //$NON-NLS-1$
-            }
-            else
-            {
-                tdNames = tempEnv.split(","); //$NON-NLS-1$
-            }
-            int nTemps = tdNames.length;
-            tempDir = new File[nTemps];
-            coreFile = new File[nTemps];
-            coreFileAccessor = new RandomAccessFile[nTemps];
-            channelMapper = new FileChannel[nTemps];
-            String pid = ManagementFactory.getRuntimeMXBean().getName();
-            int index = 0;
-            for (String tdName : tdNames)
-            {
-                tempDir[index] = new File(tdName);
-                try
-                {
-                    coreFile[index] = File.createTempFile("SonicFieldSwap" + pid, ".mem", tempDir[index]);  //$NON-NLS-1$//$NON-NLS-2$
-                    coreFile[index].deleteOnExit();
-                    // Now create the actual file
-                    coreFileAccessor[index] = new RandomAccessFile(coreFile[index], "rw"); //$NON-NLS-1$
-                }
-                catch (IOException e)
-                {
-                    throw new RuntimeException(e);
-                }
-                channelMapper[index] = coreFileAccessor[index].getChannel();
-                ++index;
-            }
+            tdNames = new String[] { System.getProperty("java.io.tmpdir") }; //$NON-NLS-1$
         }
         else
         {
-            // Used for sync only
-            coreFile = new File[1];
+            tdNames = tempEnv.split(","); //$NON-NLS-1$
+        }
+        int nTemps = tdNames.length;
+        tempDir = new File[nTemps];
+        coreFile = new File[nTemps];
+        coreFileAccessor = new RandomAccessFile[nTemps];
+        channelMapper = new FileChannel[nTemps];
+        String pid = ManagementFactory.getRuntimeMXBean().getName();
+        int index = 0;
+        for (String tdName : tdNames)
+        {
+            tempDir[index] = new File(tdName);
+            try
+            {
+                coreFile[index] = File.createTempFile("SonicFieldSwap" + pid, ".mem", tempDir[index]);  //$NON-NLS-1$//$NON-NLS-2$
+                coreFile[index].deleteOnExit();
+                // Now create the actual file
+                coreFileAccessor[index] = new RandomAccessFile(coreFile[index], "rw"); //$NON-NLS-1$
+            }
+            catch (IOException e)
+            {
+                throw new RuntimeException(e);
+            }
+            channelMapper[index] = coreFileAccessor[index].getChannel();
+            ++index;
         }
     }
 
@@ -150,15 +208,7 @@ public class SFData extends SFSignal implements Serializable
             ++chunkCount;
             countDown -= CHUNK_LEN;
         }
-        double free = freeCount.get();
-        double total = totalCount.get();
-        freeCount.addAndGet(-chunkCount);
-        boolean gc = false;
-        if (total > 20000.0 && free / total < 0.1)
-        {
-            System.out.println("Going for gc " + free + "," + total + ',' + (free / total));
-            gc = true;
-        }
+
         countDown = size;
         chunks = new ByteBufferWrapper[chunkCount];
         chunkCount = 0;
@@ -168,15 +218,18 @@ public class SFData extends SFSignal implements Serializable
             ByteBufferWrapper chunk = freeChunks.poll();
             if (chunk == null) break;
             chunks[chunkCount] = chunk;
+            freeCount.decrementAndGet();
             ++chunkCount;
             countDown -= CHUNK_LEN;
         }
 
         if (countDown > 0)
         {
+            // If the GC has found something, make sure the finalizers are run here so we get
+            // the chunks freed.
+            System.runFinalization();
             mapMoreData(countDown, chunkCount);
         }
-        if (gc) System.gc();
         getChunkAddresses();
     }
 
@@ -188,36 +241,25 @@ public class SFData extends SFSignal implements Serializable
         long offSet = 0;
         for (ByteBufferWrapper chunk : chunks)
         {
-            unsafe.putAddress(chunkIndex + offSet, chunk.address);
+            unsafe.putAddress(chunkIndex + offSet, chunk.getAddress());
             offSet += 8;
         }
     }
 
     private void mapMoreData(long countDown, int chunkCount)
-                    throws IOException, NoSuchMethodException, IllegalAccessException, InvocationTargetException
     {
         synchronized (coreFile)
         {
+            // System.out.println("Adding " + (countDown / CHUNK_LEN) + " chunks");
             while (countDown > 0)
             {
-                ByteBuffer chunk;
-                if (mapped)
-                {
-                    long from = coreFile[fileRoundRobbin].length();
-                    @SuppressWarnings("resource")
-                    FileChannel channel = channelMapper[fileRoundRobbin];
-                    chunk = channel.map(MapMode.READ_WRITE, from, CHUNK_LEN << 3l);
-                    if (++fileRoundRobbin >= coreFile.length) fileRoundRobbin = 0;
-                }
-                else
-                {
-                    chunk = ByteBuffer.allocateDirect((int) (CHUNK_LEN << 3l));
-                }
-                chunk.order(ByteOrder.nativeOrder());
-                chunks[chunkCount] = new ByteBufferWrapper(chunk);
+                long from = coreFile[fileRoundRobbin].length();
+                @SuppressWarnings("resource")
+                FileChannel channel = channelMapper[fileRoundRobbin];
+                if (++fileRoundRobbin >= coreFile.length) fileRoundRobbin = 0;
+                chunks[chunkCount] = new ByteBufferWrapper(channel, from);
                 ++chunkCount;
                 totalCount.addAndGet(1);
-                freeCount.addAndGet(1);
                 countDown -= CHUNK_LEN;
             }
         }
@@ -234,12 +276,16 @@ public class SFData extends SFSignal implements Serializable
     }
 
     @Override
-    public void release()
+    public synchronized void release()
     {
-        freeCount.addAndGet(chunks.length);
+        // If we are already released, do nothing;
+        if (chunks == null) return;
+
         for (ByteBufferWrapper chunk : chunks)
         {
+            chunk.unmap();
             freeChunks.push(chunk);
+            freeCount.incrementAndGet();
         }
         chunks = null;
         if (saferMemory) freeUnsafeMemory();
@@ -284,6 +330,12 @@ public class SFData extends SFSignal implements Serializable
                 allocked = 0;
             }
             throw t;
+        }
+        Stack<SFMemoryZone> stack = memoryZoneStack.get();
+        if (stack.size() > 0)
+        {
+            SFMemoryZone zone = stack.peek();
+            zone.localData.add(this);
         }
     }
 
@@ -773,10 +825,11 @@ public class SFData extends SFSignal implements Serializable
     public void preTouch()
     {
         // Pass.
-        // TODO Auto-generated method stub
+        // TODO Not sure if we need this or not - comment out for now.
         // Pre-touch the incoming to try and get it memory if possible.
         // In reverse order so if some if swapped out it is more likely to be
         // older and so not so much waste.
+        /*
         synchronized (coreFile)
         {
             for (int pointer = length - 1; pointer > 0; pointer -= SFConstants.PAGE_SIZE_DOUBLES)
@@ -788,6 +841,49 @@ public class SFData extends SFSignal implements Serializable
                     throw new RuntimeException("Nan found whilst pre-touching");
                 }
             }
+        }*/
+    }
+
+    public static SFMemoryZone popZone()
+    {
+        // Relase everything in the head of the zone thread local stack.
+        SFMemoryZone zone = memoryZoneStack.get().pop();
+        // System.out.println("Popped: " + zone);
+        int count = 0;
+        for (SFData data : zone.localData)
+        {
+            count += data.chunks.length;
+            data.release();
         }
+        System.out.println("Releasing: " + count + " chunks total:" + totalCount.get() + " free: " + freeCount.get());
+        // Reap a few references - why not?
+        zone.localData.clear();
+        zone.localData = null;
+        return zone;
+    }
+
+    public static SFMemoryZone unstackZone()
+    {
+        return memoryZoneStack.get().pop();
+    }
+
+    public static void stackZone(SFMemoryZone sfMemoryZone)
+    {
+        pushZone(sfMemoryZone);
+    }
+
+    public static SFMemoryZone peekZone()
+    {
+        Stack<SFMemoryZone> zone = memoryZoneStack.get();
+        if (zone.size() == 0) return null;
+        return zone.peek();
+    }
+
+    public static void pushZone(SFMemoryZone sfMemoryZone)
+    {
+        // Push to a thread local stack a collection which holds all new SFData objects.
+        // So that they can be released explicitly.
+        // System.out.println("Pushing: " + sfMemoryZone);
+        memoryZoneStack.get().push(sfMemoryZone);
     }
 }

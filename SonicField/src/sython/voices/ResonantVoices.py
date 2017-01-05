@@ -4,11 +4,13 @@
 #
 ###############################################################################
 
+from com.nerdscentral.audio.core import SFMemoryZone
 from sython.utils.Parallel_Helpers import mix
 from sython.utils.Algorithms import do_formant
 from sython.utils.Algorithms import excite
 from sython.utils.Algorithms import create_vibrato
 from sython.utils.Algorithms import polish
+from sython.utils.Algorithms import compress, decompress
 from sython.voices.Signal_Generators import phasing_sawtooth
 from sython.voices.Signal_Generators import simple_sawtooth
 from sython.voices.Signal_Generators import phasing_triangle
@@ -27,52 +29,53 @@ celloIRs  = sf.CelloBodyIRs(())
 bassIRs   = sf.BassBodyIRs(())
 
 def _distant_wind(length, freq, qCorrect = 1.25, limit = False, seed = -60):
-    length += 250.0
-    base = sf.Mix(
-        clean_noise(length,freq*4.0),
-        sf.Volume(sf.SineWave(length,freq), seed)
-    )
-    env = []
-    # Super imposted last two postions does not matter.
-    v = 0.5
-    t = 0
-    while t < length:
-        if random.random() > 0.5:
-            v *= 1.1
-            if v > 1.0:
-                v = 0.9
-        else:
-            v *= 0.9
-        env += [(t, v)]
-        # Constrained random walk envelope in 100 ms steps.
-        t += 100
-
-    #base = sf.Multiply(sf.NumericShape(env), base)
-    out = []
-    xq = 1.8 if freq > 640 else 2.0 if freq > 256 else 2.5 if freq > 128 else 3.0
-    xq *= qCorrect
-    for q in (16, 32, 48):
-        out += [
-            byquad_filter(
-                'peak' if not limit else 'limited peak',
-                +base,
-                freq,
-                0.5,
-                q * xq
-            )
-        ]
-    -base
-    out = sf.Mix(out)
-    out = sf.ButterworthLowPass(out, freq*1.25, 4)
-    out = sf.ButterworthLowPass(out, freq*1.25, 4)
-    st = sf.Cut(0, length/2.0,+out)
-    ed = sf.Cut(length/2.0, length,+out)
-    st = sf.Magnitude(st)
-    ed = sf.Magnitude(ed)
-    rt = st/ed
-    ev = sf.NumericShape((0.0, 1.0), (length, rt))
-    out = sf.Multiply(ev, out)
-    return sf.FixSize(sf.Cut(250,length,out))
+    with SFMemoryZone():
+        length += 250.0
+        base = sf.Mix(
+            clean_noise(length,freq*4.0),
+            sf.Volume(sf.SineWave(length,freq), seed)
+        )
+        env = []
+        # Super imposted last two postions does not matter.
+        v = 0.5
+        t = 0
+        while t < length:
+            if random.random() > 0.5:
+                v *= 1.1
+                if v > 1.0:
+                    v = 0.9
+            else:
+                v *= 0.9
+            env += [(t, v)]
+            # Constrained random walk envelope in 100 ms steps.
+            t += 100
+    
+        #base = sf.Multiply(sf.NumericShape(env), base)
+        out = []
+        xq = 1.8 if freq > 640 else 2.0 if freq > 256 else 2.5 if freq > 128 else 3.0
+        xq *= qCorrect
+        for q in (16, 32, 48):
+            out += [
+                byquad_filter(
+                    'peak' if not limit else 'limited peak',
+                    +base,
+                    freq,
+                    0.5,
+                    q * xq
+                )
+            ]
+        -base
+        out = sf.Mix(out)
+        out = sf.ButterworthLowPass(out, freq*1.25, 4)
+        out = sf.ButterworthLowPass(out, freq*1.25, 4)
+        st = sf.Cut(0, length/2.0, out)
+        ed = sf.Cut(length/2.0, length, out)
+        st = sf.Magnitude(st)
+        ed = sf.Magnitude(ed)
+        rt = st/ed
+        ev = sf.NumericShape((0.0, 1.0), (length, rt))
+        out = sf.Multiply(ev, out)
+        return sf.SwapSignal(sf.FixSize(sf.Cut(250,length,out)))
 
 def distant_wind(length, freq):
 
@@ -106,8 +109,13 @@ def distant_wind(length, freq):
 
 def additive_resonance(power, qCorrect, saturate, rollOff, post, limit, seed, flat, harmonics, length, freq):
 
+    lowComp = freq < 128
+    if lowComp:
+        freq *= 2.0
+        length *= 0.5
+
     @sf_parallel
-    def doWind(lenth, hfq, vol):
+    def doWind(lenth, hfq, vol, reverse=False):
         out = _distant_wind(length, hfq, qCorrect, limit, seed)
         out = sf.Power(out, power)
         if saturate:
@@ -115,30 +123,40 @@ def additive_resonance(power, qCorrect, saturate, rollOff, post, limit, seed, fl
             out = sf.Mix(sf.NumericVolume(out, 1.0-saturate), sf.NumericVolume(os, saturate))
         out = sf.Realise(out)
         out = sf.NumericVolume(sf.FixSize(out), vol)
-        return sf.Realise(out)
+        if reverse:
+            out = sf.Reverse(out)
+        return compress(out)
 
     harms = []
-    base = sf.Silence(length)
-    harmonics = list(harmonics)
-    revHarms = [] + harmonics
-    revHarms.reverse()
-    for harm, revHarm in zip(harmonics, revHarms):
+    base = compress(sf.Silence(length))
+    sigs = []
+    for harm in harmonics:
         hfreq = harm * freq
         if hfreq > 18000.0:
             break
         harms.append(harm)
-        vol = 1.0 / (pow(revHarm, rollOff))
+        vol = 1.0 / (pow(harm, rollOff))
         if flat:
             sfw = doWind(length, hfreq, vol)
-            srv = sf.Reverse(doWind(length, hfreq, vol))
-            sig = sf.Mix(sfw, srv)
+            srv = doWind(length, hfreq, vol, reverse=True)
+            sigs += [sfw, srv]
         else:
-            sig = doWind(lenth, hfq, vol)
-        print 'Realising', harm
-        base = sf.Realise(sf.Mix(base, sig))
+            sigs += [doWind(lenth, hfq, vol)]
+        if len(sigs) >  3:
+            sigs += [base]
+            base = sf.Realise(sf.Mix(sigs))
+            sigs = []
 
     print 'Done Wind'
-    ret = sf.Realise(sf.FixSize(polish(sig,freq)))
+    base = decompress(base)
+    ret = None
+    if lowComp:
+        base=sf.DirectRelength(base, 0.5)
+        freq *= 0.5
+        length *= 2.0
+        ret = sf.Realise(sf.FixSize(sf.Clean(base)))
+    else:
+        ret = sf.Realise(sf.FixSize(polish(base,freq)))
     return post(ret, length, freq) if post else ret
 
 def make_addtive_resonance(power = 1.1 , qCorrect = 1.25 , saturate = 0.0, rollOff = 4.0,

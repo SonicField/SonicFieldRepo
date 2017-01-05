@@ -102,3 +102,13 @@ def polish(sig,freq):
     else:
         sig=sf.ButterworthHighPass(sig,freq*0.66,2)   
     return sf.Clean(sig)
+
+@sf_parallel
+def compress(sig):
+    sig = sf.Clean(sig);
+    return sf.DirectRelength(sig, 2.0)
+
+@sf_parallel
+def decompress(sig):
+    return sf.DirectRelength(sig, 0.5)
+    

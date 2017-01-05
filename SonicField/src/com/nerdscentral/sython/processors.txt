@@ -7,6 +7,7 @@ com.nerdscentral.audio.sound.SF_Monitor
 com.nerdscentral.audio.sound.SF_PlayFile
 com.nerdscentral.audio.io.SF_ReadFile
 com.nerdscentral.audio.io.SF_ReadSignal
+com.nerdscentral.audio.io.SF_SwapSignal
 com.nerdscentral.audio.core.SF_Realise
 com.nerdscentral.audio.utilities.SF_Semitone
 com.nerdscentral.audio.core.SF_SetSampleRate

@@ -29,6 +29,10 @@ public class SFConstants
     public static final double                   UPPER_ALIAS_LIMIT   = 24000;
     public static final double                   NOISE_FLOOR         = 1.0 / 32768.00;
     public static final int                      PAGE_SIZE_DOUBLES   = 512;
+    public static final double                   HEAP_RATIO          = Double
+                    .parseDouble(System.getProperty("sython.heap_ratio", "0.1"));                                                   //$NON-NLS-1$ //$NON-NLS-2$
+    public static final double                   HEAP_SIZE           = Double
+                    .parseDouble(System.getProperty("sython.heap_size", "2")) * ONE_GIG;                                     //$NON-NLS-1$ //$NON-NLS-2$
     public static boolean                        TRACE               = false;
 
     static
