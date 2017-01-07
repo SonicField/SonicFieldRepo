@@ -27,10 +27,6 @@ public class SF_Realise implements SFPL_Operator, SFPL_RefPassThrough
     @Override
     public Object Interpret(Object input) throws SFPL_RuntimeException
     {
-        if (input instanceof SFData)
-        {
-            return input;
-        }
         SFSignal in = Caster.makeSFSignal(input);
         return SFData.realise(in);
     }

@@ -41,6 +41,15 @@ public abstract class SFSignal
         return this;
     }
 
+    public SFSignal keep()
+    {
+        if (isRealised())
+        {
+            return this;
+        }
+        return SFData.realise(this);
+    }
+
     /**
      * Returns a linearly interpolated sample based on the samples either side of the the passed index. This is used for super
      * sampling or pitch effects.

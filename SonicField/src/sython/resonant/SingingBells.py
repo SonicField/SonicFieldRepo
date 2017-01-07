@@ -39,7 +39,7 @@ def bell(frequency = 440 , brightness = 1.0, length = 10000, hit = 1.0, isBowl =
                 harmonics = harmonics,
                 saturate = saturate
             )
-            sig = sf.SwapSignal(gen(length, frequency))
+            sig = gen(length, frequency).keep()
         
         # Hit processing with resonance if is a bowl.
         peak = 2000 if isBowl else 1
@@ -60,8 +60,8 @@ def bell(frequency = 440 , brightness = 1.0, length = 10000, hit = 1.0, isBowl =
                 (length, 0)),
             sf.SimpleShape((0, 0), (peak, 0), (length, -30))
         )
-        
-        return sf.SwapSignal(sf.FixSize(sf.Multiply(env, sig)))
+        out = sf.FixSize(sf.Multiply(env, sig))
+        return sf.SwapSignal(out)
 
 @sf_parallel
 def makeBlocks(length = 3600000, start = 10, rootFrequency = 256):
@@ -91,6 +91,7 @@ def makeBlocks(length = 3600000, start = 10, rootFrequency = 256):
             brightness = random() * 2 + 1.0
             hit = random() * 2 + 1.0
             isBowl = random() > 0.5
+            isBowl = False
             frequency = freqWalk.next() * rootFrequency
             print "%6g, %6g, %6g, %6g, %6g, %3g, %s," % (frequency, atLeft, atRight, thisLen, brightness, hit, str(isBowl))
             sig = bell(frequency = frequency, brightness = 1.0, length = thisLen, hit = 1.0, isBowl = isBowl)

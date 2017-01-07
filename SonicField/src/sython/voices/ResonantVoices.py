@@ -54,28 +54,28 @@ def _distant_wind(length, freq, qCorrect = 1.25, limit = False, seed = -60):
         out = []
         xq = 1.8 if freq > 640 else 2.0 if freq > 256 else 2.5 if freq > 128 else 3.0
         xq *= qCorrect
-        for q in (16, 32, 48):
-            out += [
-                byquad_filter(
-                    'peak' if not limit else 'limited peak',
-                    +base,
-                    freq,
-                    0.5,
-                    q * xq
-                )
-            ]
-        -base
-        out = sf.Mix(out)
-        out = sf.ButterworthLowPass(out, freq*1.25, 4)
-        out = sf.ButterworthLowPass(out, freq*1.25, 4)
-        st = sf.Cut(0, length/2.0, out)
-        ed = sf.Cut(length/2.0, length, out)
-        st = sf.Magnitude(st)
-        ed = sf.Magnitude(ed)
+        with SFMemoryZone():
+            for q in (16, 32, 48):
+                out += [
+                    byquad_filter(
+                        'peak' if not limit else 'limited peak',
+                        base,
+                        freq,
+                        0.5,
+                        q * xq
+                    )
+                ]
+            out = sf.Mix(out)
+            out = sf.ButterworthLowPass(out, freq*1.25, 4)
+            out = sf.ButterworthLowPass(out, freq*1.25, 4).keep()
+            st = sf.Cut(0, length/2.0, out)
+            ed = sf.Cut(length/2.0, length, out)
+            st = sf.Magnitude(st)
+            ed = sf.Magnitude(ed)
         rt = st/ed
         ev = sf.NumericShape((0.0, 1.0), (length, rt))
         out = sf.Multiply(ev, out)
-        return sf.SwapSignal(sf.FixSize(sf.Cut(250,length,out)))
+        return sf.FixSize(sf.Cut(250,length,out)).keep()
 
 def distant_wind(length, freq):
 
@@ -116,16 +116,17 @@ def additive_resonance(power, qCorrect, saturate, rollOff, post, limit, seed, fl
 
     @sf_parallel
     def doWind(lenth, hfq, vol, reverse=False):
-        out = _distant_wind(length, hfq, qCorrect, limit, seed)
-        out = sf.Power(out, power)
-        if saturate:
-            os = sf.Saturate(sf.NumericVolume(sf.FixSize(+out), 2.0))
-            out = sf.Mix(sf.NumericVolume(out, 1.0-saturate), sf.NumericVolume(os, saturate))
-        out = sf.Realise(out)
-        out = sf.NumericVolume(sf.FixSize(out), vol)
-        if reverse:
-            out = sf.Reverse(out)
-        return compress(out)
+        with SFMemoryZone():
+            out = _distant_wind(length, hfq, qCorrect, limit, seed)
+            out = sf.Power(out, power)
+            if saturate:
+                os = sf.Saturate(sf.NumericVolume(sf.FixSize(+out), 2.0))
+                out = sf.Mix(sf.NumericVolume(out, 1.0-saturate), sf.NumericVolume(os, saturate))
+            out = sf.Realise(out)
+            out = sf.NumericVolume(sf.FixSize(out), vol)
+            if reverse:
+                out = sf.Reverse(out)
+            return compress(out).keep()
 
     harms = []
     base = compress(sf.Silence(length))

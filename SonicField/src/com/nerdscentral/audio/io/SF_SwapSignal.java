@@ -30,10 +30,10 @@ public class SF_SwapSignal implements SFPL_Operator, SFPL_RefPassThrough
     public static class Translate extends SFGenerator
     {
         private static final File DIRECTORY = new File("/Volumes/External1");
-        private final File tmpFile;
-        private boolean    swapped = true;
-        private SFSignal   signal;
-        private final int  len;
+        private final File        tmpFile;
+        private boolean           swapped   = true;
+        private SFSignal          signal;
+        private final int         len;
 
         protected Translate(SFSignal data) throws SFPL_RuntimeException
         {
@@ -69,25 +69,31 @@ public class SF_SwapSignal implements SFPL_Operator, SFPL_RefPassThrough
         {
             if (swapped)
             {
-                System.out.println("Swapping from:" + tmpFile.getPath());
-
-                signal = SFData.build(len);
-                try (
-                    FileInputStream fs = new FileInputStream(tmpFile);
-                    DataInputStream ds = new DataInputStream(new BufferedInputStream(fs)))
+                synchronized (this)
                 {
-                    if (len != ds.readInt()) throw new RuntimeException("Length missmatch in swap in");
-                    for (int i = 0; i < len; ++i)
+                    if (swapped)
                     {
-                        signal.setSample(i, ds.readDouble());
+                        System.out.println("Swapping from:" + tmpFile.getPath());
+
+                        signal = SFData.build(len);
+                        try (
+                            FileInputStream fs = new FileInputStream(tmpFile);
+                            DataInputStream ds = new DataInputStream(new BufferedInputStream(fs)))
+                        {
+                            if (len != ds.readInt()) throw new RuntimeException("Length missmatch in swap in");
+                            for (int i = 0; i < len; ++i)
+                            {
+                                signal.setSample(i, ds.readDouble());
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            throw new RuntimeException(Messages.getString("Exception swapping in signal"), e);
+                        }
+                        tmpFile.delete();
+                        swapped = false;
                     }
                 }
-                catch (Exception e)
-                {
-                    throw new RuntimeException(Messages.getString("Exception swapping in signal"), e);
-                }
-                tmpFile.delete();
-                swapped = false;
             }
             return signal.getSample(index);
         }
