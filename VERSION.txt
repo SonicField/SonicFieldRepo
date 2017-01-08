@@ -1,8 +1,17 @@
-Version 1.0.0
+Version 1.0.2
 =============
 
-version 1.0.1
--------------
+version 1.0.2: Jan 2017
+-----------------------
+1) Remove reference counting and move to memory zones.
+2) Move more music creation into same file structure and the reset of the source.
+3) Improve efficiency of memory management through order of chunk access.
+4) Introduce SwapSignal.
+5) Fully robust work stealing scheduler.
+6) Start of built in support for addative resonant synthesis.
+
+version 1.0.1 Jan 2015
+----------------------
 1) Hosted on git hub
 2) Uses memory mapped files for swap
 3) Uses reference counted resource management
@@ -12,7 +21,7 @@ version 1.0.1
 7) Move python initialization class definitions to separate file
 
 version 1.0.0
-------------
+-------------
 1) Python as main control language
 2) Introduction of generators rather than always creating new data for signals
 3) tweaks to the swap file system to handle long signals
