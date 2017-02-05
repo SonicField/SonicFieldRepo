@@ -14,6 +14,7 @@ import org.python.core.PyDictionary;
 import org.python.core.PyObject;
 import org.python.util.PythonInterpreter;
 
+import com.nerdscentral.audio.core.SFConstants;
 import com.nerdscentral.audio.utilities.SFP_DBs;
 import com.nerdscentral.audio.utilities.SFP_Pcnt;
 
@@ -32,46 +33,12 @@ public class Sython
     {
         try
         {
-            // Launch Thread Watchdog
-            // Checks for deadlocks
-            new Thread(new Runnable()
+            // Launch Thread Watchdog.
+            // Checks for deadlocks IFF the property SFConstants.FIND_DEADLOCKS is set.
+            if (SFConstants.FIND_DEADLOCKS)
             {
-
-                @Override
-                public void run()
-                {
-                    ThreadMXBean bean = ManagementFactory.getThreadMXBean();
-                    while (true)
-                    {
-                        long[] threadIds = bean.findDeadlockedThreads(); // Returns null if no threads are deadlocked.
-                        if (threadIds != null)
-                        {
-                            System.err.println("DEADLOCK");
-                            System.err.println("========");
-                            ThreadInfo[] infos = bean.getThreadInfo(threadIds);
-                            for (ThreadInfo info : infos)
-                            {
-                                System.err.println("STACK:");
-                                StackTraceElement[] stack = info.getStackTrace();
-                                for (StackTraceElement x : stack)
-                                {
-                                    System.err.println("    " + x);
-                                }
-                            }
-                            System.exit(1);
-                        }
-                        try
-                        {
-                            Thread.sleep(1000);
-                        }
-                        catch (InterruptedException e)
-                        {
-                            // nop
-                        }
-                    }
-
-                }
-            }).start();
+                findDeadlocks();
+            }
 
             // Create Java/Jython interface
             // ============================
@@ -170,5 +137,47 @@ public class Sython
             System.exit(1);
         }
         System.exit(0);
+    }
+
+    private static void findDeadlocks()
+    {
+        new Thread(new Runnable()
+        {
+
+            @Override
+            public void run()
+            {
+                ThreadMXBean bean = ManagementFactory.getThreadMXBean();
+                while (true)
+                {
+                    long[] threadIds = bean.findDeadlockedThreads(); // Returns null if no threads are deadlocked.
+                    if (threadIds != null)
+                    {
+                        System.err.println("DEADLOCK");
+                        System.err.println("========");
+                        ThreadInfo[] infos = bean.getThreadInfo(threadIds);
+                        for (ThreadInfo info : infos)
+                        {
+                            System.err.println("STACK:");
+                            StackTraceElement[] stack = info.getStackTrace();
+                            for (StackTraceElement x : stack)
+                            {
+                                System.err.println("    " + x);
+                            }
+                        }
+                        System.exit(1);
+                    }
+                    try
+                    {
+                        Thread.sleep(1000);
+                    }
+                    catch (InterruptedException e)
+                    {
+                        // nop
+                    }
+                }
+
+            }
+        }).start();
     }
 }

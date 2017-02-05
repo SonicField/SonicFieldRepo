@@ -3,9 +3,8 @@
 #########
 
 import os
-import sython.utils.Midi
-import sython.organ.Player as Player
-from sython.resonant.OrganPipes import *
+import sython.utils.Midi as Midi
+from sython.resonant.ResonantPipes import *
 
 def main():  
     Notes  = []
@@ -18,7 +17,7 @@ def main():
     
     # Length of full piece
     #======================
-    length = 4
+    length = 2
     
     # Temperament
     #=============
@@ -47,15 +46,15 @@ def main():
     #    out += midi
     #out = sorted(out, key=lambda event: event.tick)
     
-    out = midis[2]
+    track = 1
+    out = midis[track]
     
     # dilate notes to inspect individually
     #for event in out:
     #    diff=event.tick_off-event.tick
     #    event.tick*=3
     #    event.tick_off=event.tick+diff
-    
-    
+
     # Purify
     o2 = []
     for o in out:
@@ -65,9 +64,9 @@ def main():
     beat = Midi.set_length([out],length)
     
     # Truncate
-    out = out[0:15]
+    out = out[0:5]
     
-    left,right = [sf.Finalise(sig) for sig in distant_bass(out,beat,temperament,1.0)]
+    left,right = [sf.Finalise(sig) for sig in harpsichord(out,beat,temperament,1.0)]
     
     if useModWheel:
         left  = sf.ReadSignal("temp/left")
@@ -105,6 +104,6 @@ def main():
         left=doVib(modEnvl,left)
         right=doVib(modEnvr,right)
     
-    sf.WriteSignal(+left, "temp/left_v_acc")
-    sf.WriteSignal(+right,"temp/right_v_acc")
-    sf.WriteFile32((left,right),"temp/temp_v_acc.wav")
+    sf.WriteSignal(+left, "temp/left_v{0}_acc".format(track))
+    sf.WriteSignal(+right,"temp/right_v{0}_acc".format(track))
+    sf.WriteFile32((left,right),"temp/temp_v{0}_acc.wav".format(track))

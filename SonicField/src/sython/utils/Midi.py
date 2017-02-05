@@ -472,7 +472,7 @@ def read_midi_file(name):
                     try:
                         e['data']=float(dd)
                     except OverflowError as er:
-                        print 'Over flow error: %s', str(er)
+                        print 'Over flow error: %s -> %s' % (str(er), str(dd))
                     e['data'] = 0
 
             if not command=='note':

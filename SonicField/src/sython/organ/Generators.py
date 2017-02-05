@@ -1,6 +1,7 @@
 import random
-from sython.utils.Parallel_Helpers import mix,realise
-from sythe.organ.Algorithms import pitch_move,polish
+from sython.utils.Parallel_Helpers import mix, realise
+from sython.organ.Algorithms import pitch_move
+from sython.utils.Algorithms import polish
 from sython.concurrent import sf_parallel
 
 @sf_parallel

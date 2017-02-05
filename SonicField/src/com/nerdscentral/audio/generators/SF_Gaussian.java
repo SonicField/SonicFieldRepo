@@ -3,6 +3,7 @@ package com.nerdscentral.audio.generators;
 
 import com.nerdscentral.audio.core.SFConstants;
 import com.nerdscentral.audio.core.SFData;
+import com.nerdscentral.audio.core.SFSignal;
 import com.nerdscentral.sython.Caster;
 import com.nerdscentral.sython.SFMaths;
 import com.nerdscentral.sython.SFPL_Operator;
@@ -27,7 +28,7 @@ public class SF_Gaussian implements SFPL_Operator
         length *= SFConstants.SAMPLE_RATE_MS;
         double sigma = length;
         length *= 8;
-        SFData out = SFData.build((int) SFMaths.ceil(length));
+        SFSignal out = SFData.build((int) SFMaths.ceil(length));
         double center = length / 2;
         for (int i = 0; i < length; ++i)
         {

@@ -12,6 +12,11 @@ public class SFMemoryZone
         SFData.pushZone(this);
     }
 
+    /**
+     * @param t
+     * @param v
+     * @param tr
+     */
     public void __exit__(Object t, Object v, Object tr)
     {
         // PASS
@@ -19,7 +24,7 @@ public class SFMemoryZone
         {
             if (this != SFData.popZone())
             {
-                throw new RuntimeException("Memory zone missmatch");
+                throw new RuntimeException(Messages.getString("SFMemoryZone.0")); //$NON-NLS-1$
             }
         }
         catch (Exception e)

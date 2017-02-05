@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.nerdscentral.audio.core.SFConstants;
 import com.nerdscentral.audio.core.SFData;
+import com.nerdscentral.audio.core.SFSignal;
 import com.nerdscentral.sython.Caster;
 import com.nerdscentral.sython.SFMaths;
 import com.nerdscentral.sython.SFPL_Operator;
@@ -33,7 +34,7 @@ public class SF_NumericShape implements SFPL_Operator
             if (el.size() != 2) throw new SFPL_RuntimeException(Messages.getString("SF_NumericShape.2"));  //$NON-NLS-1$
         }
         totalTime = Caster.makeDouble(Caster.makeBunch(l.get(l.size() - 1)).get(0));
-        SFData shape = SFData.build((int) (totalTime * SFConstants.SAMPLE_RATE / 1000.0d));
+        SFSignal shape = SFData.build((int) (totalTime * SFConstants.SAMPLE_RATE / 1000.0d));
         int position = 0;
         for (int i = 0; i < l.size() - 1; ++i)
         {

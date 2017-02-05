@@ -20,13 +20,13 @@ public class SF_Clean implements SFPL_Operator
     public Object Interpret(final Object input) throws SFPL_RuntimeException
     {
         SFSignal sig = Caster.makeSFSignal(input);
-        SFData dataIn = SFData.realise(sig);
-        SFData dataOut = dataIn.replicateEmpty();
+        SFSignal dataIn = SFData.realise(sig);
+        SFSignal dataOut = dataIn.replicateEmpty();
         decimateFilter(dataIn, dataOut);
         return dataOut;
     }
 
-    public static double decimateFilter(SFData dataIn, SFData dataOut)
+    public static double decimateFilter(SFSignal dataIn, SFSignal dataOut)
     {
         // Decimate
         Decimator d0 = new Decimator();

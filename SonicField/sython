@@ -18,17 +18,15 @@
 java \
     -XX:+UseCompressedOops \
     -XX:+UseCompressedClassPointers \
-    -DsonicFieldTemp=/Volumes/External1/ \
+    -DsonicFieldTemp=/Volumes/External1/scratch1/,/Volumes/External2/scratch1/ \
     -Dsython.threads=4 \
     -Xmx2G \
     -Dsython.linear=false \
     -Dsython.trace=false \
-    -Dsython.heap_size=8\
-    -Dsython.heap_ratio=0.1\
     -Dsython.modules=/Users/alexanderturner/SonicFieldRepo/SonicField/src \
     -Dsython.steal=true \
-    -DsonicFieldDirectMemory=false\
-    -XX:MaxDirectMemorySize=12g \
+    -Dsython.find_deadlocks=true\
+    -XX:MaxDirectMemorySize=2g \
     -XX:MaxInlineSize=128 \
     -XX:InlineSmallCode=1024 \
     -Xms128m \

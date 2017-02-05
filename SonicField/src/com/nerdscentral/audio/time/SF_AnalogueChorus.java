@@ -38,7 +38,7 @@ public class SF_AnalogueChorus implements SFPL_Operator
         SFSignal inR = Caster.makeSFSignal(lin.get(0));
         SFSignal mod = Caster.makeSFSignal(lin.get(2));
 
-        SFData in = SFData.realise(inR);
+        SFSignal in = SFData.realise(inR);
         double filt = 5000.0;
         if (lin.size() > 4)
         {

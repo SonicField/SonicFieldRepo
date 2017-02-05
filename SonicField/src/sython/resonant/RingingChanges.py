@@ -3,6 +3,8 @@ from com.nerdscentral.audio.core import SFMemoryZone
 from sython.resonant.Bells import primeBell
 from sython.utils.Generative import BrownianWalk
 from random import random, shuffle, randint
+from sython.utils.Splitter import writeWave
+
 
 #sf.SetSampleRate(60000)
 
@@ -14,9 +16,8 @@ def randSwap(sequ):
     sequ[fm] = tmp
 
 @sf_parallel
-def makeBlocks(length = 360000 * 20):
+def makeBlocks(length = 60000 * 1): # Minutes
     with SFMemoryZone():
-        
         class Walker(object):
             def __init__(self, frequency):
                 
@@ -44,23 +45,34 @@ def makeBlocks(length = 360000 * 20):
                     }
         
         freqs = []
-        for baseF in [64.0, 128.0, 256.0, 512.0, 1024.0]:
-            freqs += [baseF, baseF * 4 / 3, baseF * 3 / 2]
+        # For Choas and order
+        #for baseF in [64.0, 128.0, 256.0, 512.0, 1024.0]:
+        #    freqs += [baseF, baseF * 4 / 3, baseF * 3 / 2]
+        # For Further Chaos
+        for baseF in range(20,0,-1):
+            freqs += [baseF * 64]
             
         bells = [Walker(f) for f in freqs]
-        step = 256
         steps = []
+        # For Choas and order
+        '''
+        step = 256
         for x in range(0, len(freqs)):
             if (x + 1) % 4 == 0:
                 # Or *= 2 - which will sounds better?
                 step += 128
             steps += [step]
+        '''
+        steps = []
+        for _ in range(0,4):
+            steps += [ ((x % 4) + 1)* 128 for x in range(0, len(freqs))]
         
         at = 1000
         sigsLeft  = []
         sigsRight = []
         count = 0
         while at < length:
+            print 'At: ', at , ' of ', length  
             for step, bell in zip(steps, bells):
                 with SFMemoryZone():
                     bellFo = bell.next()
@@ -80,51 +92,25 @@ def makeBlocks(length = 360000 * 20):
                     sigsLeft  += [(sf.NumericVolume(sig,bellFo['balLeft']).flush(),  atLeft)]
                     sigsRight += [(sf.NumericVolume(sig,bellFo['balRight']).flush(), atRight)]
                     at += step
-            count += 1
-            if count % 2 == 0:
-                randSwap(steps)
+
+            for _ in range(0, 4):
                 randSwap(bells)
-                for place in range(1, len(bells)):
-                    n0 = bells[place -1]
-                    n1 = bells[place]
-                    if n1.frequency < n0.frequency:
-                        tmp = n1.frequency
-                        n1.frequency = n0.frequency
-                        n0.frequency = tmp
-                        
-                for place in range(1, len(steps)):
-                    n0 = steps[place -1]
-                    n1 = steps[place]
-                    if n1< n0:
-                        tmp = n1
-                        steps[place] = n0
-                        steps[place - 1] = tmp
-    
+                randSwap(steps)
+                    
+
         return [sf.FixSize(sf.MixAt(sigs)).flush() for sigs in sigsLeft, sigsRight]
         
 def main():
     print 'Doing work'
-    '''
+
     voxl, voxr = makeBlocks()
 
     sf.WriteSignal(voxl, "temp/change_l")
     sf.WriteSignal(voxr, "temp/change_r")
-    '''
-    
-    voxl = sf.ReadSignal("temp/change_l")
-    voxr = sf.ReadSignal("temp/change_r")
-    t = 0
-    l = max(sf.Length(voxl),sf.Length(voxr))
-    c = 0
-    while t<l: 
-        e = t + 2400000.0
-        e = min(l, e)
-        # TODO is left and right are different lengths
-        # will this fail?
-        leftX  = sf.Cut(t, e, voxl)
-        rightX = sf.Cut(t, e, voxr)
-        sf.WriteFile32((leftX,rightX), "temp/change{0}.wav".format(c))
-        c += 1
-        t = e
+
+    #voxl = sf.ReadSignal('temp/change_l')
+    #voxr = sf.ReadSignal('temp/change_r')
+
+    writeWave(voxl, voxr, 'temp/changes')
 
     print 'Done work'

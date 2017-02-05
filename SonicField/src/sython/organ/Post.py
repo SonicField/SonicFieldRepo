@@ -3,8 +3,8 @@
 # Mix mix/processing  
 ######################
 
-from organ.Algorithms import echo_division,tremolate
-from Parallel_Helpers import finalise,mix
+from sython.organ.Algorithms import echo_division,tremolate
+from sython.utils.Parallel_Helpers import finalise,mix
 
 @sf_parallel
 def post_process(notes):

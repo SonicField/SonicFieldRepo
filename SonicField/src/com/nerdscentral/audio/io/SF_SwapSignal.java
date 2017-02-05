@@ -11,6 +11,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 
 import com.nerdscentral.audio.Messages;
+import com.nerdscentral.audio.core.SFConstants;
 import com.nerdscentral.audio.core.SFData;
 import com.nerdscentral.audio.core.SFGenerator;
 import com.nerdscentral.audio.core.SFPL_RefPassThrough;
@@ -29,23 +30,22 @@ public class SF_SwapSignal implements SFPL_Operator, SFPL_RefPassThrough
 
     public static class Translate extends SFGenerator
     {
-        private static final File DIRECTORY = new File("/Volumes/External1");
-        private final File        tmpFile;
-        private boolean           swapped   = true;
-        private SFSignal          signal;
-        private final int         len;
+        private final File tmpFile;
+        private boolean    swapped = true;
+        private SFSignal   signal;
+        private final int  len;
 
         protected Translate(SFSignal data) throws SFPL_RuntimeException
         {
             try
             {
-                tmpFile = File.createTempFile("swap", ".mem", DIRECTORY);
+                tmpFile = File.createTempFile(Messages.getString("SF_SwapSignal.1"), Messages.getString("SF_SwapSignal.2"), SFConstants.getLocalisedTempDir()); //$NON-NLS-1$ //$NON-NLS-2$
                 tmpFile.deleteOnExit();
-                System.out.println("Swapping   to:" + tmpFile.getPath());
+                System.out.println(Messages.getString("SF_SwapSignal.3") + tmpFile.getPath()); //$NON-NLS-1$
             }
             catch (IOException e)
             {
-                throw new SFPL_RuntimeException(Messages.getString("Exception swapping out signal"), e);
+                throw new SFPL_RuntimeException(Messages.getString(Messages.getString("SF_SwapSignal.4")), e); //$NON-NLS-1$
             }
             len = data.getLength();
             try (
@@ -60,7 +60,7 @@ public class SF_SwapSignal implements SFPL_Operator, SFPL_RefPassThrough
             }
             catch (Exception e)
             {
-                throw new SFPL_RuntimeException(Messages.getString("Exception swapping out signal"), e);
+                throw new SFPL_RuntimeException(Messages.getString(Messages.getString("SF_SwapSignal.5")), e); //$NON-NLS-1$
             }
         }
 
@@ -73,14 +73,14 @@ public class SF_SwapSignal implements SFPL_Operator, SFPL_RefPassThrough
                 {
                     if (swapped)
                     {
-                        System.out.println("Swapping from:" + tmpFile.getPath());
+                        System.out.println(Messages.getString("SF_SwapSignal.6") + tmpFile.getPath()); //$NON-NLS-1$
 
                         signal = SFData.build(len);
                         try (
                             FileInputStream fs = new FileInputStream(tmpFile);
                             DataInputStream ds = new DataInputStream(new BufferedInputStream(fs)))
                         {
-                            if (len != ds.readInt()) throw new RuntimeException("Length missmatch in swap in");
+                            if (len != ds.readInt()) throw new RuntimeException(Messages.getString("SF_SwapSignal.7")); //$NON-NLS-1$
                             for (int i = 0; i < len; ++i)
                             {
                                 signal.setSample(i, ds.readDouble());
@@ -88,7 +88,7 @@ public class SF_SwapSignal implements SFPL_Operator, SFPL_RefPassThrough
                         }
                         catch (Exception e)
                         {
-                            throw new RuntimeException(Messages.getString("Exception swapping in signal"), e);
+                            throw new RuntimeException(Messages.getString(Messages.getString("SF_SwapSignal.8")), e); //$NON-NLS-1$
                         }
                         tmpFile.delete();
                         swapped = false;
@@ -128,7 +128,7 @@ public class SF_SwapSignal implements SFPL_Operator, SFPL_RefPassThrough
     @Override
     public String Word()
     {
-        return "SwapSignal";
+        return Messages.getString("SF_SwapSignal.9"); //$NON-NLS-1$
     }
 
 }

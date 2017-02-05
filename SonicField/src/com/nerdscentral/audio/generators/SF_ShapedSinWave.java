@@ -25,7 +25,7 @@ public class SF_ShapedSinWave implements SFPL_Operator
         final SFSignal frequency = Caster.makeSFSignal(input);
         int length = frequency.getLength();
         // float[] f = new float[length];
-        SFData data = SFData.build(length);
+        SFSignal data = SFData.build(length);
         final double PI2 = SFMaths.PI * 2.0d;
         final double scal = 0.1 * PI2 / SFConstants.SAMPLE_RATE;
         double pos = 0;

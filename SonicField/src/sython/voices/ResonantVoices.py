@@ -148,7 +148,6 @@ def additive_resonance(power, qCorrect, saturate, rollOff, post, limit, seed, fl
             base = sf.Realise(sf.Mix(sigs))
             sigs = []
 
-    print 'Done Wind'
     base = decompress(base)
     ret = None
     if lowComp:
@@ -179,6 +178,32 @@ def oboe_filter(sig, length, freq):
        br = 5000.0
     sig = sf.RBJLowPass(sig, br, 1.0)
     return sf.FixSize(sf.Clean(sig))
+
+def harpsichord_filter(sig, length, freq):
+    with SFMemoryZone():
+        ring = sf.SineWave(length,50.0 + freq / 50.0)
+        ring = sf.Multiply(sf.NumericShape((0,0.1), (length,0)), ring)
+        sig = sf.Multiply(sig, ring).flush()
+        
+    with SFMemoryZone():
+        env = sf.NumericShape(
+            (0, 18000),
+            (10, freq * 6.0),
+            (length, freq)
+        )
+        res = sf.NumericShape((1, 1.0),(length, 1.5))
+        sig = sf.ShapedRBJLowPass(sig, env, res)
+    
+        # A mixture of linear and exponential enveloping.
+        env = sf.Multiply(
+            sf.NumericShape(
+                (0, 0),
+                (1, 1),
+                (length, 0)),
+            sf.SimpleShape((0, 0), (1, 0), (length, -30))
+        )
+        out = sf.FixSize(sf.Multiply(env, sig))
+        return out.flush()
 
 def tremulus_oboe_filter(sig, length, freq):
     rate = 3.25
@@ -269,7 +294,8 @@ def violin_filter(sig, length, freq):
         sig
     )
     
-    if length > 250:
+    vibAbove = 250
+    if length > vibAbove:
         # TODO feels a bit crushed - more stages?
         vibStart  = length*0.5  if length>600 else vibAbove*0.75
         vibMiddle = length*0.75 if length>600 else vibAbove

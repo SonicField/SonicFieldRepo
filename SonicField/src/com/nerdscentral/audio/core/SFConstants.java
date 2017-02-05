@@ -1,7 +1,9 @@
 /* For Copyright and License see LICENSE.txt and COPYING.txt in the root directory */
 package com.nerdscentral.audio.core;
 
+import java.io.File;
 import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.nerdscentral.audio.Messages;
 import com.nerdscentral.sython.Caster;
@@ -30,9 +32,11 @@ public class SFConstants
     public static final double                   NOISE_FLOOR         = 1.0 / 32768.00;
     public static final int                      PAGE_SIZE_DOUBLES   = 512;
     public static final double                   HEAP_RATIO          = Double
-                    .parseDouble(System.getProperty("sython.heap_ratio", "0.1"));                                                   //$NON-NLS-1$ //$NON-NLS-2$
+                    .parseDouble(System.getProperty("sython.heap_ratio", "0.1"));                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              //$NON-NLS-1$ //$NON-NLS-2$
     public static final double                   HEAP_SIZE           = Double
-                    .parseDouble(System.getProperty("sython.heap_size", "2")) * ONE_GIG;                                     //$NON-NLS-1$ //$NON-NLS-2$
+                    .parseDouble(System.getProperty("sython.heap_size", "2")) * ONE_GIG;                                                                                                                                                                                                                                                                                                                                                                                           //$NON-NLS-1$ //$NON-NLS-2$
+    public static final boolean                  FIND_DEADLOCKS      = Boolean
+                    .parseBoolean(System.getProperty("sython.find_deadlocks", "false"));                                                                                                                                                                                                                                                                                                              //$NON-NLS-1$ //$NON-NLS-2$
     public static boolean                        TRACE               = false;
 
     static
@@ -176,6 +180,54 @@ public class SFConstants
     {
         SAMPLE_RATE = rate;
         SAMPLE_RATE_MS = rate / 1000.0d;
+    }
+
+    // Directory to send swap files to
+    private static final String  SONIC_FIELD_TEMP = "sonicFieldTemp"; //$NON-NLS-1$
+    public final static String[] TEMP_DATA_DIRS;
+    static
+    {
+        String tempEnv = System.getProperty(SONIC_FIELD_TEMP);
+        String[] tdNames = null;
+        if (tempEnv == null)
+        {
+            tdNames = new String[] { System.getProperty("java.io.tmpdir") }; //$NON-NLS-1$
+        }
+        else
+        {
+            tdNames = tempEnv.split(","); //$NON-NLS-1$
+        }
+        TEMP_DATA_DIRS = tdNames;
+    }
+
+    private static class LocalisedTempDir extends ThreadLocal<File>
+    {
+        private final AtomicInteger tempRoundRobbin = new AtomicInteger();
+
+        @Override
+        protected File initialValue()
+        {
+            int frr = tempRoundRobbin.incrementAndGet() % TEMP_DATA_DIRS.length;
+            return new File(TEMP_DATA_DIRS[frr]);
+        }
+
+        File getRoundRobbin()
+        {
+            return initialValue();
+        }
+    }
+
+    @SuppressWarnings("synthetic-access")
+    private static LocalisedTempDir LOCALISE_TEMPDIR = new LocalisedTempDir();
+
+    public static File getLocalisedTempDir()
+    {
+        return LOCALISE_TEMPDIR.get();
+    }
+
+    public static File getRotatingTempDir()
+    {
+        return LOCALISE_TEMPDIR.getRoundRobbin();
     }
 
 }

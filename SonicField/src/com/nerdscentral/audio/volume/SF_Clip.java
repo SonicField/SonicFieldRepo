@@ -1,7 +1,6 @@
 /* For Copyright and License see LICENSE.txt and COPYING.txt in the root directory */
 package com.nerdscentral.audio.volume;
 
-import com.nerdscentral.audio.core.SFData;
 import com.nerdscentral.audio.core.SFSignal;
 import com.nerdscentral.audio.core.SFSingleTranslator;
 import com.nerdscentral.sython.Caster;
@@ -39,7 +38,7 @@ public class SF_Clip implements SFPL_Operator
     public Object Interpret(final Object input) throws SFPL_RuntimeException
     {
         SFSignal in = Caster.makeSFSignal(input);
-        SFData out = in.replicateEmpty();
+        SFSignal out = in.replicateEmpty();
         for (int i = 0; i < in.getLength(); ++i)
         {
             double q = in.getSample(i);

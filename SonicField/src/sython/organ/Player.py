@@ -1,6 +1,7 @@
 from sython.utils.Reverberation import granular_reverberate,reverberate,convolve
 from java.util.concurrent.atomic import AtomicLong
-from sython.utils.Envelope import safe_env
+from sython.utils.Envelopes import safe_env
+from com.nerdscentral.audio.core import SFMemoryZone
 import random
 
 NOTE_COUNTER=AtomicLong()
@@ -31,203 +32,203 @@ NOTE_COUNTER=AtomicLong()
 @sf_parallel
 def sing(hint,pitch,lengthIn,v,vl,vr,voice,velocity_correct_,quick_factor,
          sub_bass,flat_env,pure,raw_bass,decay,bend,mellow):
-         
-    d_log('Playing note:',NOTE_COUNTER.incrementAndGet(),voice)
-    velocity_correct=velocity_correct_
-    length=lengthIn
-    tp=0
-    
-    # minimum play time
-    if length<192:
-        length=192
-        tp=0  
-    elif length<363:
-        length+=128
-        tp=1
-    elif length<512:
-        length+=256
-        tp=2
-    elif length<1024:
-        length+=128
-        tp=3
-    else:
-        tp=4
-
-    sig=[]
-    if pure:
-        x=1
-    else:
-        if pitch<330:
-            x=5
-        elif pitch<880:
-            x=6
+    with SFMemoryZone():     
+        d_log('Playing note:',NOTE_COUNTER.incrementAndGet(),voice)
+        velocity_correct=velocity_correct_
+        length=lengthIn
+        tp=0
+        
+        # minimum play time
+        if length<192:
+            length=192
+            tp=0  
+        elif length<363:
+            length+=128
+            tp=1
+        elif length<512:
+            length+=256
+            tp=2
+        elif length<1024:
+            length+=128
+            tp=3
         else:
-            x=3
-    for x in range(0,x):
-        vc=voice(length,pitch*(1.0+random.random()*0.005))
-        vc=sf.Multiply(
-            safe_env(
-                vc,
-                [
-                    (0,0),
-                    (24,1),
-                    (sf.Length(+vc)-24,1),
-                    (sf.Length(+vc),0)
-                ]
-            ),
-            vc
-        )
-        sig.append(
-            sf.NumericVolume(
-                sf.Concatenate(
-                    sf.Silence(24*random.random()),
-                    vc
+            tp=4
+    
+        sig=[]
+        if pure:
+            x=1
+        else:
+            if pitch<330:
+                x=5
+            elif pitch<880:
+                x=6
+            else:
+                x=3
+        for x in range(0,x):
+            vc=voice(length,pitch*(1.0+random.random()*0.005))
+            vc=sf.Multiply(
+                safe_env(
+                    vc,
+                    [
+                        (0,0),
+                        (24,1),
+                        (sf.Length(+vc)-24,1),
+                        (sf.Length(+vc),0)
+                    ]
+                ),
+                vc
+            )
+            sig.append(
+                sf.NumericVolume(
+                    sf.Concatenate(
+                        sf.Silence(24*random.random()),
+                        vc
+                    )
+                    ,random.random()+0.25
                 )
-                ,random.random()+0.25
             )
-        )
-    sig=sf.Realise(sf.Mix(sig))
-    
-    sig = sf.FixSize(sig)
-    length=sf.Length(+sig)
-    
-    if decay:
-        # -60 db at 1 minute
-        dbs=-60.0*float(length)/float(decay)
-        env=sf.SimpleShape((0,0),(length,dbs))
-        sig=sf.Multiply(sig,env)
-    
-    pHint=hint[0]
-    nHint=hint[1]
-    shine=False
-    if quick_factor:
-        if tp==0:
-            if pHint=="T":
-                q=32
-            else:
-                q=64
-            if nHint=="T":
-                p=32
-            else:
-                p=64
-            q*=quick_factor
-            env=safe_env(sig,[(0,0),(q,1),(192-p,0.5),(length,0)])
-            if hint=="TT":
-                velocity_correct*=0.8
-            elif hint=="NN" and pitch>660:
-                shine=True
-                velocity_correct*=0.5        
-        elif tp==1 or flat_env:
-            if pHint=="T":
-                q=48
-            else:
-                q=96
-            if nHint=="T":
-                p=64
-            else:
-                p=128
-            q*=quick_factor
-            env=safe_env(sig,[(0,0),(q,0.75),(length-p,1.0),(length,0)])
-            if hint=="TT":
-                velocity_correct*=0.8            
-            if hint=="TT":
-                velocity_correct*=0.8
-            elif hint=="NN" and pitch>880:
-                shine=True
-                velocity_correct*=0.6
-        elif tp==2:
-            env=safe_env(sig,[(0,0),(96*quick_factor,0.75),(length-256,1.0),(length,0)])
-        elif tp==3:
-            if length<1280:
-                env=safe_env(sig,[(0,0),(64*quick_factor,0.5),(256,1),(512,0.75),((length-512)/2.0+512,0.5),(length,0)])
-            else:
-                env=safe_env(sig,[(0,0),(64*quick_factor,0.5),(256,1),(512,0.75),(length-512,0.75),(length,0)])
-        else:
-            env=safe_env(sig,[(0,0),(64*quick_factor,0.25),(512,1),(length/2,0.75),(length,0)])
-    else:
-        env=safe_env(sig,[(0,1),(length,1)])
-
-    if bend:
-        mod=sf.NumericShape((0,0.995),(length,1.005))
-        mod=sf.Mix(mod,sf.NumericVolume(+env,0.01))
-        # if we have envelope extension then we don't do this as
-        # it get really hard to get the lengths correct and make 
-        # sense of what we are trying to do. KISS
-        if sf.Length(+sig)==sf.Length(+mod):
-            sig=sf.FrequencyModulate(sig,mod)  
-        else:
-            -mod
-
-    sig=sf.FixSize(sig)
-    if mellow:
-        if pitch<256:
-            if sub_bass:
-                if pitch < 128:
-                    sig=sf.Mix(
-                        granular_reverberate(+sig,ratio=0.501 ,delay=256,density=32,length=256,stretch=1,vol=0.20),
-                        granular_reverberate(+sig,ratio=0.2495,delay=256,density=32,length=256,stretch=1,vol=0.10),
-                        sig
-                    )
-                elif pitch < 192:
-                    sig=sf.Mix(
-                        granular_reverberate(+sig,ratio=0.501,delay=256,density=32,length=256,stretch=1,vol=0.25),
-                        sig
-                    )
+        sig=sf.Realise(sf.Mix(sig))
+        
+        sig = sf.FixSize(sig)
+        length=sf.Length(+sig)
+        
+        if decay:
+            # -60 db at 1 minute
+            dbs=-60.0*float(length)/float(decay)
+            env=sf.SimpleShape((0,0),(length,dbs))
+            sig=sf.Multiply(sig,env)
+        
+        pHint=hint[0]
+        nHint=hint[1]
+        shine=False
+        if quick_factor:
+            if tp==0:
+                if pHint=="T":
+                    q=32
                 else:
-                    sig=sf.Mix(
-                        granular_reverberate(+sig,ratio=0.501,delay=256,density=32,length=256,stretch=1,vol=0.15),
-                        sig
-                    )
-            if raw_bass:
-                sig=sf.BesselLowPass(sig,pitch*8.0,1)
-            else:        
-                sig=sf.BesselLowPass(sig,pitch*8.0,2)
-        if pitch<392:
-            sig=sf.BesselLowPass(sig,pitch*6.0,2)
-        elif pitch<512:
-            sig=sf.Mix(
-                sf.BesselLowPass(+sig,pitch*6.0, 2),
-                sf.BesselLowPass( sig,pitch*3.0, 2)
-            )                
-        elif pitch<640:
-            sig=sf.BesselLowPass(sig,pitch*3.5, 2)
-        elif pitch<1280:
-            sig=sf.Mix(
-                sf.BesselLowPass(+sig,pitch*3.5, 2),
-                sf.BesselLowPass( sig,pitch*5.0, 2)
-            )                
+                    q=64
+                if nHint=="T":
+                    p=32
+                else:
+                    p=64
+                q*=quick_factor
+                env=safe_env(sig,[(0,0),(q,1),(192-p,0.5),(length,0)])
+                if hint=="TT":
+                    velocity_correct*=0.8
+                elif hint=="NN" and pitch>660:
+                    shine=True
+                    velocity_correct*=0.5        
+            elif tp==1 or flat_env:
+                if pHint=="T":
+                    q=48
+                else:
+                    q=96
+                if nHint=="T":
+                    p=64
+                else:
+                    p=128
+                q*=quick_factor
+                env=safe_env(sig,[(0,0),(q,0.75),(length-p,1.0),(length,0)])
+                if hint=="TT":
+                    velocity_correct*=0.8            
+                if hint=="TT":
+                    velocity_correct*=0.8
+                elif hint=="NN" and pitch>880:
+                    shine=True
+                    velocity_correct*=0.6
+            elif tp==2:
+                env=safe_env(sig,[(0,0),(96*quick_factor,0.75),(length-256,1.0),(length,0)])
+            elif tp==3:
+                if length<1280:
+                    env=safe_env(sig,[(0,0),(64*quick_factor,0.5),(256,1),(512,0.75),((length-512)/2.0+512,0.5),(length,0)])
+                else:
+                    env=safe_env(sig,[(0,0),(64*quick_factor,0.5),(256,1),(512,0.75),(length-512,0.75),(length,0)])
+            else:
+                env=safe_env(sig,[(0,0),(64*quick_factor,0.25),(512,1),(length/2,0.75),(length,0)])
         else:
-            sig=sf.Mix(
-                sf.BesselLowPass(+sig,pitch*5, 2),
-                sf.BesselLowPass( sig,5000,    1)
-            )
-
-    sig=sf.Multiply(sig,env)                     
-    sig=sf.FixSize(sig)
+            env=safe_env(sig,[(0,1),(length,1)])
     
-    cnv=sf.WhiteNoise(10240)
-    cnv=sf.ButterworthHighPass(cnv,32,4)
-    if shine:
-        q=640
-        print "Shine"
-    else:
-        q=256
-    cnv=sf.Cut(5000,5000+q,cnv)
-    cnv=sf.Multiply(cnv,sf.NumericShape((0,0),(32,1),(q,0)))
-    sigr=convolve(+sig,cnv)
-    sigr=sf.Multiply(
-        safe_env(sigr,[(0,0),(256,1),(sf.Length(+sigr),1.5)]),
-        sigr
-    )
-    sig=sf.Mix(
-        sf.Pcnt20(sigr),
-        sf.Pcnt80(sig)
-    )
+        if bend:
+            mod=sf.NumericShape((0,0.995),(length,1.005))
+            mod=sf.Mix(mod,sf.NumericVolume(+env,0.01))
+            # if we have envelope extension then we don't do this as
+            # it get really hard to get the lengths correct and make 
+            # sense of what we are trying to do. KISS
+            if sf.Length(+sig)==sf.Length(+mod):
+                sig=sf.FrequencyModulate(sig,mod)  
+            else:
+                -mod
     
-    note=sf.NumericVolume(sf.FixSize(sig),v)
-    notel=sf.Realise(sf.NumericVolume(+note,vl*velocity_correct))
-    noter=sf.Realise(sf.NumericVolume( note,vr*velocity_correct))
-    return notel,noter
+        sig=sf.FixSize(sig)
+        if mellow:
+            if pitch<256:
+                if sub_bass:
+                    if pitch < 128:
+                        sig=sf.Mix(
+                            granular_reverberate(+sig,ratio=0.501 ,delay=256,density=32,length=256,stretch=1,vol=0.20),
+                            granular_reverberate(+sig,ratio=0.2495,delay=256,density=32,length=256,stretch=1,vol=0.10),
+                            sig
+                        )
+                    elif pitch < 192:
+                        sig=sf.Mix(
+                            granular_reverberate(+sig,ratio=0.501,delay=256,density=32,length=256,stretch=1,vol=0.25),
+                            sig
+                        )
+                    else:
+                        sig=sf.Mix(
+                            granular_reverberate(+sig,ratio=0.501,delay=256,density=32,length=256,stretch=1,vol=0.15),
+                            sig
+                        )
+                if raw_bass:
+                    sig=sf.BesselLowPass(sig,pitch*8.0,1)
+                else:        
+                    sig=sf.BesselLowPass(sig,pitch*8.0,2)
+            if pitch<392:
+                sig=sf.BesselLowPass(sig,pitch*6.0,2)
+            elif pitch<512:
+                sig=sf.Mix(
+                    sf.BesselLowPass(+sig,pitch*6.0, 2),
+                    sf.BesselLowPass( sig,pitch*3.0, 2)
+                )                
+            elif pitch<640:
+                sig=sf.BesselLowPass(sig,pitch*3.5, 2)
+            elif pitch<1280:
+                sig=sf.Mix(
+                    sf.BesselLowPass(+sig,pitch*3.5, 2),
+                    sf.BesselLowPass( sig,pitch*5.0, 2)
+                )                
+            else:
+                sig=sf.Mix(
+                    sf.BesselLowPass(+sig,pitch*5, 2),
+                    sf.BesselLowPass( sig,5000,    1)
+                )
+    
+        sig=sf.Multiply(sig,env)                     
+        sig=sf.FixSize(sig)
+        
+        cnv=sf.WhiteNoise(10240)
+        cnv=sf.ButterworthHighPass(cnv,32,4)
+        if shine:
+            q=640
+            print "Shine"
+        else:
+            q=256
+        cnv=sf.Cut(5000,5000+q,cnv)
+        cnv=sf.Multiply(cnv,sf.NumericShape((0,0),(32,1),(q,0)))
+        sigr=convolve(+sig,cnv)
+        sigr=sf.Multiply(
+            safe_env(sigr,[(0,0),(256,1),(sf.Length(+sigr),1.5)]),
+            sigr
+        )
+        sig=sf.Mix(
+            sf.Pcnt20(sigr),
+            sf.Pcnt80(sig)
+        )
+        
+        note=sf.NumericVolume(sf.FixSize(sig),v)
+        notel=sf.NumericVolume(+note,vl*velocity_correct).flush()
+        noter=sf.NumericVolume( note,vr*velocity_correct).flush()
+        return notel,noter
 
 ################################################################################
 # Play a list of notes representing a midi channel.

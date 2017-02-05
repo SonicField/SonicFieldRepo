@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.nerdscentral.audio.core.SFConstants;
 import com.nerdscentral.audio.core.SFData;
+import com.nerdscentral.audio.core.SFSignal;
 import com.nerdscentral.sython.Caster;
 import com.nerdscentral.sython.SFMaths;
 import com.nerdscentral.sython.SFPL_Operator;
@@ -32,7 +33,7 @@ public class SF_Sinc implements SFPL_Operator
         length *= SFConstants.SAMPLE_RATE_MS;
         length *= quality;
         // float d[] = new float[(int) SFMaths.ceil(length)];
-        SFData data = SFData.build((int) SFMaths.ceil(length));
+        SFSignal data = SFData.build((int) SFMaths.ceil(length));
         int center = (int) (length / 2);
         final double PI2 = SFMaths.PI * 2.0d;
         final double window = 0.125;

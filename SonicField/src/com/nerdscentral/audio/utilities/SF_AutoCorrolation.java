@@ -23,7 +23,7 @@ public class SF_AutoCorrolation implements SFPL_Operator
         SFSignal orig = Caster.makeSFSignal(input);
         int len = orig.getLength();
         int window = len / 2;
-        SFData r = SFData.build(window);
+        SFSignal r = SFData.build(window);
         double sum;
         for (int i = 0; i < window; i++)
         {

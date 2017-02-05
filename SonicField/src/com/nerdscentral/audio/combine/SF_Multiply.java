@@ -47,7 +47,6 @@ public class SF_Multiply implements SFPL_Operator
         if (list.get(0).isRealised() && list.get(1).isRealised())
         {
             SFData data = (SFData) list.get(0).replicate();
-            list.get(1).preTouch();
             data.operateOnto(0, list.get(1), SFData.OPERATION.MULTIPLY);
             return data;
         }

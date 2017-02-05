@@ -55,7 +55,7 @@ public class SF_Normalise implements SFPL_Operator
     {
         double dc = 0;
 
-        SFData data = SFData.realise(signalIn);
+        SFSignal data = SFData.realise(signalIn);
         int len = data.getLength();
         for (int i = 0; i < len; ++i)
         {

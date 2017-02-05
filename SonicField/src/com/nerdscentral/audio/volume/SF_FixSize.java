@@ -52,7 +52,7 @@ public class SF_FixSize implements SFPL_Operator
     private static SFSignal setup(SFSignal signalIn)
     {
 
-        SFData data = SFData.realise(signalIn);
+        SFSignal data = SFData.realise(signalIn);
         int len = data.getLength();
 
         double max = 0;

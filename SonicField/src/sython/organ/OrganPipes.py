@@ -1,35 +1,3 @@
-from sython.organ.Post   import \
-    do_final_mix, \
-    mix, \
-    post_process, \
-    post_process_tremolate
-from sython.organ.Voices import \
-    vox_humana_femail_soprano_ah,\
-    vox_humana_femail_soprano_a,\
-    vox_humana_femail_soprano_ma,\
-    upper_accent,\
-    reed,\
-    string,\
-    sweet_flute,\
-    folk_flute,\
-    shawm,\
-    bright_plucked_glass,\
-    plucked_glass,\
-    folk_clarinet,\
-    folk_basson,\
-    tuned_wind,\
-    orchestral_oboe,\
-    cello,\
-    nordic_cello, \
-    upper_accent, \
-    pure_triangle, \
-    pure_sine, \
-    simple_bell, \
-    distant_wind, \
-    make_addtive_resonance, \
-    oboe_filter, \
-    violin_filter
-
 def sing(midi_in,beat,temperament,velocity):
     l=200.0
     midi1=Midi.long_as(midi_in,beat,l)
@@ -92,90 +60,6 @@ def strange_sing(midi_in,beat,temperament,velocity):
 
     return mix(left1,left2,left3),mix(right1,right2,right3)
 
-def distant(midi_in,beat,temperament,velocity):
-    notes1=Player.play(
-        midi_in,
-        beat,
-        temperament,
-        voice=distant_wind,
-        bend=True,
-        mellow=False,
-        velocity_correct=velocity*1.5,
-        flat_env=True,
-        quick_factor=1.5,
-        pan = -1
-    )
-    return post_process(notes1)
-
-def distant_bass(midi_in,beat,temperament,velocity):
-    l = 512
-    plr = make_addtive_resonance(qCorrect=1.0, rollOff=2.0, saturate=0.5, power=1.1)
-    notes1=Player.play(
-        midi_in,
-        beat,
-        temperament,
-        voice=plr,
-        bend=False,
-        mellow=False,
-        velocity_correct=velocity,
-        flat_env=True,
-        quick_factor=1.5,
-        pure=True,
-        pan = -1
-    )
-    return post_process(notes1)
-
-def distant_string(midi_in,beat,temperament,velocity):
-    l = 512
-    plr = make_addtive_resonance(qCorrect=2.0, rollOff=1.5, power=1.0, post=violin_filter)
-    notes1=Player.play(
-        midi_in,
-        beat,
-        temperament,
-        voice=plr,
-        bend=True,
-        mellow=False,
-        velocity_correct=velocity*1.5,
-        flat_env=True,
-        quick_factor=1.0,
-        pan = -1
-    )
-    return post_process(notes1)
-
-def distant_oboe(midi_in,beat,temperament,velocity):
-    plr = make_addtive_resonance(qCorrect=2.0, rollOff=1.5, saturate=0.1, power=1.4, post=oboe_filter)
-    notes1=Player.play(
-        midi_in,
-        beat,
-        temperament,
-        voice=plr,
-        bend=False,
-        mellow=False,
-        velocity_correct=velocity*1.5,
-        flat_env=True,
-        quick_factor=0.5,
-        pure=True,
-        pan = -1
-    )
-    return post_process_tremolate(notes1)
-
-def distant_oboe2(midi_in,beat,temperament,velocity):
-    midi=Midi.legato(midi_in,beat,200)
-    plr = make_addtive_resonance(qCorrect=1.5, rollOff=1.5, saturate=0.1, power=1.4, post=oboe_filter)
-    notes1=Player.play(
-        midi,
-        beat,
-        temperament,
-        voice=plr,
-        bend=False,
-        mellow=False,
-        velocity_correct=velocity*1.5,
-        flat_env=True,
-        quick_factor=1.0,
-        pure=True,
-        pan = -1
-    )
-    return post_process(notes1)
 
 def quick_flute(midi_in,beat,temperament,velocity):
     notes1=Player.play(midi1,beat,temperament,voice=folk_flute, bend=True,mellow=False,velocity_correct=velocity*0.5,flat_env=False, quick_factor=1.0,pan=-1)
@@ -229,70 +113,8 @@ def slow_flute(midi_in,beat,temperament,velocity):
     left3,right3 = post_process(notes3)
     return mix(left1,left2,left3),mix(right1,right2,right3)
 
-def space_flute(midi_in,beat,temperament,velocity):
-    notes1=Player.play(
-        midi_in,
-        beat,
-        temperament,
-        voice=folk_flute,
-        bend=False,
-        mellow=False,
-        velocity_correct=velocity*0.25,
-        flat_env=False,
-        quick_factor=2.0,
-        pan=0.5
-    )
-    notes2=Player.play(
-        midi_in,
-        beat,
-        temperament,
-        voice=tuned_wind,
-        bend=False,
-        mellow=True,
-        velocity_correct=velocity*0.3,
-        flat_env=True,
-        quick_factor=0.5,
-        pitch_shift=0.25,
-        pan=0.8
-    )
-    notes3=Player.play(
-        midi_in,
-        beat,
-        temperament,
-        voice=tuned_wind,
-        bend=False,
-        mellow=True,
-        velocity_correct=velocity*0.3,
-        flat_env=True,
-        quick_factor=0.5,
-        pitch_shift=0.5,
-        pan=0.2
-    )
-    notes4=Player.play(
-        midi_in,
-        beat,
-        temperament,
-        voice=upper_accent,
-        bend=True,
-        mellow=True,
-        velocity_correct=velocity*0.05,
-        flat_env=True,
-        quick_factor=2.0,
-        pitch_shift=2.0
-    )
-    left1,right1 = post_process(notes1)
-    left2,right2 = post_process(notes2)
-    left3,right3 = post_process(notes3)
-    left4,right4 = post_process(notes4)
-    return mix(left1,left2,left3,left4),mix(right1,right2,right3,right4)
-
-
-def first_lead(midi_in,beat,temperament,velocity):
+ def first_lead(midi_in,beat,temperament,velocity):
     notes1=Player.play(midi_in,beat,temperament,voice=folk_flute, bend=True,mellow=True, velocity_correct=velocity*1.0,flat_env=False, quick_factor=0.5,pan=-1)
-    return post_process(notes1)
-
-def third_lead(midi_in,beat,temperament,velocity):
-    notes1=Player.play(midi_in,beat,temperament,voice=tuned_wind, bend=True,mellow=False, velocity_correct=velocity*1.0,flat_env=False, quick_factor=0.5,pan=-1)
     return post_process(notes1)
 
 def bright_lead(midi_in,beat,temperament,velocity):
@@ -306,7 +128,7 @@ def bright_lead(midi_in,beat,temperament,velocity):
     left2,right2=post_process(notes2)
     left3,right3=post_process(notes3)
     return mix(left1,left2,left3),mix(right1,right2,right3)
-    
+ 
 def second_lead(midi_in,beat,temperament,velocity):
     notes1=Player.play(midi_in,beat,temperament,voice=plucked_glass, bend=True,decay=1500,mellow=False,velocity_correct=velocity*1.0,flat_env=False, quick_factor=0.1,pan=-1)
     midi=Midi.scatter(midi_in,beat,128)
@@ -318,7 +140,8 @@ def second_lead(midi_in,beat,temperament,velocity):
     left2,right2=post_process(notes2)
     left3,right3=post_process(notes3)
     return mix(left1,left2,left3),mix(right1,right2,right3)
-
+ 
+ 
 def first_bass(midi_in,beat,temperament,velocity):
     notes1=Player.play(midi_in,beat,temperament,voice=folk_clarinet, bend=False,mellow=False, velocity_correct=velocity*1.0,flat_env=True, quick_factor=0.5,pan=0.25)
     notes2=Player.play(midi_in,beat,temperament,voice=folk_clarinet, bend=False,mellow=False, velocity_correct=velocity*1.0,flat_env=True, quick_factor=0.5,pan=0.75)
@@ -326,24 +149,13 @@ def first_bass(midi_in,beat,temperament,velocity):
     left1,right1 = post_process_echo(notes1)
     left2,right2 = post_process_echo(notes2)
     return mix(left1,left2),mix(right1,right2)
-        
+
 def first_harmony(midi_in,beat,temperament,velocity):
     midi=Midi.scatter(midi_in,beat,32)
     notes1=Player.play(midi,beat,temperament,voice=folk_basson,bend=True,mellow=False,velocity_correct=velocity*1.0,flat_env=True, quick_factor=1.0,pan=-0.7)
-
     return post_process(notes1)
-
-def space_sine(midi_in,beat,temperament,velocity):
-    notes1=Player.play(midi_in,beat,temperament,voice=pure_sine,bend=False,mellow=False,velocity_correct=velocity*1.0,flat_env=False, quick_factor=1.0)
-    return post_process(notes1)
-
-def pure_glass(midi_in,beat,temperament,velocity):
-    notes1=Player.play(midi_in,beat,temperament,voice=plucked_glass,bend=True,mellow=True,velocity_correct=velocity*1.0,flat_env=False, quick_factor=0.1)
-    return post_process(notes1)    
-
-def pure_bell(midi_in,beat,temperament,velocity):
-    notes1=Player.play(midi_in,beat,temperament,voice=simple_bell,bend=False,mellow=True,velocity_correct=velocity*1.0,flat_env=True, quick_factor=0.0, pure=True)
-    return post_process(notes1)    
+    
+    
 
 def space_accented_wind(midi_in,beat,temperament,velocity):
     notes1=Player.play(midi_in,beat,temperament,voice=tuned_wind,bend=False,mellow=False,velocity_correct=velocity*0.02, flat_env=False,  quick_factor=6.0)
@@ -373,4 +185,28 @@ def celloish(midi_in,beat,temperament,velocity):
     #left2,right2=post_process(notes2)
     #return mix(left1,left2),mix(right1,right2)
     return post_process(notes2)
-  
+
+def MassiveBass(midi_in,beat,temperament,velocity):
+    notes1=Player.play(midi_in,beat,temperament,voice=double_bombard, bend=True,  mellow=True ,velocity_correct=velocity*0.75, flat_env=True, quick_factor=1.5, pan=0.2, pure=False)
+    notes2=Player.play(midi_in,beat,temperament,voice=upper_accent,   bend=False, mellow=True, velocity_correct=velocity*0.10, flat_env=True, quick_factor=1.0, pitch_shift=4.00, pure=True, pan=0.8)
+    notes3=Player.play(midi_in,beat,temperament,voice=double_bombard, bend=True,  mellow=True, velocity_correct=velocity*0.75, flat_env=True, quick_factor=1.5, pitch_shift=0.25, pure=False, pan=0.5)
+    left1,right1 = post_process(notes1)
+    left2,right2 = post_process(notes2)
+    left3,right3 = post_process(notes3)
+    return mix(left1, left2, left3), mix(right1, right2, right3)
+
+def third_lead(midi_in,beat,temperament,velocity):
+    notes1=Player.play(midi_in,beat,temperament,voice=tuned_wind, bend=True,mellow=False, velocity_correct=velocity*1.0,flat_env=False, quick_factor=0.5,pan=-1)
+    return post_process(notes1)
+
+def space_sine(midi_in,beat,temperament,velocity):
+    notes1=Player.play(midi_in,beat,temperament,voice=pure_sine,bend=False,mellow=False,velocity_correct=velocity*1.0,flat_env=False, quick_factor=1.0)
+    return post_process(notes1)
+
+def pure_glass(midi_in,beat,temperament,velocity):
+    notes1=Player.play(midi_in,beat,temperament,voice=plucked_glass,bend=True,mellow=True,velocity_correct=velocity*1.0,flat_env=False, quick_factor=0.1)
+    return post_process(notes1)    
+
+def pure_bell(midi_in,beat,temperament,velocity):
+    notes1=Player.play(midi_in,beat,temperament,voice=simple_bell,bend=False,mellow=True,velocity_correct=velocity*1.0,flat_env=True, quick_factor=0.0, pure=True)
+    return post_process(notes1)    

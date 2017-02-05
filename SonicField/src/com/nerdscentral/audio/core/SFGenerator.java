@@ -21,13 +21,6 @@ public abstract class SFGenerator extends SFSignal
      */
 
     @Override
-    public boolean isKilled()
-    {
-        // cannot swap out a generator
-        return true;
-    }
-
-    @Override
     public SFSignal replicate()
     {
         return SFData.realise(this);

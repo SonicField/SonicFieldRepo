@@ -29,7 +29,7 @@ public class SF_RectangularJoin implements SFPL_Operator
         int lenA = sampleA.getLength();
         int lenB = sampleB.getLength();
         int len = lenA > lenB ? lenA : lenB;
-        SFData out = SFData.build(len);
+        SFSignal out = SFData.build(len);
         for (int i = 0; i < len; i += 2)
         {
             double a = i >= lenA ? 0 : sampleA.getSample(i);

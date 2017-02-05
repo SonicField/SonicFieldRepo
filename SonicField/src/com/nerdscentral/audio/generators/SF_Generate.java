@@ -18,7 +18,7 @@ public class SF_Generate implements SFPL_Operator
     public static class Generator extends SFSimpleGenerator
     {
 
-        final SFData         waveTable;
+        final SFSignal         waveTable;
         private final double upscale;
         private final int    size;
 

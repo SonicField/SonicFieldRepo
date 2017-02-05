@@ -2,7 +2,7 @@
 package com.nerdscentral.audio.generators;
 
 import com.nerdscentral.audio.core.SFConstants;
-import com.nerdscentral.audio.core.SFData;
+import com.nerdscentral.audio.core.SFSignal;
 import com.nerdscentral.audio.core.SFSimpleGenerator;
 import com.nerdscentral.sython.Caster;
 import com.nerdscentral.sython.SFPL_Operator;
@@ -27,7 +27,7 @@ public class SF_WhiteNoise implements SFPL_Operator
         long   x  = System.nanoTime();
         long   xi = x;
         double g  = Integer.MAX_VALUE;
-        SFData data;
+        SFSignal data;
 
         Generator(int len)
         {

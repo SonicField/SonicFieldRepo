@@ -33,7 +33,7 @@ public class SF_Trim implements SFPL_Operator
             if (SFMaths.abs(dataIn.getSample(end)) > SFConstants.NOISE_FLOOR) break;
         }
         ++end;
-        SFData out = SFData.build(end - start);
+        SFSignal out = SFData.build(end - start);
         for (int i = start; i < end; ++i)
         {
             out.setSample(i - start, dataIn.getSample(i));

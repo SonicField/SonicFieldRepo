@@ -3,6 +3,7 @@ package com.nerdscentral.audio.core;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.nerdscentral.audio.core.SFData.ByteBufferWrapper;
 import com.nerdscentral.audio.pitch.CubicInterpolator;
 import com.nerdscentral.sython.SFMaths;
 import com.nerdscentral.sython.SFPL_RuntimeException;
@@ -13,13 +14,11 @@ public abstract class SFSignal
     private final static AtomicLong uniqueId = new AtomicLong(0);
     private final long              myId;
 
-    public abstract boolean isKilled();
-
     public abstract SFSignal replicate();
 
     private static ThreadLocal<String> pythonStack = new ThreadLocal<>();
 
-    public final SFData replicateEmpty()
+    public final SFSignal replicateEmpty()
     {
         return SFData.build(this.getLength());
     }
@@ -43,11 +42,7 @@ public abstract class SFSignal
 
     public SFSignal keep()
     {
-        if (isRealised())
-        {
-            return this;
-        }
-        return SFData.realise(this);
+        return SFData.realise(this).keep();
     }
 
     /**
@@ -157,6 +152,12 @@ public abstract class SFSignal
         // NOOP on root class
     }
 
+    public SFSignal realise()
+    {
+        // FIXME: Parent has knowledge of child which is BAD.
+        return SFData.realise(this);
+    }
+
     @SuppressWarnings("static-method")
     public boolean isRealised()
     {
@@ -169,8 +170,14 @@ public abstract class SFSignal
         release();
     }
 
-    public void preTouch()
+    public SFSignal flush()
     {
-        // Pass.
+        // FIXME: Parent has knowledge of child which is BAD.
+        SFData data = (SFData) SFData.realise(this);
+        for (ByteBufferWrapper chunk : data.chunks)
+        {
+            chunk.force();
+        }
+        return data.keep();
     }
 }

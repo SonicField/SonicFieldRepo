@@ -3,6 +3,7 @@ package com.nerdscentral.audio.generators;
 
 import com.nerdscentral.audio.core.SFConstants;
 import com.nerdscentral.audio.core.SFData;
+import com.nerdscentral.audio.core.SFSignal;
 import com.nerdscentral.sython.Caster;
 import com.nerdscentral.sython.SFMaths;
 import com.nerdscentral.sython.SFPL_Operator;
@@ -25,7 +26,7 @@ public class SF_Hamming implements SFPL_Operator
         double length = Caster.makeDouble(input);
         length *= SFConstants.SAMPLE_RATE_MS;
         length = SFMaths.ceil(length);
-        SFData out = SFData.build((int) length);
+        SFSignal out = SFData.build((int) length);
         int Nminus1 = (int) (length - 1);
         for (int n = 0; n < length; ++n)
         {

@@ -38,7 +38,7 @@ public class SF_FrequencyDomain implements SFPL_Operator
                 re.setDouble(i, signal.getSample(i));
             }
             FFTbase.fft(re, im, out, true);
-            SFData ret = SFData.build(out, NFFT);
+            SFSignal ret = SFData.build(out, NFFT);
             return ret;
         }
     }

@@ -4,12 +4,13 @@
 #
 ###############################################################################
 
-from organ.Generators import *
-from Parallel_Helpers import mix
-from organ.Algorithms import do_formant,excite,create_vibrato
-from Signal_Generators import phasing_sawtooth,simple_sawtooth,phasing_triangle, limited_triangle
-from Filters import byquad_filter
-from Reverberation import convolve,reverberate
+from sython.organ.Generators import *
+from sython.voices.Signal_Generators import clean_noise
+from sython.utils.Parallel_Helpers import mix
+from sython.utils.Algorithms import do_formant, excite, create_vibrato
+from sython.voices.Signal_Generators import phasing_sawtooth,simple_sawtooth,phasing_triangle, limited_triangle
+from sython.utils.Filters import byquad_filter
+from sython.utils.Reverberation import convolve,reverberate
 import math
 import random
 import functools
@@ -386,7 +387,7 @@ def double_bombard(length,freq):
 
 @sf_parallel
 def trost_posaune(length,freq):
-    b=posaunePulse(length,freq)
+    b=posaune_pulse(length,freq)
     b=mix(
         [b,12],
         [

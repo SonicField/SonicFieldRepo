@@ -2,8 +2,8 @@ import math
 import random
 import sys
 from sython.concurrent import sf_parallel
-from Parallel_Helpers import mix,realise,finalise
-from Reverberation import convolve
+from sython.utils.Parallel_Helpers import mix,realise,finalise
+from sython.utils.Reverberation import convolve
 
 @sf_parallel
 def echo_division(sig_):

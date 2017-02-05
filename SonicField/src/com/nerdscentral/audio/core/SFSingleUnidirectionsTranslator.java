@@ -3,7 +3,7 @@ package com.nerdscentral.audio.core;
 public abstract class SFSingleUnidirectionsTranslator extends SFSingleTranslator
 {
     int    previous;
-    SFData reified;
+    SFSignal reified;
 
     protected SFSingleUnidirectionsTranslator(SFSignal input)
     {

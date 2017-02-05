@@ -32,7 +32,7 @@ public class SF_Cut implements SFPL_Operator
         {
             iend = data.getLength() - 1;
         }
-        SFData out = SFData.build(iend - istart);
+        SFSignal out = SFData.build(iend - istart);
         for (int i = istart; i < iend; ++i)
         {
             out.setSample(i - istart, data.getSample(i));
