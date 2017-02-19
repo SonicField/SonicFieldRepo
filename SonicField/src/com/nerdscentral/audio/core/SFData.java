@@ -375,7 +375,12 @@ public class SFData extends SFSignal implements Serializable
         long pos = index & CHUNK_MASK;
         long bufPos = index >> CHUNK_SHIFT;
         long address = chunkIndex + (bufPos << 3);
-        return unsafe.getAddress(address) + (pos << 3l);
+        long addr = unsafe.getAddress(address) + (pos << 3l);
+        if(SFConstants.CHECK_MEMORY)
+        {
+            if(addr == 0) throw new RuntimeException("Accessing released memory");
+        }
+        return addr;
     }
 
     /* (non-Javadoc)
@@ -823,7 +828,6 @@ public class SFData extends SFSignal implements Serializable
         // Release everything in the head of the zone thread local stack.
         SFMemoryZone zone = memoryZoneStack.get().pop();
         // System.out.println("Popped: " + zone);
-        int count = 0;
         synchronized (zone.localData)
         {
             for (SFData data : zone.localData)
@@ -833,7 +837,6 @@ public class SFData extends SFSignal implements Serializable
                 if (someChunks != null)
                 {
                     // Not already released.
-                    count += data.chunks.length;
                     if (data.kept.get())
                     {
                         data.kept.set(false);

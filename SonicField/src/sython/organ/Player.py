@@ -30,8 +30,8 @@ NOTE_COUNTER=AtomicLong()
 ################################################################################
 
 @sf_parallel
-def sing(hint,pitch,lengthIn,v,vl,vr,voice,velocity_correct_,quick_factor,
-         sub_bass,flat_env,pure,raw_bass,decay,bend,mellow):
+def sing(hint, pitch, lengthIn, v, vl, vr, voice, velocity_correct_, quick_factor,
+         sub_bass, flat_env, pure, raw_bass, decay, bend, mellow):
     with SFMemoryZone():     
         d_log('Playing note:',NOTE_COUNTER.incrementAndGet(),voice)
         velocity_correct=velocity_correct_
@@ -66,27 +66,31 @@ def sing(hint,pitch,lengthIn,v,vl,vr,voice,velocity_correct_,quick_factor,
                 x=3
         for x in range(0,x):
             vc=voice(length,pitch*(1.0+random.random()*0.005))
-            vc=sf.Multiply(
-                safe_env(
-                    vc,
-                    [
-                        (0,0),
-                        (24,1),
-                        (sf.Length(+vc)-24,1),
-                        (sf.Length(+vc),0)
-                    ]
-                ),
-                vc
-            )
-            sig.append(
-                sf.NumericVolume(
-                    sf.Concatenate(
-                        sf.Silence(24*random.random()),
-                        vc
-                    )
-                    ,random.random()+0.25
+            if quick_factor:
+                vc=sf.Multiply(
+                    safe_env(
+                        vc,
+                        [
+                            (0,0),
+                            (24,1),
+                            (sf.Length(+vc)-24,1),
+                            (sf.Length(+vc),0)
+                        ]
+                    ),
+                    vc
                 )
-            )
+                sig.append(
+                    sf.NumericVolume(
+                        sf.Concatenate(
+                            sf.Silence(24*random.random()),
+                            vc
+                        )
+                        ,random.random()+0.25
+                    )
+                )
+            else:
+                sig.append(sf.NumericVolume(vc, random.random()+0.25))
+
         sig=sf.Realise(sf.Mix(sig))
         
         sig = sf.FixSize(sig)
@@ -225,10 +229,10 @@ def sing(hint,pitch,lengthIn,v,vl,vr,voice,velocity_correct_,quick_factor,
             sf.Pcnt80(sig)
         )
         
-        note=sf.NumericVolume(sf.FixSize(sig),v)
-        notel=sf.NumericVolume(+note,vl*velocity_correct).flush()
-        noter=sf.NumericVolume( note,vr*velocity_correct).flush()
-        return notel,noter
+        note=sf.NumericVolume(sf.FixSize(sig), v)
+        notel=sf.NumericVolume(note, vl*velocity_correct).flush()
+        noter=sf.NumericVolume(note, vr*velocity_correct).flush()
+        return notel, noter
 
 ################################################################################
 # Play a list of notes representing a midi channel.
@@ -421,8 +425,8 @@ def play(
  
         d_log("H",hint,"P",pitch,"@",at,"L",length,"V",velocity,"VU",vCUse,"PC",pCorrect)
         signals = sing(hint,pitch, length,velocity,lr,rl,voice,vCUse,quick_factor,sub_bass,flat_env,pure,raw_bass,decay,bend,mellow)
-        dl=30*rl+1000
-        dr=38*lr+1000
+        dl=30 * rl + 1000
+        dr=38 * lr + 1000
         l=len(notes)
         if l > oldI + 8:
             for x in range(oldI,l):

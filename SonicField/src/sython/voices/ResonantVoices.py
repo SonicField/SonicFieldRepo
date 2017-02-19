@@ -18,6 +18,7 @@ from sython.voices.Signal_Generators import limited_triangle
 from sython.voices.Signal_Generators import clean_noise
 from sython.utils.Filters import byquad_filter
 from sython.utils.Reverberation import convolve
+from sython.utils.Algorithms import polish
 import math
 import random
 import functools
@@ -179,31 +180,96 @@ def oboe_filter(sig, length, freq):
     sig = sf.RBJLowPass(sig, br, 1.0)
     return sf.FixSize(sf.Clean(sig))
 
-def harpsichord_filter(sig, length, freq):
+def harpsichord_filter(power, resonance, sig, length, freq):
     with SFMemoryZone():
-        ring = sf.SineWave(length,50.0 + freq / 50.0)
-        ring = sf.Multiply(sf.NumericShape((0,0.1), (length,0)), ring)
-        sig = sf.Multiply(sig, ring).flush()
+        ring = sf.SineWave(length, 50.0 + freq / 50.0)
+        ring = sf.Multiply(sf.NumericShape((0,0.05), (length,0)), ring)
+        ring = sf.DirectMix(1.0, ring)
+        sig = sf.Multiply(sig, ring).keep()
         
     with SFMemoryZone():
+        end = length - 10
+        if end < 50:
+            end = 50
+        tot = 10000.0 # 10 Seconds
+        
         env = sf.NumericShape(
             (0, 18000),
-            (10, freq * 6.0),
-            (length, freq)
+            (length-25, freq * 3.0),
+            (length, freq * 6.0)
         )
-        res = sf.NumericShape((1, 1.0),(length, 1.5))
-        sig = sf.ShapedRBJLowPass(sig, env, res)
+        res = sf.NumericShape(
+            (1, 0.2* resonance),
+            (length-25, 0.5 * resonance),
+            (length, 0.8 * resonance)
+        )
+        sig = sf.ShapedLadderLowPass(sig,env,res)
     
-        # A mixture of linear and exponential enveloping.
+        env = sf.SimpleShape((0, 10), (5, -10), (10000, -80))
+        env = sf.Cut(0, length, env)
         env = sf.Multiply(
-            sf.NumericShape(
-                (0, 0),
-                (1, 1),
-                (length, 0)),
-            sf.SimpleShape((0, 0), (1, 0), (length, -30))
+            env,
+            sf.NumericShape((0,1), (length - 25,1), (length, 0))
         )
         out = sf.FixSize(sf.Multiply(env, sig))
-        return out.flush()
+        click = sf.RBJLowPass(sf.SimpleShape((0,-10),(10,-90),(length, -100)),5000,1)
+        out = sf.Mix(click, out)
+        out = sf.Power(out, power)
+        return sf.FixSize(out.flush())
+
+def soft_harpsichord_filter(power, resonance, sig, length, freq):
+    with SFMemoryZone():
+        ring = sf.SineWave(length, 65 * random.random() * 10)
+        ring = sf.Multiply(sf.NumericShape((0,0.1), (length,0)), ring)
+        ring = sf.DirectMix(1.0, ring)
+        sig = sf.Multiply(sig, ring).keep()
+    
+    with SFMemoryZone():
+        sig = sf.Reverse(sig)
+        end = length - 10
+        if end < 50:
+            end = 50
+        tot = 10000.0 # 10 Seconds
+        
+        max_len = 10000.0
+        tLen = max_len if max_len > length else length
+        
+        env = sf.SimpleShape(
+            (0,       sf.ToDBs(18000)),
+            (max_len, sf.ToDBs(freq * 2.5)),
+            (tLen,    sf.ToDBs(freq * 2.5))
+        )
+        env = sf.Cut(0, length, env)
+
+        res = sf.NumericShape(
+            (0, 0.2* resonance),
+            (max_len, 0.5 * resonance),
+            (tLen,  0.5 * resonance)
+        )
+        res = sf.Cut(0, length, res)
+        sig = sf.ShapedLadderLowPass(sig, env, res)
+
+        env = sf.SimpleShape((0, -20), (2,0), (50, -10), (max_len, -80), (tLen, -80))
+        env = sf.Cut(0, length, env)
+        env = sf.Multiply(
+            env,
+            sf.NumericShape((0,1), (length - 25,1), (length, 0))
+        )
+
+        out = sf.FixSize(sf.Multiply(env, sig))
+        #out = sig
+        #click = sf.RBJLowPass(sf.SimpleShape((0,-10), (length, -100), (tLen, -100)), 5000 ,1)
+        #click = sf.NumericShape((0,5), (1,-5), (2,0), (tLen, 0))
+        #click = sf.Cut(0, length, click)
+        #out = sf.Mix(click, out)
+        out = sf.Power(out, power)
+        return sf.FixSize(polish(out, freq)).flush()
+
+def make_harpsichord_filter(soft=False, power=1.05, resonance=1.0):
+    if soft:
+        return functools.partial(soft_harpsichord_filter, power, resonance) 
+    else:
+        return functools.partial(harpsichord_filter, power, resonance)
 
 def tremulus_oboe_filter(sig, length, freq):
     rate = 3.25

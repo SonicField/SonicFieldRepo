@@ -53,7 +53,7 @@ def excite(sig,mix,power):
         sigh=sf.NumericVolume(sigh,mh/nh)
         sig=sf.Mix(sf.NumericVolume(sigh,mix),sf.NumericVolume(sig,1.0-mix))
         n=sf.Magnitude(sig)
-        return sf.SwapSignal(sf.NumericVolume(sig,m/n))
+        return sf.NumericVolume(sig, m/n).flush()
 
 def main():
     ####################################
@@ -195,7 +195,7 @@ def main():
                     (convorl,convorr)=sf.ReadFile("temp/impulses/bh-r.wav")
             
                 with SFMemoryZone():
-                    left  = sf.BesselLowPass(left  ,392,1)
+                    left  = sf.BesselLowPass(left ,392,1)
                     right = sf.BesselLowPass(right,392,1)
                     ll  = reverberate(+left ,convoll)
                     lr  = reverberate( left ,convolr)

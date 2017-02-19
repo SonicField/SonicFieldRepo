@@ -287,7 +287,7 @@ def shorter_than(midi,beat,millis):
             print "Skipping ",l
     return midiOut
 
-def scatter(midi,beat,millis_in):
+def scatter(midi, beat, millis_in):
     d_log("Interpretation Pass")
     midiOut=[]
     for event in midi:

@@ -121,8 +121,9 @@ public class SF_SwapSignal implements SFPL_Operator, SFPL_RefPassThrough
     @Override
     public Object Interpret(final Object input) throws SFPL_RuntimeException
     {
+        // TODO MAKE THIS WORK!
         SFSignal data = Caster.makeSFSignal(input);
-        return new Translate(data);
+        return data.flush();
     }
 
     @Override

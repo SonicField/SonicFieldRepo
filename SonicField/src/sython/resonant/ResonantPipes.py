@@ -1,4 +1,6 @@
 import sython.organ.Player as Player
+from com.nerdscentral.audio.core import SFData
+
 
 from sython.organ.Post   import \
     do_final_mix, \
@@ -9,6 +11,7 @@ from sython.organ.Post   import \
 from sython.voices.ResonantVoices import \
     distant_wind, \
     make_addtive_resonance, \
+    make_harpsichord_filter, \
     oboe_filter, \
     violin_filter, \
     harpsichord_filter, \
@@ -135,12 +138,56 @@ def distant_oboe2(midi_in, beat, temperament, velocity):
         pan = -1
     )
     return post_process(notes1)
-  
+
+def soft_harpsichord(midi_in, beat, temperament, velocity):
+
+    harmonics1 = [pow(x,1.01) for x in xrange(1,100)]
+    plr1 = make_addtive_resonance(qCorrect=5.0, rollOff=2.5, saturate=0.1, power=1.0, 
+                                 post=make_harpsichord_filter(power=1.00, soft=True),
+                                 harmonics=harmonics1, seed = -40)
+    notes1 = Player.play(
+        midi_in,
+        beat,
+        temperament,
+        voice=plr1,
+        bend=False,
+        mellow=False,
+        velocity_correct=velocity*1.0,
+        flat_env=True,
+        quick_factor=0,
+        pure=False,
+        pan = 0.25
+    )
+    left1, right1 = post_process(notes1)
+    SFData.flushAll()
+
+    harmonics2 = harmonics1[1:10]
+    plr1 = make_addtive_resonance(qCorrect=4.5, rollOff=3.0, saturate=0.0, power=1.0, 
+                                 post=make_harpsichord_filter(power=1.00, soft=True),
+                                 harmonics=harmonics2, seed = -50)
+    notes2 = Player.play(
+        midi_in,
+        beat,
+        temperament,
+        voice=plr1,
+        bend=False,
+        mellow=True,
+        velocity_correct=velocity*0.25,
+        flat_env=True,
+        quick_factor=0,
+        pure=True,
+        pitch_shift=0.5,
+        pan = 0.75
+    )
+    left2, right2 = post_process(notes2)
+    SFData.flushAll()
+    
+    return mix(left1, left2), mix(right1, right2)
   
 def harpsichord(midi_in, beat, temperament, velocity):
-    harmonics = [pow(x,1.001) for x in xrange(1,100)]
-    plr = make_addtive_resonance(qCorrect=4.0, rollOff=1.0, saturate=0.1, power=1.0, 
-                                 post=harpsichord_filter, harmonics=harmonics, seed = -40)
+    harmonics = [pow(x,1.01) for x in xrange(1,100)]
+    plr = make_addtive_resonance(qCorrect=4.0, rollOff=0.5, saturate=0.1, power=1.0, 
+                                 post=make_harpsichord_filter(power=1.05), harmonics=harmonics, seed = -40)
     notes1=Player.play(
         midi_in,
         beat,
@@ -151,9 +198,49 @@ def harpsichord(midi_in, beat, temperament, velocity):
         velocity_correct=velocity*1.5,
         flat_env=True,
         quick_factor=0,
-        pure=True,
+        pure=False,
         pan = -1
     )
     return post_process(notes1)  
 
-    
+def bass_harpsichord(midi_in, beat, temperament, velocity):
+    harmonics = [pow(x,1.01) for x in xrange(1,100)]
+    plr1 = make_addtive_resonance(qCorrect=4.0, rollOff=0.5, saturate=0.1, power=1.0, 
+                                 post=make_harpsichord_filter(power=1.05, resonance=0.9),
+                                 harmonics=harmonics, seed = -40)
+    notes1=Player.play(
+        midi_in,
+        beat,
+        temperament,
+        voice=plr1,
+        bend=True,
+        mellow=False,
+        velocity_correct=velocity*0.75,
+        flat_env=True,
+        quick_factor=0,
+        pure=False,
+        pan = 0.1
+    )
+
+    SFData.flushAll()
+    plr2 = make_addtive_resonance(qCorrect=4.0, rollOff=1.0, saturate=0.0, power=1.0, 
+                                 post=make_harpsichord_filter(power=0.95, resonance=0.2),
+                                 harmonics=harmonics, seed = -50)
+    notes2=Player.play(
+        midi_in,
+        beat,
+        temperament,
+        voice=plr2,
+        bend=False,
+        mellow=False,
+        velocity_correct=velocity*1.0,
+        flat_env=True,
+        quick_factor=0,
+        pure=True,
+        pitch_shift=0.5,
+        pan = 0.8
+    )
+
+    left1,right1 = post_process(notes1)
+    left2,right2 = post_process(notes2)
+    return mix(left1, left2),mix(right1, right2)
