@@ -159,7 +159,6 @@ def soft_harpsichord(midi_in, beat, temperament, velocity):
         pan = 0.25
     )
     left1, right1 = post_process(notes1)
-    SFData.flushAll()
 
     harmonics2 = harmonics1[1:10]
     plr1 = make_addtive_resonance(qCorrect=4.5, rollOff=3.0, saturate=0.0, power=1.0, 
@@ -180,7 +179,6 @@ def soft_harpsichord(midi_in, beat, temperament, velocity):
         pan = 0.75
     )
     left2, right2 = post_process(notes2)
-    SFData.flushAll()
     
     return mix(left1, left2), mix(right1, right2)
   
@@ -222,7 +220,6 @@ def bass_harpsichord(midi_in, beat, temperament, velocity):
         pan = 0.1
     )
 
-    SFData.flushAll()
     plr2 = make_addtive_resonance(qCorrect=4.0, rollOff=1.0, saturate=0.0, power=1.0, 
                                  post=make_harpsichord_filter(power=0.95, resonance=0.2),
                                  harmonics=harmonics, seed = -50)

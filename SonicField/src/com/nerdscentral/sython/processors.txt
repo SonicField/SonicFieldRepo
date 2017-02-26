@@ -1,5 +1,3 @@
-com.nerdscentral.audio.utilities.SF_Check
-com.nerdscentral.audio.utilities.SF_CheckZeros
 com.nerdscentral.audio.sound.SF_GetMixer
 com.nerdscentral.audio.sound.SF_LineWait
 com.nerdscentral.audio.sound.SF_Mixers
@@ -9,9 +7,7 @@ com.nerdscentral.audio.io.SF_ReadFile
 com.nerdscentral.audio.io.SF_ReadSignal
 com.nerdscentral.audio.io.SF_SwapSignal
 com.nerdscentral.audio.core.SF_Realise
-com.nerdscentral.audio.utilities.SF_Semitone
 com.nerdscentral.audio.core.SF_SetSampleRate
-com.nerdscentral.audio.utilities.SF_SpeedOfSound
 com.nerdscentral.audio.sound.SF_StereoMonitor
 com.nerdscentral.audio.io.SF_WriteFile16
 com.nerdscentral.audio.io.SF_WriteFile32
@@ -118,14 +114,19 @@ com.nerdscentral.audio.time.SF_ShapedResonateFilter
 com.nerdscentral.audio.time.SF_TimeShift
 com.nerdscentral.audio.time.SF_TruncateSilence
 com.nerdscentral.audio.utilities.SF_AutoCorrolation
+com.nerdscentral.audio.utilities.SF_Check
+com.nerdscentral.audio.utilities.SF_CheckZeros
 com.nerdscentral.audio.utilities.SF_Frequency
 com.nerdscentral.audio.utilities.SF_FromDBs
 com.nerdscentral.audio.utilities.SF_Length
 com.nerdscentral.audio.utilities.SF_Magnitude
+com.nerdscentral.audio.utilities.SF_MatchLengths
 com.nerdscentral.audio.utilities.SF_MaxValue
 com.nerdscentral.audio.utilities.SF_MinValue
 com.nerdscentral.audio.utilities.SF_Period
 com.nerdscentral.audio.utilities.SF_Samples
+com.nerdscentral.audio.utilities.SF_Semitone
+com.nerdscentral.audio.utilities.SF_SpeedOfSound
 com.nerdscentral.audio.utilities.SF_Time
 com.nerdscentral.audio.utilities.SF_ToDBs
 com.nerdscentral.audio.utilities.SF_ValueAt

@@ -110,6 +110,9 @@ public class SFData extends SFSignal implements Serializable
     static final long                                       CHUNK_LEN               = (long) Math.pow(2, CHUNK_SHIFT);
     static final long                                       CHUNK_MASK              = CHUNK_LEN - 1;
 
+    // How frequently to print of memory state as a modulus of the number of SFData objects created.
+    private static final long MEM_REPORT_MODULUS =          10000;
+
     private static final long                               serialVersionUID        = 1L;
     private final int                                       length;
     ByteBufferWrapper[]                                     chunks;
@@ -127,6 +130,7 @@ public class SFData extends SFSignal implements Serializable
     private static final MemoryZoneStack                    memoryZoneStack         = new MemoryZoneStack();
     private final AtomicBoolean                             kept                    = new AtomicBoolean(false);
     private final AtomicBoolean                             dead                    = new AtomicBoolean(false);
+    private final AtomicBoolean                             pinned                  = new AtomicBoolean(false);
 
     // TODO: The file channels are thread local but the chunks are not. Thus over time chunks will disperse
     // across threads and the locality will be broken. If we can make some mechanism to allow this were needed
@@ -134,6 +138,7 @@ public class SFData extends SFSignal implements Serializable
     // be good.
 
     private static ConcurrentHashMap<File, FileChannel>     fileMap                 = new ConcurrentHashMap<>();
+    private static AtomicBoolean isFlushing = new AtomicBoolean(false);
 
     protected static FileChannel getRotatingChannel()
     {
@@ -169,7 +174,7 @@ public class SFData extends SFSignal implements Serializable
 
     private static void maybeReportStats()
     {
-        if (reportTicker.incrementAndGet() % 1000 == 0)
+        if (reportTicker.incrementAndGet() % MEM_REPORT_MODULUS == 0)
         {
             System.out.println(Messages.getString("SFData.20") + totalCount.get() + Messages.getString("SFData.21") + freeCount.get()); //$NON-NLS-1$ //$NON-NLS-2$
         }
@@ -241,20 +246,36 @@ public class SFData extends SFSignal implements Serializable
         }
     }
 
+    /**
+     * Flushes a snap shot of all current chunks to disk thus liberating the
+     * RAM with which they are associated to be used by new chunks. This method
+     * is useful between big sections of processing where the data generated will
+     * just be stored to be used in another processing section later. For example
+     * generate the left channel, flush(), generate the right, flush() then mix.
+     */
     public static void flushAll()
     {
-        // Snapshot it so that it does not get caught flushing as loads of chunks are being allocated.
-        ByteBufferWrapper[] a = new ByteBufferWrapper[0];
-        a = allChunks.toArray(a);
-        System.out.println(Messages.getString("SFData.5") + a.length); //$NON-NLS-1$
-        int c = 0;
-        for (ByteBufferWrapper chunk : a)
+        // Snapshot the current container of all chunks so that
+        // the loop does not get caught flushing as loads of chunks are being allocated
+        // and so running for an unbounded amount of time.
+        if(isFlushing.get()) return;
+        isFlushing.set(true);
+        try
         {
-            chunk.force();
-            ++c;
-            if (c % 1000 == 0) System.out.println(Messages.getString("SFData.7") + c + Messages.getString("SFData.8")); //$NON-NLS-1$ //$NON-NLS-2$
+            ByteBufferWrapper[] a = new ByteBufferWrapper[0];
+            a = allChunks.toArray(a);
+            System.out.println(Messages.getString("SFData.5") + a.length); //$NON-NLS-1$
+            int c = 0;
+            for (ByteBufferWrapper chunk : a)
+            {
+                chunk.force();
+                ++c;
+                if (c % 1000 == 0) System.out.println(Messages.getString("SFData.7") + c + Messages.getString("SFData.8")); //$NON-NLS-1$ //$NON-NLS-2$
+            }
+            System.out.println(Messages.getString("SFData.12") + a.length); //$NON-NLS-1$
+        }finally{
+            isFlushing.set(false);
         }
-        System.out.println(Messages.getString("SFData.12") + a.length); //$NON-NLS-1$
     }
 
     @Override
@@ -272,6 +293,8 @@ public class SFData extends SFSignal implements Serializable
     public void release()
     {
         checkLive();
+        if(pinned.get())
+            throw new RuntimeException("Trying to release pinned memory.");
         dead.set(true);
         synchronized (fileMap)
         {
@@ -843,7 +866,8 @@ public class SFData extends SFSignal implements Serializable
                     }
                     else
                     {
-                        data.release();
+                        if(!data.pinned.get())
+                            data.release();
                     }
                 }
             }
@@ -876,6 +900,14 @@ public class SFData extends SFSignal implements Serializable
         // So that they can be released explicitly.
         // System.out.println("Pushing: " + sfMemoryZone);
         memoryZoneStack.get().push(sfMemoryZone);
+    }
+
+    @Override
+    public SFSignal pin()
+    {
+        checkLive();
+        pinned.set(true);
+        return this;
     }
 
     @Override

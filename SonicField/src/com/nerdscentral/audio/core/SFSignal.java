@@ -40,6 +40,11 @@ public abstract class SFSignal
         return this;
     }
 
+    public SFSignal pin()
+    {
+        return SFData.realise(this).pin();
+    }
+
     public SFSignal keep()
     {
         return SFData.realise(this).keep();

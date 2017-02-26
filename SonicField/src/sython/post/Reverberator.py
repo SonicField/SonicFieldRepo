@@ -63,9 +63,9 @@ def main():
     ####################################
     
     with SFMemoryZone():    
-        left, right = sf.ReadFile("temp/dry.wav")
-        #left  = sf.ReadSignal("temp/bells_left_b")
-        #right = sf.ReadSignal("temp/bells_right_b")
+        #left, right = sf.ReadFile("temp/dry.wav")
+        left  = sf.ReadSignal("temp/left_v1_acc")
+        right = sf.ReadSignal("temp/right_v1_acc")
         
         left =sf.Multiply(sf.NumericShape((0,0),(64,1),(sf.Length(+left ),1)),left )
         right=sf.Multiply(sf.NumericShape((0,0),(64,1),(sf.Length(+right),1)),right)
@@ -84,13 +84,13 @@ def main():
     clear   = True
     bright  = True
     vBright = False
-    church  = True
+    church  = False
     ambient = False
     megaThe = False
     terys   = False
-    post    = False
+    post    = True
     spring  = True
-    bboost  = True
+    bboost  = False
     mix     = 0.0
       
     if ambient:  

@@ -2,6 +2,7 @@ from sython.utils.Reverberation import granular_reverberate,reverberate,convolve
 from java.util.concurrent.atomic import AtomicLong
 from sython.utils.Envelopes import safe_env
 from com.nerdscentral.audio.core import SFMemoryZone
+from com.nerdscentral.audio.core import SFData
 import random
 
 NOTE_COUNTER=AtomicLong()
@@ -308,9 +309,11 @@ def play(
         controllers         ={}
     ):
     notes=[]
+    cache = {}
     d_log("Stop: ",voice)
     d_log('Total notes:',len(midi))
     oldI = 0
+    cacheMisses = 0
     for index in range(0,len(midi)):
         if index>0:
             prev=midi[index-1]
@@ -349,7 +352,7 @@ def play(
         # low perception issue.
         pCorrect=1
         if velocity_correct>0.25 and pitch > 660 :
-            # shorter is less intense and gets lost easity so boost a bit
+            # shorter is less intense and gets lost easily so boost a bit
             if length <256:
                 sCorrect=1.5
             else:
@@ -424,7 +427,33 @@ def play(
             hint+="E"
  
         d_log("H",hint,"P",pitch,"@",at,"L",length,"V",velocity,"VU",vCUse,"PC",pCorrect)
-        signals = sing(hint,pitch, length,velocity,lr,rl,voice,vCUse,quick_factor,sub_bass,flat_env,pure,raw_bass,decay,bend,mellow)
+        args = (
+            hint,
+            pitch,
+            length,
+            velocity,
+            lr,
+            rl,
+            voice,
+            vCUse,
+            quick_factor,
+            sub_bass,
+            flat_env,
+            pure,
+            raw_bass,
+            decay,
+            bend,
+            mellow)
+        
+        if args in cache:
+            print 'Note Cache Hit! {0} -> {1}'.format(index, index - cacheMisses)
+            signals = cache[args]
+        else:
+            signals = sing(*args)
+            # Note that the get code below will compute the value fo these futures as some point.
+            cache[args] = signals
+            cacheMisses += 1
+
         dl=30 * rl + 1000
         dr=38 * lr + 1000
         l=len(notes)

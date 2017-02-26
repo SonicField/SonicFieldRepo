@@ -23,11 +23,25 @@ import math
 import random
 import functools
 
+# The probability of using rather than replacing a cached harmonic.
+_CACHE_PROBABILITY = 0.9
+# TODO: Turn on caching when the frequency problem if fixed.
+_PERFORM_CACHE = True
+
 # Get IRs
 violinIRs = sf.ViolinBodyIRs(())
 violaIRs  = sf.ViolaBodyIRs(())
 celloIRs  = sf.CelloBodyIRs(())
 bassIRs   = sf.BassBodyIRs(())
+
+# TODO: Refactor this caching logic to a utility.
+def _logRoundUp(freq):
+    lfq = math.log(freq) * 100.0
+    return math.exp(math.ceil(lfq)* 0.01)
+
+def _repitch(freq, targetFreq, sig, length = None):
+    ret = sf.DirectResample(sig, float(targetFreq) / float(freq))
+    return sf.Cut(0, length, ret) if length and sf.Length(ret) > length else ret
 
 def _distant_wind(length, freq, qCorrect = 1.25, limit = False, seed = -60):
     with SFMemoryZone():
@@ -108,6 +122,8 @@ def distant_wind(length, freq):
     out = sf.Mix(sigs)
     return sf.FixSize(polish(out, freq))
 
+_resonanceCache = {}
+
 def additive_resonance(power, qCorrect, saturate, rollOff, post, limit, seed, flat, harmonics, length, freq):
 
     lowComp = freq < 128
@@ -116,9 +132,16 @@ def additive_resonance(power, qCorrect, saturate, rollOff, post, limit, seed, fl
         length *= 0.5
 
     @sf_parallel
-    def doWind(lenth, hfq, vol, reverse=False):
+    def doWind(length, hfq, vol, reverse=False):
+        key = (length, _logRoundUp(hfq), vol, reverse)
+        if key in _resonanceCache:
+            if random.random() < _CACHE_PROBABILITY:
+                return _repitch(key[1], hfq, _resonanceCache[key])
+
         with SFMemoryZone():
-            out = _distant_wind(length, hfq, qCorrect, limit, seed)
+            # Put in a little extra and then trim it off reliably.
+            upRatio = key[1] * 1.01 / float(hfq)
+            out = _distant_wind(length * upRatio, hfq, qCorrect, limit, seed)
             out = sf.Power(out, power)
             if saturate:
                 os = sf.Saturate(sf.NumericVolume(sf.FixSize(+out), 2.0))
@@ -127,7 +150,20 @@ def additive_resonance(power, qCorrect, saturate, rollOff, post, limit, seed, fl
             out = sf.NumericVolume(sf.FixSize(out), vol)
             if reverse:
                 out = sf.Reverse(out)
-            return compress(out).keep()
+            ret = compress(out)
+            if _PERFORM_CACHE:
+                # Store no more than the length we need which we work out as the 
+                # inverse scale of that used to make the signal. This should 
+                # always give enough signal so out of bounds does not happen.
+                toCache = _repitch(hfq, key[1], ret, sf.Length(ret) / upRatio)
+                toCache = toCache.pin()
+                # FIXME: Figure out how to make this long enough.
+                # See call to _distant_wind above.
+                _resonanceCache[key] = toCache
+                return toCache
+            else:
+                return ret.keep()
+            return ret
 
     harms = []
     base = compress(sf.Silence(length))
@@ -218,6 +254,7 @@ def harpsichord_filter(power, resonance, sig, length, freq):
         return sf.FixSize(out.flush())
 
 def soft_harpsichord_filter(power, resonance, sig, length, freq):
+
     with SFMemoryZone():
         ring = sf.SineWave(length, 65 * random.random() * 10)
         ring = sf.Multiply(sf.NumericShape((0,0.1), (length,0)), ring)
@@ -247,6 +284,7 @@ def soft_harpsichord_filter(power, resonance, sig, length, freq):
             (tLen,  0.5 * resonance)
         )
         res = sf.Cut(0, length, res)
+        sig, env, res = sf.MatchLengths((sig, env, res))
         sig = sf.ShapedLadderLowPass(sig, env, res)
 
         env = sf.SimpleShape((0, -20), (2,0), (50, -10), (max_len, -80), (tLen, -80))
