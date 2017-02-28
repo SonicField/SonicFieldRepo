@@ -253,11 +253,21 @@ def harpsichord_filter(power, resonance, sig, length, freq):
         out = sf.Power(out, power)
         return sf.FixSize(out.flush())
 
-def soft_harpsichord_filter(power, resonance, sig, length, freq):
+def soft_harpsichord_filter(power, resonance, sig, length, freq, attack=2, triangle=True):
+
+    if attack > 20:
+        raise ValueError('Attack too large; must be <= 20.')
 
     with SFMemoryZone():
         ring = sf.SineWave(length, 65 * random.random() * 10)
-        ring = sf.Multiply(sf.NumericShape((0,0.1), (length,0)), ring)
+        if triangle:
+            ring = sf.MakeTriangle(ring)
+        quant = 0.1
+        if freq < 256:
+            quant = 0.3
+        elif freq < 512:
+            quant = 0.2
+        ring = sf.Multiply(sf.NumericShape((0, quant), (length,0)), ring)
         ring = sf.DirectMix(1.0, ring)
         sig = sf.Multiply(sig, ring).keep()
     
@@ -287,7 +297,7 @@ def soft_harpsichord_filter(power, resonance, sig, length, freq):
         sig, env, res = sf.MatchLengths((sig, env, res))
         sig = sf.ShapedLadderLowPass(sig, env, res)
 
-        env = sf.SimpleShape((0, -20), (2,0), (50, -10), (max_len, -80), (tLen, -80))
+        env = sf.SimpleShape((0, -20), (attack,0), (50, -10), (max_len, -80), (tLen, -80))
         env = sf.Cut(0, length, env)
         env = sf.Multiply(
             env,
@@ -302,6 +312,21 @@ def soft_harpsichord_filter(power, resonance, sig, length, freq):
         #out = sf.Mix(click, out)
         out = sf.Power(out, power)
         return sf.FixSize(polish(out, freq)).flush()
+
+def oboe_harpichord_filter(sig, length, frequency):
+        with SFMemoryZone():
+            sig = sf.RBJPeaking(sig, freq*3, 0.2, 5)
+            sig = sf.RBJPeaking(sig, freq*5, 0.5, 4)
+            sig = sf.RBJPeaking(sig, freq*7, 1, 4)
+            sig = sf.RBJNotch(sig, freq*2, 1.0, 1.0)
+            sig = sf.Mix(+sig, sf.RBJNotch(sig, freq, 1.0, 1.0))
+            sig = sf.RBJLowPass(sig, freq*9, 1.0)
+            br = freq * 9
+            if br > 5000.0:
+               br = 5000.0
+            sig = sf.RBJLowPass(sig, br, 1.0).kepp()
+        return soft_harpsichord_filter(power=1.0, resonance=1.0, sig=sig,
+                                       length=length, freq = frequency, attack=6 * random.random() * 8)
 
 def make_harpsichord_filter(soft=False, power=1.05, resonance=1.0):
     if soft:

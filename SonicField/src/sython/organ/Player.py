@@ -445,7 +445,7 @@ def play(
             bend,
             mellow)
         
-        if args in cache:
+        if args in cache and random.random() < 0.9:
             print 'Note Cache Hit! {0} -> {1}'.format(index, index - cacheMisses)
             signals = cache[args]
         else:

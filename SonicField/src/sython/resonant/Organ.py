@@ -49,7 +49,7 @@ def main():
     # Controls for rendering the piece #
     ####################################
     
-    midis=Midi.read_midi_file("temp/input.mid")
+    midis=Midi.read_midi_file("temp/807.mid")
     
     # Length of full piece
     #======================
@@ -139,7 +139,7 @@ def main():
                 out = out[0 : truncate]
             
             # This renders the music.
-            left,right = [sf.Finalise(sig) for sig in soft_harpsichord(out, beat, temperament, 1.0)]
+            left,right = [sf.Finalise(sig) for sig in oboe_harpsichord(out, beat, temperament, 1.0)]
             
             # Creates controller envelopes based on a particular modulation source in the midi.
             modEnvl = None

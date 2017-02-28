@@ -181,7 +181,28 @@ def soft_harpsichord(midi_in, beat, temperament, velocity):
     left2, right2 = post_process(notes2)
     
     return mix(left1, left2), mix(right1, right2)
-  
+
+def oboe_harpsichord(midi_in, beat, temperament, velocity):
+
+    harmonics1 = [pow(x,1.00) for x in xrange(1,100)]
+    plr1 = make_addtive_resonance(qCorrect=5.0, rollOff=2.5, saturate=0.1, power=1.0, 
+                                 post=make_harpsichord_filter(power=1.00, soft=True),
+                                 harmonics=harmonics1, seed = -40)
+    notes1 = Player.play(
+        midi_in,
+        beat,
+        temperament,
+        voice=plr1,
+        bend=False,
+        mellow=False,
+        velocity_correct=velocity*1.0,
+        flat_env=True,
+        quick_factor=0,
+        pure=False,
+        pan = 0.25
+    )
+    return post_process(notes1)
+    
 def harpsichord(midi_in, beat, temperament, velocity):
     harmonics = [pow(x,1.01) for x in xrange(1,100)]
     plr = make_addtive_resonance(qCorrect=4.0, rollOff=0.5, saturate=0.1, power=1.0, 

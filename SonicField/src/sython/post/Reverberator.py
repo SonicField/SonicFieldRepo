@@ -3,42 +3,6 @@ from com.nerdscentral.audio.core import SFMemoryZone
 from sython.utils.Reverberation import reverberate
 from sython.utils.Splitter import writeWave
 from com.nerdscentral.audio.core import SFData
-'''
-@sf_parallel
-def reverbInner(signal,convol,grainLength):
-    with SFMemoryZone():    
-        mag=sf.Magnitude(signal)
-        if mag>0:
-            signal_=sf.Concatenate(signal, sf.Silence(grainLength))
-            signal_=sf.FrequencyDomain(signal_)
-            signal_=sf.CrossMultiply(convol, signal_)
-            signal_=sf.TimeDomain(signal_)
-            newMag=sf.Magnitude(signal_)
-            if newMag>0:
-                signal_=sf.NumericVolume(signal_,mag/newMag)        
-                # tail out clicks due to amplitude at end of signal 
-                return signal_.flush()
-            else:
-                return sf.Silence(sf.Length(signal_)).flush()
-        return signal
-
-@sf_parallel   
-def reverberate(signal,convol):
-    with SFMemoryZone():
-        grainLength = sf.Length(convol)
-        convol_=sf.FrequencyDomain(sf.Concatenate(convol,sf.Silence(grainLength)))
-        signal_=sf.Concatenate(signal,sf.Silence(grainLength))
-        out=[]
-        grains = []
-        for grain in sf.Granulate(signal_,grainLength):
-            signal_i, at =grain
-            grains += [ (sf.SwapSignal(signal_i), at) ]
-
-        for grain in grains:
-            signal_i, at =grain
-            out.append((reverbInner(signal_i, convol_, grainLength), at))
-        return sf.Clean(sf.FixSize(sf.MixAt(out))).flush()
-'''
 
 @sf_parallel
 def excite(sig,mix,power):
@@ -80,19 +44,35 @@ def main():
     #
     ####################################
     
+    # If true, do not perform secondary reverb.
     dry     = False
+    # Perform excitation of primary convolution even when not bright or vbright.
     clear   = True
+    # Perform brightening.
     bright  = True
+    # Extra brightening of the dry signal.
+    # vBright without bright will not brighten the wet signal.
     vBright = False
+    # Use a church impulse response.
     church  = False
+    # Use an very long 'ambient' impulse response.
     ambient = False
+    # Use another very long impulse response.
     megaThe = False
+    # Use an impulse response from an abandoned factory.
     terys   = False
+    # Post process which is a multi-band compress and adds warmth (valve like waveshaping).
     post    = True
+    # Use a spring reverb' impulse response.
     spring  = True
+    # EQ up the bass a little. This helps compensate for domination of highs when brightening.
     bboost  = False
+    # The mix in the final. 0.0 implies pure wet; 1.0 is pure dry. Use 0.0 if you want to mix by hand.
     mix     = 0.0
-      
+    # The spring impulse response has a boomy signature at around 100Hz, this takes some of that out.
+    lightenSpring = True
+ 
+    '''     
     if ambient:  
         (convoll,convolr)=sf.ReadFile("temp/impulses/v-grand-l.wav")
         (convorl,convorr)=sf.ReadFile("temp/impulses/v-grand-r.wav")
@@ -105,6 +85,9 @@ def main():
     
     if spring:
         spring=sf.ReadFile("temp/impulses/classic-fs2a.wav")[0]
+        if lightenSpring:
+            spring =sf.RBJPeaking(spring,100,1,-1)
+
         convoll=sf.Mix(
            convoll,
             +spring
@@ -114,6 +97,7 @@ def main():
             convorr,
             sf.Invert(spring)
         )
+
     
     if megaThe:
         ml,mr=sf.ReadFile("temp/impulses/mega-thederal.wav")
@@ -150,15 +134,8 @@ def main():
             lr  = reverberate(left ,convolr)
             rl  = reverberate(right,convorl)
             rr  = reverberate(right,convorr)
-            SFData.flushAll()
             wleft =sf.FixSize(sf.Mix(ll,rl)).keep()
             wright=sf.FixSize(sf.Mix(rr,lr)).keep()
-            sf.WriteSignal(left ,"temp/left-l.sig")
-            sf.WriteSignal(right,"temp/right-r.sig")    
-            sf.WriteSignal(wleft ,"temp/wleft-l.sig")
-            sf.WriteSignal(wright,"temp/wright-r.sig")    
-        
-        SFData.flushAll()
         
         if bright:
             wright = excite(wright,0.15,1.11)
@@ -170,17 +147,13 @@ def main():
             right  = excite(right,0.25,1.15)
             left   = excite(left ,0.25,1.15)
 
+        writeWave(wleft, wright, 'temp/step-1-reverb')
+
         SFData.flushAll()
         
         with SFMemoryZone():
-            wleft  =sf.FixSize(sf.Mix(sf.NumericVolume(left,mix ),sf.NumericVolume(wleft,1.0-mix)))
-            wright =sf.FixSize(sf.Mix(sf.NumericVolume(right,mix),sf.NumericVolume(wright,1.0-mix)))
-            writeWave(sf.FixSize(wleft), sf.FixSize(wright), "temp/bright-wet.wav")
-            writeWave(sf.FixSize(left),  sf.FixSize(right),  "temp/bright-dry.wav")
-            wleft=sf.SwapSignal(wleft)
-            wright=sf.SwapSignal(wright)
-
-        SFData.flushAll()
+            wleft  =sf.FixSize(sf.Mix(sf.NumericVolume(left,mix ),sf.NumericVolume(wleft,1.0-mix))).flush()
+            wright =sf.FixSize(sf.Mix(sf.NumericVolume(right,mix),sf.NumericVolume(wright,1.0-mix))).flush()
 
         if not dry:
             with SFMemoryZone():
@@ -201,35 +174,19 @@ def main():
                     lr  = reverberate( left ,convolr)
                     rl  = reverberate(+right,convorl)
                     rr  = reverberate( right,convorr)
-                    SFData.flushAll()
-                    vwleft =sf.FixSize(sf.Mix(ll,rl))
-                    vwright=sf.FixSize(sf.Mix(rr,lr))
-                    SFData.flushAll()
-                    sf.WriteSignal(wleft ,"temp/vwet-l.sig")
-                    sf.WriteSignal(wright,"temp/vwet-r.sig")
-                    vwleft=sf.SwapSignal(vwleft)
-                    vwright=sf.SwapSignal(vwright)
-
-                SFData.flushAll()
+                    vwleft =sf.FixSize(sf.Mix(ll,rl)).flush()
+                    vwright=sf.FixSize(sf.Mix(rr,lr)).flush()
                     
                 with SFMemoryZone():
-                    wleft =sf.FixSize(sf.Mix(wleft ,sf.Pcnt20(vwleft )))
-                    wright=sf.FixSize(sf.Mix(wright,sf.Pcnt20(vwright)))
-                    sf.WriteSignal(wleft ,"temp/grand-l.sig")
-                    sf.WriteSignal(wright,"temp/grand-r.sig")
-                    writeWave(wleft, wright, 'temp/grand')
+                    wleft =sf.FixSize(sf.Mix(wleft ,sf.Pcnt20(vwleft ))).flush()
+                    wright=sf.FixSize(sf.Mix(wright,sf.Pcnt20(vwright))).flush()
 
-                SFData.flushAll()
-        else:
-            if post:
-                sf.WriteSignal(left ,"temp/grand-l.sig")
-                sf.WriteSignal(right,"temp/grand-r.sig")
-    
+    writeWave(wleft, wright, 'temp/step-2-reverb')
+    '''
     if post:
         print "Warming"
         
-        left  = sf.ReadSignal("temp/grand-l.sig")
-        right = sf.ReadSignal("temp/grand-r.sig")
+        #left, right = sf.ReadFile('temp/step-2-reverb_0.wav')
         
         def highDamp(sig,freq,fact):
             with SFMemoryZone():
@@ -271,5 +228,5 @@ def main():
             
         left  = filter(left)
         right = filter(right)
-        writeWave(left, right, 'temp/filtered')
+        writeWave(left, right, 'temp/step-3-filtered')
         
