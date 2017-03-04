@@ -15,6 +15,7 @@ from sython.voices.ResonantVoices import \
     oboe_filter, \
     violin_filter, \
     harpsichord_filter, \
+    oboe_harpsichord_filter, \
     tuned_wind
 
 def distant(midi_in,beat,temperament,velocity):
@@ -186,7 +187,7 @@ def oboe_harpsichord(midi_in, beat, temperament, velocity):
 
     harmonics1 = [pow(x,1.00) for x in xrange(1,100)]
     plr1 = make_addtive_resonance(qCorrect=5.0, rollOff=2.5, saturate=0.1, power=1.0, 
-                                 post=make_harpsichord_filter(power=1.00, soft=True),
+                                 post=oboe_harpsichord_filter,
                                  harmonics=harmonics1, seed = -40)
     notes1 = Player.play(
         midi_in,

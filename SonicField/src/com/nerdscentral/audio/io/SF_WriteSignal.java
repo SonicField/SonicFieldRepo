@@ -5,6 +5,8 @@ import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 
 import com.nerdscentral.audio.Messages;
@@ -25,10 +27,21 @@ public class SF_WriteSignal implements SFPL_Operator, SFPL_RefPassThrough
     @Override
     public Object Interpret(final Object input) throws SFPL_RuntimeException
     {
+        /* Writes any SFSignal out to disk in signal format.
+         * It takes arguments:
+         * String: the file name (including the path).
+         * SFSignal: the signal to write.
+         * 
+         * This method first writes to a file with an underscore appended.
+         * Once the entire file has been written and flushed then it will rename to
+         * the correct file name. This is to help ensure any file without the prepended
+         * file name will not be a partial write and thus can be use in restarts etc.
+         */
         List<Object> inList = Caster.makeBunch(input);
         SFSignal data = Caster.makeSFSignal(inList.get(0));
         String fileName = Caster.makeString(inList.get(1));
-        File file = new File(fileName);
+        String tmpName = fileName + "_"; // $NON-NLS-1$
+        File file = new File(tmpName);
         try (
             FileOutputStream fs = new FileOutputStream(file);
             DataOutputStream ds = new DataOutputStream(new BufferedOutputStream(fs)))
@@ -38,10 +51,13 @@ public class SF_WriteSignal implements SFPL_Operator, SFPL_RefPassThrough
             {
                 ds.writeDouble(data.getSample(i));
             }
+            ds.flush();
+            java.nio.file.Files.move(Paths.get(tmpName), Paths.get(fileName), StandardCopyOption.REPLACE_EXISTING,
+                            StandardCopyOption.ATOMIC_MOVE);
         }
         catch (Exception e)
         {
-            throw new SFPL_RuntimeException(Messages.getString("SF_WriteSignal.1"), e);  //$NON-NLS-1$
+            throw new SFPL_RuntimeException(Messages.getString("SF_WriteSignal.1") + e.getMessage());  //$NON-NLS-1$
         }
         return data;
     }

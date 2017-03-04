@@ -312,8 +312,8 @@ def play(
     cache = {}
     d_log("Stop: ",voice)
     d_log('Total notes:',len(midi))
-    oldI = 0
     cacheMisses = 0
+    toWrite=[]
     for index in range(0,len(midi)):
         if index>0:
             prev=midi[index-1]
@@ -445,22 +445,37 @@ def play(
             bend,
             mellow)
         
+        # Here is the restart logic. If this is a restart then it
+        # should automatically skip generating notes it has already generated.
+        # However, it will still cache them. Note, other caches in the signal generators
+        # may not be populated so a restart might not generate exactly the same notes
+        # as a complete run would.
+        signals = None
         if args in cache and random.random() < 0.9:
             print 'Note Cache Hit! {0} -> {1}'.format(index, index - cacheMisses)
             signals = cache[args]
         else:
-            signals = sing(*args)
-            # Note that the get code below will compute the value fo these futures as some point.
+            path_l, signal_l = sf.MaybeReadSignal("left_{0}".format(index))
+            path_r, signal_r = sf.MaybeReadSignal("right_{0}".format(index))
+            signals = None
+            if not (signal_l and signal_r):
+                signals = sing(*args)
+                toWrite += [(signals, path_l, path_r)]
+                if len(toWrite) > 4:
+                    for sPair, path_l, path_r in toWrite:
+                        sf.WriteSignal(sPair.get()[0], path_l)
+                        sf.WriteSignal(sPair.get()[1], path_r)
+                    toWrite = []
+            else:
+                print 'Restart Hit!   {0}'.format(index)
+                signals = (signal_l, signal_r)
+            # Note that the get code below will compute the value for these futures as some point.
             cache[args] = signals
             cacheMisses += 1
 
         dl=30 * rl + 1000
         dr=38 * lr + 1000
-        l=len(notes)
-        if l > oldI + 8:
-            for x in range(oldI,l):
-                notes[x][0].get()
-            oldI = l
         notes.append((signals,at+dl,at+dr))
+
     return notes
 

@@ -3,6 +3,7 @@ com.nerdscentral.audio.sound.SF_LineWait
 com.nerdscentral.audio.sound.SF_Mixers
 com.nerdscentral.audio.sound.SF_Monitor
 com.nerdscentral.audio.sound.SF_PlayFile
+com.nerdscentral.audio.io.SF_MaybeReadSignal
 com.nerdscentral.audio.io.SF_ReadFile
 com.nerdscentral.audio.io.SF_ReadSignal
 com.nerdscentral.audio.io.SF_SwapSignal

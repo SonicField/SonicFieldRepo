@@ -19,6 +19,7 @@ java \
     -XX:+UseCompressedOops \
     -XX:+UseCompressedClassPointers \
     -DsonicFieldTemp=/Volumes/External1/scratch1/,/Volumes/External2/scratch1/ \
+    -Dsython.restart.dir=/Volumes/External1/restart/ \
     -Dsython.threads=4 \
     -Xmx2G \
     -Dsython.linear=false \

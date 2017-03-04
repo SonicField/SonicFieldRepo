@@ -49,11 +49,11 @@ def main():
     # Controls for rendering the piece #
     ####################################
     
-    midis=Midi.read_midi_file("temp/807.mid")
+    midis=Midi.read_midi_file("temp/bwv808.mid")
     
     # Length of full piece
     #======================
-    length = 16.0
+    length = 14.0
     
     # Temperament
     #=============
@@ -81,7 +81,7 @@ def main():
     
     # Truncate.
     # Only render this many notes; < 1 implies all.
-    truncate = -1
+    truncate = 4000
     
     # Do Not Change
     #===============
