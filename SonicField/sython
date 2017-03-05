@@ -15,10 +15,11 @@
 # -XX:+UseCompressedKlassPointers \
 # -XX:+PrintCompilation \
 
+#    -DsonicFieldTemp=/Volumes/External1/scratch1/,/Volumes/External2/scratch1/ \
 java \
     -XX:+UseCompressedOops \
     -XX:+UseCompressedClassPointers \
-    -DsonicFieldTemp=/Volumes/External1/scratch1/,/Volumes/External2/scratch1/ \
+    -DsonicFieldTemp=/tmp/ \
     -Dsython.restart.dir=/Volumes/External1/restart/ \
     -Dsython.threads=4 \
     -Xmx2G \

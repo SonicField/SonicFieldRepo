@@ -4,8 +4,6 @@ from sython.utils.Envelopes import safe_env
 from com.nerdscentral.audio.core import SFMemoryZone
 from com.nerdscentral.audio.core import SFData
 import random
-
-NOTE_COUNTER=AtomicLong()
          
 ################################################################################
 #  hint:     NN TN TT NT for trill and normal for the previous and next notes
@@ -34,7 +32,6 @@ NOTE_COUNTER=AtomicLong()
 def sing(hint, pitch, lengthIn, v, vl, vr, voice, velocity_correct_, quick_factor,
          sub_bass, flat_env, pure, raw_bass, decay, bend, mellow):
     with SFMemoryZone():     
-        d_log('Playing note:',NOTE_COUNTER.incrementAndGet(),voice)
         velocity_correct=velocity_correct_
         length=lengthIn
         tp=0
@@ -313,7 +310,9 @@ def play(
     d_log("Stop: ",voice)
     d_log('Total notes:',len(midi))
     cacheMisses = 0
+    # Stores up sing futures so they are executed in batches giving better parallelisation.
     toWrite=[]
+
     for index in range(0,len(midi)):
         if index>0:
             prev=midi[index-1]
@@ -475,6 +474,7 @@ def play(
 
         dl=30 * rl + 1000
         dr=38 * lr + 1000
+        print "Appending Node {} of {}".format(index, len(midi))
         notes.append((signals,at+dl,at+dr))
 
     return notes

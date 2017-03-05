@@ -185,7 +185,7 @@ def soft_harpsichord(midi_in, beat, temperament, velocity):
 
 def oboe_harpsichord(midi_in, beat, temperament, velocity):
 
-    harmonics1 = [pow(x,1.00) for x in xrange(1,100)]
+    harmonics1 = [pow(x,1.002) for x in xrange(1,100)]
     plr1 = make_addtive_resonance(qCorrect=5.0, rollOff=2.5, saturate=0.1, power=1.0, 
                                  post=oboe_harpsichord_filter,
                                  harmonics=harmonics1, seed = -40)

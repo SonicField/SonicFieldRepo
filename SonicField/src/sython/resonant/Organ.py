@@ -53,7 +53,7 @@ def main():
     
     # Length of full piece
     #======================
-    length = 14.0
+    length = 17.0
     
     # Temperament
     #=============
@@ -81,7 +81,8 @@ def main():
     
     # Truncate.
     # Only render this many notes; < 1 implies all.
-    truncate = 4000
+    truncate = 150
+
     
     # Do Not Change
     #===============

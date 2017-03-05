@@ -305,31 +305,29 @@ def soft_harpsichord_filter(power, resonance, sig, length, freq, attack=2, trian
         )
 
         out = sf.FixSize(sf.Multiply(env, sig))
-        #out = sig
-        #click = sf.RBJLowPass(sf.SimpleShape((0,-10), (length, -100), (tLen, -100)), 5000 ,1)
-        #click = sf.NumericShape((0,5), (1,-5), (2,0), (tLen, 0))
-        #click = sf.Cut(0, length, click)
-        #out = sf.Mix(click, out)
-        out = sf.Power(out, power)
+        if power != 1.0:
+            outP = sf.FixSize(sf.Power(out, power))
+            outP = sf.Saturate(outP)
+            trueLen = sf.Length(outP)
+            envP = sf.NumericShape((0,0), (20,1), (trueLen - 20, 1), (trueLen, 0))
+            outP = sf.Multiply(outP, envP)
+
+            env  = sf.NumericShape((0,1), (20,0), (trueLen - 20, 0), (trueLen, 1))
+            out  = sf.Multiply(out, env)
+            
+            out = sf.Mix(out, outP)
+            
         return sf.FixSize(polish(out, freq)).flush()
 
 def oboe_harpsichord_filter(sig, length, frequency):
-        with SFMemoryZone():
-            sig = sf.RBJPeaking(sig, frequency*3, 0.2, 5)
-            sig = sf.RBJPeaking(sig, frequency*5, 0.5, 4)
-            sig = sf.RBJPeaking(sig, frequency*7, 1, 4)
-            sig = sf.RBJNotch(sig, frequency*2, 1.0, 1.0)
-            sig = sf.Mix(+sig, sf.RBJNotch(sig, frequency, 1.0, 1.0))
-            sig = sf.RBJLowPass(sig, frequency*9, 1.0)
-            br = frequency * 9
-            if br > 5000.0:
-               br = 5000.0
-            sig = sf.RBJLowPass(sig, br, 1.0).keep()
-            powr = 1.0
-            if frequency< 250:
-                powr += (250.0 - frequency) / 100.0
-        return soft_harpsichord_filter(power=powr, resonance=1.0, sig=sig,
-                                       length=length, freq = frequency, attack=6 + random.random() * 8)
+    powr = 1.0
+    if frequency< 250:
+        powr -= (250.0 - frequency) / 750.0
+        if powr < 0.5:
+            powr = 0.5
+
+    return soft_harpsichord_filter(power=powr, resonance=1.0, sig=sig,
+                                   length=length, freq = frequency)
 
 def make_harpsichord_filter(soft=False, power=1.05, resonance=1.0):
     if soft:

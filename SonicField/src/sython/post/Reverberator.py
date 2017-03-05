@@ -45,7 +45,7 @@ def main():
     ####################################
     
     # If true, do not perform secondary reverb.
-    dry     = False
+    dry     = True
     # Perform excitation of primary convolution even when not bright or vbright.
     clear   = True
     # Perform brightening.
@@ -64,15 +64,14 @@ def main():
     # Post process which is a multi-band compress and adds warmth (valve like waveshaping).
     post    = True
     # Use a spring reverb' impulse response.
-    spring  = True
+    spring  = False
     # EQ up the bass a little. This helps compensate for domination of highs when brightening.
     bboost  = False
     # The mix in the final. 0.0 implies pure wet; 1.0 is pure dry. Use 0.0 if you want to mix by hand.
-    mix     = 0.0
+    mix     = 0.25
     # The spring impulse response has a boomy signature at around 100Hz, this takes some of that out.
     lightenSpring = True
- 
-    '''     
+    
     if ambient:  
         (convoll,convolr)=sf.ReadFile("temp/impulses/v-grand-l.wav")
         (convorl,convorr)=sf.ReadFile("temp/impulses/v-grand-r.wav")
@@ -182,11 +181,11 @@ def main():
                     wright=sf.FixSize(sf.Mix(wright,sf.Pcnt20(vwright))).flush()
 
     writeWave(wleft, wright, 'temp/step-2-reverb')
-    '''
+
     if post:
         print "Warming"
         
-        #left, right = sf.ReadFile('temp/step-2-reverb_0.wav')
+        left, right = wleft, wright
         
         def highDamp(sig,freq,fact):
             with SFMemoryZone():
