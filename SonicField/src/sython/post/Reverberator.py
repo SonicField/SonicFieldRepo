@@ -27,9 +27,9 @@ def main():
     ####################################
     
     with SFMemoryZone():    
-        #left, right = sf.ReadFile("temp/dry.wav")
-        left  = sf.ReadSignal("temp/left_v1_acc")
-        right = sf.ReadSignal("temp/right_v1_acc")
+        left, right = sf.ReadFile("temp/declicked.wav")
+        #left  = sf.ReadSignal("temp/left_v1_acc")
+        #right = sf.ReadSignal("temp/right_v1_acc")
         
         left =sf.Multiply(sf.NumericShape((0,0),(64,1),(sf.Length(+left ),1)),left )
         right=sf.Multiply(sf.NumericShape((0,0),(64,1),(sf.Length(+right),1)),right)
@@ -47,7 +47,7 @@ def main():
     # If true, do not perform secondary reverb.
     dry     = True
     # Perform excitation of primary convolution even when not bright or vbright.
-    clear   = True
+    clear   = False
     # Perform brightening.
     bright  = True
     # Extra brightening of the dry signal.
@@ -64,7 +64,7 @@ def main():
     # Post process which is a multi-band compress and adds warmth (valve like waveshaping).
     post    = True
     # Use a spring reverb' impulse response.
-    spring  = False
+    spring  = True
     # EQ up the bass a little. This helps compensate for domination of highs when brightening.
     bboost  = False
     # The mix in the final. 0.0 implies pure wet; 1.0 is pure dry. Use 0.0 if you want to mix by hand.

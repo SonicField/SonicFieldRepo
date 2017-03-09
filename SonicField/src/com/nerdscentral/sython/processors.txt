@@ -35,6 +35,7 @@ com.nerdscentral.audio.combine.SF_CrossFadeSplit
 com.nerdscentral.audio.combine.SF_CrossMultiply
 com.nerdscentral.audio.combine.SF_Cut
 com.nerdscentral.audio.combine.SF_Divide
+com.nerdscentral.audio.combine.SF_FirstCross
 com.nerdscentral.audio.combine.SF_Granulate
 com.nerdscentral.audio.combine.SF_Mix
 com.nerdscentral.audio.combine.SF_MixAt

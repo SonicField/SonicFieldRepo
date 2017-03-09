@@ -19,6 +19,9 @@ public class SF_RoundOff implements SFPL_Operator
     @Override
     public Object Interpret(final Object input) throws SFPL_RuntimeException
     {
+        /*
+         * Tapers 20ms linearly at the start and the end of a sample to remove clicks.
+         */
         SFSignal data = Caster.makeSFSignal(input);
         if (data.getLength() < rollOffSamples * 2)
         {

@@ -20,6 +20,9 @@ public class SF_RTrim implements SFPL_Operator
     @Override
     public Object Interpret(final Object input) throws SFPL_RuntimeException
     {
+        /*
+         * Trims silence (actually noise < NOISE_FLOOR) off the right (trailing end) of a signal.
+         */
         SFSignal dataIn = Caster.makeSFSignal(input);
         int start = 0;
         int len = dataIn.getLength();

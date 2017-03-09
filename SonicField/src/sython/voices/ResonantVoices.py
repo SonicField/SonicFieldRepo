@@ -297,7 +297,7 @@ def soft_harpsichord_filter(power, resonance, sig, length, freq, attack=2, trian
         sig, env, res = sf.MatchLengths((sig, env, res))
         sig = sf.ShapedLadderLowPass(sig, env, res)
 
-        env = sf.SimpleShape((0, -20), (attack,0), (50, -10), (max_len, -80), (tLen, -80))
+        env = sf.SimpleShape((0, -40), (attack,0), (50, -10), (max_len, -80), (tLen, -80))
         env = sf.Cut(0, length, env)
         env = sf.Multiply(
             env,
@@ -316,7 +316,7 @@ def soft_harpsichord_filter(power, resonance, sig, length, freq, attack=2, trian
             out  = sf.Multiply(out, env)
             
             out = sf.Mix(out, outP)
-            
+        out = sf.FirstCross(out) 
         return sf.FixSize(polish(out, freq)).flush()
 
 def oboe_harpsichord_filter(sig, length, frequency):

@@ -200,7 +200,7 @@ def oboe_harpsichord(midi_in, beat, temperament, velocity):
         flat_env=True,
         quick_factor=0,
         pure=False,
-        pan = 0.25
+        pan = -1
     )
     return post_process(notes1)
     

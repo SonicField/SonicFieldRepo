@@ -81,7 +81,7 @@ def main():
     
     # Truncate.
     # Only render this many notes; < 1 implies all.
-    truncate = 150
+    truncate = -1
 
     
     # Do Not Change
@@ -115,7 +115,7 @@ def main():
             if dilate:
                 for event in out:
                     diff = event.tick_off-event.tick
-                    event.tick *= 3
+                    event.tick *= 10
                     event.tick_off = event.tick+diff
         
             # Purify, i.e. strip out events which are not notes.

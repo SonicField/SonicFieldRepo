@@ -1,7 +1,6 @@
 /* For Copyright and License see LICENSE.txt and COPYING.txt in the root directory */
 package com.nerdscentral.audio.combine;
 
-import com.nerdscentral.audio.core.SFConstants;
 import com.nerdscentral.audio.core.SFData;
 import com.nerdscentral.audio.core.SFSignal;
 import com.nerdscentral.sython.Caster;
@@ -9,7 +8,7 @@ import com.nerdscentral.sython.SFMaths;
 import com.nerdscentral.sython.SFPL_Operator;
 import com.nerdscentral.sython.SFPL_RuntimeException;
 
-public class SF_Trim implements SFPL_Operator
+public class SF_FirstCross implements SFPL_Operator
 {
 
     /**
@@ -21,25 +20,31 @@ public class SF_Trim implements SFPL_Operator
     public Object Interpret(final Object input) throws SFPL_RuntimeException
     {
         /*
-         * Trims all the silence (actually < NOISE_FLOOR) of the start and end of a signal.
+         * Zeros  the start of a signal to the point where the first crossing of zero is.
+         * This helps get rid of unwanted clicks at the start of a signal and is a bit like
+         * starting all the oscillators in phase at the start.
          */
         SFSignal dataIn = Caster.makeSFSignal(input);
         int start = 0;
+        double first = dataIn.getSample(0);
+        if (SFMaths.abs(first) == 0.0) return input;
+
         int len = dataIn.getLength();
+        boolean phase = first > 0.0;
         for (; start < len; ++start)
         {
-            if (SFMaths.abs(dataIn.getSample(start)) > SFConstants.NOISE_FLOOR) break;
+            boolean newPhase = dataIn.getSample(start) > 0.0;
+            if (newPhase != phase) break;
         }
-        int end = len - 1;
-        for (; end > start; --end)
+        SFSignal out = SFData.build(len - start);
+        for (int i = 0; i < start; ++i)
         {
-            if (SFMaths.abs(dataIn.getSample(end)) > SFConstants.NOISE_FLOOR) break;
+            out.setSample(i, 0);
+
         }
-        ++end;
-        SFSignal out = SFData.build(end - start);
-        for (int i = start; i < end; ++i)
+        for (int i = start; i < len; ++i)
         {
-            out.setSample(i - start, dataIn.getSample(i));
+            out.setSample(i, dataIn.getSample(i));
         }
         return out;
     }
@@ -47,7 +52,7 @@ public class SF_Trim implements SFPL_Operator
     @Override
     public String Word()
     {
-        return Messages.getString("SF_Trim.0"); //$NON-NLS-1$
+        return Messages.getString("SF_FirstCross.0"); //$NON-NLS-1$
     }
 
 }

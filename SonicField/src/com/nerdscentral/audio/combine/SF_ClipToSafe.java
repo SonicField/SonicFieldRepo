@@ -19,6 +19,11 @@ public class SF_ClipToSafe implements SFPL_Operator
     @Override
     public Object Interpret(final Object input) throws SFPL_RuntimeException
     {
+        /*
+         * DC corrects the start of a clip and rolls off the end.
+         * This is an attempt to get rid of clicks. Does not work very well.
+         * TODO: Remove this.
+         */
         SFSignal data = Caster.makeSFSignal(input);
         if (data.getLength() < rollOffSamples)
         {
