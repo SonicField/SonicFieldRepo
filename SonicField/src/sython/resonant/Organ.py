@@ -49,7 +49,7 @@ def main():
     # Controls for rendering the piece #
     ####################################
     
-    midis=Midi.read_midi_file("temp/bwv808.mid")
+    midis=Midi.read_midi_file("temp/809.mid")
     
     # Length of full piece
     #======================

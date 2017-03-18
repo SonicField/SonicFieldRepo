@@ -26,11 +26,30 @@ import random
 #  bend:     true/false if true then let the pitch of the note rise very
 #            slightly over the note
 #  mellow:   Use filtering to mellow the note, required for sub_bass to work
+#
+# smooth:    Use convolution to smooth out notes individually.
 ################################################################################
 
 @sf_parallel
-def sing(hint, pitch, lengthIn, v, vl, vr, voice, velocity_correct_, quick_factor,
-         sub_bass, flat_env, pure, raw_bass, decay, bend, mellow):
+def sing(
+        hint,
+        pitch,
+        lengthIn,
+        v,
+        vl,
+        vr,
+        voice,
+        velocity_correct_,
+        quick_factor,
+        sub_bass,
+        flat_env,
+        pure,
+        raw_bass,
+        decay,
+        bend,
+        mellow,
+        smooth
+    ):
     with SFMemoryZone():     
         velocity_correct=velocity_correct_
         length=lengthIn
@@ -100,9 +119,10 @@ def sing(hint, pitch, lengthIn, v, vl, vr, voice, velocity_correct_, quick_facto
             env=sf.SimpleShape((0,0),(length,dbs))
             sig=sf.Multiply(sig,env)
         
-        pHint=hint[0]
-        nHint=hint[1]
-        shine=False
+        pHint = hint[0]
+        nHint = hint[1]
+        shine = False
+        env = None
         if quick_factor:
             if tp==0:
                 if pHint=="T":
@@ -147,12 +167,11 @@ def sing(hint, pitch, lengthIn, v, vl, vr, voice, velocity_correct_, quick_facto
                     env=safe_env(sig,[(0,0),(64*quick_factor,0.5),(256,1),(512,0.75),(length-512,0.75),(length,0)])
             else:
                 env=safe_env(sig,[(0,0),(64*quick_factor,0.25),(512,1),(length/2,0.75),(length,0)])
-        else:
-            env=safe_env(sig,[(0,1),(length,1)])
     
         if bend:
             mod=sf.NumericShape((0,0.995),(length,1.005))
-            mod=sf.Mix(mod,sf.NumericVolume(+env,0.01))
+            if env:
+                mod=sf.Mix(mod,sf.NumericVolume(+env,0.01))
             # if we have envelope extension then we don't do this as
             # it get really hard to get the lengths correct and make 
             # sense of what we are trying to do. KISS
@@ -204,32 +223,35 @@ def sing(hint, pitch, lengthIn, v, vl, vr, voice, velocity_correct_, quick_facto
                     sf.BesselLowPass(+sig,pitch*5, 2),
                     sf.BesselLowPass( sig,5000,    1)
                 )
-    
-        sig=sf.Multiply(sig,env)                     
+        
+        if env:
+            sig=sf.Multiply(sig,env)                     
         sig=sf.FixSize(sig)
         
-        cnv=sf.WhiteNoise(10240)
-        cnv=sf.ButterworthHighPass(cnv,32,4)
-        if shine:
-            q=640
-            print "Shine"
-        else:
-            q=256
-        cnv=sf.Cut(5000,5000+q,cnv)
-        cnv=sf.Multiply(cnv,sf.NumericShape((0,0),(32,1),(q,0)))
-        sigr=convolve(+sig,cnv)
-        sigr=sf.Multiply(
-            safe_env(sigr,[(0,0),(256,1),(sf.Length(+sigr),1.5)]),
-            sigr
-        )
-        sig=sf.Mix(
-            sf.Pcnt20(sigr),
-            sf.Pcnt80(sig)
-        )
-        
-        note=sf.NumericVolume(sf.FixSize(sig), v)
-        notel=sf.NumericVolume(note, vl*velocity_correct).flush()
-        noter=sf.NumericVolume(note, vr*velocity_correct).flush()
+        if smooth:
+            cnv=sf.WhiteNoise(10240)
+            cnv=sf.ButterworthHighPass(cnv,32,4)
+            if shine:
+                q=640
+                print "Shine"
+            else:
+                q=256
+            cnv=sf.Cut(5000,5000+q,cnv)
+            cnv=sf.Multiply(cnv,sf.NumericShape((0,0),(32,1),(q,0)))
+            sigr=convolve(+sig,cnv)
+            sigr=sf.Multiply(
+                safe_env(sigr,[(0,0),(256,1),(sf.Length(+sigr),1.5)]),
+                sigr
+            )
+            sig=sf.Mix(
+                sf.Pcnt20(sigr),
+                sf.Pcnt80(sig)
+            )
+
+        #note  = sf.FirstCross(sf.FixSize(sig)) 
+        note  = sf.NumericVolume(sf.FixSize(sig), v)
+        notel = sf.NumericVolume(note, vl*velocity_correct).flush()
+        noter = sf.NumericVolume(note, vr*velocity_correct).flush()
         return notel, noter
 
 ################################################################################
@@ -255,6 +277,7 @@ def sing(hint, pitch, lengthIn, v, vl, vr, voice, velocity_correct_, quick_facto
 # decay:        use decay - see sing
 # bend:         use bend - see sing
 # mellow:       use mellow - see sing
+# smooth:       use convolution to smooth out notes
 # simple:       use simple midi mode (see below), default True
 # controllers:  in complex midi mode use these functions as controllers#
 #
@@ -303,7 +326,9 @@ def play(
         decay               =False,
         bend                =False,
         mellow              =False,
-        controllers         ={}
+        smooth              =True,
+        controllers         ={},
+        replayIndex         =4000
     ):
     notes=[]
     cache = {}
@@ -442,7 +467,8 @@ def play(
             raw_bass,
             decay,
             bend,
-            mellow)
+            mellow,
+            smooth)
         
         # Here is the restart logic. If this is a restart then it
         # should automatically skip generating notes it has already generated.
@@ -450,7 +476,7 @@ def play(
         # may not be populated so a restart might not generate exactly the same notes
         # as a complete run would.
         signals = None
-        if args in cache and random.random() < 0.9:
+        if args in cache and (index < replayIndex or random.random() < 0.9):
             print 'Note Cache Hit! {0} -> {1}'.format(index, index - cacheMisses)
             signals = cache[args]
         else:

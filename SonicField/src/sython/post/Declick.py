@@ -58,4 +58,6 @@ def main():
     left  = declick(left)
     right = declick(right)
     sf.WriteFile32((left, right),"temp/declicked.wav")
+    sf.WriteSignal(left, "temp/declicked_l")
+    sf.WriteSignal(right,"temp/declicked_r")
 

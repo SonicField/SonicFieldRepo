@@ -45,12 +45,19 @@ public class SF_SimpleShape implements SFPL_Operator
             double endX = Caster.makeDouble(end.get(0));
             double startY = Caster.makeDouble(start.get(1));
             double endY = Caster.makeDouble(end.get(1));
+            if (startX > endX)
+            {
+                throw new RuntimeException("Illegal envelope points: " + startX + "," + endX);
+            }
+            if (startX < 0) throw new RuntimeException("Envelope position less than zero.");
             double len = SFMaths.floor((endX - startX) * SFConstants.SAMPLE_RATE / 1000.0d);
             double diff = endY - startY;
             double min = SFMaths.min(len, shape.getLength());
+            int mustEnd = shape.getLength() - 1;
             for (double x = 0; x < min; ++x)
             {
                 double dbs = diff * x / len + startY;
+                if (position > mustEnd) break;
                 shape.setSample(position++, SFConstants.slowFromDBs(dbs) /*SFConstants.fromDBs(dbs)*/);
             }
         }

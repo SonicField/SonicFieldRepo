@@ -22,6 +22,7 @@ from sython.utils.Algorithms import polish
 import math
 import random
 import functools
+from __builtin__ import None
 
 # The probability of using rather than replacing a cached harmonic.
 _CACHE_PROBABILITY = 0.9
@@ -253,7 +254,10 @@ def harpsichord_filter(power, resonance, sig, length, freq):
         out = sf.Power(out, power)
         return sf.FixSize(out.flush())
 
+# TODO remove length from signature.
 def soft_harpsichord_filter(power, resonance, sig, length, freq, attack=2, triangle=True):
+
+    length = sf.Length(sig)
 
     if attack > 20:
         raise ValueError('Attack too large; must be <= 20.')
@@ -273,20 +277,50 @@ def soft_harpsichord_filter(power, resonance, sig, length, freq, attack=2, trian
     
     with SFMemoryZone():
         sig = sf.Reverse(sig)
-        end = length - 10
-        if end < 50:
-            end = 50
         tot = 10000.0 # 10 Seconds
         
         max_len = 10000.0
         tLen = max_len if max_len > length else length
         
-        env = sf.SimpleShape(
-            (0,       sf.ToDBs(18000)),
-            (max_len, sf.ToDBs(freq * 2.5)),
-            (tLen,    sf.ToDBs(freq * 2.5))
-        )
+        q1 = freq * 7
+        q2 = freq * 3
+        if freq > 440:
+            q2 *= 0.75
+            q1 *= 0.75
+        if freq > 660:
+            q2 *= 0.75
+            q1 *= 0.75
+    
+        env = None
+        if length > 60:
+            env = sf.SimpleShape(
+                (0,       sf.ToDBs(18000)),
+                (50,      sf.ToDBs(q1)),
+                (max_len, sf.ToDBs(q2)),
+                (tLen,    sf.ToDBs(q1))
+            )         
+        else:
+            env = sf.SimpleShape(
+                (0,       sf.ToDBs(18000)),
+                (max_len, sf.ToDBs(q2)),
+                (tLen,    sf.ToDBs(q2))
+            )
         env = sf.Cut(0, length, env)
+        env = sf.Multiply(
+            sf.SimpleShape((0, 0),(length - 10, 0), (length, -20)),
+            env
+        )
+
+        if length > 50:
+            env = sf.Multiply(
+                env,
+                sf.NumericShape((0,1), (length - 35,1), (length, 0.1))
+            )
+        else:
+            env = sf.Multiply(
+                env,
+                sf.NumericShape((0,1), (length, 0.1))
+            )
 
         res = sf.NumericShape(
             (0, 0.2* resonance),
@@ -294,29 +328,29 @@ def soft_harpsichord_filter(power, resonance, sig, length, freq, attack=2, trian
             (tLen,  0.5 * resonance)
         )
         res = sf.Cut(0, length, res)
-        sig, env, res = sf.MatchLengths((sig, env, res))
-        sig = sf.ShapedLadderLowPass(sig, env, res)
-
-        env = sf.SimpleShape((0, -40), (attack,0), (50, -10), (max_len, -80), (tLen, -80))
-        env = sf.Cut(0, length, env)
         env = sf.Multiply(
-            env,
-            sf.NumericShape((0,1), (length - 25,1), (length, 0))
+            sf.SimpleShape((0, 0),(length - 10, 0), (length, 10)),
+            env
         )
+        sig, env, res = sf.MatchLengths((sig, env, res))
+        out = sf.ShapedLadderLowPass(sig, env, res)
 
-        out = sf.FixSize(sf.Multiply(env, sig))
         if power != 1.0:
             outP = sf.FixSize(sf.Power(out, power))
             outP = sf.Saturate(outP)
-            trueLen = sf.Length(outP)
-            envP = sf.NumericShape((0,0), (20,1), (trueLen - 20, 1), (trueLen, 0))
-            outP = sf.Multiply(outP, envP)
+        
+        env = None
+        if length > 50:
+            env = sf.SimpleShape((0, -40), (attack,0), (50, -10), (max_len, -80), (tLen, -80))
+            env = sf.Cut(0, length, env)
+            env = sf.Multiply(
+                env,
+                sf.NumericShape((0, 0), (10, 1), (length - 25,1), (length, 0))
+            )
+        else:
+            env = sf.NumericShape((0, 0), (10, 1), (length, 0))
+        out = sf.Multiply(env, out)
 
-            env  = sf.NumericShape((0,1), (20,0), (trueLen - 20, 0), (trueLen, 1))
-            out  = sf.Multiply(out, env)
-            
-            out = sf.Mix(out, outP)
-        out = sf.FirstCross(out) 
         return sf.FixSize(polish(out, freq)).flush()
 
 def oboe_harpsichord_filter(sig, length, frequency):
@@ -556,3 +590,64 @@ def tuned_wind(length,freq):
     sig=mix(sigs)
     return sf.FixSize(polish(sig,freq))
 
+def synthichord_filter(sig, length, freq):
+
+    with SFMemoryZone():
+
+        vibAbove = 250
+        if length > vibAbove:
+            # TODO feels a bit crushed - more stages?
+            vibStart  = length*0.5  if length>600 else vibAbove*0.75
+            vibMiddle = length*0.75 if length>600 else vibAbove
+            vibAmount = 0.5 if length > 1000 else 0.25
+            trueLen = sf.Length(+sig)
+            l = trueLen
+            env = sf.NumericShape((0, 0), (vibStart, 0), (vibMiddle, 1), (length, 0.75), (l, 0))
+            env = sf.NumericVolume(env, vibAmount)
+            trem = sf.SineWave(l,2.0 + random.random())
+            trem = sf.MakeTriangle(trem)
+            trem = sf.Multiply(env, trem)
+            vib = +trem
+            trem = sf.DirectMix(1, sf.Pcnt50(trem))
+            sig = sf.Multiply(trem, sig)
+            vib = sf.DirectMix(1, sf.NumericVolume(vib, 0.01))
+            sig = sf.Resample(vib, sig)
+        
+        env = sf.SimpleShape(
+            (0,       sf.ToDBs(18000)),
+            (length,  sf.ToDBs(freq * 2.5))
+        )
+        env = sf.Cut(0, length, env)
+        env = sf.Multiply(
+            env,
+            sf.NumericShape((0,1), (length - 35,1), (length, 0.1))
+        )
+
+        res = None
+        if length > 50:
+            res = sf.NumericShape(
+                (0, 0.5),
+                (length - 50, 0.5),
+                (length, 0.9)
+            )
+        else:
+            res = sf.NumericShape(
+                (0, 0.5),
+                (length, 0.8)
+            )
+        res = sf.Cut(0, length, res)
+        sig, env, res = sf.MatchLengths((sig, env, res))
+        out = sf.ShapedLadderLowPass(sig, env, res)
+
+        attack = 5
+        env = None
+        if length > 50:
+            env = sf.SimpleShape((0, -40), (attack,0), (length, -20))
+            env = sf.Multiply(
+                env,
+                sf.NumericShape((0,1), (length - 20,1), (length, 0))
+            )
+        else:
+            env = sf.NumericShape((0, 0.00), (attack,0), (length, 0))
+        out = sf.Multiply(env, out)
+        return sf.FixSize(polish(out, freq)).flush()

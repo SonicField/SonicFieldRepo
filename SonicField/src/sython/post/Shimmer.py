@@ -22,21 +22,22 @@ def spatialise(osg):
         return oso
 
 @sf_parallel        
-def doWork(left, right, doChorus = False):
+def doWork(left, right, doChorus = False, doSpatial=True):
     print'Do work'
-    with SFMemoryZone():
-        left1, right1 = spatialise(left)
-        left2, right2 = spatialise(right)
-    
-        left=sf.MixAt(
-            (left1,0),
-            (sf.Pcnt10(left2),50)
-        ).flush()
-    
-        right=sf.MixAt(
-            (right1,0),
-            (sf.Pcnt10(right2),40)
-        ).flush()
+    if doSpatial:
+        with SFMemoryZone():
+            left1, right1 = spatialise(left)
+            left2, right2 = spatialise(right)
+        
+            left=sf.MixAt(
+                (left1,0),
+                (sf.Pcnt10(left2),50)
+            ).flush()
+        
+            right=sf.MixAt(
+                (right1,0),
+                (sf.Pcnt10(right2),40)
+            ).flush()
 
     if doChorus:
         left, right = chorus(
@@ -103,8 +104,8 @@ def ma(l):
 
 def main():
         
-    left  = sf.ReadSignal("temp/change_l")
-    right = sf.ReadSignal("temp/change_r")
+    left  = sf.ReadSignal("temp/declicked_l")
+    right = sf.ReadSignal("temp/declicked_r")
     
     lefts  = sf.Granulate(left ,60*5000,0)
     rights = sf.Granulate(right,60*5000,0)
@@ -115,7 +116,7 @@ def main():
     for (left,atl), (right,alr) in zip(lefts,rights):
         left = sf.Realise(left)
         right = sf.Realise(right)
-        left, right = doWork(left,right)
+        left, right = doWork(left, right, doChorus=True, doSpatial=False)
         outl.append((left ,atl))
         outr.append((right,atl))
     

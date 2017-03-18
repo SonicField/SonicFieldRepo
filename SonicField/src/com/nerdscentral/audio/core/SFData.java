@@ -104,42 +104,39 @@ public class SFData extends SFSignal implements Serializable
     }
 
     // $NON-NLS-1$
-    private static final String                             SONIC_FIELD_SAFE_MEMORY = "sonicFieldSaferMemory";                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 //$NON-NLS-1$
-    private static final String                             SONIC_FIELD_TRUE        = "true";                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    //$NON-NLS-1$
-
-    static final long                                       CHUNK_SHIFT             = 16;
-    static final long                                       CHUNK_LEN               = (long) Math.pow(2, CHUNK_SHIFT);
-    static final long                                       CHUNK_MASK              = CHUNK_LEN - 1;
+    private static final String                             SONIC_FIELD_TRUE   = "true";                           //$NON-NLS-1$
+    static final long                                       CHUNK_SHIFT        = 16;
+    static final long                                       CHUNK_LEN          = (long) Math.pow(2, CHUNK_SHIFT);
+    static final long                                       CHUNK_MASK         = CHUNK_LEN - 1;
 
     // How frequently to print of memory state as a modulus of the number of SFData objects created.
-    private static final long                               MEM_REPORT_MODULUS      = 10000;
+    private static final long                               MEM_REPORT_MODULUS = 10000;
 
-    private static final long                               serialVersionUID        = 1L;
+    private static final long                               serialVersionUID   = 1L;
     private final int                                       length;
     ByteBufferWrapper[]                                     chunks;
     private final long                                      chunkIndex;
     // shadows chunkIndex for memory management as chunkIndex must
     // be final to enable optimisation
     private long                                            allocked;
-    private static final AtomicLong                         totalCount              = new AtomicLong();
-    private static final AtomicLong                         freeCount               = new AtomicLong();
-    private static final AtomicLong                         reportTicker            = new AtomicLong();
-    private static ConcurrentLinkedDeque<ByteBufferWrapper> freeChunks              = new ConcurrentLinkedDeque<>();
-    private static ConcurrentLinkedDeque<ByteBufferWrapper> allChunks               = new ConcurrentLinkedDeque<>();
-    private static final boolean                            saferMemory;
+    private static final AtomicLong                         totalCount         = new AtomicLong();
+    private static final AtomicLong                         freeCount          = new AtomicLong();
+    private static final AtomicLong                         reportTicker       = new AtomicLong();
+    private static ConcurrentLinkedDeque<ByteBufferWrapper> freeChunks         = new ConcurrentLinkedDeque<>();
+    private static ConcurrentLinkedDeque<ByteBufferWrapper> allChunks          = new ConcurrentLinkedDeque<>();
     @SuppressWarnings("synthetic-access")
-    private static final MemoryZoneStack                    memoryZoneStack         = new MemoryZoneStack();
-    private final AtomicBoolean                             kept                    = new AtomicBoolean(false);
-    private final AtomicBoolean                             dead                    = new AtomicBoolean(false);
-    private final AtomicBoolean                             pinned                  = new AtomicBoolean(false);
+    private static final MemoryZoneStack                    memoryZoneStack    = new MemoryZoneStack();
+    private final AtomicBoolean                             kept               = new AtomicBoolean(false);
+    private final AtomicBoolean                             dead               = new AtomicBoolean(false);
+    private final AtomicBoolean                             pinned             = new AtomicBoolean(false);
 
     // TODO: The file channels are thread local but the chunks are not. Thus over time chunks will disperse
     // across threads and the locality will be broken. If we can make some mechanism to allow this were needed
     // but migrate chunks back to being thread local where possible to improve disk data locallity this would
     // be good.
 
-    private static ConcurrentHashMap<File, FileChannel>     fileMap                 = new ConcurrentHashMap<>();
-    private static AtomicBoolean                            isFlushing              = new AtomicBoolean(false);
+    private static ConcurrentHashMap<File, FileChannel>     fileMap            = new ConcurrentHashMap<>();
+    private static AtomicBoolean                            isFlushing         = new AtomicBoolean(false);
 
     protected static FileChannel getRotatingChannel()
     {
@@ -164,13 +161,6 @@ public class SFData extends SFSignal implements Serializable
         {
             throw new RuntimeException(e);
         }
-    }
-
-    static
-    {
-        String safe = System.getProperty(SONIC_FIELD_SAFE_MEMORY);
-        saferMemory = safe != null && safe.equals(SONIC_FIELD_TRUE);
-        if (saferMemory) System.out.println(Messages.getString("SFData.4")); //$NON-NLS-1$
     }
 
     private static void maybeReportStats()
@@ -297,7 +287,7 @@ public class SFData extends SFSignal implements Serializable
     public void release()
     {
         checkLive();
-        if (pinned.get()) throw new RuntimeException("Trying to release pinned memory.");
+        if (pinned.get()) throw new RuntimeException("Trying to release pinned memory."); //$NON-NLS-1$
         dead.set(true);
         synchronized (fileMap)
         {
@@ -398,13 +388,17 @@ public class SFData extends SFSignal implements Serializable
 
     private long getAddress(long index)
     {
+        if (SFConstants.CHECK_MEMORY)
+        {
+            if (index < 0 || index > length) throw new RuntimeException("Access out of bounds."); //$NON-NLS-1$
+        }
         long pos = index & CHUNK_MASK;
         long bufPos = index >> CHUNK_SHIFT;
         long address = chunkIndex + (bufPos << 3);
         long addr = unsafe.getAddress(address) + (pos << 3l);
         if (SFConstants.CHECK_MEMORY)
         {
-            if (addr == 0) throw new RuntimeException("Accessing released memory");
+            if (addr == 0) throw new RuntimeException("Accessing released memory."); //$NON-NLS-1$
         }
         return addr;
     }
@@ -440,7 +434,8 @@ public class SFData extends SFSignal implements Serializable
 
     public static final SFSignal build(float[] input)
     {
-        SFSignal data = SFData.build(input.length);
+        // No nead to clear as we set the entire buffer.
+        SFSignal data = new SFData(input.length);
         for (int i = 0; i < input.length; ++i)
         {
             data.setSample(i, input[i]);
@@ -450,7 +445,8 @@ public class SFData extends SFSignal implements Serializable
 
     public static SFSignal build(double[] input)
     {
-        SFSignal data = SFData.build(input.length);
+        // No nead to clear as we set the entire buffer.
+        SFSignal data = new SFData(input.length);
         for (int i = 0; i < input.length; ++i)
         {
             data.setSample(i, input[i]);
@@ -460,6 +456,7 @@ public class SFData extends SFSignal implements Serializable
 
     public static final SFSignal build(double[] input, int j)
     {
+        // Use the factor which does a clear as we are not overwriting everything.
         SFSignal data = SFData.build(j);
         for (int i = 0; i < j; ++i)
         {
@@ -470,6 +467,7 @@ public class SFData extends SFSignal implements Serializable
 
     public static final SFSignal build(OffHeapArray input, int j)
     {
+        // Use the factor which does a clear as we are not overwriting everything.
         SFSignal data = SFData.build(j);
         input.checkBoundsDouble(0, j);
         for (int i = 0; i < j; ++i)

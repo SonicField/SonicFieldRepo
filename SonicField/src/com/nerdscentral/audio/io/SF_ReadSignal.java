@@ -72,8 +72,12 @@ public class SF_ReadSignal implements SFPL_Operator
         }
 
         @Override
-        public double getSample(int index)
+        public synchronized double getSample(int index)
         {
+            // TODO: Is simple synchronisation the best solution or would thread locality be a better bet?
+            // We need to do something because two thread can be looking at different places entirely.
+            // If that happens performance will completely suck anyhow and we _should_ convert to just
+            // loading the whole thing into memory.
             if (index > length || index < 0)
             {
                 throw new ArrayIndexOutOfBoundsException();

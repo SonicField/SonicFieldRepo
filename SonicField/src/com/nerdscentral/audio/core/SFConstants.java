@@ -31,15 +31,14 @@ public class SFConstants
     public static final double                   UPPER_ALIAS_LIMIT   = 24000;
     public static final double                   NOISE_FLOOR         = 1.0 / 32768.00;
     public static final int                      PAGE_SIZE_DOUBLES   = 512;
-    public static final double                   HEAP_RATIO          = Double
-                    .parseDouble(System.getProperty("sython.heap_ratio", "0.1"));                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              //$NON-NLS-1$ //$NON-NLS-2$
-    public static final double                   HEAP_SIZE           = Double
-                    .parseDouble(System.getProperty("sython.heap_size", "2")) * ONE_GIG;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            //$NON-NLS-1$ //$NON-NLS-2$
     public static final boolean                  FIND_DEADLOCKS      = Boolean
-                    .parseBoolean(System.getProperty("sython.find_deadlocks", "false"));                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               //$NON-NLS-1$ //$NON-NLS-2$
+                    .parseBoolean(System.getProperty("sython.check.deadlocks", "false"));                                    //$NON-NLS-1$ //$NON-NLS-2$
+    public static final boolean                  CHECK_MEMORY        = Boolean
+                    .parseBoolean(System.getProperty("sython.check.memory", "false"));                                       //$NON-NLS-1$ //$NON-NLS-2$
+
     public static boolean                        TRACE               = false;
-    public static final String                   RESTART_DIRECTORY   = System.getProperty("sython.restart.dir",                           //$NON-NLS-1$
-                    System.getProperty("java.io.tmpdir"));                                                                                                                                     //$NON-NLS-1$
+    public static final String                   RESTART_DIRECTORY   = System.getProperty("sython.restart.dir",              //$NON-NLS-1$
+                    System.getProperty("java.io.tmpdir"));                                                                   //$NON-NLS-1$
     static
     {
         double start = C4 / 16; // C0
@@ -184,9 +183,8 @@ public class SFConstants
     }
 
     // Directory to send swap files to
-    private static final String  SONIC_FIELD_TEMP = "sonicFieldTemp"; //$NON-NLS-1$
+    private static final String  SONIC_FIELD_TEMP = "sython.temp.dirs"; //$NON-NLS-1$
     public final static String[] TEMP_DATA_DIRS;
-    public static final boolean  CHECK_MEMORY     = false;
     static
     {
         String tempEnv = System.getProperty(SONIC_FIELD_TEMP);

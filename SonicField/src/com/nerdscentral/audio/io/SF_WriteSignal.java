@@ -40,7 +40,7 @@ public class SF_WriteSignal implements SFPL_Operator, SFPL_RefPassThrough
         List<Object> inList = Caster.makeBunch(input);
         SFSignal data = Caster.makeSFSignal(inList.get(0));
         String fileName = Caster.makeString(inList.get(1));
-        String tmpName = fileName + "_"; // $NON-NLS-1$
+        String tmpName = fileName + "_"; //$NON-NLS-1$
         File file = new File(tmpName);
         try (
             FileOutputStream fs = new FileOutputStream(file);
