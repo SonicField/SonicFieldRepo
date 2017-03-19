@@ -60,7 +60,7 @@ def main():
     # Use another very long impulse response.
     megaThe = False
     # Use an impulse response from an abandoned factory.
-    terys   = False
+    terrys  = True
     # Post process which is a multi-band compress and adds warmth (valve like waveshaping).
     post    = True
     # Use a spring reverb' impulse response.
@@ -97,6 +97,21 @@ def main():
             sf.Invert(spring)
         )
 
+    if terrys:
+        ml,mr=sf.ReadFile("temp/impulses/terrys.wav")
+        convoll=sf.Finalise(
+            sf.Mix(
+                convoll,
+                ml
+            )
+        )
+        
+        convorr=sf.Finalise(
+            sf.Mix(
+                convorr,
+                mr
+            )
+        )
     
     if megaThe:
         ml,mr=sf.ReadFile("temp/impulses/mega-thederal.wav")
