@@ -19,6 +19,7 @@ import java.util.Stack;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongFunction;
 
@@ -104,7 +105,7 @@ public class SFData extends SFSignal implements Serializable
     }
 
     // $NON-NLS-1$
-    private static final String                             SONIC_FIELD_TRUE   = "true";                           //$NON-NLS-1$
+    private static final String                             SONIC_FIELD_TRUE   = "true";                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              //$NON-NLS-1$
     static final long                                       CHUNK_SHIFT        = 16;
     static final long                                       CHUNK_LEN          = (long) Math.pow(2, CHUNK_SHIFT);
     static final long                                       CHUNK_MASK         = CHUNK_LEN - 1;
@@ -167,7 +168,7 @@ public class SFData extends SFSignal implements Serializable
     {
         if (reportTicker.incrementAndGet() % MEM_REPORT_MODULUS == 0)
         {
-            final LongFunction<Long> toGigs = chunks -> chunks * CHUNK_LEN / SFConstants.ONE_GIG;
+            final LongFunction<Long> toGigs = chunks -> chunks * CHUNK_LEN * 8 / SFConstants.ONE_GIG;
             System.out.println(Messages.getString("SFData.20") + toGigs.apply(totalCount.get()) //$NON-NLS-1$
                             + Messages.getString("SFData.21") + toGigs.apply((freeCount.get())));  //$NON-NLS-1$
         }
@@ -252,23 +253,77 @@ public class SFData extends SFSignal implements Serializable
         // and so running for an unbounded amount of time.
         if (isFlushing.get()) return;
         isFlushing.set(true);
-        try
+        int nThreads = SFConstants.TEMP_DATA_DIRS.length;
+        AtomicBoolean failed = new AtomicBoolean(false);
+        // Increment and get needs -1 to index from 0.
+        AtomicInteger taken = new AtomicInteger(-1);
+        Thread[] threads = new Thread[nThreads];
+
+        // Flush all in as mean threads as there are temp files so that we can optimise
+        // disk bandwidth.
+        for (int n = 0; n < nThreads; ++n)
         {
-            ByteBufferWrapper[] a = new ByteBufferWrapper[0];
-            a = allChunks.toArray(a);
-            System.out.println(Messages.getString("SFData.5") + a.length); //$NON-NLS-1$
-            int c = 0;
-            for (ByteBufferWrapper chunk : a)
+            Thread th = new Thread()
             {
-                chunk.force();
-                ++c;
-                if (c % 1000 == 0) System.out.println(Messages.getString("SFData.7") + c + Messages.getString("SFData.8")); //$NON-NLS-1$ //$NON-NLS-2$
+
+                @Override
+                @SuppressWarnings({ "synthetic-access" })
+                public void run()
+                {
+                    try
+                    {
+                        ByteBufferWrapper[] a = new ByteBufferWrapper[0];
+                        a = allChunks.toArray(a);
+                        System.out.println(Messages.getString("SFData.5") + a.length); //$NON-NLS-1$
+                        int c = 0;
+                        int mod = taken.incrementAndGet();
+                        for (ByteBufferWrapper chunk : a)
+                        {
+                            if (c % nThreads == mod)
+                            {
+                                chunk.force();
+                            }
+                            ++c;
+                            if (c % 1000 == mod)
+                                System.out.println(Messages.getString("SFData.7") + c + Messages.getString("SFData.8")); //$NON-NLS-1$ //$NON-NLS-2$
+                        }
+                        System.out.println(Messages.getString("SFData.12") + a.length); //$NON-NLS-1$
+                    }
+                    catch (Throwable t)
+                    {
+                        t.printStackTrace();
+                        failed.set(true);
+                    }
+                    finally
+                    {
+                        isFlushing.set(false);
+                    }
+                }
+            };
+            threads[n] = th;
+            th.setDaemon(true);
+            th.start();
+            if (failed.get())
+            {
+                throw new RuntimeException("Flush all failed, see stderr.");
             }
-            System.out.println(Messages.getString("SFData.12") + a.length); //$NON-NLS-1$
         }
-        finally
+        for (Thread thts : threads)
         {
-            isFlushing.set(false);
+            boolean joined = false;
+            while (!joined)
+            {
+                try
+                {
+                    thts.join();
+                    joined = true;
+                }
+                catch (InterruptedException e)
+                {
+                    System.err.println("Non critical thread interup exception during flush - ignoring.");
+                    e.printStackTrace();
+                }
+            }
         }
     }
 

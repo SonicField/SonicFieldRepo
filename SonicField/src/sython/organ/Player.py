@@ -1,9 +1,10 @@
 from sython.utils.Reverberation import granular_reverberate,reverberate,convolve
 from java.util.concurrent.atomic import AtomicLong
 from sython.utils.Envelopes import safe_env
-from com.nerdscentral.audio.core import SFMemoryZone
+from com.nerdscentral.audio.core import SFMemoryZone, SFConstants
 from com.nerdscentral.audio.core import SFData
 import random
+import os.path
          
 ################################################################################
 #  hint:     NN TN TT NT for trill and normal for the previous and next notes
@@ -328,10 +329,13 @@ def play(
         mellow              =False,
         smooth              =True,
         controllers         ={},
-        replayIndex         =4000
+        replayIndex         =0
     ):
     notes=[]
     cache = {}
+    cacheFileName = os.path.join(SFConstants.CACHE_DIRECTORY, 'playerNoteCache.pcl')
+    if os.path.isfile(cacheFileName):
+        cache = pickle.load(cacheFileName)
     d_log("Stop: ",voice)
     d_log('Total notes:',len(midi))
     cacheMisses = 0
@@ -502,6 +506,7 @@ def play(
         dr=38 * lr + 1000
         print "Appending Node {} of {}".format(index, len(midi))
         notes.append((signals,at+dl,at+dr))
-
+        
+        #pickle.dump(noteCache, cacheFileName)
     return notes
 

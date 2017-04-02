@@ -360,8 +360,29 @@ def oboe_harpsichord_filter(sig, length, frequency):
         if powr < 0.5:
             powr = 0.5
 
-    return soft_harpsichord_filter(power=powr, resonance=1.0, sig=sig,
+    with SFMemoryZone():
+        sig = soft_harpsichord_filter(power=powr, resonance=1.0, sig=sig,
                                    length=length, freq = frequency)
+        vibAbove = 200
+        if length > vibAbove:
+            # TODO feels a bit crushed - more stages?
+            vibStart  = length*0.5  if length>600 else vibAbove*0.75
+            vibMiddle = length*0.75 if length>600 else vibAbove
+            vibAmount = 0.5 if length > 1000 else 0.25
+            trueLen = sf.Length(sig)
+            l = trueLen
+            env = sf.NumericShape((0, 0), (vibStart, 0), (vibMiddle, 1), (l, 0))
+            env = sf.NumericVolume(env, vibAmount)
+            trem = sf.SineWave(l,2.0 + random.random())
+            trem = sf.MakeTriangle(trem)
+            trem = sf.Multiply(env, trem)
+            vib = +trem
+            trem = sf.DirectMix(1, sf.Pcnt50(trem))
+            sig = sf.Multiply(trem, sig)
+            vib = sf.DirectMix(1, sf.NumericVolume(vib, 0.01))
+            sig = sf.Resample(vib, sig)
+        
+        return sig.keep()
 
 def make_harpsichord_filter(soft=False, power=1.05, resonance=1.0):
     if soft:

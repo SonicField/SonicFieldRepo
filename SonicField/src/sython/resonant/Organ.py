@@ -49,11 +49,11 @@ def main():
     # Controls for rendering the piece #
     ####################################
     
-    midis=Midi.read_midi_file("temp/809.mid")
+    midis=Midi.read_midi_file("temp/830.mid")
     
     # Length of full piece
     #======================
-    length = 17.0
+    length = 19.0
     
     # Temperament
     #=============
@@ -157,7 +157,8 @@ def main():
             if useModWheel:
                 left  = _doVib(modEnvl, left)
                 right = _doVib(modEnvr, right)
-            
+            left  = sf.FixSize(left)
+            right = sf.FixSize(right)
             sf.WriteSignal(left, "temp/left_v{0}_acc".format(track))
             sf.WriteSignal(right,"temp/right_v{0}_acc".format(track))
             sf.WriteFile32((left, right),"temp/temp_v{0}_acc.wav".format(track))

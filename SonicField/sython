@@ -16,6 +16,7 @@
 # -XX:+PrintCompilation \
 
 #    -Dsython.temp.dirs=/Volumes/External1/scratch1/,/Volumes/External2/scratch1/ \
+#    -Dsython.temp.dirs=/Volumes/External2/scratch1/ \
 
 java \
     -Dsython.check.deadlocks=true\
@@ -23,9 +24,10 @@ java \
     -Dsython.linear=false \
     -Dsython.modules=/Users/alexanderturner/SonicFieldRepo/SonicField/src \
     -Dsython.restart.dir=/Volumes/External1/restart/ \
+    -Dsython.cache.dir=/Volumes/External1/cache/ \
     -Dsython.steal=true \
     -Dsython.trace=false \
-    -Dsython.temp.dirs=/Volumes/External2/scratch1/ \
+    -Dsython.temp.dirs=/Volumes/External1/scratch1/,/Volumes/External2/scratch1/ \
     -Dsython.threads=4 \
     -XX:+UseCompressedOops \
     -XX:+UseCompressedClassPointers \

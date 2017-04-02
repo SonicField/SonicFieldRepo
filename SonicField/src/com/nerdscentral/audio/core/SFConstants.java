@@ -10,6 +10,7 @@ import com.nerdscentral.sython.Caster;
 import com.nerdscentral.sython.SFMaths;
 import com.nerdscentral.sython.SFPL_RuntimeException;
 
+@SuppressWarnings("nls")
 public class SFConstants
 {
     public static final double                   SPEED_OF_SOUND      = 340.29d;
@@ -32,24 +33,27 @@ public class SFConstants
     public static final double                   NOISE_FLOOR         = 1.0 / 32768.00;
     public static final int                      PAGE_SIZE_DOUBLES   = 512;
     public static final boolean                  FIND_DEADLOCKS      = Boolean
-                    .parseBoolean(System.getProperty("sython.check.deadlocks", "false"));                                    //$NON-NLS-1$ //$NON-NLS-2$
+                    .parseBoolean(System.getProperty("sython.check.deadlocks", "false"));
     public static final boolean                  CHECK_MEMORY        = Boolean
-                    .parseBoolean(System.getProperty("sython.check.memory", "false"));                                       //$NON-NLS-1$ //$NON-NLS-2$
+                    .parseBoolean(System.getProperty("sython.check.memory", "false"));
 
     public static boolean                        TRACE               = false;
-    public static final String                   RESTART_DIRECTORY   = System.getProperty("sython.restart.dir",              //$NON-NLS-1$
-                    System.getProperty("java.io.tmpdir"));                                                                   //$NON-NLS-1$
+    public static final String                   RESTART_DIRECTORY   = System.getProperty("sython.restart.dir",
+                    System.getProperty("java.io.tmpdir"));
+    public static final String                   CACHE_DIRECTORY     = System.getProperty("sython.cache.dir",
+                    System.getProperty("java.io.tmpdir"));
+
     static
     {
         double start = C4 / 16; // C0
         // Add sharps and fundamentals
         for (int octave = 0; octave < 10; ++octave)
         {
-            for (String rootName : new String[] { "c", "d", "e", "f", "g", "a", "b" }) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$
+            for (String rootName : new String[] { "c", "d", "e", "f", "g", "a", "b" })
             {
                 equalNotes.put(rootName + octave, start);
                 start *= TWELTH_ROOT_TWO;
-                if (!(rootName.equals("b") || rootName.equals("e"))) //$NON-NLS-1$ //$NON-NLS-2$
+                if (!(rootName.equals("b") || rootName.equals("e"))) //$NON-NLS-2$
                 {
                     equalNotes.put(rootName + octave + "#", start); //$NON-NLS-1$
                     start *= TWELTH_ROOT_TWO;
@@ -60,15 +64,15 @@ public class SFConstants
         // Add flats
         for (int octave = 0; octave < 10; ++octave)
         {
-            for (String rootName : new String[] { "c", "d", "e", "f", "g", "a", "b" }) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$
+            for (String rootName : new String[] { "c", "d", "e", "f", "g", "a", "b" })
             {
                 // if has a flat add it
-                if (!(rootName.equals("c") || rootName.equals("f"))) //$NON-NLS-1$ //$NON-NLS-2$
+                if (!(rootName.equals("c") || rootName.equals("f")))
                 {
-                    equalNotes.put(rootName + octave + "b", start / TWELTH_ROOT_TWO); //$NON-NLS-1$
+                    equalNotes.put(rootName + octave + "b", start / TWELTH_ROOT_TWO);
                 }
                 start *= TWELTH_ROOT_TWO;
-                if (!(rootName.equals("b") || rootName.equals("e"))) //$NON-NLS-1$ //$NON-NLS-2$
+                if (!(rootName.equals("b") || rootName.equals("e")))
                 {
                     start *= TWELTH_ROOT_TWO;
                 }
@@ -91,30 +95,30 @@ public class SFConstants
     {
         justNotes.put("c" + rootName, rootFrequency); //$NON-NLS-1$
 
-        justNotes.put("c" + rootName + "#", rootFrequency * 16 / 15); //$NON-NLS-1$ //$NON-NLS-2$
-        justNotes.put("d" + rootName + "b", rootFrequency * 16 / 15); //$NON-NLS-1$ //$NON-NLS-2$
+        justNotes.put("c" + rootName + "#", rootFrequency * 16 / 15); //$NON-NLS-2$
+        justNotes.put("d" + rootName + "b", rootFrequency * 16 / 15); //$NON-NLS-2$
 
         justNotes.put("d" + rootName, rootFrequency * 9 / 8); //$NON-NLS-1$
 
-        justNotes.put("d" + rootName + "#", rootFrequency * 6 / 5); //$NON-NLS-1$ //$NON-NLS-2$
-        justNotes.put("e" + rootName + "b", rootFrequency * 6 / 5); //$NON-NLS-1$ //$NON-NLS-2$
+        justNotes.put("d" + rootName + "#", rootFrequency * 6 / 5); //$NON-NLS-2$
+        justNotes.put("e" + rootName + "b", rootFrequency * 6 / 5); //$NON-NLS-2$
 
         justNotes.put("e" + rootName, rootFrequency * 5 / 4); //$NON-NLS-1$
 
         justNotes.put("f" + rootName, rootFrequency * 4 / 3); //$NON-NLS-1$
 
-        justNotes.put("f" + rootName + "#", rootFrequency * 10 / 7); //$NON-NLS-1$ //$NON-NLS-2$
-        justNotes.put("g" + rootName + "b", rootFrequency * 10 / 7); //$NON-NLS-1$ //$NON-NLS-2$
+        justNotes.put("f" + rootName + "#", rootFrequency * 10 / 7); //$NON-NLS-2$
+        justNotes.put("g" + rootName + "b", rootFrequency * 10 / 7); //$NON-NLS-2$
 
         justNotes.put("g" + rootName, rootFrequency * 3 / 2); //$NON-NLS-1$
 
-        justNotes.put("g" + rootName + "#", rootFrequency * 32 / 21); //$NON-NLS-1$ //$NON-NLS-2$
-        justNotes.put("a" + rootName + "b", rootFrequency * 32 / 21); //$NON-NLS-1$ //$NON-NLS-2$
+        justNotes.put("g" + rootName + "#", rootFrequency * 32 / 21); //$NON-NLS-2$
+        justNotes.put("a" + rootName + "b", rootFrequency * 32 / 21); //$NON-NLS-2$
 
         justNotes.put("a" + rootName, rootFrequency * 5 / 3); //$NON-NLS-1$
 
-        justNotes.put("a" + rootName + "#", rootFrequency * 9 / 5); //$NON-NLS-1$ //$NON-NLS-2$
-        justNotes.put("b" + rootName + "b", rootFrequency * 9 / 5); //$NON-NLS-1$ //$NON-NLS-2$
+        justNotes.put("a" + rootName + "#", rootFrequency * 9 / 5); //$NON-NLS-2$
+        justNotes.put("b" + rootName + "b", rootFrequency * 9 / 5); //$NON-NLS-2$
 
         justNotes.put("b" + rootName, rootFrequency * 15 / 8); //$NON-NLS-1$
     }
@@ -123,7 +127,7 @@ public class SFConstants
     {
         Object ret = equalNotes.get(note.toLowerCase());
         if (ret == null)
-            throw new RuntimeException(Messages.getString("SFConstants.0") + note + Messages.getString("SFConstants.1")); //$NON-NLS-1$ //$NON-NLS-2$
+            throw new RuntimeException(Messages.getString("SFConstants.0") + note + Messages.getString("SFConstants.1")); //$NON-NLS-2$
         return Caster.makeDouble(ret);
     }
 
@@ -147,11 +151,12 @@ public class SFConstants
         return q;
     }
 
+    @SuppressWarnings("nls")
     public static final double getJustPitch(String note) throws SFPL_RuntimeException
     {
         Object ret = justNotes.get(note.toLowerCase());
         if (ret == null)
-            throw new RuntimeException(Messages.getString("SFConstants.0") + note + Messages.getString("SFConstants.1")); //$NON-NLS-1$ //$NON-NLS-2$
+            throw new RuntimeException(Messages.getString("SFConstants.0") + note + Messages.getString("SFConstants.1"));
         return Caster.makeDouble(ret);
     }
 
@@ -183,7 +188,7 @@ public class SFConstants
     }
 
     // Directory to send swap files to
-    private static final String  SONIC_FIELD_TEMP = "sython.temp.dirs"; //$NON-NLS-1$
+    private static final String  SONIC_FIELD_TEMP = "sython.temp.dirs";
     public final static String[] TEMP_DATA_DIRS;
     static
     {
@@ -191,7 +196,7 @@ public class SFConstants
         String[] tdNames = null;
         if (tempEnv == null)
         {
-            tdNames = new String[] { System.getProperty("java.io.tmpdir") }; //$NON-NLS-1$
+            tdNames = new String[] { System.getProperty("java.io.tmpdir") };
         }
         else
         {
