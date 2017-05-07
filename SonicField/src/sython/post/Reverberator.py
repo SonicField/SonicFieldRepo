@@ -27,9 +27,9 @@ def main():
     ####################################
     
     with SFMemoryZone():    
-        #left, right = sf.ReadFile("temp/dry.wav")
-        left  = sf.ReadSignal("temp/right_v1_acc")
-        right = sf.ReadSignal("temp/left_v1_acc")
+        left, right = sf.ReadFile("temp/dry.wav")
+        #left  = sf.ReadSignal("temp/right_v1_acc")
+        #right = sf.ReadSignal("temp/left_v1_acc")
         
         left =sf.Multiply(sf.NumericShape((0,0),(64,1),(sf.Length(+left ),1)),left )
         right=sf.Multiply(sf.NumericShape((0,0),(64,1),(sf.Length(+right),1)),right)
@@ -60,7 +60,7 @@ def main():
     # Use another very long impulse response.
     megaThe = False
     # Use an impulse response from an abandoned factory.
-    terrys  = True
+    terrys  = False
     # Post process which is a multi-band compress and adds warmth (valve like waveshaping).
     post    = True
     # Use a spring reverb' impulse response.

@@ -353,7 +353,7 @@ def soft_harpsichord_filter(power, resonance, sig, length, freq, attack=2, trian
 
         return sf.FixSize(polish(out, freq)).flush()
 
-def oboe_harpsichord_filter(sig, length, frequency):
+def oboe_harpsichord_filter(sig, length, frequency, vibAbove=200):
     powr = 1.0
     if frequency< 250:
         powr -= (250.0 - frequency) / 750.0
@@ -363,7 +363,6 @@ def oboe_harpsichord_filter(sig, length, frequency):
     with SFMemoryZone():
         sig = soft_harpsichord_filter(power=powr, resonance=1.0, sig=sig,
                                    length=length, freq = frequency)
-        vibAbove = 200
         if length > vibAbove:
             # TODO feels a bit crushed - more stages?
             vibStart  = length*0.5  if length>600 else vibAbove*0.75
@@ -376,13 +375,40 @@ def oboe_harpsichord_filter(sig, length, frequency):
             trem = sf.SineWave(l,2.0 + random.random())
             trem = sf.MakeTriangle(trem)
             trem = sf.Multiply(env, trem)
-            vib = +trem
+            vib = trem
             trem = sf.DirectMix(1, sf.Pcnt50(trem))
             sig = sf.Multiply(trem, sig)
             vib = sf.DirectMix(1, sf.NumericVolume(vib, 0.01))
             sig = sf.Resample(vib, sig)
         
         return sig.keep()
+
+goldbergSlope = sf.SimpleShape((0,0), (10,0), (1000,-30), (20000,-60))
+def goldberg_filter(sig, length, frequency):
+    return _goldberg_filter(sig, length, frequency, False)
+
+def goldberg_filter_bright(sig, length, frequency):
+    return _goldberg_filter(sig, length, frequency, True)
+
+def _goldberg_filter(sig, length, frequency, bright):
+    global goldbergSlope
+    with SFMemoryZone():
+        sig = oboe_harpsichord_filter(sig, length, frequency, 75)
+        wetV = sf.ValueAt(goldbergSlope, frequency)
+        dryV = 1.0 - wetV
+        wet = sf.FixSize(sf.Saturate(sf.NumericVolume(sig, 2.0)))
+        wet = sf.NumericVolume(wet, wetV)
+        dry = sf.NumericVolume(sig, dryV)
+        slope = (250.0 - frequency) / 250.0
+        vol = 1.0 if slope < 0.0 else slope + 1.0
+        sig = sf.Mix(wet, dry)
+        if bright and length > 20.0:
+            sig = sf.RBJPeaking(sig, frequency*4, 1.0, 1)
+            reclip = sf.NumericShape((0,1), (length - 10, 1),  (length, 0))
+            sig = sf.Multiply(reclip, sig)
+        sig = sf.FixSize(sig)
+        return sf.NumericVolume(sig, vol).keep()
+    
 
 def make_harpsichord_filter(soft=False, power=1.05, resonance=1.0):
     if soft:

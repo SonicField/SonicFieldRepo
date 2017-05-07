@@ -49,17 +49,17 @@ def main():
     # Controls for rendering the piece #
     ####################################
     
-    midis=Midi.read_midi_file("temp/830.mid")
+    midis=Midi.read_midi_file("temp/mephisto.mid")
     
     # Length of full piece
     #======================
-    length = 19.0
+    length = 10.0
     
     # Temperament
     #=============
-    temperament = Midi.werckmeisterIII
+    #temperament = Midi.werckmeisterIII
     #temperament = Midi.just_intonation
-    #temperament = Midi.bach_lehman
+    temperament = Midi.bach_lehman
     #temperament = Midi.equal_temperament
     
     # Modulation
@@ -81,13 +81,15 @@ def main():
     
     # Truncate.
     # Only render this many notes; < 1 implies all.
-    truncate = -1
+    truncate = 0
 
+    # Fast blip - needed for some piano music.
+    fastBlip = False
     
     # Do Not Change
     #===============
     
-    midis = Midi.repare_overlap(midis)
+    midis = Midi.repare_overlap(midis, blip=2.0 if fastBlip else 5.0)
     #midis = Midi.tempo(midis)
     
     if unify:
@@ -140,7 +142,7 @@ def main():
                 out = out[0 : truncate]
             
             # This renders the music.
-            left,right = [sf.Finalise(sig) for sig in oboe_harpsichord(out, beat, temperament, 1.0)]
+            left,right = [sf.Finalise(sig) for sig in mephisto_harpsichord(out, beat, temperament, 1.0)]
             
             # Creates controller envelopes based on a particular modulation source in the midi.
             modEnvl = None

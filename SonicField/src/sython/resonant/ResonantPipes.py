@@ -16,6 +16,8 @@ from sython.voices.ResonantVoices import \
     violin_filter, \
     harpsichord_filter, \
     oboe_harpsichord_filter, \
+    goldberg_filter, \
+    goldberg_filter_bright, \
     synthichord_filter, \
     tuned_wind
 
@@ -205,6 +207,50 @@ def oboe_harpsichord(midi_in, beat, temperament, velocity):
         temperament,
         voice=plr1,
         bend=True,
+        mellow=False,
+        velocity_correct=velocity*1.0,
+        flat_env=True,
+        quick_factor=0,
+        pure=False,
+        pan = -1
+    )
+    return post_process(notes1)
+
+def mephisto_harpsichord(midi_in, beat, temperament, velocity):
+
+    harmonics1 = [pow(x,1.005) for x in xrange(1,100)]
+
+    plr1 = make_addtive_resonance(qCorrect=5.0, rollOff=2.0, saturate=0.20, power=1.1, 
+                                 post=goldberg_filter_bright,
+                                 harmonics=harmonics1, seed = -50)
+    notes1 = Player.play(
+        midi_in,
+        beat,
+        temperament,
+        voice=plr1,
+        bend=True,
+        mellow=False,
+        velocity_correct=velocity*1.0,
+        flat_env=True,
+        quick_factor=0.0,
+        pure=False,
+        pan = -1
+    )
+    return post_process(notes1)
+
+def golberg_harpsichord(midi_in, beat, temperament, velocity):
+
+    harmonics1 = [pow(x,1.002) for x in xrange(1,100)]
+
+    plr1 = make_addtive_resonance(qCorrect=5.0, rollOff=2.5, saturate=0.1, power=1.0, 
+                                 post=goldberg_filter,
+                                 harmonics=harmonics1, seed = -50)
+    notes1 = Player.play(
+        midi_in,
+        beat,
+        temperament,
+        voice=plr1,
+        bend=False,
         mellow=False,
         velocity_correct=velocity*1.0,
         flat_env=True,
