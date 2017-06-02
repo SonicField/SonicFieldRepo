@@ -408,7 +408,6 @@ def _goldberg_filter(sig, length, frequency, bright):
             sig = sf.Multiply(reclip, sig)
         sig = sf.FixSize(sig)
         return sf.NumericVolume(sig, vol).keep()
-    
 
 def make_harpsichord_filter(soft=False, power=1.05, resonance=1.0):
     if soft:

@@ -49,8 +49,11 @@ def sing(
         decay,
         bend,
         mellow,
-        smooth
+        smooth,
+        slope,
     ):
+    if pitch > 20000:
+        raise ValueError('Pitch too great {0}'.format(pitch))
     with SFMemoryZone():     
         velocity_correct=velocity_correct_
         length=lengthIn
@@ -248,8 +251,9 @@ def sing(
                 sf.Pcnt20(sigr),
                 sf.Pcnt80(sig)
             )
-
-        #note  = sf.FirstCross(sf.FixSize(sig)) 
+            slopeEnv = sf.SimpleShape(slope)
+            velocity_correct *= sf.ValueAt(slopeEnv, pitch)
+            print 'VCorrect: {0}'.format(velocity_correct)
         note  = sf.NumericVolume(sf.FixSize(sig), v)
         notel = sf.NumericVolume(note, vl*velocity_correct).flush()
         noter = sf.NumericVolume(note, vr*velocity_correct).flush()
@@ -309,6 +313,9 @@ def sing(
 #
 ################################################################################
 
+# Restart is a global thing as we might have multiple passes through play.
+restartIndex = 0
+
 @sf_parallel
 def play(
         midi,
@@ -329,8 +336,10 @@ def play(
         mellow              =False,
         smooth              =True,
         controllers         ={},
-        replayIndex         =0
+        replayIndex         =0,
+        slope               = ((0, 0),  (20000, 0))
     ):
+    global restartIndex
     notes=[]
     cache = {}
     cacheFileName = os.path.join(SFConstants.CACHE_DIRECTORY, 'playerNoteCache.pcl')
@@ -472,7 +481,8 @@ def play(
             decay,
             bend,
             mellow,
-            smooth)
+            smooth,
+            slope)
         
         # Here is the restart logic. If this is a restart then it
         # should automatically skip generating notes it has already generated.
@@ -480,12 +490,12 @@ def play(
         # may not be populated so a restart might not generate exactly the same notes
         # as a complete run would.
         signals = None
-        if args in cache and (index < replayIndex or random.random() < 0.9):
+        if args in cache and (restartIndex < replayIndex or random.random() < 0.9):
             print 'Note Cache Hit! {0} -> {1}'.format(index, index - cacheMisses)
             signals = cache[args]
         else:
-            path_l, signal_l = sf.MaybeReadSignal("left_{0}".format(index))
-            path_r, signal_r = sf.MaybeReadSignal("right_{0}".format(index))
+            path_l, signal_l = sf.MaybeReadSignal("left_{0}".format(restartIndex))
+            path_r, signal_r = sf.MaybeReadSignal("right_{0}".format(restartIndex))
             signals = None
             if not (signal_l and signal_r):
                 signals = sing(*args)
@@ -496,12 +506,12 @@ def play(
                         sf.WriteSignal(sPair.get()[1], path_r)
                     toWrite = []
             else:
-                print 'Restart Hit!   {0}'.format(index)
+                print 'Restart Hit!   {0}'.format(restartIndex)
                 signals = (signal_l, signal_r)
             # Note that the get code below will compute the value for these futures as some point.
             cache[args] = signals
             cacheMisses += 1
-
+        restartIndex += 1
         dl=30 * rl + 1000
         dr=38 * lr + 1000
         print "Appending Node {} of {}".format(index, len(midi))

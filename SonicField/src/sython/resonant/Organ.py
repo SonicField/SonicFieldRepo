@@ -49,11 +49,11 @@ def main():
     # Controls for rendering the piece #
     ####################################
     
-    midis=Midi.read_midi_file("temp/mephisto.mid")
+    midis=Midi.read_midi_file("temp/bwv853.mid")
     
     # Length of full piece
     #======================
-    length = 10.0
+    length = 7.5
     
     # Temperament
     #=============
@@ -142,7 +142,7 @@ def main():
                 out = out[0 : truncate]
             
             # This renders the music.
-            left,right = [sf.Finalise(sig) for sig in mephisto_harpsichord(out, beat, temperament, 1.0)]
+            left,right = [sf.Finalise(sig) for sig in golberg_harpsichord(out, beat, temperament, 1.0)]
             
             # Creates controller envelopes based on a particular modulation source in the midi.
             modEnvl = None

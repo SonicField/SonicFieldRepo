@@ -27,9 +27,9 @@ def main():
     ####################################
     
     with SFMemoryZone():    
-        left, right = sf.ReadFile("temp/dry.wav")
-        #left  = sf.ReadSignal("temp/right_v1_acc")
-        #right = sf.ReadSignal("temp/left_v1_acc")
+        #left, right = sf.ReadFile("temp/dry.wav")
+        left  = sf.ReadSignal("temp/right_v1_acc")
+        right = sf.ReadSignal("temp/left_v1_acc")
         
         left =sf.Multiply(sf.NumericShape((0,0),(64,1),(sf.Length(+left ),1)),left )
         right=sf.Multiply(sf.NumericShape((0,0),(64,1),(sf.Length(+right),1)),right)
@@ -47,14 +47,14 @@ def main():
     # If true, do not perform secondary reverb.
     dry     = False
     # Perform excitation of primary convolution even when not bright or vbright.
-    clear   = False
+    clear   = True
     # Perform brightening.
     bright  = True
     # Extra brightening of the dry signal.
     # vBright without bright will not brighten the wet signal.
     vBright = False
     # Use a church impulse response.
-    church  = False
+    church  = True
     # Use an very long 'ambient' impulse response.
     ambient = False
     # Use another very long impulse response.
