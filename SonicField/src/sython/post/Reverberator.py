@@ -3,6 +3,7 @@ from com.nerdscentral.audio.core import SFMemoryZone
 from sython.utils.Reverberation import reverberate
 from sython.utils.Splitter import writeWave
 from com.nerdscentral.audio.core import SFData
+from __builtin__ import None
 
 @sf_parallel
 def excite(sig,mix,power):
@@ -28,8 +29,8 @@ def main():
     
     with SFMemoryZone():    
         #left, right = sf.ReadFile("temp/dry.wav")
-        left  = sf.ReadSignal("temp/right_v1_acc")
-        right = sf.ReadSignal("temp/left_v1_acc")
+        left  = sf.ReadSignal("temp/right_v1_0_acc")
+        right = sf.ReadSignal("temp/left_v1_0_acc")
         
         left =sf.Multiply(sf.NumericShape((0,0),(64,1),(sf.Length(+left ),1)),left )
         right=sf.Multiply(sf.NumericShape((0,0),(64,1),(sf.Length(+right),1)),right)
@@ -53,6 +54,10 @@ def main():
     # Extra brightening of the dry signal.
     # vBright without bright will not brighten the wet signal.
     vBright = False
+    # A small chamber (smaller than the default vocal chamber).
+    # This also shortens off the spring a lot to remove long rumbling tails
+    # if the spring is used with this.
+    small   = False
     # Use a church impulse response.
     church  = True
     # Use an very long 'ambient' impulse response.
@@ -78,12 +83,19 @@ def main():
     elif church:    
         (convoll,convolr)=sf.ReadFile("temp/impulses/bh-l.wav")
         (convorl,convorr)=sf.ReadFile("temp/impulses/bh-r.wav")
+    elif small:    
+        (convoll,convolr)=sf.ReadFile("temp/impulses/Small-Chamber-L.wav")
+        (convorl,convorr)=sf.ReadFile("temp/impulses/Small-Chamber-R.wav")
     else:
         (convoll,convolr)=sf.ReadFile("temp/impulses/Vocal-Chamber-L.wav")
         (convorl,convorr)=sf.ReadFile("temp/impulses/Vocal-Chamber-R.wav")
     
     if spring:
-        spring=sf.ReadFile("temp/impulses/classic-fs2a.wav")[0]
+        spring = None
+        if small:
+            spring=sf.ReadFile("temp/impulses/short-spring.wav")[0]
+        else:
+            spring=sf.ReadFile("temp/impulses/classic-fs2a.wav")[0]
         if lightenSpring:
             spring =sf.RBJPeaking(spring,100,1,-1)
 

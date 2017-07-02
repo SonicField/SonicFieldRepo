@@ -49,11 +49,11 @@ def main():
     # Controls for rendering the piece #
     ####################################
     
-    midis=Midi.read_midi_file("temp/bwv853.mid")
+    midis=Midi.read_midi_file("temp/bwv856.mid")
     
     # Length of full piece
     #======================
-    length = 7.5
+    length = 3
     
     # Temperament
     #=============
@@ -68,7 +68,7 @@ def main():
     
     # Unify
     #======
-    unify = False
+    unify = True
     
     # Which tracks to render.
     # Note this has no effect under unify.
@@ -86,6 +86,13 @@ def main():
     # Fast blip - needed for some piano music.
     fastBlip = False
     
+    # Render in multiple tracks using round robin.
+    # A setting of 1 gives on track, 2 gives 2 etc.
+    splitTo = 4
+    
+    # How much to mess with timing in milliseconds.
+    scatter = 32
+    
     # Do Not Change
     #===============
     
@@ -102,65 +109,72 @@ def main():
         SFData.flushAll()
         
         # All outputs are written to files which have the track in the name so we can
-        # completely discard all data chunks on each itereation.
+        # completely discard all data chunks on each iteration.
         with SFMemoryZone():
-            out=[]
+            outRaw=[]
             if unify:
                 # Make it all one voice if necessary.
                 for midi in midis:
-                    out += midi
-                out = sorted(out, key=lambda event: event.tick)
+                    outRaw += midi
+                outRaw = sorted(outRaw, key=lambda event: event.tick)
             else:
-                out = midis[track]
+                outRaw = midis[track]
             
             # Dilate notes to inspect individually.
             if dilate:
-                for event in out:
+                for event in outRaw:
                     diff = event.tick_off-event.tick
                     event.tick *= 10
                     event.tick_off = event.tick+diff
         
             # Purify, i.e. strip out events which are not notes.
             o2 = []
-            for o in out:
+            for o in outRaw:
                 if o.isNote():
                     o2.append(o)
-            out = o2
+            outRaw = o2
             
             # Extract the required beat to get the desired length.
-            beat = Midi.set_length([out],length)
+            beat = Midi.set_length([outRaw],length)
         
             # Scatter, i.e. add some timing jitter to the notes.
             # This helps prevent the music sounding quite so mechanical.
-            # High levels of jitter can produce interesting rubato effects; this
             # for this settings of around 128ms seem to make sense.
-            out = Midi.scatter(out, beat, 32)
+            if scatter:
+                out = Midi.scatter(outRaw, beat, scatter)
             
             # Truncate, use this when working on tuning sounds so only the first few notes are
             # generated.
             if truncate > 0:
-                out = out[0 : truncate]
-            
-            # This renders the music.
-            left,right = [sf.Finalise(sig) for sig in golberg_harpsichord(out, beat, temperament, 1.0)]
-            
-            # Creates controller envelopes based on a particular modulation source in the midi.
-            modEnvl = None
-            modEnvR = None
-            if useModWheel:
-                with SFMemoryZone():
-                    modEnvl = Midi.controllerEnvelope(out,'modwheel', beat, left)
-                    modEnvr = Midi.controllerEnvelope(out,'modwheel', beat, right)
-                    # Remove transients from signal use bessel filter
-                    # to retain the phase of the modulation.
-                    modEnvl = sf.BesselLowPass(modEnvl, 16, 2).flush()
-                    modEnvr = sf.BesselLowPass(modEnvr, 16, 2).flush()
-            
-            if useModWheel:
-                left  = _doVib(modEnvl, left)
-                right = _doVib(modEnvr, right)
-            left  = sf.FixSize(left)
-            right = sf.FixSize(right)
-            sf.WriteSignal(left, "temp/left_v{0}_acc".format(track))
-            sf.WriteSignal(right,"temp/right_v{0}_acc".format(track))
-            sf.WriteFile32((left, right),"temp/temp_v{0}_acc.wav".format(track))
+                outRaw = outRaw[0 : truncate]
+
+            for split in xrange(0, splitTo):
+                count = 1
+                out = []
+                for nt in outRaw:
+                    if count % splitTo == split:
+                        out.append(nt)
+                    count += 1                
+                # This renders the music.
+                left,right = [sf.Finalise(sig) for sig in soft_harpsichord(out, beat, temperament, 1.0)]
+                
+                # Creates controller envelopes based on a particular modulation source in the midi.
+                modEnvl = None
+                modEnvR = None
+                if useModWheel:
+                    with SFMemoryZone():
+                        modEnvl = Midi.controllerEnvelope(out,'modwheel', beat, left)
+                        modEnvr = Midi.controllerEnvelope(out,'modwheel', beat, right)
+                        # Remove transients from signal use bessel filter
+                        # to retain the phase of the modulation.
+                        modEnvl = sf.BesselLowPass(modEnvl, 16, 2).flush()
+                        modEnvr = sf.BesselLowPass(modEnvr, 16, 2).flush()
+                
+                if useModWheel:
+                    left  = _doVib(modEnvl, left)
+                    right = _doVib(modEnvr, right)
+                left  = sf.FixSize(left)
+                right = sf.FixSize(right)
+                sf.WriteSignal(left, "temp/left_v{0}_{1}_acc".format(track, split))
+                sf.WriteSignal(right,"temp/right_v{0}_{1}_acc".format(track, split))
+                sf.WriteFile32((left, right),"temp/temp_v{0}_{1}_acc.wav".format(track, split))

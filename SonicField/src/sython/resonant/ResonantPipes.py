@@ -240,11 +240,11 @@ def mephisto_harpsichord(midi_in, beat, temperament, velocity):
     return post_process(notes1)
 
 
-def double_mephisto_harpsichord(midi_in, beat, temperament, velocity):
+def double_pure_harpsichord(midi_in, beat, temperament, velocity):
 
-    harmonics1 = [pow(x,1.005) for x in xrange(1,100)]
+    harmonics1 = [pow(x,1.001) for x in xrange(1,100)]
 
-    plr1 = make_addtive_resonance(qCorrect=5.0, rollOff=2.0, saturate=0.20, power=1.1, 
+    plr1 = make_addtive_resonance(qCorrect=5.0, rollOff=2.0, saturate=0.10, power=1.0, 
                                  post=goldberg_filter_bright,
                                  harmonics=harmonics1, seed = -50)
     notes1 = Player.play(
@@ -265,7 +265,7 @@ def double_mephisto_harpsichord(midi_in, beat, temperament, velocity):
     left1, right1 = post_process(notes1)
     
     harmonics2 = harmonics1[1:10]
-    plr1 = make_addtive_resonance(qCorrect=4.5, rollOff=3.0, saturate=0.5, power=1.2, 
+    plr1 = make_addtive_resonance(qCorrect=4.5, rollOff=3.0, saturate=0.25, power=1.1, 
                                  post=goldberg_filter,
                                  harmonics=harmonics2, seed = -35)
     notes2 = Player.play(
@@ -287,49 +287,35 @@ def double_mephisto_harpsichord(midi_in, beat, temperament, velocity):
     
     return mix(left1, left2), mix(right1, right2)
 
-def golberg_harpsichord(midi_in, beat, temperament, velocity):
+def _golberg_harpsichord(midi_in, beat, temperament, velocity, slope):
 
     harmonics1 = [pow(x,1.002) for x in xrange(1,100)]
 
     plr1 = make_addtive_resonance(qCorrect=5.0, rollOff=2.5, saturate=0.1, power=1.0, 
                                  post=goldberg_filter,
-                                 harmonics=harmonics1, seed = -50)
+                                 harmonics=harmonics1, seed = -30 if slope else -50)
     notes1 = Player.play(
         midi_in,
         beat,
         temperament,
         voice=plr1,
-        bend=False,
+        bend=True if slope else False,
         mellow=False,
         velocity_correct=velocity*1.0,
         flat_env=True,
         quick_factor=0,
         pure=False,
-        pan = -1
+        pan = -1,
+        slope = slope
     )
     return post_process(notes1)
 
-def synthichord(midi_in, beat, temperament, velocity):
+def golberg_harpsichord(midi_in, beat, temperament, velocity):
+    return _golberg_harpsichord(midi_in, beat, temperament, velocity, None)
 
-    harmonics1 = [pow(x,1.000) for x in xrange(1,100)]
-    plr1 = make_addtive_resonance(qCorrect=4.0, rollOff=3.5, saturate=0.0, power=1.0, 
-                                 post=synthichord_filter,
-                                 harmonics=harmonics1, seed = -40)
-    notes1 = Player.play(
-        midi_in,
-        beat,
-        temperament,
-        voice=plr1,
-        bend=False,
-        mellow=False,
-        velocity_correct=velocity*1.0,
-        flat_env=True,
-        quick_factor=0,
-        pure=False,
-        pan=-1,
-        smooth=False
-    )
-    return post_process(notes1)
+def sloped_golberg_harpsichord(midi_in, beat, temperament, velocity):
+    return _golberg_harpsichord(midi_in, beat, temperament, velocity, 
+                         ((0.0, 0), (100, 0) , (440, -10), (4000, -30), (20000, -30)))
     
 def harpsichord(midi_in, beat, temperament, velocity):
     harmonics = [pow(x,1.01) for x in xrange(1,100)]

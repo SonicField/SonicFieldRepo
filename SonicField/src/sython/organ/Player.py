@@ -337,9 +337,11 @@ def play(
         smooth              =True,
         controllers         ={},
         replayIndex         =0,
-        slope               = ((0, 0),  (20000, 0))
+        slope               = None
     ):
     global restartIndex
+    if not slope:
+        slope = ((0, 0),  (20000, 0))
     notes=[]
     cache = {}
     cacheFileName = os.path.join(SFConstants.CACHE_DIRECTORY, 'playerNoteCache.pcl')
