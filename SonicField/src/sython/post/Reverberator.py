@@ -21,23 +21,12 @@ def excite(sig,mix,power):
         return sf.NumericVolume(sig, m/n).flush()
 
 def main():
-    ####################################
-    #
-    # Load the file and clean
-    #
-    ####################################
-    
-    with SFMemoryZone():    
-        #left, right = sf.ReadFile("temp/dry.wav")
-        left  = sf.ReadSignal("temp/right_v1_0_acc")
-        right = sf.ReadSignal("temp/left_v1_0_acc")
-        
-        left =sf.Multiply(sf.NumericShape((0,0),(64,1),(sf.Length(+left ),1)),left )
-        right=sf.Multiply(sf.NumericShape((0,0),(64,1),(sf.Length(+right),1)),right)
-        
-        left =sf.Concatenate(sf.Silence(1024),left).flush()
-        right=sf.Concatenate(sf.Silence(1024),right).flush()
-    
+    paths = 2
+    for path in xrange(paths):
+        _main(path)
+
+def _main(path):
+
     
     ####################################
     #
@@ -57,9 +46,9 @@ def main():
     # A small chamber (smaller than the default vocal chamber).
     # This also shortens off the spring a lot to remove long rumbling tails
     # if the spring is used with this.
-    small   = False
+    small   = True
     # Use a church impulse response.
-    church  = True
+    church  = False
     # Use an very long 'ambient' impulse response.
     ambient = False
     # Use another very long impulse response.
@@ -75,8 +64,35 @@ def main():
     # The mix in the final. 0.0 implies pure wet; 1.0 is pure dry. Use 0.0 if you want to mix by hand.
     mix     = 0.25
     # The spring impulse response has a boomy signature at around 100Hz, this takes some of that out.
-    lightenSpring = True
+    lightenSpring = False
+    # Will the outgoing volumes match the incoming ratio of magnituds
+    matchMagnitudes = True
+
+    ####################################
+    #
+    # Load the file and clean
+    #
+    ####################################
     
+    with SFMemoryZone():    
+        #right, left = sf.ReadFile("temp/dry.wav")
+        left  = sf.ReadSignal("temp/right_v1_{0}_acc".format(path))
+        right = sf.ReadSignal("temp/left_v1_{0}_acc".format(path))
+
+        lrBalance = None
+        if matchMagnitudes:
+            rMag = sf.Magnitude(right)
+            lMag = sf.Magnitude(left) 
+            tMag = lMag + rMag
+            lrBalance = (lMag / tMag, rMag / tMag)
+            print 'Will correct magnitudes to:', lrBalance
+        
+        left =sf.Multiply(sf.NumericShape((0,0),(64,1),(sf.Length(+left ),1)),left )
+        right=sf.Multiply(sf.NumericShape((0,0),(64,1),(sf.Length(+right),1)),right)
+        
+        left =sf.Concatenate(sf.Silence(1024),left).flush()
+        right=sf.Concatenate(sf.Silence(1024),right).flush()
+
     if ambient:  
         (convoll,convolr)=sf.ReadFile("temp/impulses/v-grand-l.wav")
         (convorl,convorr)=sf.ReadFile("temp/impulses/v-grand-r.wav")
@@ -173,8 +189,6 @@ def main():
             right  = excite(right,0.25,1.15)
             left   = excite(left ,0.25,1.15)
 
-        writeWave(wleft, wright, 'temp/step-1-reverb')
-
         SFData.flushAll()
         
         with SFMemoryZone():
@@ -206,8 +220,6 @@ def main():
                 with SFMemoryZone():
                     wleft =sf.FixSize(sf.Mix(wleft ,sf.Pcnt20(vwleft ))).flush()
                     wright=sf.FixSize(sf.Mix(wright,sf.Pcnt20(vwright))).flush()
-
-    writeWave(wleft, wright, 'temp/step-2-reverb')
 
     if post:
         print "Warming"
@@ -254,5 +266,14 @@ def main():
             
         left  = filter(left)
         right = filter(right)
-        writeWave(left, right, 'temp/step-3-filtered')
+    else:
+        left = wleft
+        right = wright
+
+    if lrBalance:
+        print 'Correcting magnitudes to:', lrBalance
+        left  = sf.NumericVolume(left,  lrBalance[0])
+        right = sf.NumericVolume(right, lrBalance[1])
+
+    writeWave(right, left, 'temp/reverberated_{0}'.format(path))
         

@@ -15,7 +15,6 @@ def echo_division(sig_):
     convol=sf.ReadFile("temp/swell.wav")
     sigW=convolve(+sig ,convol[0])
     sig=realise(sig,sigW)
-    c_log("Reference count:",sig.getReferenceCount())
     m2=sf.Magnitude(+sig)
     sig=realise(sf.NumericVolume(sig,m1/m2))
     return sig

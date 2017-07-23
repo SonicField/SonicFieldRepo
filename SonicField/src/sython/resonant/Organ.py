@@ -49,11 +49,11 @@ def main():
     # Controls for rendering the piece #
     ####################################
     
-    midis=Midi.read_midi_file("temp/bwv856.mid")
+    midis=Midi.read_midi_file("temp/bwv862.mid")
     
     # Length of full piece
     #======================
-    length = 3
+    length = 5.0
     
     # Temperament
     #=============
@@ -90,6 +90,9 @@ def main():
     # A setting of 1 gives on track, 2 gives 2 etc.
     splitTo = 4
     
+    # When we split, do we aggregate by pitch?
+    splitPitch = True
+    
     # How much to mess with timing in milliseconds.
     scatter = 32
     
@@ -98,7 +101,7 @@ def main():
     
     midis = Midi.repare_overlap(midis, blip=2.0 if fastBlip else 5.0)
     #midis = Midi.tempo(midis)
-    
+
     if unify:
         tracks = [1]
     
@@ -133,6 +136,7 @@ def main():
                 if o.isNote():
                     o2.append(o)
             outRaw = o2
+
             
             # Extract the required beat to get the desired length.
             beat = Midi.set_length([outRaw],length)
@@ -148,16 +152,50 @@ def main():
             if truncate > 0:
                 outRaw = outRaw[0 : truncate]
 
+            # Distribute the notes such that each split rendering is a different pitch range
+            if splitPitch:
+                oLen = len(outRaw)
+                tmpOut = [[] for _ in xrange(splitTo)]
+                cutAt = int(oLen / splitTo)
+                idx = 0
+                for event in sorted(outRaw, key=lambda event: event.key):
+                    if len(tmpOut[idx]) >= cutAt:
+                        idx += 1
+                        if idx == splitTo:
+                            idx -= 1
+                            print 'IDX Overflow at:', len(tmpOut[idx])
+                    tmpOut[idx].append(event)
+                
+                for idx in xrange(splitTo):
+                    tmpOut[idx] = sorted(tmpOut[idx], key=lambda event: event.tick)
+
+                # TODO: Make this less hacky.
+                outRaw = []
+                for idx in xrange(oLen):
+                    row = tmpOut[idx % splitTo]
+                    rowIdx = int(idx / splitTo)
+                    if len(row) > rowIdx:
+                        outRaw.append(row[rowIdx])
+
             for split in xrange(0, splitTo):
-                count = 1
+                rank = float(split) / float(splitTo)
+                place = 0.1 + (float(split + 0.5) / float(splitTo)) * 0.8
+                count = splitTo
                 out = []
                 for nt in outRaw:
                     if count % splitTo == split:
                         out.append(nt)
-                    count += 1                
+                    count += 1
+         
                 # This renders the music.
-                left,right = [sf.Finalise(sig) for sig in soft_harpsichord(out, beat, temperament, 1.0)]
+                left,right = [sf.Finalise(sig) for sig in sloped_golberg_harpsichord(out, beat, temperament, 1.0, place)]
                 
+                # Add highlight to bottom notes.
+                # TODO: Make this parameterisable.
+                if rank < 0.5:
+                        leftb, rightb = [sf.Finalise(sig) for sig in distant_accent(out, beat, temperament, 0.1, place)]
+                        left, right = [sf.FixSize(sf.Mix(a, b)) for a,b in ((left, leftb), (right, rightb))]
+                    
                 # Creates controller envelopes based on a particular modulation source in the midi.
                 modEnvl = None
                 modEnvR = None
@@ -173,8 +211,13 @@ def main():
                 if useModWheel:
                     left  = _doVib(modEnvl, left)
                     right = _doVib(modEnvr, right)
+
                 left  = sf.FixSize(left)
                 right = sf.FixSize(right)
+
+                left = sf.NumericVolume(left, place)
+                right = sf.NumericVolume(right, 1.0 - place)
+
                 sf.WriteSignal(left, "temp/left_v{0}_{1}_acc".format(track, split))
                 sf.WriteSignal(right,"temp/right_v{0}_{1}_acc".format(track, split))
-                sf.WriteFile32((left, right),"temp/temp_v{0}_{1}_acc.wav".format(track, split))
+                sf.WriteFile32((right, left),"temp/temp_v{0}_{1}_acc.wav".format(track, split))

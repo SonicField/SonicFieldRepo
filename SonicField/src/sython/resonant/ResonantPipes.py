@@ -6,6 +6,7 @@ from sython.organ.Post   import \
     do_final_mix, \
     mix, \
     post_process, \
+    post_process_echo, \
     post_process_tremolate
 
 from sython.voices.ResonantVoices import \
@@ -235,7 +236,8 @@ def mephisto_harpsichord(midi_in, beat, temperament, velocity):
         flat_env=True,
         quick_factor=0.0,
         pure=False,
-        pan = -1
+        pan = -1,
+        slope = ((0.0, 0), (100, 0) , (440, -10), (4000, -30), (20000, -30))
     )
     return post_process(notes1)
 
@@ -283,11 +285,11 @@ def double_pure_harpsichord(midi_in, beat, temperament, velocity):
         pan = -1,
         slope = ((0.0, 0), (50, 0) , (220, -10), (4000, -60), (20000, -90)) 
     )
-    left2, right2 = post_process(notes2)
+    left2, right2 = post_process_tremolate(notes2)
     
     return mix(left1, left2), mix(right1, right2)
 
-def _golberg_harpsichord(midi_in, beat, temperament, velocity, slope):
+def _golberg_harpsichord(midi_in, beat, temperament, velocity, slope, pan):
 
     harmonics1 = [pow(x,1.002) for x in xrange(1,100)]
 
@@ -305,17 +307,17 @@ def _golberg_harpsichord(midi_in, beat, temperament, velocity, slope):
         flat_env=True,
         quick_factor=0,
         pure=False,
-        pan = -1,
+        pan = pan,
         slope = slope
     )
     return post_process(notes1)
 
-def golberg_harpsichord(midi_in, beat, temperament, velocity):
-    return _golberg_harpsichord(midi_in, beat, temperament, velocity, None)
+def golberg_harpsichord(midi_in, beat, temperament, velocity, pan):
+    return _golberg_harpsichord(midi_in, beat, temperament, velocity, None, pan)
 
-def sloped_golberg_harpsichord(midi_in, beat, temperament, velocity):
+def sloped_golberg_harpsichord(midi_in, beat, temperament, velocity, pan):
     return _golberg_harpsichord(midi_in, beat, temperament, velocity, 
-                         ((0.0, 0), (100, 0) , (440, -10), (4000, -30), (20000, -30)))
+                         ((0.0, 0), (100, 0) , (440, -10), (4000, -30), (20000, -30)), pan)
     
 def harpsichord(midi_in, beat, temperament, velocity):
     harmonics = [pow(x,1.01) for x in xrange(1,100)]
@@ -335,6 +337,24 @@ def harpsichord(midi_in, beat, temperament, velocity):
         pan = -1
     )
     return post_process(notes1)  
+
+def distant_accent(midi_in, beat, temperament, velocity, pan):
+    plr = make_addtive_resonance(qCorrect=4.0, rollOff=4.0, saturate=0.0, power=1.0, seed = -40)
+    notes1=Player.play(
+        midi_in,
+        beat,
+        temperament,
+        voice=plr,
+        bend=False,
+        mellow=False,
+        velocity_correct=velocity,
+        flat_env=False,
+        quick_factor=0.25,
+        pure=True,
+        pitch_shift=2.0,
+        pan = pan
+    )
+    return post_process_echo(notes1) 
 
 def bass_harpsichord(midi_in, beat, temperament, velocity):
     harmonics = [pow(x,1.01) for x in xrange(1,100)]
