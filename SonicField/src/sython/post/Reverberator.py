@@ -46,13 +46,15 @@ def _main(path):
     # A small chamber (smaller than the default vocal chamber).
     # This also shortens off the spring a lot to remove long rumbling tails
     # if the spring is used with this.
-    small   = True
+    small   = False
     # Use a church impulse response.
     church  = False
     # Use an very long 'ambient' impulse response.
     ambient = False
     # Use another very long impulse response.
-    megaThe = False
+    megaThe = 0
+    #  An impulse from Perth City Hall.
+    perth = 0.25
     # Use an impulse response from an abandoned factory.
     terrys  = False
     # Post process which is a multi-band compress and adds warmth (valve like waveshaping).
@@ -62,7 +64,7 @@ def _main(path):
     # EQ up the bass a little. This helps compensate for domination of highs when brightening.
     bboost  = False
     # The mix in the final. 0.0 implies pure wet; 1.0 is pure dry. Use 0.0 if you want to mix by hand.
-    mix     = 0.25
+    mix     = 0.15
     # The spring impulse response has a boomy signature at around 100Hz, this takes some of that out.
     lightenSpring = False
     # Will the outgoing volumes match the incoming ratio of magnituds
@@ -146,14 +148,30 @@ def _main(path):
         convoll=sf.Finalise(
             sf.Mix(
                 convoll,
-                ml
+                sf.NumericVolume(ml, megaThe)
             )
         )
         
         convorr=sf.Finalise(
             sf.Mix(
                 convorr,
-                mr
+                sf.NumericVolume(mr, megaThe)
+            )
+        )
+
+    if perth:
+        ml,mr=sf.ReadFile("temp/impulses/perth_city_hall_balcony_ir_edit.wav")
+        convoll=sf.Finalise(
+            sf.Mix(
+                convoll,
+                sf.NumericVolume(ml, perth)
+            )
+        )
+        
+        convorr=sf.Finalise(
+            sf.Mix(
+                convorr,
+                sf.NumericVolume(mr, perth)
             )
         )
     

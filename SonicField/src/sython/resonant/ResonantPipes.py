@@ -242,7 +242,7 @@ def mephisto_harpsichord(midi_in, beat, temperament, velocity):
     return post_process(notes1)
 
 
-def double_pure_harpsichord(midi_in, beat, temperament, velocity):
+def double_pure_harpsichord(midi_in, beat, temperament, velocity, pan):
 
     harmonics1 = [pow(x,1.001) for x in xrange(1,100)]
 
@@ -260,11 +260,11 @@ def double_pure_harpsichord(midi_in, beat, temperament, velocity):
         flat_env=True,
         quick_factor=0.0,
         pure=False,
-        pan = -1,
+        pan = pan,
         slope = ((0.0, 0), (100, 0) , (440, -10), (4000, -40), (20000, -30)) 
     )
     
-    left1, right1 = post_process(notes1)
+    left1, right1 = post_process_echo(notes1)
     
     harmonics2 = harmonics1[1:10]
     plr1 = make_addtive_resonance(qCorrect=4.5, rollOff=3.0, saturate=0.25, power=1.1, 
@@ -282,7 +282,7 @@ def double_pure_harpsichord(midi_in, beat, temperament, velocity):
         quick_factor=0,
         pure=True,
         pitch_shift=0.5,
-        pan = -1,
+        pan = pan,
         slope = ((0.0, 0), (50, 0) , (220, -10), (4000, -60), (20000, -90)) 
     )
     left2, right2 = post_process_tremolate(notes2)
@@ -355,6 +355,24 @@ def distant_accent(midi_in, beat, temperament, velocity, pan):
         pan = pan
     )
     return post_process_echo(notes1) 
+
+def distant_soft_accent(midi_in, beat, temperament, velocity, pan):
+    plr = make_addtive_resonance(qCorrect=4.0, rollOff=4.0, saturate=0.0, power=1.0, seed = -40)
+    notes1=Player.play(
+        midi_in,
+        beat,
+        temperament,
+        voice=plr,
+        bend=False,
+        mellow=True,
+        velocity_correct=velocity,
+        flat_env=False,
+        quick_factor=0.25,
+        pure=True,
+        pitch_shift=2.0,
+        pan = pan
+    )
+    return post_process_tremolate(notes1, rate=3.75) 
 
 def bass_harpsichord(midi_in, beat, temperament, velocity):
     harmonics = [pow(x,1.01) for x in xrange(1,100)]

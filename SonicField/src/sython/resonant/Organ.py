@@ -49,11 +49,11 @@ def main():
     # Controls for rendering the piece #
     ####################################
     
-    midis=Midi.read_midi_file("temp/bwv862.mid")
+    midis=Midi.read_midi_file("temp/bwv864.mid")
     
     # Length of full piece
     #======================
-    length = 5.0
+    length = 4.25
     
     # Temperament
     #=============
@@ -88,13 +88,17 @@ def main():
     
     # Render in multiple tracks using round robin.
     # A setting of 1 gives on track, 2 gives 2 etc.
-    splitTo = 4
+    splitTo = 2
     
     # When we split, do we aggregate by pitch?
     splitPitch = True
     
     # How much to mess with timing in milliseconds.
     scatter = 32
+    
+    # Here to add the second voice. Values less than this will have it;
+    # typicyally 0.5 means the bototm half.
+    lowerRank = 0.5
     
     # Do Not Change
     #===============
@@ -192,7 +196,7 @@ def main():
                 
                 # Add highlight to bottom notes.
                 # TODO: Make this parameterisable.
-                if rank < 0.5:
+                if lowerRank < 0.5:
                         leftb, rightb = [sf.Finalise(sig) for sig in distant_accent(out, beat, temperament, 0.1, place)]
                         left, right = [sf.FixSize(sf.Mix(a, b)) for a,b in ((left, leftb), (right, rightb))]
                     
