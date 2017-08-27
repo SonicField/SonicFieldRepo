@@ -21,8 +21,9 @@ def excite(sig,mix,power):
         return sf.NumericVolume(sig, m/n).flush()
 
 def main():
-    paths = 2
-    for path in xrange(paths):
+    paths = range(2, 8)
+    #paths = [7]
+    for path in paths:
         _main(path)
 
 def _main(path):
@@ -37,12 +38,14 @@ def _main(path):
     # If true, do not perform secondary reverb.
     dry     = False
     # Perform excitation of primary convolution even when not bright or vbright.
-    clear   = True
+    clear   = False
     # Perform brightening.
     bright  = True
     # Extra brightening of the dry signal.
     # vBright without bright will not brighten the wet signal.
     vBright = False
+    # A super short hand made impulse.
+    tiny = True
     # A small chamber (smaller than the default vocal chamber).
     # This also shortens off the spring a lot to remove long rumbling tails
     # if the spring is used with this.
@@ -54,21 +57,27 @@ def _main(path):
     # Use another very long impulse response.
     megaThe = 0
     #  An impulse from Perth City Hall.
-    perth = 0.25
+    perth = 0.0
     # Use an impulse response from an abandoned factory.
-    terrys  = False
+    terrys  = 0.0
+    # Bright medium Ir.
+    club = 0.0
+    # Enhanced rich church - very long.
+    ultraChurch = 0.0
     # Post process which is a multi-band compress and adds warmth (valve like waveshaping).
-    post    = True
+    post    = False
     # Use a spring reverb' impulse response.
     spring  = False
     # EQ up the bass a little. This helps compensate for domination of highs when brightening.
     bboost  = False
     # The mix in the final. 0.0 implies pure wet; 1.0 is pure dry. Use 0.0 if you want to mix by hand.
-    mix     = 0.15
+    mix     = 0.50
     # The spring impulse response has a boomy signature at around 100Hz, this takes some of that out.
     lightenSpring = False
     # Will the outgoing volumes match the incoming ratio of magnituds
     matchMagnitudes = True
+    # To multiply each track with dbsPerTrack * path.
+    dbsPerTrack = -1.00
 
     ####################################
     #
@@ -101,6 +110,9 @@ def _main(path):
     elif church:    
         (convoll,convolr)=sf.ReadFile("temp/impulses/bh-l.wav")
         (convorl,convorr)=sf.ReadFile("temp/impulses/bh-r.wav")
+    elif tiny:    
+        (convoll,convolr)=sf.ReadFile("temp/impulses/tiny-l.wav")
+        (convorl,convorr)=sf.ReadFile("temp/impulses/tiny-r.wav")
     elif small:    
         (convoll,convolr)=sf.ReadFile("temp/impulses/Small-Chamber-L.wav")
         (convorl,convorr)=sf.ReadFile("temp/impulses/Small-Chamber-R.wav")
@@ -127,53 +139,31 @@ def _main(path):
             sf.Invert(spring)
         )
 
-    if terrys:
-        ml,mr=sf.ReadFile("temp/impulses/terrys.wav")
-        convoll=sf.Finalise(
+    def mixIR(filePath, vol):
+        if not vol:
+            return convoll, convorr
+        ml, mr=sf.ReadFile(filePath)
+        retl = sf.Finalise(
             sf.Mix(
                 convoll,
-                ml
+                sf.NumericVolume(ml, vol)
             )
         )
         
-        convorr=sf.Finalise(
+        retr = sf.Finalise(
             sf.Mix(
                 convorr,
-                mr
+                sf.NumericVolume(mr, vol)
             )
         )
-    
-    if megaThe:
-        ml,mr=sf.ReadFile("temp/impulses/mega-thederal.wav")
-        convoll=sf.Finalise(
-            sf.Mix(
-                convoll,
-                sf.NumericVolume(ml, megaThe)
-            )
-        )
+        return retl, retr
         
-        convorr=sf.Finalise(
-            sf.Mix(
-                convorr,
-                sf.NumericVolume(mr, megaThe)
-            )
-        )
 
-    if perth:
-        ml,mr=sf.ReadFile("temp/impulses/perth_city_hall_balcony_ir_edit.wav")
-        convoll=sf.Finalise(
-            sf.Mix(
-                convoll,
-                sf.NumericVolume(ml, perth)
-            )
-        )
-        
-        convorr=sf.Finalise(
-            sf.Mix(
-                convorr,
-                sf.NumericVolume(mr, perth)
-            )
-        )
+    convoll, convorr = mixIR("temp/impulses/terrys.wav", terrys)
+    convoll, convorr = mixIR("temp/impulses/mega-thederal.wav", megaThe)
+    convoll, convorr = mixIR("temp/impulses/perth_city_hall_balcony_ir_edit.wav", perth)
+    convoll, convorr = mixIR("temp/impulses/womans_club.wav", club)
+    convoll, convorr = mixIR("temp/impulses/ultra-church.wav", ultraChurch)
     
     if bboost:
         left =sf.RBJPeaking(left,100,1,6)
@@ -292,6 +282,13 @@ def _main(path):
         print 'Correcting magnitudes to:', lrBalance
         left  = sf.NumericVolume(left,  lrBalance[0])
         right = sf.NumericVolume(right, lrBalance[1])
+        
+    if dbsPerTrack:
+        amount = dbsPerTrack * path
+        print 'Scaling magnitudes to:', lrBalance
+        left  = sf.Volume(left,  amount)
+        right = sf.Volume(right, amount)
+        
 
     writeWave(right, left, 'temp/reverberated_{0}'.format(path))
         

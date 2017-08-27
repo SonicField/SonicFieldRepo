@@ -3,6 +3,7 @@
 #########
 
 import os
+import copy
 import sython.utils.Midi as Midi
 from com.nerdscentral.audio.core import SFMemoryZone
 from sython.resonant.ResonantPipes import *
@@ -49,17 +50,17 @@ def main():
     # Controls for rendering the piece #
     ####################################
     
-    midis=Midi.read_midi_file("temp/bwv864.mid")
+    midis=Midi.read_midi_file("temp/pachelbel_canon_and_gigue_tweaked.mid")
     
     # Length of full piece
     #======================
-    length = 4.25
+    length = 9.0
     
     # Temperament
     #=============
-    #temperament = Midi.werckmeisterIII
+    temperament = Midi.werckmeisterIII
     #temperament = Midi.just_intonation
-    temperament = Midi.bach_lehman
+    #temperament = Midi.bach_lehman
     #temperament = Midi.equal_temperament
     
     # Modulation
@@ -88,7 +89,7 @@ def main():
     
     # Render in multiple tracks using round robin.
     # A setting of 1 gives on track, 2 gives 2 etc.
-    splitTo = 2
+    splitTo = 8
     
     # When we split, do we aggregate by pitch?
     splitPitch = True
@@ -97,7 +98,7 @@ def main():
     scatter = 32
     
     # Here to add the second voice. Values less than this will have it;
-    # typicyally 0.5 means the bototm half.
+    # typicyally 0.5 means the bott0m half.
     lowerRank = 0.5
     
     # Do Not Change
@@ -183,7 +184,9 @@ def main():
 
             for split in xrange(0, splitTo):
                 rank = float(split) / float(splitTo)
-                place = 0.1 + (float(split + 0.5) / float(splitTo)) * 0.8
+                place = -1
+                if splitPitch:
+                    place = 0.1 + (float(split + 0.5) / float(splitTo)) * 0.8
                 count = splitTo
                 out = []
                 for nt in outRaw:
@@ -192,14 +195,30 @@ def main():
                     count += 1
          
                 # This renders the music.
-                left,right = [sf.Finalise(sig) for sig in sloped_golberg_harpsichord(out, beat, temperament, 1.0, place)]
+                left,right = [sf.Finalise(sig) for sig in distant_flute_pipe(out, beat, temperament, 1.0, place)]
                 
                 # Add highlight to bottom notes.
                 # TODO: Make this parameterisable.
-                if lowerRank < 0.5:
-                        leftb, rightb = [sf.Finalise(sig) for sig in distant_accent(out, beat, temperament, 0.1, place)]
-                        left, right = [sf.FixSize(sf.Mix(a, b)) for a,b in ((left, leftb), (right, rightb))]
-                    
+                #if rank < lowerRank:
+                #        leftb, rightb = [sf.Finalise(sig) for sig in distant_string_pipe_bass(out, beat, temperament, 0.1, place)]
+                #        left, right = [sf.FixSize(sf.Mix(a, b)) for a,b in ((left, leftb), (right, rightb))]
+                #else:
+                #        leftb, rightb = [sf.Finalise(sig) for sig in distant_accent(out, beat, temperament, 0.05, place)]
+                #        left, right = [sf.FixSize(sf.Mix(a, b)) for a,b in ((left, leftb), (right, rightb))]
+                outH = []
+                outL = []
+                for event in out:
+                    eventH = copy.copy(event)
+                    eventL = copy.copy(event)
+                    eventH.key += 12
+                    eventL.key -= 12
+                    outH.append(eventH)
+                    outL.append(eventL)
+
+                leftb, rightb = [sf.NumericVolume(sf.Finalise(sig), 0.1 * rank) for sig in distant_flute_pipe(outH, beat, temperament, 1.0, place)]
+                leftc, rightc = [sf.NumericVolume(sf.Finalise(sig), 0.1 * (1.0 - rank)) for sig in distant_flute_pipe(outL, beat, temperament, 1.0, place)]
+                left, right = [sf.FixSize(sf.Mix(a, b, c)) for a,b,c in ((left, leftb, leftc), (right, rightb, rightc))]                    
+             
                 # Creates controller envelopes based on a particular modulation source in the midi.
                 modEnvl = None
                 modEnvR = None
@@ -218,9 +237,9 @@ def main():
 
                 left  = sf.FixSize(left)
                 right = sf.FixSize(right)
-
-                left = sf.NumericVolume(left, place)
-                right = sf.NumericVolume(right, 1.0 - place)
+                if splitPitch:
+                    left = sf.NumericVolume(left, place)
+                    right = sf.NumericVolume(right, 1.0 - place)
 
                 sf.WriteSignal(left, "temp/left_v{0}_{1}_acc".format(track, split))
                 sf.WriteSignal(right,"temp/right_v{0}_{1}_acc".format(track, split))

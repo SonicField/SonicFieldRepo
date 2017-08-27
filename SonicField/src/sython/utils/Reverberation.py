@@ -43,7 +43,10 @@ def reverberate_inner(signal,convol,grain_length):
             signal_=sf.CrossMultiply(convol,signal_)
             signal_=sf.TimeDomain(signal_)
             newMag=sf.Magnitude(signal_)
-            signal_=sf.NumericVolume(signal_,mag/newMag)        
+            # HACK! TODO:
+            if not newMag:
+                return signal
+            signal_=sf.NumericVolume(signal_,mag/newMag)     
             # tail out clicks due to amplitude at end of signal
             return sf.Clean(sf.Cut(0,len,signal_)).flush()
         else:

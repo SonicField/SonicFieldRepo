@@ -539,18 +539,18 @@ def _vox_filter(vox, freq, a, b, c):
     )
     
     if length>1024:
-        rate = 3.0
+        vibRate = 3.0
         depth = 0.05
         pDepth = 0.1
     else:
-        rt = 2.5
+        vibRate = 2.5
         depth = 0.025
         pDepth = 0.05
     if length > 2048:
         at = length*0.75
     else:
         at = length*0.5
-    vox=create_vibrato(vox, length, longer_than=512, rate=rate, depth=depth, pitch_depth=pDepth, at=at)
+    vox=create_vibrato(vox, length, longer_than=512, rate=vibRate, depth=depth, pitch_depth=pDepth, at=at)
     
     vox=polish(vox, freq)
     vox=sf.RBJPeaking(vox, freq, 3, 4)

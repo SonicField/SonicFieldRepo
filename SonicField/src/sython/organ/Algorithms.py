@@ -12,7 +12,7 @@ def echo_division(sig_):
     if m1==0.0:
         return sig
     length=sf.Length(+sig)
-    convol=sf.ReadFile("temp/swell.wav")
+    convol=sf.ReadFile("temp/impulses/swell.wav")
     sigW=convolve(+sig ,convol[0])
     sig=realise(sig,sigW)
     m2=sf.Magnitude(+sig)
@@ -32,7 +32,7 @@ def tremolate(sig_,rate,mag):
     ev=sf.DirectMix(1.0,ev)
     sig=sf.FrequencyModulate(sig,fv)
     sig=sf.Multiply(ev,sig)
-    convol=sf.ReadFile("temp/swell.wav")
+    convol=sf.ReadFile("temp/impulses/swell.wav")
     sigW=convolve(+sig ,convol[0])
     sig=mix(sig,sigW)
     m2=sf.Magnitude(+sig)

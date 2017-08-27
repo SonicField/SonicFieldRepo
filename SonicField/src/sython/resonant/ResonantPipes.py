@@ -1,6 +1,7 @@
 import sython.organ.Player as Player
 from com.nerdscentral.audio.core import SFData
 
+import sython.utils.Midi as Midi
 
 from sython.organ.Post   import \
     do_final_mix, \
@@ -20,6 +21,7 @@ from sython.voices.ResonantVoices import \
     goldberg_filter, \
     goldberg_filter_bright, \
     synthichord_filter, \
+    femail_soprano_ah_filter, \
     tuned_wind
 
 def distant(midi_in,beat,temperament,velocity):
@@ -37,7 +39,7 @@ def distant(midi_in,beat,temperament,velocity):
     )
     return post_process(notes1)
 
-def distant_bass(midi_in,beat,temperament,velocity):
+def distant_bass(midi_in,beat,temperament,velocity, pan):
     l = 512
     plr = make_addtive_resonance(qCorrect=1.0, rollOff=2.0, saturate=0.5, power=1.1)
     notes1=Player.play(
@@ -51,7 +53,7 @@ def distant_bass(midi_in,beat,temperament,velocity):
         flat_env=True,
         quick_factor=1.5,
         pure=True,
-        pan = -1
+        pan=pan
     )
     return post_process(notes1)
 
@@ -109,7 +111,7 @@ def distant_string(midi_in,beat,temperament,velocity):
     )
     return post_process(notes1)
 
-def distant_oboe(midi_in,beat,temperament,velocity):
+def distant_oboe(midi_in,beat,temperament,velocity, pan):
     plr = make_addtive_resonance(qCorrect=2.0, rollOff=1.5, saturate=0.1, power=1.4, post=oboe_filter)
     notes1=Player.play(
         midi_in,
@@ -122,7 +124,7 @@ def distant_oboe(midi_in,beat,temperament,velocity):
         flat_env=True,
         quick_factor=0.5,
         pure=True,
-        pan = -1
+        pan=pan
     )
     return post_process_tremolate(notes1)
 
@@ -144,7 +146,7 @@ def distant_oboe2(midi_in, beat, temperament, velocity):
     )
     return post_process(notes1)
 
-def soft_harpsichord(midi_in, beat, temperament, velocity):
+def soft_harpsichord(midi_in, beat, temperament, velocity, pan):
 
     harmonics1 = [pow(x,1.01) for x in xrange(1,100)]
     plr1 = make_addtive_resonance(qCorrect=5.0, rollOff=2.5, saturate=0.1, power=1.0, 
@@ -161,7 +163,7 @@ def soft_harpsichord(midi_in, beat, temperament, velocity):
         flat_env=True,
         quick_factor=0,
         pure=False,
-        pan = 0.25,
+        pan=pan,
         slope = ((0.0, 0), (100, 0) , (440, -5), (4000, -10), (20000, -30)) 
     )
     left1, right1 = post_process(notes1)
@@ -182,7 +184,7 @@ def soft_harpsichord(midi_in, beat, temperament, velocity):
         quick_factor=0,
         pure=True,
         pitch_shift=0.5,
-        pan = 0.75
+        pan=pan
     )
     left2, right2 = post_process(notes2)
     
@@ -218,7 +220,7 @@ def oboe_harpsichord(midi_in, beat, temperament, velocity):
     )
     return post_process(notes1)
 
-def mephisto_harpsichord(midi_in, beat, temperament, velocity):
+def mephisto_harpsichord(midi_in, beat, temperament, velocity, pan):
 
     harmonics1 = [pow(x,1.005) for x in xrange(1,100)]
 
@@ -236,7 +238,7 @@ def mephisto_harpsichord(midi_in, beat, temperament, velocity):
         flat_env=True,
         quick_factor=0.0,
         pure=False,
-        pan = -1,
+        pan=pan,
         slope = ((0.0, 0), (100, 0) , (440, -10), (4000, -30), (20000, -30))
     )
     return post_process(notes1)
@@ -373,6 +375,67 @@ def distant_soft_accent(midi_in, beat, temperament, velocity, pan):
         pan = pan
     )
     return post_process_tremolate(notes1, rate=3.75) 
+
+def distant_string_pipe(midi_in, beat, temperament, velocity, pan):
+    midi = Midi.legato(midi_in, beat, 128)
+    plr = make_addtive_resonance(qCorrect=4.0, rollOff=4.5, saturate=0.05, power=1.02, seed = -40)
+    #plr = make_addtive_resonance(qCorrect=4.0, rollOff=4.0, saturate=0.0, power=1.1, seed = -40)
+    notes1=Player.play(
+        midi_in,
+        beat,
+        temperament,
+        voice=plr,
+        bend=True,
+        mellow=False,
+        velocity_correct=velocity,
+        flat_env=False,
+        quick_factor=0.25,
+        pure=False,
+        pitch_shift=1.0,
+        pan = pan
+    )
+    return post_process(notes1) 
+
+def distant_string_pipe_bass(midi_in, beat, temperament, velocity, pan):
+    midi = Midi.legato(midi_in, beat, 128)
+    plr = make_addtive_resonance(qCorrect=4.0, rollOff=4.5, saturate=0.05, power=1.02, seed = -40)
+    #plr = make_addtive_resonance(qCorrect=4.0, rollOff=4.0, saturate=0.0, power=1.1, seed = -40)
+    notes1=Player.play(
+        midi_in,
+        beat,
+        temperament,
+        voice=plr,
+        bend=True,
+        mellow=False,
+        velocity_correct=velocity,
+        flat_env=False,
+        quick_factor=1.0,
+        pure=False,
+        pitch_shift=0.5,
+        pan = pan
+    )
+    return post_process(notes1)
+
+def distant_flute_pipe(midi_in, beat, temperament, velocity, pan):
+    harmonics = [pow(x,1.00) for x in xrange(1,16)]
+    midi = Midi.legato(midi_in, beat, 128)
+    plr = make_addtive_resonance(qCorrect=4.0, rollOff=4.5, saturate=0.00, power=1.001, seed = -30, harmonics=harmonics)
+    notes1=Player.play(
+        midi,
+        beat,
+        temperament,
+        voice=plr,
+        bend=False,
+        mellow=False,
+        velocity_correct=velocity,
+        flat_env=False,
+        quick_factor=0.5,
+        pure=True,
+        pitch_shift=1.0,
+        pan = pan
+    )
+
+    return post_process(notes1) 
 
 def bass_harpsichord(midi_in, beat, temperament, velocity):
     harmonics = [pow(x,1.01) for x in xrange(1,100)]
