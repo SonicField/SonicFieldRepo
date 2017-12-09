@@ -5,10 +5,10 @@ from com.nerdscentral.audio.core import SFMemoryZone, SFConstants
 from com.nerdscentral.audio.core import SFData
 import random
 import os.path
-         
+
 ################################################################################
 #  hint:     NN TN TT NT for trill and normal for the previous and next notes
-#            a special hint value of E or S inticates end or start note 
+#            a special hint value of E or S inticates end or start note
 #            respectively
 #  pitch:    the frequency of the note in Hz
 #  v:        over all volume 0 to 1
@@ -16,11 +16,11 @@ import os.path
 #  vr:       volume right correction 0 to 1
 #  voice:    voice function
 #  velocity_correct: correct volume by this amount between 0 and 1
-#  quick_factor:     'quick' scales initial attack. >1 makes 
+#  quick_factor:     'quick' scales initial attack. >1 makes
 #                    slow/soft <1 make fast/hard
-#  flat_env: true/false if true flatten all but attack and short release 
+#  flat_env: true/false if true flatten all but attack and short release
 #            (more like a tradition organ pipe)
-#  pure:     true/false if true do not mix in several slight pitch shifts 
+#  pure:     true/false if true do not mix in several slight pitch shifts
 #            otherwise do
 #  raw_bass: true/false if true no post processing of bass
 #  decay:    true/false if true causes steady decay of note throughout envelope.
@@ -54,15 +54,15 @@ def sing(
     ):
     if pitch > 20000:
         raise ValueError('Pitch too great {0}'.format(pitch))
-    with SFMemoryZone():     
+    with SFMemoryZone():
         velocity_correct=velocity_correct_
         length=lengthIn
         tp=0
-        
+
         # minimum play time
         if length<192:
             length=192
-            tp=0  
+            tp=0
         elif length<363:
             length+=128
             tp=1
@@ -74,7 +74,7 @@ def sing(
             tp=3
         else:
             tp=4
-    
+
         sig=[]
         if pure:
             x=1
@@ -94,8 +94,8 @@ def sing(
                         [
                             (0,0),
                             (24,1),
-                            (sf.Length(+vc)-24,1),
-                            (sf.Length(+vc),0)
+                            (sf.Length(vc)-24,1),
+                            (sf.Length(vc),0)
                         ]
                     ),
                     vc
@@ -113,16 +113,16 @@ def sing(
                 sig.append(sf.NumericVolume(vc, random.random()+0.25))
 
         sig=sf.Realise(sf.Mix(sig))
-        
+
         sig = sf.FixSize(sig)
-        length=sf.Length(+sig)
-        
+        length=sf.Length(sig)
+
         if decay:
             # -60 db at 1 minute
             dbs=-60.0*float(length)/float(decay)
             env=sf.SimpleShape((0,0),(length,dbs))
             sig=sf.Multiply(sig,env)
-        
+
         pHint = hint[0]
         nHint = hint[1]
         shine = False
@@ -143,7 +143,7 @@ def sing(
                     velocity_correct*=0.8
                 elif hint=="NN" and pitch>660:
                     shine=True
-                    velocity_correct*=0.5        
+                    velocity_correct*=0.5
             elif tp==1 or flat_env:
                 if pHint=="T":
                     q=48
@@ -156,7 +156,7 @@ def sing(
                 q*=quick_factor
                 env=safe_env(sig,[(0,0),(q,0.75),(length-p,1.0),(length,0)])
                 if hint=="TT":
-                    velocity_correct*=0.8            
+                    velocity_correct*=0.8
                 if hint=="TT":
                     velocity_correct*=0.8
                 elif hint=="NN" and pitch>880:
@@ -171,19 +171,19 @@ def sing(
                     env=safe_env(sig,[(0,0),(64*quick_factor,0.5),(256,1),(512,0.75),(length-512,0.75),(length,0)])
             else:
                 env=safe_env(sig,[(0,0),(64*quick_factor,0.25),(512,1),(length/2,0.75),(length,0)])
-    
+
         if bend:
             mod=sf.NumericShape((0,0.995),(length,1.005))
             if env:
                 mod=sf.Mix(mod,sf.NumericVolume(+env,0.01))
             # if we have envelope extension then we don't do this as
-            # it get really hard to get the lengths correct and make 
+            # it get really hard to get the lengths correct and make
             # sense of what we are trying to do. KISS
             if sf.Length(+sig)==sf.Length(+mod):
-                sig=sf.FrequencyModulate(sig,mod)  
+                sig=sf.FrequencyModulate(sig,mod)
             else:
                 -mod
-    
+
         sig=sf.FixSize(sig)
         if mellow:
             if pitch<256:
@@ -206,7 +206,7 @@ def sing(
                         )
                 if raw_bass:
                     sig=sf.BesselLowPass(sig,pitch*8.0,1)
-                else:        
+                else:
                     sig=sf.BesselLowPass(sig,pitch*8.0,2)
             if pitch<392:
                 sig=sf.BesselLowPass(sig,pitch*6.0,2)
@@ -214,24 +214,24 @@ def sing(
                 sig=sf.Mix(
                     sf.BesselLowPass(+sig,pitch*6.0, 2),
                     sf.BesselLowPass( sig,pitch*3.0, 2)
-                )                
+                )
             elif pitch<640:
                 sig=sf.BesselLowPass(sig,pitch*3.5, 2)
             elif pitch<1280:
                 sig=sf.Mix(
                     sf.BesselLowPass(+sig,pitch*3.5, 2),
                     sf.BesselLowPass( sig,pitch*5.0, 2)
-                )                
+                )
             else:
                 sig=sf.Mix(
                     sf.BesselLowPass(+sig,pitch*5, 2),
                     sf.BesselLowPass( sig,5000,    1)
                 )
-        
+
         if env:
-            sig=sf.Multiply(sig,env)                     
+            sig=sf.Multiply(sig,env)
         sig=sf.FixSize(sig)
-        
+
         if smooth:
             cnv=sf.WhiteNoise(10240)
             cnv=sf.ButterworthHighPass(cnv,32,4)
@@ -255,8 +255,8 @@ def sing(
             velocity_correct *= sf.ValueAt(slopeEnv, pitch)
             print 'VCorrect: {0}'.format(velocity_correct)
         note  = sf.NumericVolume(sf.FixSize(sig), v)
-        notel = sf.NumericVolume(note, vl*velocity_correct).flush()
-        noter = sf.NumericVolume(note, vr*velocity_correct).flush()
+        notel = sf.NumericVolume(note, vl*velocity_correct).keep()
+        noter = sf.NumericVolume(note, vr*velocity_correct).keep()
         return notel, noter
 
 ################################################################################
@@ -273,7 +273,7 @@ def sing(
 # sub_bass:     use sub bass enhancement - see sing
 # flat_env:     use flat env - see sing
 # pure:         use pure pitch - see sing
-# pan:          pan left and right from 0 to 1. A special value of -1 (the 
+# pan:          pan left and right from 0 to 1. A special value of -1 (the
 #               default) causes 'auto pan' where pitch is used to work out
 #               the pan.
 # raw_bass:     use raw bass - see sing
@@ -370,7 +370,7 @@ def play(
             velocity = current.velocity
         else:
             continue
-            
+
         at=tickOn*beat
         length=(tickOff-tickOn)*beat
         if key==0:
@@ -384,9 +384,9 @@ def play(
         pl=pitch
 
         vCUse=velocity_correct
-        
+
         # volume pitch correction to stop domination
-        # of high notes - not quite the same as 
+        # of high notes - not quite the same as
         # loudness correction due to the high dominating
         # low perception issue.
         pCorrect=1
@@ -432,9 +432,9 @@ def play(
                 lr=pl
         else:
             lr=1.0-pan
-                    
+
         rl=1.0-lr
-        
+
         # Compute hint
         # Two letters - first for previous note
         # second for next note
@@ -464,7 +464,7 @@ def play(
                 hint+="N"
         else:
             hint+="E"
- 
+
         d_log("H",hint,"P",pitch,"@",at,"L",length,"V",velocity,"VU",vCUse,"PC",pCorrect)
         args = (
             hint,
@@ -485,7 +485,7 @@ def play(
             mellow,
             smooth,
             slope)
-        
+
         # Here is the restart logic. If this is a restart then it
         # should automatically skip generating notes it has already generated.
         # However, it will still cache them. Note, other caches in the signal generators
@@ -503,7 +503,7 @@ def play(
                 signals = sing(*args)
                 toWrite += [(signals, path_l, path_r)]
                 if len(toWrite) > 4:
-                    for sPair, path_l, path_r in toWrite:
+                    for sPair, path_l, path_r in toWrite:                            
                         sf.WriteSignal(sPair.get()[0], path_l)
                         sf.WriteSignal(sPair.get()[1], path_r)
                     toWrite = []
@@ -518,7 +518,7 @@ def play(
         dr=38 * lr + 1000
         print "Appending Node {} of {}".format(index, len(midi))
         notes.append((signals,at+dl,at+dr))
-        
+
         #pickle.dump(noteCache, cacheFileName)
     return notes
 

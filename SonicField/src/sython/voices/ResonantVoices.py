@@ -65,7 +65,7 @@ def _distant_wind(length, freq, qCorrect = 1.25, limit = False, seed = -60):
             env += [(t, v)]
             # Constrained random walk envelope in 100 ms steps.
             t += 100
-    
+
         #base = sf.Multiply(sf.NumericShape(env), base)
         out = []
         xq = 1.8 if freq > 640 else 2.0 if freq > 256 else 2.5 if freq > 128 else 3.0
@@ -88,7 +88,7 @@ def _distant_wind(length, freq, qCorrect = 1.25, limit = False, seed = -60):
             ed = sf.Cut(length/2.0, length, out)
             st = sf.Magnitude(st)
             ed = sf.Magnitude(ed)
-        rt = st/ed
+        rt = st/ed if ed != 0 else 0
         ev = sf.NumericShape((0.0, 1.0), (length, rt))
         out = sf.Multiply(ev, out)
         return sf.FixSize(sf.Cut(250,length,out)).keep()
@@ -153,8 +153,8 @@ def additive_resonance(power, qCorrect, saturate, rollOff, post, limit, seed, fl
                 out = sf.Reverse(out)
             ret = compress(out)
             if _PERFORM_CACHE:
-                # Store no more than the length we need which we work out as the 
-                # inverse scale of that used to make the signal. This should 
+                # Store no more than the length we need which we work out as the
+                # inverse scale of that used to make the signal. This should
                 # always give enough signal so out of bounds does not happen.
                 toCache = _repitch(hfq, key[1], ret, sf.Length(ret) / upRatio)
                 toCache = toCache.pin()
@@ -223,13 +223,13 @@ def harpsichord_filter(power, resonance, sig, length, freq):
         ring = sf.Multiply(sf.NumericShape((0,0.05), (length,0)), ring)
         ring = sf.DirectMix(1.0, ring)
         sig = sf.Multiply(sig, ring).keep()
-        
+
     with SFMemoryZone():
         end = length - 10
         if end < 50:
             end = 50
         tot = 10000.0 # 10 Seconds
-        
+
         env = sf.NumericShape(
             (0, 18000),
             (length-25, freq * 3.0),
@@ -241,7 +241,7 @@ def harpsichord_filter(power, resonance, sig, length, freq):
             (length, 0.8 * resonance)
         )
         sig = sf.ShapedLadderLowPass(sig,env,res)
-    
+
         env = sf.SimpleShape((0, 10), (5, -10), (10000, -80))
         env = sf.Cut(0, length, env)
         env = sf.Multiply(
@@ -252,7 +252,7 @@ def harpsichord_filter(power, resonance, sig, length, freq):
         click = sf.RBJLowPass(sf.SimpleShape((0,-10),(10,-90),(length, -100)),5000,1)
         out = sf.Mix(click, out)
         out = sf.Power(out, power)
-        return sf.FixSize(out.flush())
+        return sf.FixSize(out).keep()
 
 # TODO remove length from signature.
 def soft_harpsichord_filter(power, resonance, sig, length, freq, attack=2, triangle=True):
@@ -274,14 +274,14 @@ def soft_harpsichord_filter(power, resonance, sig, length, freq, attack=2, trian
         ring = sf.Multiply(sf.NumericShape((0, quant), (length,0)), ring)
         ring = sf.DirectMix(1.0, ring)
         sig = sf.Multiply(sig, ring).keep()
-    
+
     with SFMemoryZone():
         sig = sf.Reverse(sig)
         tot = 10000.0 # 10 Seconds
-        
+
         max_len = 10000.0
         tLen = max_len if max_len > length else length
-        
+
         q1 = freq * 7
         q2 = freq * 3
         if freq > 440:
@@ -290,7 +290,7 @@ def soft_harpsichord_filter(power, resonance, sig, length, freq, attack=2, trian
         if freq > 660:
             q2 *= 0.75
             q1 *= 0.75
-    
+
         env = None
         if length > 60:
             env = sf.SimpleShape(
@@ -298,7 +298,7 @@ def soft_harpsichord_filter(power, resonance, sig, length, freq, attack=2, trian
                 (50,      sf.ToDBs(q1)),
                 (max_len, sf.ToDBs(q2)),
                 (tLen,    sf.ToDBs(q1))
-            )         
+            )
         else:
             env = sf.SimpleShape(
                 (0,       sf.ToDBs(18000)),
@@ -338,7 +338,7 @@ def soft_harpsichord_filter(power, resonance, sig, length, freq, attack=2, trian
         if power != 1.0:
             outP = sf.FixSize(sf.Power(out, power))
             outP = sf.Saturate(outP)
-        
+
         env = None
         if length > 50:
             env = sf.SimpleShape((0, -40), (attack,0), (50, -10), (max_len, -80), (tLen, -80))
@@ -351,7 +351,7 @@ def soft_harpsichord_filter(power, resonance, sig, length, freq, attack=2, trian
             env = sf.NumericShape((0, 0), (10, 1), (length, 0))
         out = sf.Multiply(env, out)
 
-        return sf.FixSize(polish(out, freq)).flush()
+        return sf.FixSize(polish(out, freq)).keep()
 
 def oboe_harpsichord_filter(sig, length, frequency, vibAbove=200):
     powr = 1.0
@@ -380,7 +380,7 @@ def oboe_harpsichord_filter(sig, length, frequency, vibAbove=200):
             sig = sf.Multiply(trem, sig)
             vib = sf.DirectMix(1, sf.NumericVolume(vib, 0.01))
             sig = sf.Resample(vib, sig)
-        
+
         return sig.keep()
 
 goldbergSlope = sf.SimpleShape((0,0), (10,0), (1000,-30), (20000,-60))
@@ -411,7 +411,7 @@ def _goldberg_filter(sig, length, frequency, bright):
 
 def make_harpsichord_filter(soft=False, power=1.05, resonance=1.0):
     if soft:
-        return functools.partial(soft_harpsichord_filter, power, resonance) 
+        return functools.partial(soft_harpsichord_filter, power, resonance)
     else:
         return functools.partial(harpsichord_filter, power, resonance)
 
@@ -503,7 +503,7 @@ def violin_filter(sig, length, freq):
         sf.FixSize(sf.Clean(sf.Mix(sigs))),
         sig
     )
-    
+
     vibAbove = 250
     if length > vibAbove:
         # TODO feels a bit crushed - more stages?
@@ -527,17 +527,17 @@ def violin_filter(sig, length, freq):
 @sf_parallel
 def _vox_filter(vox, freq, a, b, c):
     length=sf.Length(+vox)
-    vox=sf.FixSize(polish(vox,freq)) 
+    vox=sf.FixSize(polish(vox,freq))
     vox=do_formant(vox, a, b, c, freq)
-    vox=polish(vox, freq)        
+    vox=polish(vox, freq)
     vox=excite(vox, 0.2, 2.0)
     vox=polish(vox, freq)
-    notch=(freq + a) / 2.0      
+    notch=(freq + a) / 2.0
     vox=mix(
         sf.Pcnt75(sf.RBJNotch(+vox, notch, 0.5)),
         sf.Pcnt25(vox)
     )
-    
+
     if length>1024:
         vibRate = 3.0
         depth = 0.05
@@ -551,7 +551,7 @@ def _vox_filter(vox, freq, a, b, c):
     else:
         at = length*0.5
     vox=create_vibrato(vox, length, longer_than=512, rate=vibRate, depth=depth, pitch_depth=pDepth, at=at)
-    
+
     vox=polish(vox, freq)
     vox=sf.RBJPeaking(vox, freq, 3, 4)
     vox=polish(vox, freq)
@@ -567,7 +567,7 @@ def femail_soprano_ah_filter(vox, length, freq):
     higher = sf.ButterworthHighPass(higher, freq*1.5 ,6)
     lower = sf.ButterworthHighPass(lower, freq*0.75 ,6)
     return sf.Realise(mix(sf.Pcnt95(lower), sf.Pcnt5(higher)))
-    
+
 @sf_parallel
 def femail_soprano_a_filter(vox,length,freq):
     vox = _vox_filter(vox, freq, 860, 2050, 2850)
@@ -612,7 +612,7 @@ def tuned_wind(length,freq):
             0.1,
             64
         )
-        
+
         sig=byquad_filter(
             'peak',
             sig,
@@ -620,7 +620,7 @@ def tuned_wind(length,freq):
             1.0,
             128
         )
-    
+
         sig=sf.FixSize(excite(sig,1.0,2.0))
         sig=sf.FixSize(sf.Saturate(sf.NumericVolume(sig,2.0)))
         sig=create_vibrato(
@@ -631,7 +631,7 @@ def tuned_wind(length,freq):
             depth=0.5,
             pitch_depth=0.02
         )
-        
+
         sigs.append(sig)
     sig=mix(sigs)
     return sf.FixSize(polish(sig,freq))
@@ -658,7 +658,7 @@ def synthichord_filter(sig, length, freq):
             sig = sf.Multiply(trem, sig)
             vib = sf.DirectMix(1, sf.NumericVolume(vib, 0.01))
             sig = sf.Resample(vib, sig)
-        
+
         env = sf.SimpleShape(
             (0,       sf.ToDBs(18000)),
             (length,  sf.ToDBs(freq * 2.5))
@@ -696,4 +696,4 @@ def synthichord_filter(sig, length, freq):
         else:
             env = sf.NumericShape((0, 0.00), (attack,0), (length, 0))
         out = sf.Multiply(env, out)
-        return sf.FixSize(polish(out, freq)).flush()
+        return sf.FixSize(polish(out, freq))

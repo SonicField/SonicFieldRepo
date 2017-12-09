@@ -13,18 +13,18 @@ from com.nerdscentral.audio.core import SFData
 def _doVib(env, signal):
     '''
     Adds vibrato to a signal based on the passed in envelope.
-    
+
     :param: env, the modulation envolope between 0 (no modulaltio) and 1 (full modulation).
     :type: env, SFSignal.
-    
+
     :param: signal, the signal to modulate.
     :type: signal, SFSignal.
-    
-    :return: an SFSignal of the modulate version of the passed in signal. 
-    
+
+    :return: an SFSignal of the modulate version of the passed in signal.
+
     Note that the returned signal will be flushed.
     '''
-    with SFMemoryZone():    
+    with SFMemoryZone():
         l=sf.Length(signal)
         trem=sf.FixSize(
             sf.MakeTriangle(
@@ -42,80 +42,75 @@ def _doVib(env, signal):
         signal=sf.Multiply(trem, signal)
         vib=sf.DirectMix(1, sf.NumericVolume(vib, 0.01))
         signal=sf.Resample(vib,signal)
-    return sf.Finalise(signal).flush()
+    return sf.FixSize(sf.Finalise(signal)).keep()
 
-def main():  
+def main():
 
     ####################################
     # Controls for rendering the piece #
     ####################################
-    
-    midis=Midi.read_midi_file("temp/pachelbel_canon_and_gigue_tweaked.mid")
-    
+
+    midis=Midi.read_midi_file("temp/bwv870-a.mid")
+
     # Length of full piece
     #======================
-    length = 9.0
-    
+    length = 2.0
+
     # Temperament
     #=============
     temperament = Midi.werckmeisterIII
     #temperament = Midi.just_intonation
     #temperament = Midi.bach_lehman
     #temperament = Midi.equal_temperament
-    
+
     # Modulation
     # ==========
     useModWheel = False
-    
+
     # Unify
     #======
     unify = True
-    
+
     # Which tracks to render.
     # Note this has no effect under unify.
     # ====================================
     tracks = [1]
-    
+
     # Dilate.
     # =======
     dilate = False
-    
+
     # Truncate.
     # Only render this many notes; < 1 implies all.
     truncate = 0
 
     # Fast blip - needed for some piano music.
     fastBlip = False
-    
+
     # Render in multiple tracks using round robin.
     # A setting of 1 gives on track, 2 gives 2 etc.
     splitTo = 8
-    
+
     # When we split, do we aggregate by pitch?
     splitPitch = True
-    
+
     # How much to mess with timing in milliseconds.
     scatter = 32
-    
+
     # Here to add the second voice. Values less than this will have it;
     # typicyally 0.5 means the bott0m half.
     lowerRank = 0.5
-    
+
     # Do Not Change
     #===============
-    
+
     midis = Midi.repare_overlap(midis, blip=2.0 if fastBlip else 5.0)
     #midis = Midi.tempo(midis)
 
     if unify:
         tracks = [1]
-    
+
     for track in tracks:
-        # Clear as much memory as possible before each render; remember that
-        # there should no no allocations at all in the first pass so there is no
-        # harm in calling this for each itereation.
-        SFData.flushAll()
-        
         # All outputs are written to files which have the track in the name so we can
         # completely discard all data chunks on each iteration.
         with SFMemoryZone():
@@ -127,14 +122,14 @@ def main():
                 outRaw = sorted(outRaw, key=lambda event: event.tick)
             else:
                 outRaw = midis[track]
-            
+
             # Dilate notes to inspect individually.
             if dilate:
                 for event in outRaw:
                     diff = event.tick_off-event.tick
                     event.tick *= 10
                     event.tick_off = event.tick+diff
-        
+
             # Purify, i.e. strip out events which are not notes.
             o2 = []
             for o in outRaw:
@@ -142,16 +137,16 @@ def main():
                     o2.append(o)
             outRaw = o2
 
-            
+
             # Extract the required beat to get the desired length.
             beat = Midi.set_length([outRaw],length)
-        
+
             # Scatter, i.e. add some timing jitter to the notes.
             # This helps prevent the music sounding quite so mechanical.
             # for this settings of around 128ms seem to make sense.
             if scatter:
                 out = Midi.scatter(outRaw, beat, scatter)
-            
+
             # Truncate, use this when working on tuning sounds so only the first few notes are
             # generated.
             if truncate > 0:
@@ -170,7 +165,7 @@ def main():
                             idx -= 1
                             print 'IDX Overflow at:', len(tmpOut[idx])
                     tmpOut[idx].append(event)
-                
+
                 for idx in xrange(splitTo):
                     tmpOut[idx] = sorted(tmpOut[idx], key=lambda event: event.tick)
 
@@ -193,10 +188,15 @@ def main():
                     if count % splitTo == split:
                         out.append(nt)
                     count += 1
-         
+
+                voice = harpsiPipe
                 # This renders the music.
-                left,right = [sf.Finalise(sig) for sig in distant_flute_pipe(out, beat, temperament, 1.0, place)]
-                
+                with SFMemoryZone():
+                    left,right = [sf.Finalise(sig) for sig in voice(out, beat, temperament, 1.0, place)]
+                    sf.WriteSignal(left,  "temp/l0")
+                    sf.WriteSignal(right, "temp/r0")
+
+
                 # Add highlight to bottom notes.
                 # TODO: Make this parameterisable.
                 #if rank < lowerRank:
@@ -215,31 +215,40 @@ def main():
                     outH.append(eventH)
                     outL.append(eventL)
 
-                leftb, rightb = [sf.NumericVolume(sf.Finalise(sig), 0.1 * rank) for sig in distant_flute_pipe(outH, beat, temperament, 1.0, place)]
-                leftc, rightc = [sf.NumericVolume(sf.Finalise(sig), 0.1 * (1.0 - rank)) for sig in distant_flute_pipe(outL, beat, temperament, 1.0, place)]
-                left, right = [sf.FixSize(sf.Mix(a, b, c)) for a,b,c in ((left, leftb, leftc), (right, rightb, rightc))]                    
-             
+                with SFMemoryZone():
+                    left, right = [sf.NumericVolume(sf.Finalise(sig), 0.1 * rank) for sig in voice(outH, beat, temperament, 1.0, place)]
+                    sf.WriteSignal(left, "temp/l1")
+                    sf.WriteSignal(right, "temp/r1")
+                with SFMemoryZone():
+                    left, right = [sf.NumericVolume(sf.Finalise(sig), 0.1 * (1.0 - rank)) for sig in voice(outL, beat, temperament, 1.0, place)]
+                    sf.WriteSignal(left, "temp/l2")
+                    sf.WriteSignal(right, "temp/r2")
+                with SFMemoryZone():    
+                    left, right = [sf.FixSize(sf.Mix(a, b, c)) for a,b,c in (
+                        (sf.ReadSignal("temp/l%i" % x) for x in xrange(3)), 
+                        (sf.ReadSignal("temp/r%i" % x) for x in xrange(3)))]
+                    if splitPitch:
+                        left = sf.NumericVolume(left, place)
+                        right = sf.NumericVolume(right, 1.0 - place)
+                    left = left.keep()
+                    right = right.keep()
+
                 # Creates controller envelopes based on a particular modulation source in the midi.
-                modEnvl = None
-                modEnvR = None
+
                 if useModWheel:
+                    modEnvl = None
+                    modEnvR = None
                     with SFMemoryZone():
                         modEnvl = Midi.controllerEnvelope(out,'modwheel', beat, left)
                         modEnvr = Midi.controllerEnvelope(out,'modwheel', beat, right)
                         # Remove transients from signal use bessel filter
                         # to retain the phase of the modulation.
-                        modEnvl = sf.BesselLowPass(modEnvl, 16, 2).flush()
-                        modEnvr = sf.BesselLowPass(modEnvr, 16, 2).flush()
-                
-                if useModWheel:
+                        modEnvl = sf.BesselLowPass(modEnvl, 16, 2)
+                        modEnvr = sf.BesselLowPass(modEnvr, 16, 2)
+
                     left  = _doVib(modEnvl, left)
                     right = _doVib(modEnvr, right)
 
-                left  = sf.FixSize(left)
-                right = sf.FixSize(right)
-                if splitPitch:
-                    left = sf.NumericVolume(left, place)
-                    right = sf.NumericVolume(right, 1.0 - place)
 
                 sf.WriteSignal(left, "temp/left_v{0}_{1}_acc".format(track, split))
                 sf.WriteSignal(right,"temp/right_v{0}_{1}_acc".format(track, split))

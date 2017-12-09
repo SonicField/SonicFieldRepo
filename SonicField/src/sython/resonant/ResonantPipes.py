@@ -2,6 +2,7 @@ import sython.organ.Player as Player
 from com.nerdscentral.audio.core import SFData
 
 import sython.utils.Midi as Midi
+from com.nerdscentral.audio.core import SFMemoryZone
 
 from sython.organ.Post   import \
     do_final_mix, \
@@ -477,3 +478,14 @@ def bass_harpsichord(midi_in, beat, temperament, velocity):
     left1,right1 = post_process(notes1)
     left2,right2 = post_process(notes2)
     return mix(left1, left2),mix(right1, right2)
+
+def harpsiPipe(midi_in, beat, temperament, velocity, pan):
+    with SFMemoryZone():
+        a = distant_flute_pipe(midi_in, beat, temperament, velocity, pan)
+        b = sloped_golberg_harpsichord(midi_in, beat, temperament, velocity, pan)
+        a=a.get()
+        b=b.get()
+        return (
+            sf.FixSize(sf.Mix(sf.Pcnt60(a[0]), sf.Pcnt40(b[0]))).keep(),
+            sf.FixSize(sf.Mix(sf.Pcnt60(a[1]), sf.Pcnt40(b[1]))).keep()
+        )

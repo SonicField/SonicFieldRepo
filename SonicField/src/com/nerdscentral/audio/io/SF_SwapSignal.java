@@ -123,7 +123,7 @@ public class SF_SwapSignal implements SFPL_Operator, SFPL_RefPassThrough
     {
         // TODO MAKE THIS WORK!
         SFSignal data = Caster.makeSFSignal(input);
-        return data.flush();
+        return data.keep();
     }
 
     @Override

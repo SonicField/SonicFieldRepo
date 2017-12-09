@@ -17,18 +17,19 @@
 
 #    -Dsython.temp.dirs=/Volumes/External1/scratch1/,/Volumes/External2/scratch1/ \
 #    -Dsython.temp.dirs=/Volumes/External2/scratch1/ \
+#    -Dsython.temp.dirs=/Volumes/SSD/scratch/ \
 
 java \
     -Dsython.check.deadlocks=true\
     -Dsython.check.memory=false \
     -Dsython.linear=false \
     -Dsython.modules=/Users/alexanderturner/SonicFieldRepo/SonicField/src \
-    -Dsython.restart.dir=/Volumes/External1/restart/ \
-    -Dsython.cache.dir=/Volumes/External1/cache/ \
+    -Dsython.restart.dir=/Volumes/SSD/restart/ \
+    -Dsython.cache.dir=/Volumes/SSD/cache/ \
     -Dsython.steal=true \
     -Dsython.trace=false \
-    -Dsython.temp.dirs=/Volumes/External1/scratch1/,/Volumes/External2/scratch1/ \
-    -Dsython.threads=4 \
+    -Dsython.temp.dirs=/Volumes/SSD/scratch/ \
+    -Dsython.threads=8 \
     -XX:+UseCompressedOops \
     -XX:+UseCompressedClassPointers \
     -XX:MaxDirectMemorySize=2g \

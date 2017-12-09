@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.ByteOrder;
@@ -19,7 +20,6 @@ import java.util.Stack;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongFunction;
 
@@ -28,6 +28,7 @@ import com.nerdscentral.data.OffHeapArray;
 import com.nerdscentral.data.UnsafeProvider;
 import com.nerdscentral.sython.SFPL_RuntimeException;
 
+import sun.misc.Cleaner;
 import sun.misc.Unsafe;
 
 /**
@@ -37,7 +38,7 @@ import sun.misc.Unsafe;
 public class SFData extends SFSignal implements Serializable
 {
     // JIT time alias in effect, maybe remove in the future
-    private static final Unsafe unsafe = UnsafeProvider.unsafe;
+    static final Unsafe unsafe = UnsafeProvider.unsafe;
 
     private static class MemoryZoneStack extends ThreadLocal<Stack<SFMemoryZone>>
     {
@@ -56,17 +57,44 @@ public class SFData extends SFSignal implements Serializable
         // buffer is used to hold a reference to the buffer
         // but its data is read via unsafe
         private MappedByteBuffer  buffer;
+        private static long       _adOff  = 0;
+        static
+        {
+            try
+            {
+                _adOff = unsafe.objectFieldOffset(ByteBufferWrapper.class.getDeclaredField("address")); //$NON-NLS-1$
+            }
+            catch (NoSuchFieldException | SecurityException e)
+            {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
+        private final static long adOff = _adOff;
+
+        private final static boolean isUnmapped(ByteBufferWrapper obj)
+        {
+            return unsafe.getLongVolatile(obj, adOff) == 0;
+        }
+
+        private final static long setAddress(ByteBufferWrapper obj, long value)
+        {
+            return unsafe.getAndSetLong(obj, adOff, value);
+        }
 
         public long getAddress()
         {
-            if (address == 0) remap();
+            if (isUnmapped(this)) remap();
             return address;
         }
 
         static Method getAddressMethod;
 
-        void remap()
+        synchronized void remap()
         {
+            // Already done by another thread;
+            if (!isUnmapped(this)) return;
+            address = 0; // Stops warnings this should be final etc.
             try
             {
                 buffer = underLyingFile.map(MapMode.READ_WRITE, fileOffset, CHUNK_LEN << 3l);
@@ -76,7 +104,7 @@ public class SFData extends SFSignal implements Serializable
                     getAddressMethod.setAccessible(true);
                 }
                 buffer.order(ByteOrder.nativeOrder());
-                address = (long) getAddressMethod.invoke(buffer);
+                setAddress(this, (long) getAddressMethod.invoke(buffer));
             }
             catch (IOException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
                             | NoSuchMethodException | SecurityException e)
@@ -89,14 +117,34 @@ public class SFData extends SFSignal implements Serializable
         {
             fileOffset = offsetInFile;
             underLyingFile = file;
-            // Grab the chunk of file now so it does not get used twice in a race.
+            // Map the data so the underlying channel will create the disk storage for it and
+            // so the file size etc continues to make sense.
             remap();
         }
 
-        public void force()
+        static Field cleanerField = null;
+
+        public synchronized void release()
         {
-            buffer.force();
+            setAddress(this, 0);
+            if (isUnmapped(this)) return;
+            try
+            {
+                if (cleanerField == null)
+                {
+                    cleanerField = buffer.getClass().getDeclaredField("cleaner"); //$NON-NLS-1$
+                    cleanerField.setAccessible(true);
+                }
+                Cleaner cleaner = (Cleaner) cleanerField.get(buffer);
+                cleaner.clean();
+            }
+            catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e)
+            {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
         }
+
     }
 
     public static class NotCollectedException extends Exception
@@ -105,7 +153,6 @@ public class SFData extends SFSignal implements Serializable
     }
 
     // $NON-NLS-1$
-    private static final String                             SONIC_FIELD_TRUE   = "true";                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              //$NON-NLS-1$
     static final long                                       CHUNK_SHIFT        = 16;
     static final long                                       CHUNK_LEN          = (long) Math.pow(2, CHUNK_SHIFT);
     static final long                                       CHUNK_MASK         = CHUNK_LEN - 1;
@@ -137,7 +184,6 @@ public class SFData extends SFSignal implements Serializable
     // be good.
 
     private static ConcurrentHashMap<File, FileChannel>     fileMap            = new ConcurrentHashMap<>();
-    private static AtomicBoolean                            isFlushing         = new AtomicBoolean(false);
 
     protected static FileChannel getRotatingChannel()
     {
@@ -240,93 +286,6 @@ public class SFData extends SFSignal implements Serializable
         }
     }
 
-    /**
-     * Flushes a snap shot of all current chunks to disk thus liberating the RAM with which they are associated to be used by
-     * new chunks. This method is useful between big sections of processing where the data generated will just be stored to be
-     * used in another processing section later. For example generate the left channel, flush(), generate the right, flush()
-     * then mix.
-     */
-    public static void flushAll()
-    {
-        // Snapshot the current container of all chunks so that
-        // the loop does not get caught flushing as loads of chunks are being allocated
-        // and so running for an unbounded amount of time.
-        if (isFlushing.get()) return;
-        isFlushing.set(true);
-        int nThreads = SFConstants.TEMP_DATA_DIRS.length;
-        AtomicBoolean failed = new AtomicBoolean(false);
-        // Increment and get needs -1 to index from 0.
-        AtomicInteger taken = new AtomicInteger(-1);
-        Thread[] threads = new Thread[nThreads];
-
-        // Flush all in as mean threads as there are temp files so that we can optimise
-        // disk bandwidth.
-        for (int n = 0; n < nThreads; ++n)
-        {
-            Thread th = new Thread()
-            {
-
-                @Override
-                @SuppressWarnings({ "synthetic-access" })
-                public void run()
-                {
-                    try
-                    {
-                        ByteBufferWrapper[] a = new ByteBufferWrapper[0];
-                        a = allChunks.toArray(a);
-                        System.out.println(Messages.getString("SFData.5") + a.length); //$NON-NLS-1$
-                        int c = 0;
-                        int mod = taken.incrementAndGet();
-                        for (ByteBufferWrapper chunk : a)
-                        {
-                            if (c % nThreads == mod)
-                            {
-                                chunk.force();
-                            }
-                            ++c;
-                            if (c % 1000 == mod)
-                                System.out.println(Messages.getString("SFData.7") + c + Messages.getString("SFData.8")); //$NON-NLS-1$ //$NON-NLS-2$
-                        }
-                        System.out.println(Messages.getString("SFData.12") + a.length); //$NON-NLS-1$
-                    }
-                    catch (Throwable t)
-                    {
-                        t.printStackTrace();
-                        failed.set(true);
-                    }
-                    finally
-                    {
-                        isFlushing.set(false);
-                    }
-                }
-            };
-            threads[n] = th;
-            th.setDaemon(true);
-            th.start();
-            if (failed.get())
-            {
-                throw new RuntimeException("Flush all failed, see stderr.");
-            }
-        }
-        for (Thread thts : threads)
-        {
-            boolean joined = false;
-            while (!joined)
-            {
-                try
-                {
-                    thts.join();
-                    joined = true;
-                }
-                catch (InterruptedException e)
-                {
-                    System.err.println("Non critical thread interup exception during flush - ignoring.");
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
-
     @Override
     public void clear()
     {
@@ -351,12 +310,19 @@ public class SFData extends SFSignal implements Serializable
 
             for (ByteBufferWrapper chunk : chunks)
             {
+                chunk.release();
                 freeChunks.add(chunk);
                 freeCount.incrementAndGet();
             }
             chunks = null;
             freeUnsafeMemory();
         }
+    }
+
+    @Override
+    public boolean isReleased()
+    {
+        return dead.get();
     }
 
     private void checkLive()
@@ -799,7 +765,7 @@ public class SFData extends SFSignal implements Serializable
         ADD, COPY, MULTIPLY, DIVIDE, SUBTRACT
     }
 
-    // Note that this is laboriously layed out to give
+    // Note that this is laboriously laid out to give
     // separate call sites for each operation to help give
     // static dispatch after optimisation
     public void operateOnto(int at, SFSignal in, OPERATION operation)

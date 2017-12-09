@@ -14,7 +14,7 @@ def granular_reverberate(signal,ratio,delay,density,length=50,stretch=1,vol=1,ra
                 (signal_i,at)=grain
                 signal_i=sf.Realise(signal_i)
                 signal_i=sf.Realise(sf.DirectRelength(signal_i,ratio-0.01*spread+(0.02*spread*random.random())))
-                signal_i.flush()
+                signal_i.keep()
                 for x in range(0,density):
                     time=delay*(
                         (random.random()+random.random())*rand+
@@ -27,11 +27,11 @@ def granular_reverberate(signal,ratio,delay,density,length=50,stretch=1,vol=1,ra
                             int((at + time)*stretch)
                         )
                     )
-      
+
         out = mix(out)
         out = sf.NumericVolume(out,vol)
-    return out.flush()
-    
+    return out.keep()
+
 @sf_parallel
 def reverberate_inner(signal,convol,grain_length):
     with SFMemoryZone():
@@ -46,19 +46,19 @@ def reverberate_inner(signal,convol,grain_length):
             # HACK! TODO:
             if not newMag:
                 return signal
-            signal_=sf.NumericVolume(signal_,mag/newMag)     
+            signal_=sf.NumericVolume(signal_,mag/newMag)
             # tail out clicks due to amplitude at end of signal
-            return sf.Clean(sf.Cut(0,len,signal_)).flush()
+            return sf.Clean(sf.Cut(0,len,signal_)).keep()
         else:
-            return signal.flush()
+            return signal.keep()
 
 def convolve(signal,convolution):
-    with SFMemoryZone():    
+    with SFMemoryZone():
         ls=sf.Length(signal)
         lc=sf.Length(convolution)
         convol_=sf.FrequencyDomain(sf.Concatenate(convolution,sf.Silence(ls)))
-        return sf.Finalise(reverberate_inner(signal,convol_,lc)).flush()
-    
+        return sf.Finalise(reverberate_inner(signal,convol_,lc)).keep()
+
 @sf_parallel
 def reverberate(signal,convol):
     c_log("Reverberate")
@@ -68,7 +68,6 @@ def reverberate(signal,convol):
     out=[]
     for grain in sf.Granulate(signal_,grain_length):
         (signal_i,at)=grain
-        signal_i.flush()
         signal_i=sf.Realise(signal_i)
         out.append((reverberate_inner(signal_i,convol_,grain_length),at))
     return sf.Finalise(mix(out))

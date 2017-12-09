@@ -3,7 +3,6 @@ package com.nerdscentral.audio.core;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.nerdscentral.audio.core.SFData.ByteBufferWrapper;
 import com.nerdscentral.audio.pitch.CubicInterpolator;
 import com.nerdscentral.sython.SFMaths;
 import com.nerdscentral.sython.SFPL_RuntimeException;
@@ -175,14 +174,10 @@ public abstract class SFSignal
         release();
     }
 
-    public SFSignal flush()
+    @SuppressWarnings("static-method")
+    public boolean isReleased()
     {
-        // FIXME: Parent has knowledge of child which is BAD.
-        SFData data = (SFData) SFData.realise(this);
-        for (ByteBufferWrapper chunk : data.chunks)
-        {
-            chunk.force();
-        }
-        return data.keep();
+        return false;
     }
+
 }

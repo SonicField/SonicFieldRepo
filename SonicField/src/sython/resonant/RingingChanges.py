@@ -20,20 +20,20 @@ def makeBlocks(length = 60000 * 1): # Minutes
     with SFMemoryZone():
         class Walker(object):
             def __init__(self, frequency):
-                
+
                 self.haasWalkLeft  = BrownianWalk(maxDenominator = 3, maxNumerator = 10)
                 self.haasWalkRight = BrownianWalk(maxDenominator = 3, maxNumerator = 10)
-    
+
                 # Balance walk which also gives the volume.
                 self.balWalkLeft  = BrownianWalk()
                 self.balWalkRight = BrownianWalk()
-    
+
                 # The frequency.
                 self.frequency = frequency
 
                 # Length walk.
                 self.lenWalk = BrownianWalk(maxDenominator = 4, maxNumerator = 4)
-                        
+
             def next(self):
                 return {
                     'haasLeft'  : self.haasWalkLeft.next() * 10.0,
@@ -43,7 +43,7 @@ def makeBlocks(length = 60000 * 1): # Minutes
                     'length'    : self.lenWalk.next() * 2000,
                     'frequency' : self.frequency
                     }
-        
+
         freqs = []
         # For Choas and order
         #for baseF in [64.0, 128.0, 256.0, 512.0, 1024.0]:
@@ -51,7 +51,7 @@ def makeBlocks(length = 60000 * 1): # Minutes
         # For Further Chaos
         for baseF in range(20,0,-1):
             freqs += [baseF * 64]
-            
+
         bells = [Walker(f) for f in freqs]
         steps = []
         # For Choas and order
@@ -66,13 +66,13 @@ def makeBlocks(length = 60000 * 1): # Minutes
         steps = []
         for _ in range(0,4):
             steps += [ ((x % 4) + 1)* 128 for x in range(0, len(freqs))]
-        
+
         at = 1000
         sigsLeft  = []
         sigsRight = []
         count = 0
         while at < length:
-            print 'At: ', at , ' of ', length  
+            print 'At: ', at , ' of ', length
             for step, bell in zip(steps, bells):
                 with SFMemoryZone():
                     bellFo = bell.next()
@@ -80,26 +80,26 @@ def makeBlocks(length = 60000 * 1): # Minutes
                     if bellFo['frequency'] < 256:
                         bright = 4.0
                     sig = primeBell(
-                        frequency = bellFo['frequency'], 
+                        frequency = bellFo['frequency'],
                         brightness = bright,
                         length = bellFo['length'],
-                        hit = 2.0, 
+                        hit = 2.0,
                         isBowl = False
                     )
-    
+
                     atLeft  = at + bellFo['haasLeft']
                     atRight = at + bellFo['haasRight']
-                    sigsLeft  += [(sf.NumericVolume(sig,bellFo['balLeft']).flush(),  atLeft)]
-                    sigsRight += [(sf.NumericVolume(sig,bellFo['balRight']).flush(), atRight)]
+                    sigsLeft  += [(sf.NumericVolume(sig,bellFo['balLeft']),  atLeft)]
+                    sigsRight += [(sf.NumericVolume(sig,bellFo['balRight']), atRight)]
                     at += step
 
             for _ in range(0, 4):
                 randSwap(bells)
                 randSwap(steps)
-                    
 
-        return [sf.FixSize(sf.MixAt(sigs)).flush() for sigs in sigsLeft, sigsRight]
-        
+
+        return [sf.FixSize(sf.MixAt(sigs)).keep() for sigs in sigsLeft, sigsRight]
+
 def main():
     print 'Doing work'
 

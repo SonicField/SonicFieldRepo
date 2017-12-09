@@ -17,27 +17,27 @@ def spatialise(osg):
         md1 = sf.NumericVolume(md1,100)
         os2 = sf.AnalogueChorus( osg,dly,md1,1.25,0.7,18000.0)
         oso = [sf.Mix([os1[0],os2[0]]),sf.Mix([os1[1],os2[1]])]
-        oso = [sf.FixSize(sf.Mix(sf.FixSize(s),osi)).flush() for s in oso ]
+        oso = [sf.FixSize(sf.Mix(sf.FixSize(s),osi)).keep() for s in oso ]
         print 'Done spatialise'
         return oso
 
-@sf_parallel        
+@sf_parallel
 def doWork(left, right, doChorus = False, doSpatial=True):
     print'Do work'
     if doSpatial:
         with SFMemoryZone():
             left1, right1 = spatialise(left)
             left2, right2 = spatialise(right)
-        
+
             left=sf.MixAt(
                 (left1,0),
                 (sf.Pcnt10(left2),50)
-            ).flush()
-        
+            ).keep()
+
             right=sf.MixAt(
                 (right1,0),
                 (sf.Pcnt10(right2),40)
-            ).flush()
+            ).keep()
 
     if doChorus:
         left, right = chorus(
@@ -49,7 +49,7 @@ def doWork(left, right, doChorus = False, doSpatial=True):
             maxVol   =  1.0,
             nChorus  = 16.0
         )
-    
+
     print 'Done work'
     return left, right
 
@@ -93,24 +93,24 @@ def chorus(
                         return sf.SwapSignal(sf.Finalise(nsg))
                 sigs.append(in_inner())
             ret=sf.Finalise(sf.Mix(sigs))
-            return ret.flush()
-    
+            return ret.keep()
+
     return inner(left), inner(right)
 
 @sf_parallel
 def ma(l):
     with SFMemoryZone():
-        return sf.Finalise(sf.MixAt(l)).flush()
+        return sf.Finalise(sf.MixAt(l))
 
 def main():
-        
+
     left  = sf.ReadSignal("temp/declicked_l")
     right = sf.ReadSignal("temp/declicked_r")
-    
+
     lefts  = sf.Granulate(left ,60*5000,0)
     rights = sf.Granulate(right,60*5000,0)
     print len(lefts), len(rights)
-    
+
     outl = []
     outr = []
     for (left,atl), (right,alr) in zip(lefts,rights):
@@ -119,10 +119,10 @@ def main():
         left, right = doWork(left, right, doChorus=True, doSpatial=False)
         outl.append((left ,atl))
         outr.append((right,atl))
-    
+
     left  = ma(outl)
     right = ma(outr)
-    
+
     sf.WriteSignal(left, "temp/c_left")
     sf.WriteSignal(right,"temp/c_right")
     sf.WriteFile32((left,right),"temp/c.wav")

@@ -7,7 +7,7 @@ from __builtin__ import None
 
 @sf_parallel
 def excite(sig,mix,power):
-    with SFMemoryZone():    
+    with SFMemoryZone():
         m=sf.Magnitude(sig)
         sigh=sf.BesselHighPass(sig,500,2)
         mh=sf.Magnitude(sigh)
@@ -18,7 +18,7 @@ def excite(sig,mix,power):
         sigh=sf.NumericVolume(sigh,mh/nh)
         sig=sf.Mix(sf.NumericVolume(sigh,mix),sf.NumericVolume(sig,1.0-mix))
         n=sf.Magnitude(sig)
-        return sf.NumericVolume(sig, m/n).flush()
+        return sf.NumericVolume(sig, m/n).keep()
 
 def main():
     paths = range(2, 8)
@@ -28,13 +28,13 @@ def main():
 
 def _main(path):
 
-    
+
     ####################################
     #
     # Room Size And Nature Controls
     #
     ####################################
-    
+
     # If true, do not perform secondary reverb.
     dry     = False
     # Perform excitation of primary convolution even when not bright or vbright.
@@ -84,8 +84,8 @@ def _main(path):
     # Load the file and clean
     #
     ####################################
-    
-    with SFMemoryZone():    
+
+    with SFMemoryZone():
         #right, left = sf.ReadFile("temp/dry.wav")
         left  = sf.ReadSignal("temp/right_v1_{0}_acc".format(path))
         right = sf.ReadSignal("temp/left_v1_{0}_acc".format(path))
@@ -93,33 +93,33 @@ def _main(path):
         lrBalance = None
         if matchMagnitudes:
             rMag = sf.Magnitude(right)
-            lMag = sf.Magnitude(left) 
+            lMag = sf.Magnitude(left)
             tMag = lMag + rMag
             lrBalance = (lMag / tMag, rMag / tMag)
             print 'Will correct magnitudes to:', lrBalance
-        
+
         left =sf.Multiply(sf.NumericShape((0,0),(64,1),(sf.Length(+left ),1)),left )
         right=sf.Multiply(sf.NumericShape((0,0),(64,1),(sf.Length(+right),1)),right)
-        
-        left =sf.Concatenate(sf.Silence(1024),left).flush()
-        right=sf.Concatenate(sf.Silence(1024),right).flush()
 
-    if ambient:  
+        left =sf.Concatenate(sf.Silence(1025),left).keep()
+        right=sf.Concatenate(sf.Silence(1024),right).keep()
+
+    if ambient:
         (convoll,convolr)=sf.ReadFile("temp/impulses/v-grand-l.wav")
         (convorl,convorr)=sf.ReadFile("temp/impulses/v-grand-r.wav")
-    elif church:    
+    elif church:
         (convoll,convolr)=sf.ReadFile("temp/impulses/bh-l.wav")
         (convorl,convorr)=sf.ReadFile("temp/impulses/bh-r.wav")
-    elif tiny:    
+    elif tiny:
         (convoll,convolr)=sf.ReadFile("temp/impulses/tiny-l.wav")
         (convorl,convorr)=sf.ReadFile("temp/impulses/tiny-r.wav")
-    elif small:    
+    elif small:
         (convoll,convolr)=sf.ReadFile("temp/impulses/Small-Chamber-L.wav")
         (convorl,convorr)=sf.ReadFile("temp/impulses/Small-Chamber-R.wav")
     else:
         (convoll,convolr)=sf.ReadFile("temp/impulses/Vocal-Chamber-L.wav")
         (convorl,convorr)=sf.ReadFile("temp/impulses/Vocal-Chamber-R.wav")
-    
+
     if spring:
         spring = None
         if small:
@@ -133,7 +133,7 @@ def _main(path):
            convoll,
             +spring
         )
-        
+
         convorr=sf.Mix(
             convorr,
             sf.Invert(spring)
@@ -149,7 +149,7 @@ def _main(path):
                 sf.NumericVolume(ml, vol)
             )
         )
-        
+
         retr = sf.Finalise(
             sf.Mix(
                 convorr,
@@ -157,27 +157,27 @@ def _main(path):
             )
         )
         return retl, retr
-        
+
 
     convoll, convorr = mixIR("temp/impulses/terrys.wav", terrys)
     convoll, convorr = mixIR("temp/impulses/mega-thederal.wav", megaThe)
     convoll, convorr = mixIR("temp/impulses/perth_city_hall_balcony_ir_edit.wav", perth)
     convoll, convorr = mixIR("temp/impulses/womans_club.wav", club)
     convoll, convorr = mixIR("temp/impulses/ultra-church.wav", ultraChurch)
-    
+
     if bboost:
         left =sf.RBJPeaking(left,100,1,6)
         right=sf.RBJPeaking(right,100,1,6)
-    
+
         #left =sf.RBJLowShelf(left,256,1,6)
         #right=sf.RBJLowShelf(right,256,1,6)
-    
+
     if bright or vBright or clear:
         convoll=excite(convoll,0.75,2.0)
         convolr=excite(convolr,0.75,2.0)
         convorl=excite(convorl,0.75,2.0)
         convorr=excite(convorr,0.75,2.0)
-    
+
     with SFMemoryZone():
         with SFMemoryZone():
             ll  = reverberate(left ,convoll)
@@ -186,22 +186,21 @@ def _main(path):
             rr  = reverberate(right,convorr)
             wleft =sf.FixSize(sf.Mix(ll,rl)).keep()
             wright=sf.FixSize(sf.Mix(rr,lr)).keep()
-        
+
         if bright:
             wright = excite(wright,0.15,1.11)
             wleft  = excite(wleft ,0.15,1.11)
             right  = excite(right,0.15,1.05)
             left   = excite(left ,0.15,1.05)
-            
+
         if vBright:
             right  = excite(right,0.25,1.15)
             left   = excite(left ,0.25,1.15)
 
-        SFData.flushAll()
-        
+
         with SFMemoryZone():
-            wleft  =sf.FixSize(sf.Mix(sf.NumericVolume(left,mix ),sf.NumericVolume(wleft,1.0-mix))).flush()
-            wright =sf.FixSize(sf.Mix(sf.NumericVolume(right,mix),sf.NumericVolume(wright,1.0-mix))).flush()
+            wleft  =sf.FixSize(sf.Mix(sf.NumericVolume(left,mix ),sf.NumericVolume(wleft,1.0-mix))).keep()
+            wright =sf.FixSize(sf.Mix(sf.NumericVolume(right,mix),sf.NumericVolume(wright,1.0-mix))).keep()
 
         if not dry:
             with SFMemoryZone():
@@ -214,7 +213,7 @@ def _main(path):
                 else:
                     (convoll,convolr)=sf.ReadFile("temp/impulses/bh-l.wav")
                     (convorl,convorr)=sf.ReadFile("temp/impulses/bh-r.wav")
-            
+
                 with SFMemoryZone():
                     left  = sf.BesselLowPass(left ,392,1)
                     right = sf.BesselLowPass(right,392,1)
@@ -222,18 +221,18 @@ def _main(path):
                     lr  = reverberate( left ,convolr)
                     rl  = reverberate(+right,convorl)
                     rr  = reverberate( right,convorr)
-                    vwleft =sf.FixSize(sf.Mix(ll,rl)).flush()
-                    vwright=sf.FixSize(sf.Mix(rr,lr)).flush()
-                    
+                    vwleft =sf.FixSize(sf.Mix(ll,rl)).keep()
+                    vwright=sf.FixSize(sf.Mix(rr,lr)).keep()
+
                 with SFMemoryZone():
-                    wleft =sf.FixSize(sf.Mix(wleft ,sf.Pcnt20(vwleft ))).flush()
-                    wright=sf.FixSize(sf.Mix(wright,sf.Pcnt20(vwright))).flush()
+                    wleft =sf.FixSize(sf.Mix(wleft ,sf.Pcnt20(vwleft ))).keep()
+                    wright=sf.FixSize(sf.Mix(wright,sf.Pcnt20(vwright))).keep()
 
     if post:
         print "Warming"
-        
+
         left, right = wleft, wright
-        
+
         def highDamp(sig,freq,fact):
             with SFMemoryZone():
                 hfq=sf.BesselHighPass(+sig,freq,4)
@@ -248,8 +247,8 @@ def _main(path):
                     )
                 )
                 hfq=sf.Multiply(hfq,ctr)
-                return sf.Mix(hfq,sf.BesselLowPass(sig,freq,4)).flush()
-        
+                return sf.Mix(hfq,sf.BesselLowPass(sig,freq,4)).keep()
+
         @sf_parallel
         def filter(sig):
             with SFMemoryZone():
@@ -270,8 +269,8 @@ def _main(path):
                 sig=sf.BesselHighPass(sig,256,4)
                 sig=sf.Mix(low,sig)
                 sig=highDamp(sig,5000,0.66)
-                return sf.FixSize(sf.Clean(sig)).flush()
-            
+                return sf.FixSize(sf.Clean(sig)).keep()
+
         left  = filter(left)
         right = filter(right)
     else:
@@ -282,13 +281,13 @@ def _main(path):
         print 'Correcting magnitudes to:', lrBalance
         left  = sf.NumericVolume(left,  lrBalance[0])
         right = sf.NumericVolume(right, lrBalance[1])
-        
+
     if dbsPerTrack:
         amount = dbsPerTrack * path
         print 'Scaling magnitudes to:', lrBalance
         left  = sf.Volume(left,  amount)
         right = sf.Volume(right, amount)
-        
+
 
     writeWave(right, left, 'temp/reverberated_{0}'.format(path))
-        
+

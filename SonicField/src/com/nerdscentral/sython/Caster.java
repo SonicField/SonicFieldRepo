@@ -138,7 +138,9 @@ public class Caster
         Object o2 = checkAutoTranslation(object);
         try
         {
-            return (SFSignal) o2;
+            SFSignal sig = (SFSignal) o2;
+            if (sig.isReleased()) throw new SFPL_RuntimeException("Accessing a released signal.");
+            return sig;
         }
         catch (ClassCastException e)
         {
