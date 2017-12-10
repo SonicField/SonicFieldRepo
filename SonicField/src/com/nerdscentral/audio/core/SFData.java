@@ -217,6 +217,7 @@ public class SFData extends SFSignal implements Serializable
             final LongFunction<Long> toGigs = chunks -> chunks * CHUNK_LEN * 8 / SFConstants.ONE_GIG;
             System.out.println(Messages.getString("SFData.20") + toGigs.apply(totalCount.get()) //$NON-NLS-1$
                             + Messages.getString("SFData.21") + toGigs.apply((freeCount.get())));  //$NON-NLS-1$
+            System.gc();
         }
     }
 
@@ -283,6 +284,7 @@ public class SFData extends SFSignal implements Serializable
                 totalCount.addAndGet(1);
                 countDown -= CHUNK_LEN;
             }
+            System.gc();
         }
     }
 

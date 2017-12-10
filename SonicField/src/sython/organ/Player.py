@@ -3,6 +3,7 @@ from java.util.concurrent.atomic import AtomicLong
 from sython.utils.Envelopes import safe_env
 from com.nerdscentral.audio.core import SFMemoryZone, SFConstants
 from com.nerdscentral.audio.core import SFData
+from sython.utils.Memory import writeSawppedCache, readSwappedCache
 import random
 import os.path
 
@@ -494,7 +495,7 @@ def play(
         signals = None
         if args in cache and (restartIndex < replayIndex or random.random() < 0.9):
             print 'Note Cache Hit! {0} -> {1}'.format(index, index - cacheMisses)
-            signals = cache[args]
+            signals = [readSwappedCache(s) for s in cache[args]]
         else:
             path_l, signal_l = sf.MaybeReadSignal("left_{0}".format(restartIndex))
             path_r, signal_r = sf.MaybeReadSignal("right_{0}".format(restartIndex))
@@ -511,7 +512,7 @@ def play(
                 print 'Restart Hit!   {0}'.format(restartIndex)
                 signals = (signal_l, signal_r)
             # Note that the get code below will compute the value for these futures as some point.
-            cache[args] = signals
+            cache[args] = [writeSawppedCache(s) for s in signals]
             cacheMisses += 1
         restartIndex += 1
         dl=30 * rl + 1000

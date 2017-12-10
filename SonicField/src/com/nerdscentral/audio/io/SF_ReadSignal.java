@@ -4,7 +4,6 @@ package com.nerdscentral.audio.io;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
@@ -75,7 +74,7 @@ public class SF_ReadSignal implements SFPL_Operator
         public synchronized double getSample(int index)
         {
             // TODO: Is simple synchronisation the best solution or would thread locality be a better bet?
-            // We need to do something because two thread can be looking at different places entirely.
+            // We need to do something because two threads can be looking at different places entirely.
             // If that happens performance will completely suck anyhow and we _should_ convert to just
             // loading the whole thing into memory.
             if (index > length || index < 0)
@@ -138,7 +137,7 @@ public class SF_ReadSignal implements SFPL_Operator
         {
             return new Generator(new RandomAccessFile(file, "r")); //$NON-NLS-1$
         }
-        catch (FileNotFoundException e)
+        catch (IOException e)
         {
             throw new RuntimeException(e);
         }

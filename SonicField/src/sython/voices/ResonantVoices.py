@@ -11,6 +11,7 @@ from sython.utils.Algorithms import excite
 from sython.utils.Algorithms import create_vibrato
 from sython.utils.Algorithms import polish
 from sython.utils.Algorithms import compress, decompress
+from sython.utils.Memory import writeSawppedCache, readSwappedCache
 from sython.voices.Signal_Generators import phasing_sawtooth
 from sython.voices.Signal_Generators import simple_sawtooth
 from sython.voices.Signal_Generators import phasing_triangle
@@ -137,7 +138,7 @@ def additive_resonance(power, qCorrect, saturate, rollOff, post, limit, seed, fl
         key = (length, _logRoundUp(hfq), vol, reverse)
         if key in _resonanceCache:
             if random.random() < _CACHE_PROBABILITY:
-                return _repitch(key[1], hfq, _resonanceCache[key])
+                return _repitch(key[1], hfq, readSwappedCache(_resonanceCache[key]))
 
         with SFMemoryZone():
             # Put in a little extra and then trim it off reliably.
@@ -157,11 +158,10 @@ def additive_resonance(power, qCorrect, saturate, rollOff, post, limit, seed, fl
                 # inverse scale of that used to make the signal. This should
                 # always give enough signal so out of bounds does not happen.
                 toCache = _repitch(hfq, key[1], ret, sf.Length(ret) / upRatio)
-                toCache = toCache.pin()
                 # FIXME: Figure out how to make this long enough.
                 # See call to _distant_wind above.
-                _resonanceCache[key] = toCache
-                return toCache
+                _resonanceCache[key] = writeSawppedCache(toCache)
+                return toCache.keep()
             else:
                 return ret.keep()
             return ret

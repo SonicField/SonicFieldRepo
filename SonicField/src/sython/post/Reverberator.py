@@ -21,7 +21,7 @@ def excite(sig,mix,power):
         return sf.NumericVolume(sig, m/n).keep()
 
 def main():
-    paths = range(2, 8)
+    paths = range(0, 8)
     #paths = [7]
     for path in paths:
         _main(path)
