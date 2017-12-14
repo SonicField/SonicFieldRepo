@@ -2,8 +2,9 @@ import math
 import random
 from sython.concurrent import sf_parallel
 from sython.utils.Reverberation import convolve
-from com.nerdscentral.audio.core import SFMemoryZone
+from com.nerdscentral.audio.core import SFMemoryZone, SFConstants
 
+@sf_parallel
 def spatialise(osg):
     with SFMemoryZone():
         print 'Do spatialise'
@@ -79,6 +80,7 @@ def chorus(
             sigs=[]
             l=sf.Length(signal)
             for inst in range(0,int(nChorus)):
+                @sf_parallel
                 def in_inner():
                     with SFMemoryZone():
                         print "Do"
@@ -100,29 +102,30 @@ def chorus(
 @sf_parallel
 def ma(l):
     with SFMemoryZone():
-        return sf.Finalise(sf.MixAt(l))
+        return sf.Finalise(sf.MixAt(l)).keep()
 
 def main():
 
-    left  = sf.ReadSignal("temp/declicked_l")
-    right = sf.ReadSignal("temp/declicked_r")
+    #left  = sf.ReadSignal(SFConstants.STORE_DIRECTORY + "/declicked_l")
+    #right = sf.ReadSignal(SFConstants.STORE_DIRECTORY + "/declicked_r")
+
+    left,right  = sf.ReadFile(SFConstants.STORE_DIRECTORY + "input.wav")
 
     lefts  = sf.Granulate(left ,60*5000,0)
     rights = sf.Granulate(right,60*5000,0)
     print len(lefts), len(rights)
-
     outl = []
     outr = []
     for (left,atl), (right,alr) in zip(lefts,rights):
         left = sf.Realise(left)
         right = sf.Realise(right)
-        left, right = doWork(left, right, doChorus=True, doSpatial=False)
+        left, right = doWork(left, right, doChorus=True, doSpatial=True)
         outl.append((left ,atl))
-        outr.append((right,atl))
-
+        outr.append((right,alr))
+ 
     left  = ma(outl)
     right = ma(outr)
 
-    sf.WriteSignal(left, "temp/c_left")
-    sf.WriteSignal(right,"temp/c_right")
-    sf.WriteFile32((left,right),"temp/c.wav")
+    sf.WriteSignal(left, SFConstants.STORE_DIRECTORY + "c_left")
+    sf.WriteSignal(right,SFConstants.STORE_DIRECTORY + "c_right")
+    sf.WriteFile32((left,right),SFConstants.STORE_DIRECTORY + "c.wav")

@@ -153,37 +153,38 @@ public class SFData extends SFSignal implements Serializable
     }
 
     // $NON-NLS-1$
-    static final long                                       CHUNK_SHIFT        = 16;
-    static final long                                       CHUNK_LEN          = (long) Math.pow(2, CHUNK_SHIFT);
-    static final long                                       CHUNK_MASK         = CHUNK_LEN - 1;
+    static final long                                       CHUNK_SHIFT          = 16;
+    static final long                                       CHUNK_LEN            = (long) Math.pow(2, CHUNK_SHIFT);
+    static final long                                       CHUNK_MASK           = CHUNK_LEN - 1;
 
-    // How frequently to print of memory state as a modulus of the number of SFData objects created.
-    private static final long                               MEM_REPORT_MODULUS = 10000;
+    // How frequently to print of memory state once this many samples has been allocated and/or freed.
+    private static final long                               MEM_REPORT_THRESHOLD = (long) SFConstants.SAMPLE_RATE
+                    * SFConstants.HEART_BEAT;
 
-    private static final long                               serialVersionUID   = 1L;
+    private static final long                               serialVersionUID     = 1L;
     private final int                                       length;
     ByteBufferWrapper[]                                     chunks;
     private final long                                      chunkIndex;
     // shadows chunkIndex for memory management as chunkIndex must
     // be final to enable optimisation
     private long                                            allocked;
-    private static final AtomicLong                         totalCount         = new AtomicLong();
-    private static final AtomicLong                         freeCount          = new AtomicLong();
-    private static final AtomicLong                         reportTicker       = new AtomicLong();
-    private static ConcurrentLinkedDeque<ByteBufferWrapper> freeChunks         = new ConcurrentLinkedDeque<>();
-    private static ConcurrentLinkedDeque<ByteBufferWrapper> allChunks          = new ConcurrentLinkedDeque<>();
+    private static final AtomicLong                         totalCount           = new AtomicLong();
+    private static final AtomicLong                         freeCount            = new AtomicLong();
+    private static final AtomicLong                         reportTicker         = new AtomicLong();
+    private static ConcurrentLinkedDeque<ByteBufferWrapper> freeChunks           = new ConcurrentLinkedDeque<>();
+    private static ConcurrentLinkedDeque<ByteBufferWrapper> allChunks            = new ConcurrentLinkedDeque<>();
     @SuppressWarnings("synthetic-access")
-    private static final MemoryZoneStack                    memoryZoneStack    = new MemoryZoneStack();
-    private final AtomicBoolean                             kept               = new AtomicBoolean(false);
-    private final AtomicBoolean                             dead               = new AtomicBoolean(false);
-    private final AtomicBoolean                             pinned             = new AtomicBoolean(false);
+    private static final MemoryZoneStack                    memoryZoneStack      = new MemoryZoneStack();
+    private final AtomicBoolean                             kept                 = new AtomicBoolean(false);
+    private final AtomicBoolean                             dead                 = new AtomicBoolean(false);
+    private final AtomicBoolean                             pinned               = new AtomicBoolean(false);
 
     // TODO: The file channels are thread local but the chunks are not. Thus over time chunks will disperse
     // across threads and the locality will be broken. If we can make some mechanism to allow this were needed
     // but migrate chunks back to being thread local where possible to improve disk data locallity this would
     // be good.
 
-    private static ConcurrentHashMap<File, FileChannel>     fileMap            = new ConcurrentHashMap<>();
+    private static ConcurrentHashMap<File, FileChannel>     fileMap              = new ConcurrentHashMap<>();
 
     protected static FileChannel getRotatingChannel()
     {
@@ -210,11 +211,15 @@ public class SFData extends SFSignal implements Serializable
         }
     }
 
-    private static void maybeReportStats()
+    private static void dataHeartBeat(int count)
     {
-        if (reportTicker.incrementAndGet() % MEM_REPORT_MODULUS == 0)
+        /* Periodically perform actions based on when a particular amount of data has been allocated to SFData objects
+         * or freed from them.
+         */
+        if (reportTicker.addAndGet(count) > MEM_REPORT_THRESHOLD)
         {
-            final LongFunction<Long> toGigs = chunks -> chunks * CHUNK_LEN * 8 / SFConstants.ONE_GIG;
+            reportTicker.set(0);
+            final LongFunction<Long> toGigs = chunks -> chunks * CHUNK_LEN * 8 / SFConstants.ONE_MEG;
             System.out.println(Messages.getString("SFData.20") + toGigs.apply(totalCount.get()) //$NON-NLS-1$
                             + Messages.getString("SFData.21") + toGigs.apply((freeCount.get())));  //$NON-NLS-1$
             System.gc();
@@ -284,18 +289,6 @@ public class SFData extends SFSignal implements Serializable
                 totalCount.addAndGet(1);
                 countDown -= CHUNK_LEN;
             }
-            System.gc();
-        }
-    }
-
-    @Override
-    public void clear()
-    {
-        checkLive();
-        for (long i = 0; i < chunks.length; ++i)
-        {
-            long address = unsafe.getAddress(chunkIndex + (i << 3l));
-            unsafe.setMemory(address, CHUNK_LEN << 3l, (byte) 0);
         }
     }
 
@@ -304,6 +297,7 @@ public class SFData extends SFSignal implements Serializable
     {
         checkLive();
         if (pinned.get()) throw new RuntimeException("Trying to release pinned memory."); //$NON-NLS-1$
+        dataHeartBeat(getLength());
         dead.set(true);
         synchronized (fileMap)
         {
@@ -384,13 +378,21 @@ public class SFData extends SFSignal implements Serializable
                 zone.localData.add(this);
             }
         }
-        maybeReportStats();
+        dataHeartBeat(l);
     }
 
-    public final static SFData build(int l)
+    public final static SFData build(int l, boolean clear)
     {
         SFData ret = new SFData(l);
-        ret.clear();
+        if (clear)
+        {
+            long clearLen = CHUNK_LEN << 3l;
+            for (long i = 0; i < ret.chunks.length; ++i)
+            {
+                long address = unsafe.getAddress(ret.chunkIndex + (i << 3l));
+                unsafe.setMemory(address, clearLen, (byte) 0);
+            }
+        }
         return ret;
     }
 
@@ -402,7 +404,8 @@ public class SFData extends SFSignal implements Serializable
     {
         checkLive();
         SFSignal data1 = new SFData(this.getLength());
-        for (int i = 0; i < this.getLength(); ++i)
+        int l = this.getLength();
+        for (int i = 0; i < l; ++i)
         {
             data1.setSample(i, this.getSample(i));
         }
@@ -451,7 +454,6 @@ public class SFData extends SFSignal implements Serializable
     @Override
     public final int getLength()
     {
-        checkLive();
         return this.length;
     }
 
@@ -468,7 +470,6 @@ public class SFData extends SFSignal implements Serializable
 
     public static SFSignal build(double[] input)
     {
-        // No nead to clear as we set the entire buffer.
         SFSignal data = new SFData(input.length);
         for (int i = 0; i < input.length; ++i)
         {
@@ -479,8 +480,7 @@ public class SFData extends SFSignal implements Serializable
 
     public static final SFSignal build(double[] input, int j)
     {
-        // Use the factor which does a clear as we are not overwriting everything.
-        SFSignal data = SFData.build(j);
+        SFSignal data = SFData.build(j, false);
         for (int i = 0; i < j; ++i)
         {
             data.setSample(i, input[i]);
@@ -490,8 +490,7 @@ public class SFData extends SFSignal implements Serializable
 
     public static final SFSignal build(OffHeapArray input, int j)
     {
-        // Use the factor which does a clear as we are not overwriting everything.
-        SFSignal data = SFData.build(j);
+        SFSignal data = SFData.build(j, false);
         input.checkBoundsDouble(0, j);
         for (int i = 0; i < j; ++i)
         {
@@ -554,8 +553,7 @@ public class SFData extends SFSignal implements Serializable
         SFSignal output = new SFData(len);
         for (int i = 0; i < len; ++i)
         {
-            double sample = in.getSample(i);
-            output.setSample(i, sample);
+            output.setSample(i, in.getSample(i));
         }
         return output;
     }
@@ -890,13 +888,15 @@ public class SFData extends SFSignal implements Serializable
                     }
                     else
                     {
-                        if (!data.pinned.get()) data.release();
+                        if (!data.pinned.get())
+                        {
+                            data.release();
+                        }
                     }
                 }
             }
             zone.localData.clear();
         }
-        maybeReportStats();
         return zone;
     }
 

@@ -28,7 +28,7 @@ public class SF_Gaussian implements SFPL_Operator
         length *= SFConstants.SAMPLE_RATE_MS;
         double sigma = length;
         length *= 8;
-        SFSignal out = SFData.build((int) SFMaths.ceil(length));
+        SFSignal out = SFData.build((int) SFMaths.ceil(length), true);
         double center = length / 2;
         for (int i = 0; i < length; ++i)
         {

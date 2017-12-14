@@ -82,7 +82,7 @@ public class SF_MultipleTruncateSilence implements SFPL_Operator
         }
         for (int c = 0; c < segments.size(); ++c)
         {
-            SFSignal nData = SFData.build(outLen);
+            SFSignal nData = SFData.build(outLen, true);
             outList.add(nData);
         }
         int channel = 0;

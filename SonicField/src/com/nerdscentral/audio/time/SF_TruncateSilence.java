@@ -68,7 +68,7 @@ public class SF_TruncateSilence implements SFPL_Operator
             }
             outLen += segment.length;
         }
-        SFSignal outData = SFData.build(outLen);
+        SFSignal outData = SFData.build(outLen, true);
         int index = 0;
         for (double[] segment : segments)
         {

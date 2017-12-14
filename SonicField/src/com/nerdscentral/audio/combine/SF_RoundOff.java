@@ -25,7 +25,7 @@ public class SF_RoundOff implements SFPL_Operator
         SFSignal data = Caster.makeSFSignal(input);
         if (data.getLength() < rollOffSamples * 2)
         {
-            return SFData.build(data.getLength());
+            return SFData.build(data.getLength(), true);
         }
         int len = data.getLength() - rollOffSamples;
         SFSignal out = data.replicateEmpty();

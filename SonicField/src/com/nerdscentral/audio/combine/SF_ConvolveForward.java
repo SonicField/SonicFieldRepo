@@ -27,7 +27,7 @@ public class SF_ConvolveForward implements SFPL_Operator
         SFSignal shape = Caster.makeSFSignal(inList.get(1));
         int ll = sample.getLength();
         int ls = shape.getLength();
-        SFSignal ret = SFData.build(ll + ls);
+        SFSignal ret = SFData.build(ll + ls, true);
         for (int x = 0; x < ll; ++x)
         {
             double r = 0;

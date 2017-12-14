@@ -26,10 +26,12 @@ java \
     -Dsython.modules=/Users/alexanderturner/SonicFieldRepo/SonicField/src \
     -Dsython.restart.dir=/Volumes/SSD/restart/ \
     -Dsython.cache.dir=/Volumes/SSD/cache/ \
+    -Dsython.store.dir=/Volumes/External1/music_in_progress/temp/ \
     -Dsython.steal=true \
     -Dsython.trace=false \
     -Dsython.temp.dirs=/Volumes/SSD/scratch/ \
     -Dsython.threads=8 \
+    -Dsython.heart_beat=1440 \
     -XX:+UseCompressedOops \
     -XX:+UseCompressedClassPointers \
     -XX:MaxDirectMemorySize=2g \

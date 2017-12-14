@@ -41,7 +41,7 @@ public class SF_MatchLengths implements SFPL_Operator
             SFSignal dataOut = dataIn;
             if (dataIn.getLength() != minLength)
             {
-                dataOut = SFData.build(minLength);
+                dataOut = SFData.build(minLength, false);
                 for (int i = 0; i < minLength; ++i)
                 {
                     dataOut.setSample(i, dataIn.getSample(i));

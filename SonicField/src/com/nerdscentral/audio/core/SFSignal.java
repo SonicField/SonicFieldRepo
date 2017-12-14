@@ -19,7 +19,7 @@ public abstract class SFSignal
 
     public final SFSignal replicateEmpty()
     {
-        return SFData.build(this.getLength());
+        return SFData.build(this.getLength(), true);
     }
 
     public abstract double getSample(int index);
@@ -149,11 +149,6 @@ public abstract class SFSignal
     public static void setPythonStack(String ps)
     {
         SFSignal.pythonStack.set(ps);
-    }
-
-    public void clear()
-    {
-        // NOOP on root class
     }
 
     public SFSignal realise()

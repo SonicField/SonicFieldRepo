@@ -35,7 +35,8 @@ public class SF_SimpleShape implements SFPL_Operator
                 throw new SFPL_RuntimeException(Messages.getString("SF_SimpleShape.2"));  //$NON-NLS-1$
         }
         totalTime = Caster.makeDouble(Caster.makeBunch(l.get(l.size() - 1)).get(0));
-        SFSignal shape = SFData.build((int) (totalTime * SFConstants.SAMPLE_RATE / 1000.0d));
+        SFSignal shape = SFData.build((int) (totalTime * SFConstants.SAMPLE_RATE / 1000.0d), false);
+        int mustEnd = shape.getLength() - 1;
         int position = 0;
         for (int i = 0; i < l.size() - 1; ++i)
         {
@@ -47,13 +48,13 @@ public class SF_SimpleShape implements SFPL_Operator
             double endY = Caster.makeDouble(end.get(1));
             if (startX > endX)
             {
-                throw new RuntimeException("Illegal envelope points: " + startX + "," + endX);
+                throw new RuntimeException(Messages.getString("SF_SimpleShape.3") + startX //$NON-NLS-1$
+                                + Messages.getString("SF_SimpleShape.4") + endX);  //$NON-NLS-1$
             }
-            if (startX < 0) throw new RuntimeException("Envelope position less than zero.");
+            if (startX < 0) throw new RuntimeException(Messages.getString("SF_SimpleShape.5")); //$NON-NLS-1$
             double len = SFMaths.floor((endX - startX) * SFConstants.SAMPLE_RATE / 1000.0d);
             double diff = endY - startY;
             double min = SFMaths.min(len, shape.getLength());
-            int mustEnd = shape.getLength() - 1;
             for (double x = 0; x < min; ++x)
             {
                 double dbs = diff * x / len + startY;

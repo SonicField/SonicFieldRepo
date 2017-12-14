@@ -35,7 +35,7 @@ public class SF_Slide implements SFPL_Operator
             if (el.size() != 2) throw new SFPL_RuntimeException(Messages.getString("SF_Slide.2"));  //$NON-NLS-1$
         }
         totalTime = Caster.makeDouble(Caster.makeBunch(l.get(l.size() - 1)).get(0));
-        SFSignal data = SFData.build((int) (totalTime * SFConstants.SAMPLE_RATE / 1000.0d));
+        SFSignal data = SFData.build((int) (totalTime * SFConstants.SAMPLE_RATE / 1000.0d), true);
         int position = 0;
         double sinPos = 0;
         double scl = PI2 / SFConstants.SAMPLE_RATE;

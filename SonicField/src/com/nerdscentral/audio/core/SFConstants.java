@@ -27,6 +27,7 @@ public class SFConstants
     private final static HashMap<String, Double> justNotes           = new HashMap<>();
     public static final int                      defaultSplitAt      = (int) SAMPLE_RATE;
     private static double[]                      internalDBS         = new double[8001];
+    public final static long                     ONE_MEG             = 1024 * 1024;
     public final static long                     ONE_GIG             = 1024 * 1024 * 1024;
     public static final double                   UPPER_AUDIBLE_LIMIT = 20000;
     public static final double                   UPPER_ALIAS_LIMIT   = 24000;
@@ -42,6 +43,10 @@ public class SFConstants
                     System.getProperty("java.io.tmpdir"));
     public static final String                   CACHE_DIRECTORY     = System.getProperty("sython.cache.dir",
                     System.getProperty("java.io.tmpdir"));
+    public static final String                   STORE_DIRECTORY     = System.getProperty("sython.store.dir",
+                    System.getProperty("java.io.tmpdir"));
+    public static final long                     HEART_BEAT          = Long
+                    .valueOf(System.getProperty("sython.heart_beat", "240"));
 
     static
     {

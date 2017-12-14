@@ -8,7 +8,7 @@ import com.nerdscentral.sython.Caster;
 import com.nerdscentral.sython.SFPL_Operator;
 import com.nerdscentral.sython.SFPL_RuntimeException;
 
-public class SF_TimeDomain implements SFPL_Operator
+public class SF_OffHeapTimeDomain implements SFPL_Operator
 {
 
     private static final long serialVersionUID = 1L;
@@ -42,8 +42,7 @@ public class SF_TimeDomain implements SFPL_Operator
                 im.setDouble(i, signal.getSample(j++));
             }
             FFTbase.fft(re, im, out, false);
-            SFSignal ret = SFData.build(NFFT);
-            ret.clear();
+            SFSignal ret = SFData.build(NFFT, true);
             for (int i = 0; i >> 1 < NFFT; i += 2)
             {
                 ret.setSample(i >> 1, out.getDouble(i));

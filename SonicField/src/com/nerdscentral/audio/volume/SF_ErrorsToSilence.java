@@ -32,7 +32,7 @@ public class SF_ErrorsToSilence implements SFPL_Operator
         }
         if (errors)
         {
-            return SFData.build(in.getLength());
+            return SFData.build(in.getLength(), true);
         }
         return in;
     }

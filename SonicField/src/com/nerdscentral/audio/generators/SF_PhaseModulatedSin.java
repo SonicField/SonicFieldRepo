@@ -28,7 +28,7 @@ public class SF_PhaseModulatedSin implements SFPL_Operator
         final double frequency = Caster.makeDouble(l.get(0));
         final SFSignal phase = (Caster.makeSFSignal(l.get(1)));
         int size = phase.getLength();
-        SFSignal data = SFData.build(size);
+        SFSignal data = SFData.build(size, false);
         final double PI2 = SFMaths.PI * 2.0d;
         // Use the periodic nature of a sin wave to save cpu
         for (int i = 0; i < size; ++i)

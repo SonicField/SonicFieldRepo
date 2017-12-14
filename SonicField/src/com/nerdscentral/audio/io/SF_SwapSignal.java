@@ -75,7 +75,7 @@ public class SF_SwapSignal implements SFPL_Operator, SFPL_RefPassThrough
                     {
                         System.out.println(Messages.getString("SF_SwapSignal.6") + tmpFile.getPath()); //$NON-NLS-1$
 
-                        signal = SFData.build(len);
+                        signal = SFData.build(len, false);
                         try (
                             FileInputStream fs = new FileInputStream(tmpFile);
                             DataInputStream ds = new DataInputStream(new BufferedInputStream(fs)))

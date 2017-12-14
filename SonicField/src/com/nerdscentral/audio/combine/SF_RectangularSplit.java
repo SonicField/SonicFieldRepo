@@ -26,8 +26,12 @@ public class SF_RectangularSplit implements SFPL_Operator
     {
         SFSignal sample = Caster.makeSFSignal(input);
         int len = sample.getLength();
-        SFSignal real = SFData.build(len);
-        SFSignal imaginary = SFData.build(len);
+        if (len % 2 != 0)
+        {
+            throw new RuntimeException(Messages.getString("SF_RectangularSplit.1")); //$NON-NLS-1$
+        }
+        SFSignal real = SFData.build(len / 2, false);
+        SFSignal imaginary = SFData.build(len / 2, false);
         int j = 0;
         for (int i = 0; i < len; i += 2)
         {

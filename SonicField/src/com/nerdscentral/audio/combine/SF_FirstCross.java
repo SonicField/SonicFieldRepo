@@ -36,7 +36,7 @@ public class SF_FirstCross implements SFPL_Operator
             boolean newPhase = dataIn.getSample(start) > 0.0;
             if (newPhase != phase) break;
         }
-        SFSignal out = SFData.build(len - start);
+        SFSignal out = SFData.build(len - start, true);
         for (int i = 0; i < start; ++i)
         {
             out.setSample(i, 0);

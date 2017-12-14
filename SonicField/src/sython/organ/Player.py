@@ -1,3 +1,4 @@
+import threading
 from sython.utils.Reverberation import granular_reverberate,reverberate,convolve
 from java.util.concurrent.atomic import AtomicLong
 from sython.utils.Envelopes import safe_env
@@ -32,7 +33,6 @@ import os.path
 # smooth:    Use convolution to smooth out notes individually.
 ################################################################################
 
-@sf_parallel
 def sing(
         hint,
         pitch,
@@ -315,32 +315,33 @@ def sing(
 ################################################################################
 
 # Restart is a global thing as we might have multiple passes through play.
-restartIndex = 0
+RESTART_INFO = threading.local()
 
-@sf_parallel
+
 def play(
         midi,
         beat,
         temperament,
         voice,
-        velocity_correct    =1.0,
-        pitch_shift         =1.0,
-        quick_factor        =1.0,
-        sub_bass            =False,
-        flat_env            =False,
-        pure                =False,
-        pan                 =-1,
-        raw_bass            =False,
-        pitch_add           =0.0,
-        decay               =False,
-        bend                =False,
-        mellow              =False,
-        smooth              =True,
-        controllers         ={},
-        replayIndex         =0,
+        velocity_correct    = 1.0,
+        pitch_shift         = 1.0,
+        quick_factor        = 1.0,
+        sub_bass            = False,
+        flat_env            = False,
+        pure                = False,
+        pan                 = -1,
+        raw_bass            = False,
+        pitch_add           = 0.0,
+        decay               = False,
+        bend                = False,
+        mellow              = False,
+        smooth              = True,
+        controllers         = {},
         slope               = None
     ):
-    global restartIndex
+    RESTART_INFO.restartIndex = getattr(RESTART_INFO, 'restartIndex', 0)
+    RESTART_INFO.replayIndex  = getattr(RESTART_INFO, 'replayIndex', 0)
+
     if not slope:
         slope = ((0, 0),  (20000, 0))
     notes=[]
@@ -493,28 +494,28 @@ def play(
         # may not be populated so a restart might not generate exactly the same notes
         # as a complete run would.
         signals = None
-        if args in cache and (restartIndex < replayIndex or random.random() < 0.9):
+        if args in cache and (RESTART_INFO.restartIndex < RESTART_INFO.replayIndex or random.random() < 0.9):
             print 'Note Cache Hit! {0} -> {1}'.format(index, index - cacheMisses)
             signals = [readSwappedCache(s) for s in cache[args]]
         else:
-            path_l, signal_l = sf.MaybeReadSignal("left_{0}".format(restartIndex))
-            path_r, signal_r = sf.MaybeReadSignal("right_{0}".format(restartIndex))
+            path_l, signal_l = sf.MaybeReadSignal("left_{0}".format(RESTART_INFO.restartIndex))
+            path_r, signal_r = sf.MaybeReadSignal("right_{0}".format(RESTART_INFO.restartIndex))
             signals = None
             if not (signal_l and signal_r):
                 signals = sing(*args)
                 toWrite += [(signals, path_l, path_r)]
                 if len(toWrite) > 4:
                     for sPair, path_l, path_r in toWrite:                            
-                        sf.WriteSignal(sPair.get()[0], path_l)
-                        sf.WriteSignal(sPair.get()[1], path_r)
+                        sf.WriteSignal(sPair[0], path_l)
+                        sf.WriteSignal(sPair[1], path_r)
                     toWrite = []
             else:
-                print 'Restart Hit!   {0}'.format(restartIndex)
+                print 'Restart Hit!   {0}'.format(RESTART_INFO.restartIndex)
                 signals = (signal_l, signal_r)
             # Note that the get code below will compute the value for these futures as some point.
             cache[args] = [writeSawppedCache(s) for s in signals]
             cacheMisses += 1
-        restartIndex += 1
+        RESTART_INFO.restartIndex += 1
         dl=30 * rl + 1000
         dr=38 * lr + 1000
         print "Appending Node {} of {}".format(index, len(midi))

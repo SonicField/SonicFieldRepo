@@ -35,7 +35,7 @@ public class SF_CrossFadeSplit implements SFPL_Operator
         int chunkSamples = (int) (chunkLen * SFConstants.SAMPLE_RATE_MS);
         int index = 0;
         int rampSamples = (int) (RAMP_SIZE * SFConstants.SAMPLE_RATE_MS);
-        SFSignal a = SFData.build(chunkSamples);
+        SFSignal a = SFData.build(chunkSamples, true);
         while (index < chunkSamples - rampSamples)
         {
             a.setSample(index, in.getSample(index));

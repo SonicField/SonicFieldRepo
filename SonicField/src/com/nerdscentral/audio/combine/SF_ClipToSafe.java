@@ -27,7 +27,7 @@ public class SF_ClipToSafe implements SFPL_Operator
         SFSignal data = Caster.makeSFSignal(input);
         if (data.getLength() < rollOffSamples)
         {
-            return SFData.build(data.getLength());
+            return SFData.build(data.getLength(), true);
 
         }
         int len = data.getLength() - rollOffSamples;

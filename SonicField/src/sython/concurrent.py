@@ -3,7 +3,7 @@ import threading
 import time
 
 from java.util.concurrent import Callable, Future, ConcurrentLinkedQueue, \
-                                 ConcurrentHashMap, Executors, TimeUnit
+                                 ConcurrentHashMap, ThreadPoolExecutor, TimeUnit, LinkedBlockingQueue
 from java.util.concurrent.locks import ReentrantLock
 
 from java.lang import System
@@ -156,7 +156,8 @@ else:
 SF_MAX_STEAL          = 64
 
 # A thread pool used for the executors 
-SF_POOL    = Executors.newCachedThreadPool()
+#SF_POOL    = Executors.newCachedThreadPool()
+SF_POOL = ThreadPoolExecutor(SF_MAX_CONCURRENT, SF_MAX_CONCURRENT, 60, TimeUnit.SECONDS, LinkedBlockingQueue());
 
 # A set of tasks which might be available for stealing. Use a concurrent set so
 # that it shares information between threads in a stable and relatively 
@@ -210,7 +211,7 @@ else:
     def c_log(*args):
         pass
 
-c_log( "Concurrent Threads: " + SF_MAX_CONCURRENT.__str__())
+c_log( "Concurrent Threads: " + str(SF_MAX_CONCURRENT))
     
 # Decorates ConcurrentLinkedQueue with tracking of total (global) number of
 # queued elements. Also remaps the method names to be closer to python lists

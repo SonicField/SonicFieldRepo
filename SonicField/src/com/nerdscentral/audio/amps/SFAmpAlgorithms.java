@@ -11,7 +11,7 @@ public class SFAmpAlgorithms
     public static SFSignal limit(SFSignal in)
     {
         int len = in.getLength();
-        SFSignal out = SFData.build(len);
+        SFSignal out = SFData.build(len, false);
         int start = 0;
         int end = 0;
         for (;;)
@@ -46,7 +46,7 @@ public class SFAmpAlgorithms
     public static SFSignal maximise(SFSignal in)
     {
         int len = in.getLength();
-        SFSignal out = SFData.build(len);
+        SFSignal out = SFData.build(len, false);
         int start = 0;
         int end = 0;
         for (;;)
@@ -73,7 +73,7 @@ public class SFAmpAlgorithms
     public static SFSignal makeSquare(SFSignal in)
     {
         int len = in.getLength();
-        SFSignal out = SFData.build(len);
+        SFSignal out = SFData.build(len, false);
         int start = 0;
         int end = 0;
         for (;;)
@@ -108,7 +108,7 @@ public class SFAmpAlgorithms
     public static SFSignal makeTriangle(SFSignal in)
     {
         int len = in.getLength();
-        SFSignal out = SFData.build(len);
+        SFSignal out = SFData.build(len, false);
         int start = 0;
         int end = 0;
         for (;;)
@@ -148,7 +148,7 @@ public class SFAmpAlgorithms
     public static SFSignal makeSawTooth(SFSignal in)
     {
         int len = in.getLength();
-        SFSignal out = SFData.build(len);
+        SFSignal out = SFData.build(len, false);
         int start = 0;
         int end = 1;
         boolean ab = true;
@@ -191,7 +191,7 @@ public class SFAmpAlgorithms
     public static SFSignal makeSubOctave(SFSignal in)
     {
         int len = in.getLength();
-        SFSignal out = SFData.build(len);
+        SFSignal out = SFData.build(len, false);
         int start = 0;
         int end = 0;
         int polarity = 1;

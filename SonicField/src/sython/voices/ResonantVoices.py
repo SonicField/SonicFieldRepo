@@ -96,7 +96,7 @@ def _distant_wind(length, freq, qCorrect = 1.25, limit = False, seed = -60):
 
 def distant_wind(length, freq):
 
-    @sf_parallel
+    
     def doWind(lenth, hfreg):
         outF = _distant_wind(length, hfreq)
         outR = _distant_wind(length, hfreq)
@@ -133,7 +133,7 @@ def additive_resonance(power, qCorrect, saturate, rollOff, post, limit, seed, fl
         freq *= 2.0
         length *= 0.5
 
-    @sf_parallel
+    
     def doWind(length, hfq, vol, reverse=False):
         key = (length, _logRoundUp(hfq), vol, reverse)
         if key in _resonanceCache:
@@ -201,21 +201,24 @@ def make_addtive_resonance(power = 1.1 , qCorrect = 1.25 , saturate = 0.0, rollO
                            post = None, limit = False, seed = -60, flat = True, harmonics = xrange(1,100)):
     return functools.partial(additive_resonance, power, qCorrect, saturate, rollOff, post, limit, seed, flat, harmonics)
 
+
 def oboe_filter(sig, length, freq):
-    # Clip off extreme spectra leakage (which in can have big negative compenents).
-    env = sf.NumericShape((0, 0), (5, 1), (length-5, 1), (length, 0))
-    sig = sf.Multiply(env, sig)
-    sig = sf.RBJPeaking(sig, freq*3, 0.2, 5)
-    sig = sf.RBJPeaking(sig, freq*5, 0.5, 4)
-    sig = sf.RBJPeaking(sig, freq*7, 1, 4)
-    sig = sf.RBJNotch(sig, freq*2, 1.0, 1.0)
-    sig = sf.Mix(+sig, sf.RBJNotch(sig, freq, 1.0, 1.0))
-    sig = sf.RBJLowPass(sig, freq*9, 1.0)
-    br = freq * 9
-    if br > 5000.0:
-       br = 5000.0
-    sig = sf.RBJLowPass(sig, br, 1.0)
-    return sf.FixSize(sf.Clean(sig))
+    with SFMemoryZone():
+        # Clip off extreme spectra leakage (which in can have big negative compenents).
+        env = sf.NumericShape((0, 0), (5, 1), (length-5, 1), (length, 0))
+        sig = sf.Multiply(env, sig)
+        sig = sf.RBJPeaking(sig, freq*3, 0.2, 5)
+        sig = sf.RBJPeaking(sig, freq*5, 0.5, 4)
+        sig = sf.RBJPeaking(sig, freq*7, 1, 4)
+        sig = sf.RBJNotch(sig, freq*2, 1.0, 1.0)
+        sig = sf.Mix(+sig, sf.RBJNotch(sig, freq, 1.0, 1.0))
+        sig = sf.RBJLowPass(sig, freq*9, 1.0)
+        br = freq * 9
+        if br > 5000.0:
+           br = 5000.0
+        sig = sf.RBJLowPass(sig, br, 1.0)
+        return sf.FixSize(sf.Clean(sig)).keep()
+
 
 def harpsichord_filter(power, resonance, sig, length, freq):
     with SFMemoryZone():
@@ -255,6 +258,7 @@ def harpsichord_filter(power, resonance, sig, length, freq):
         return sf.FixSize(out).keep()
 
 # TODO remove length from signature.
+
 def soft_harpsichord_filter(power, resonance, sig, length, freq, attack=2, triangle=True):
 
     length = sf.Length(sig)
@@ -353,6 +357,7 @@ def soft_harpsichord_filter(power, resonance, sig, length, freq, attack=2, trian
 
         return sf.FixSize(polish(out, freq)).keep()
 
+
 def oboe_harpsichord_filter(sig, length, frequency, vibAbove=200):
     powr = 1.0
     if frequency< 250:
@@ -384,8 +389,10 @@ def oboe_harpsichord_filter(sig, length, frequency, vibAbove=200):
         return sig.keep()
 
 goldbergSlope = sf.SimpleShape((0,0), (10,0), (1000,-30), (20000,-60))
+
 def goldberg_filter(sig, length, frequency):
     return _goldberg_filter(sig, length, frequency, False)
+
 
 def goldberg_filter_bright(sig, length, frequency):
     return _goldberg_filter(sig, length, frequency, True)
@@ -415,116 +422,123 @@ def make_harpsichord_filter(soft=False, power=1.05, resonance=1.0):
     else:
         return functools.partial(harpsichord_filter, power, resonance)
 
+
 def tremulus_oboe_filter(sig, length, freq):
-    rate = 3.25
-    # Clip off extreme spectra leakage (which in can have big negative compenents).
-    env = sf.NumericShape((0, 0), (5, 1), (length-5, 1), (length, 0))
-    sig = sf.Multiply(env, sig)
-    # Filter gentally to keep the singal stable
-    sig = sf.RBJLimitedPeaking(sig, freq*3, 0.2, 2.5)
-    sig = sf.RBJLimitedPeaking(sig, freq*3, 0.2, 2.5)
-    sig = sf.FixSize(sig)
-    sig = sf.RBJLimitedPeaking(sig, freq*5, 0.5, 2)
-    sig = sf.RBJLimitedPeaking(sig, freq*5, 0.5, 2)
-    sig = sf.FixSize(sig)
-    sig = sf.RBJLimitedPeaking(sig, freq*7, 1, 2)
-    sig = sf.RBJLimitedPeaking(sig, freq*7, 1, 2)
-    sig = sf.FixSize(sig)
-    sig = sf.RBJNotch(sig, freq*2, 1.0, 1.0)
-    sig = sf.Mix(+sig, sf.RBJNotch(sig, freq, 1.0, 1.0))
-    sig = sf.FixSize(sig)
-    sig = sf.RBJLowPass(sig, freq*9, 1.0)
-    br = freq * 9
-    if br > 5000.0:
-       br = 5000.0
-    sig = sf.RBJLowPass(sig, br, 1.0)
-    sig = sf.FixSize(sig)
-    shape = sf.SineWave(length, rate)
-    shape = sf.NumericVolume(shape, 0.5)
-    shape = sf.DirectMix(1.0, shape)
-    filt = byquad_filter('high', +sig, freq * 4)
-    filt = sf.Multiply(filt, +shape)
-    sig = sf.Mix(sig, filt)
-    mag = 0.01
-    ev=sf.NumericVolume(shape, mag)
-    ev=sf.DirectMix(1.0, ev)
-    sig=sf.FrequencyModulate(sig, ev)
-    return sf.FixSize(sig)
+    with SFMemoryZone():
+        rate = 3.25
+        # Clip off extreme spectra leakage (which in can have big negative compenents).
+        env = sf.NumericShape((0, 0), (5, 1), (length-5, 1), (length, 0))
+        sig = sf.Multiply(env, sig)
+        # Filter gentally to keep the singal stable
+        sig = sf.RBJLimitedPeaking(sig, freq*3, 0.2, 2.5)
+        sig = sf.RBJLimitedPeaking(sig, freq*3, 0.2, 2.5)
+        sig = sf.FixSize(sig)
+        sig = sf.RBJLimitedPeaking(sig, freq*5, 0.5, 2)
+        sig = sf.RBJLimitedPeaking(sig, freq*5, 0.5, 2)
+        sig = sf.FixSize(sig)
+        sig = sf.RBJLimitedPeaking(sig, freq*7, 1, 2)
+        sig = sf.RBJLimitedPeaking(sig, freq*7, 1, 2)
+        sig = sf.FixSize(sig)
+        sig = sf.RBJNotch(sig, freq*2, 1.0, 1.0)
+        sig = sf.Mix(+sig, sf.RBJNotch(sig, freq, 1.0, 1.0))
+        sig = sf.FixSize(sig)
+        sig = sf.RBJLowPass(sig, freq*9, 1.0)
+        br = freq * 9
+        if br > 5000.0:
+           br = 5000.0
+        sig = sf.RBJLowPass(sig, br, 1.0)
+        sig = sf.FixSize(sig)
+        shape = sf.SineWave(length, rate)
+        shape = sf.NumericVolume(shape, 0.5)
+        shape = sf.DirectMix(1.0, shape)
+        filt = byquad_filter('high', +sig, freq * 4)
+        filt = sf.Multiply(filt, +shape)
+        sig = sf.Mix(sig, filt)
+        mag = 0.01
+        ev=sf.NumericVolume(shape, mag)
+        ev=sf.DirectMix(1.0, ev)
+        sig=sf.FrequencyModulate(sig, ev)
+        return sf.FixSize(sig).keep()
+
 
 def tremulus_diapason_filter(sig, length, freq):
-    rate = 3.0
-    # Clip off extreme spectra leakage (which in can have big negative compenents).
-    env = sf.NumericShape((0, 0), (5, 1), (length-5, 1), (length, 0))
-    sig = sf.Multiply(env, sig)
-    # Filter gentally to keep the singal stable
-    sig = sf.RBJLimitedPeaking(sig, freq*2, 0.5, 1.0)
-    sig = sf.RBJLowPass(sig, freq*3, 1.0)
-    br = freq * 9
-    if br > 5000.0:
-       br = 5000.0
-    sig = sf.RBJLowPass(sig, br, 1.0)
-    sig = sf.FixSize(sig)
-    shape = sf.SineWave(length, rate)
-    shape = sf.NumericVolume(shape, 0.5)
-    shape = sf.DirectMix(1.0, shape)
-    filt = byquad_filter('high', +sig, freq * 4)
-    filt = sf.Multiply(filt, +shape)
-    sig = sf.Mix(sig, filt)
-    mag = 0.01
-    ev=sf.NumericVolume(shape, mag)
-    ev=sf.DirectMix(1.0, ev)
-    sig=sf.FrequencyModulate(sig, ev)
-    return sf.FixSize(sig)
+    with SFMemoryZone():
+        rate = 3.0
+        # Clip off extreme spectra leakage (which in can have big negative compenents).
+        env = sf.NumericShape((0, 0), (5, 1), (length-5, 1), (length, 0))
+        sig = sf.Multiply(env, sig)
+        # Filter gentally to keep the singal stable
+        sig = sf.RBJLimitedPeaking(sig, freq*2, 0.5, 1.0)
+        sig = sf.RBJLowPass(sig, freq*3, 1.0)
+        br = freq * 9
+        if br > 5000.0:
+           br = 5000.0
+        sig = sf.RBJLowPass(sig, br, 1.0)
+        sig = sf.FixSize(sig)
+        shape = sf.SineWave(length, rate)
+        shape = sf.NumericVolume(shape, 0.5)
+        shape = sf.DirectMix(1.0, shape)
+        filt = byquad_filter('high', +sig, freq * 4)
+        filt = sf.Multiply(filt, +shape)
+        sig = sf.Mix(sig, filt)
+        mag = 0.01
+        ev=sf.NumericVolume(shape, mag)
+        ev=sf.DirectMix(1.0, ev)
+        sig=sf.FrequencyModulate(sig, ev)
+        return sf.FixSize(sig).keep()
+
 
 def tremulus_flute_filter(sig, length, freq):
-    rate = 3.0
-    # Clip off extreme spectra leakage (which in can have big negative compenents).
-    env = sf.NumericShape((0, 0), (5, 1), (length-5, 1), (length, 0))
-    sig = sf.Multiply(env, sig)
-    shape = sf.SineWave(length, rate)
-    shape = sf.NumericVolume(shape, 0.5)
-    shape = sf.DirectMix(1.0, shape)
-    filt = byquad_filter('high', +sig, freq * 2)
-    filt = sf.Multiply(filt, +shape)
-    sig = sf.Mix(sig, filt)
-    mag = 0.01
-    ev=sf.NumericVolume(shape, mag)
-    ev=sf.DirectMix(1.0, ev)
-    sigf=sf.FrequencyModulate(+sig, ev)
-    return sf.FixSize(sf.Mix(sig, sigf))
+    with SFMemoryZone():
+        rate = 3.0
+        # Clip off extreme spectra leakage (which in can have big negative compenents).
+        env = sf.NumericShape((0, 0), (5, 1), (length-5, 1), (length, 0))
+        sig = sf.Multiply(env, sig)
+        shape = sf.SineWave(length, rate)
+        shape = sf.NumericVolume(shape, 0.5)
+        shape = sf.DirectMix(1.0, shape)
+        filt = byquad_filter('high', +sig, freq * 2)
+        filt = sf.Multiply(filt, +shape)
+        sig = sf.Mix(sig, filt)
+        mag = 0.01
+        ev=sf.NumericVolume(shape, mag)
+        ev=sf.DirectMix(1.0, ev)
+        sigf=sf.FrequencyModulate(+sig, ev)
+        return sf.FixSize(sf.Mix(sig, sigf)).keep()
 
-@sf_parallel
+
 def violin_filter(sig, length, freq):
-    sigs=[]
-    bodies = violinIRs
-    for body in bodies:
-        sigs.append(convolve(+sig,+body))
-    sig = sf.Mix(
-        sf.FixSize(sf.Clean(sf.Mix(sigs))),
-        sig
-    )
+    with SFMemoryZone():
+        sigs=[]
+        bodies = violinIRs
+        for body in bodies:
+            sigs.append(convolve(+sig,+body))
+        sig = sf.Mix(
+            sf.FixSize(sf.Clean(sf.Mix(sigs))),
+            sig
+        )
+    
+        vibAbove = 250
+        if length > vibAbove:
+            # TODO feels a bit crushed - more stages?
+            vibStart  = length*0.5  if length>600 else vibAbove*0.75
+            vibMiddle = length*0.75 if length>600 else vibAbove
+            vibAmount = 0.5 if length > 1000 else 0.25
+            trueLen = sf.Length(+sig)
+            l = trueLen
+            env = sf.NumericShape((0, 0), (vibStart, 0), (vibMiddle, 1), (length, 0.75), (l, 0))
+            env = sf.NumericVolume(env, vibAmount)
+            trem = sf.SineWave(l,2.0 + random.random())
+            trem = sf.Multiply(env, trem)
+            vib = +trem
+            trem = sf.DirectMix(1, sf.Pcnt50(trem))
+            sig = sf.Multiply(trem, sig)
+            vib = sf.DirectMix(1, sf.NumericVolume(vib, 0.01))
+            sig = sf.Resample(vib, sig)
+    
+        return sf.FixSize(sf.Clean(sig)).keep()
 
-    vibAbove = 250
-    if length > vibAbove:
-        # TODO feels a bit crushed - more stages?
-        vibStart  = length*0.5  if length>600 else vibAbove*0.75
-        vibMiddle = length*0.75 if length>600 else vibAbove
-        vibAmount = 0.5 if length > 1000 else 0.25
-        trueLen = sf.Length(+sig)
-        l = trueLen
-        env = sf.NumericShape((0, 0), (vibStart, 0), (vibMiddle, 1), (length, 0.75), (l, 0))
-        env = sf.NumericVolume(env, vibAmount)
-        trem = sf.SineWave(l,2.0 + random.random())
-        trem = sf.Multiply(env, trem)
-        vib = +trem
-        trem = sf.DirectMix(1, sf.Pcnt50(trem))
-        sig = sf.Multiply(trem, sig)
-        vib = sf.DirectMix(1, sf.NumericVolume(vib, 0.01))
-        sig = sf.Resample(vib, sig)
 
-    return sf.FixSize(sf.Clean(sig))
-
-@sf_parallel
 def _vox_filter(vox, freq, a, b, c):
     length=sf.Length(+vox)
     vox=sf.FixSize(polish(vox,freq))
@@ -557,84 +571,90 @@ def _vox_filter(vox, freq, a, b, c):
     vox=polish(vox, freq)
     return sf.FixSize(vox)
 
-@sf_parallel
+
 def femail_soprano_ah_filter(vox, length, freq):
-    print length, freq
-    vox = _vox_filter(vox, freq, 850, 1200, 2800)
-    lower = sf.BesselLowPass(+vox,freq    ,2)
-    higher = sf.Power(sf.BesselHighPass(vox, freq*4.0, 2), 1.25)
-    higher = sf.Clean(higher)
-    higher = sf.ButterworthHighPass(higher, freq*1.5 ,6)
-    lower = sf.ButterworthHighPass(lower, freq*0.75 ,6)
-    return sf.Realise(mix(sf.Pcnt95(lower), sf.Pcnt5(higher)))
+    with SFMemoryZone():
+        print length, freq
+        vox = _vox_filter(vox, freq, 850, 1200, 2800)
+        lower = sf.BesselLowPass(+vox,freq    ,2)
+        higher = sf.Power(sf.BesselHighPass(vox, freq*4.0, 2), 1.25)
+        higher = sf.Clean(higher)
+        higher = sf.ButterworthHighPass(higher, freq*1.5 ,6)
+        lower = sf.ButterworthHighPass(lower, freq*0.75 ,6)
+        return sf.Realise(mix(sf.Pcnt95(lower), sf.Pcnt5(higher))).keep()
 
-@sf_parallel
+
 def femail_soprano_a_filter(vox,length,freq):
-    vox = _vox_filter(vox, freq, 860, 2050, 2850)
-    a = sf.BesselLowPass(+vox,freq    ,2)
-    b = sf.Power(sf.BesselHighPass(vox,freq*4.0,2),1.35)
-    b = sf.Clean(b)
-    b = sf.ButterworthHighPass(b,freq*1.5 ,6)
-    a = sf.ButterworthHighPass(a,freq*0.75,6)
-    return mix(sf.Pcnt75(a),sf.Pcnt25(b))
+    with SFMemoryZone():
+        vox = _vox_filter(vox, freq, 860, 2050, 2850)
+        a = sf.BesselLowPass(+vox,freq    ,2)
+        b = sf.Power(sf.BesselHighPass(vox,freq*4.0,2),1.35)
+        b = sf.Clean(b)
+        b = sf.ButterworthHighPass(b,freq*1.5 ,6)
+        a = sf.ButterworthHighPass(a,freq*0.75,6)
+        return mix(sf.Pcnt75(a),sf.Pcnt25(b)).keep()
 
-@sf_parallel
+
 def femail_soprano_ma_filter(vox, length,freq):
-    vox = vox_humana_femail_soprano_a(vox,length,freq)
-    if length>128:
-        qsh =sf.NumericShape((0,0.1),(120,2),  (length,0.1))
-        msh =sf.NumericShape((0,1.0),(120,1.0),(length,0.0))
-        mshr=sf.NumericShape((0,0.0),(120,0.0),(length,1.0))
-        init=byquad_filter('low',+vox,freq,qsh)
-        vox =sf.Multiply(vox ,mshr)
-        init=sf.Multiply(init,msh)
-        vox =mix(vox,init)
-        vox=sf.FixSize(polish(vox,freq))
-    return vox
+    with SFMemoryZone():
+        vox = vox_humana_femail_soprano_a(vox,length,freq)
+        if length>128:
+            qsh =sf.NumericShape((0,0.1),(120,2),  (length,0.1))
+            msh =sf.NumericShape((0,1.0),(120,1.0),(length,0.0))
+            mshr=sf.NumericShape((0,0.0),(120,0.0),(length,1.0))
+            init=byquad_filter('low',+vox,freq,qsh)
+            vox =sf.Multiply(vox ,mshr)
+            init=sf.Multiply(init,msh)
+            vox =mix(vox,init)
+            vox=sf.FixSize(polish(vox,freq))
+        return vox.keep()
 
-@sf_parallel
+
 def tuned_wind(length,freq):
 
-    sigs=[]
-    for i in range(1,3):
-        sig=byquad_filter(
-            'peak',
-            byquad_filter(
+    with SFMemoryZone():
+    
+        sigs=[]
+        for i in range(1,3):
+            sig=byquad_filter(
                 'peak',
-                sf.Mix(
-                    clean_noise(length,freq),
-                    sf.Pcnt10(sf.SineWave(length,freq))
+                byquad_filter(
+                    'peak',
+                    sf.Mix(
+                        clean_noise(length,freq),
+                        sf.Pcnt10(sf.SineWave(length,freq))
+                    ),
+                    1.0,
+                    64
                 ),
-                1.0,
+                freq,
+                0.1,
                 64
-            ),
-            freq,
-            0.1,
-            64
-        )
+            )
+    
+            sig=byquad_filter(
+                'peak',
+                sig,
+                freq,
+                1.0,
+                128
+            )
+    
+            sig=sf.FixSize(excite(sig,1.0,2.0))
+            sig=sf.FixSize(sf.Saturate(sf.NumericVolume(sig,2.0)))
+            sig=create_vibrato(
+                sig,length,
+                longer_than=0.5,
+                rate=2.5,
+                at=0.45,
+                depth=0.5,
+                pitch_depth=0.02
+            )
+    
+            sigs.append(sig)
+        sig=mix(sigs)
+        return sf.FixSize(polish(sig,freq)).keep()
 
-        sig=byquad_filter(
-            'peak',
-            sig,
-            freq,
-            1.0,
-            128
-        )
-
-        sig=sf.FixSize(excite(sig,1.0,2.0))
-        sig=sf.FixSize(sf.Saturate(sf.NumericVolume(sig,2.0)))
-        sig=create_vibrato(
-            sig,length,
-            longer_than=0.5,
-            rate=2.5,
-            at=0.45,
-            depth=0.5,
-            pitch_depth=0.02
-        )
-
-        sigs.append(sig)
-    sig=mix(sigs)
-    return sf.FixSize(polish(sig,freq))
 
 def synthichord_filter(sig, length, freq):
 
@@ -696,4 +716,4 @@ def synthichord_filter(sig, length, freq):
         else:
             env = sf.NumericShape((0, 0.00), (attack,0), (length, 0))
         out = sf.Multiply(env, out)
-        return sf.FixSize(polish(out, freq))
+        return sf.FixSize(polish(out, freq)).keep()

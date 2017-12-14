@@ -26,7 +26,7 @@ public class SF_Hamming implements SFPL_Operator
         double length = Caster.makeDouble(input);
         length *= SFConstants.SAMPLE_RATE_MS;
         length = SFMaths.ceil(length);
-        SFSignal out = SFData.build((int) length);
+        SFSignal out = SFData.build((int) length, true);
         int Nminus1 = (int) (length - 1);
         for (int n = 0; n < length; ++n)
         {

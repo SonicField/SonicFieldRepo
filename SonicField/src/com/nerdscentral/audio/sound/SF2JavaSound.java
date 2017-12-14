@@ -120,7 +120,13 @@ public final class SF2JavaSound
             {
                 double frameCount = ain.getFrameLength();
                 frameCount = frameCount * SFConstants.SAMPLE_RATE / ain.getFormat().getFrameRate();
-                float[][] data = new float[nChannels][(int) SFMaths.ceil(frameCount)];
+                // float[][] data = new float[nChannels][(int) SFMaths.ceil(frameCount)];
+                SFData[] data = new SFData[nChannels];
+                int size = (int) SFMaths.ceil(frameCount);
+                for (int channel = 0; channel < nChannels; ++channel)
+                {
+                    data[channel] = SFData.build(size, true);
+                }
                 int expectedBuffSize = 4 * nChannels;
                 byte[] buff = new byte[expectedBuffSize];
                 for (int pos = 0; pos < frameCount; ++pos)
@@ -141,13 +147,13 @@ public final class SF2JavaSound
                         sample |= buff[bufferPointer++] & 255;
                         sample <<= 8;
                         sample |= buff[bufferPointer++] & 255;
-                        data[channel][pos] = (((float) sample) / ((float) Integer.MAX_VALUE));
+                        data[channel].setSample(pos, (((double) sample) / ((float) Integer.MAX_VALUE)));
                     }
                 }
                 List<SFSignal> ret = new ArrayList<>(nChannels);
-                for (int c = 0; c < nChannels; ++c)
+                for (int channel = 0; channel < nChannels; ++channel)
                 {
-                    ret.add(SFData.build(data[c]));
+                    ret.add(data[channel]);
                 }
                 return ret;
             }

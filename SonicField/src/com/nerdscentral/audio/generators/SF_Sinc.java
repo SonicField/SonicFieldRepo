@@ -33,7 +33,7 @@ public class SF_Sinc implements SFPL_Operator
         length *= SFConstants.SAMPLE_RATE_MS;
         length *= quality;
         // float d[] = new float[(int) SFMaths.ceil(length)];
-        SFSignal data = SFData.build((int) SFMaths.ceil(length));
+        SFSignal data = SFData.build((int) SFMaths.ceil(length), true);
         int center = (int) (length / 2);
         final double PI2 = SFMaths.PI * 2.0d;
         final double window = 0.125;

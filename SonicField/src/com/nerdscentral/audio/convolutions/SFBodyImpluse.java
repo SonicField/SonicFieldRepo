@@ -25,7 +25,7 @@ public abstract class SFBodyImpluse implements SFPL_Operator
         List<Object> ret = new ArrayList<>();
         for (double[] inData : arrays)
         {
-            SFSignal signal = SFData.build(outLen);
+            SFSignal signal = SFData.build(outLen, false);
             SFSignal in = SFData.build(inData);
             {
                 double pos = 0;

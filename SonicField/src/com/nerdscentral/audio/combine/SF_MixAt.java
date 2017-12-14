@@ -104,7 +104,7 @@ public class SF_MixAt implements SFPL_Operator
             tl += signals.get(i).getLength();
             if (tl > length) length = tl;
         }
-        SFData out = SFData.build(length);
+        SFData out = SFData.build(length, true);
         for (int i = 0; i < count; ++i)
         {
             int at = offsets.get(i);

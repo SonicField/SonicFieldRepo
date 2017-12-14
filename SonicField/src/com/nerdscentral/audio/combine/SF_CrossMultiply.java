@@ -29,7 +29,11 @@ public class SF_CrossMultiply implements SFPL_Operator
         int lenA = sampleA.getLength();
         int lenB = sampleB.getLength();
         int len = lenA > lenB ? lenA : lenB;
-        SFSignal out = SFData.build(len);
+        SFSignal out = SFData.build(len, false);
+        if (len % 2 != 0)
+        {
+            throw new RuntimeException(Messages.getString("SF_CrossMultiply.1")); //$NON-NLS-1$
+        }
         for (int i = 0; i < len; i += 2)
         {
             double reA = i >= lenA ? 0 : sampleA.getSample(i);

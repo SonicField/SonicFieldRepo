@@ -5,6 +5,7 @@ com.nerdscentral.audio.sound.SF_Monitor
 com.nerdscentral.audio.sound.SF_PlayFile
 com.nerdscentral.audio.io.SF_MaybeReadSignal
 com.nerdscentral.audio.io.SF_ReadFile
+com.nerdscentral.audio.io.SF_ReadFromSignalPool
 com.nerdscentral.audio.io.SF_ReadSignal
 com.nerdscentral.audio.io.SF_SwapSignal
 com.nerdscentral.audio.core.SF_Realise
@@ -14,6 +15,7 @@ com.nerdscentral.audio.io.SF_WriteFile16
 com.nerdscentral.audio.io.SF_WriteFile32
 com.nerdscentral.audio.io.SF_WriteFileString
 com.nerdscentral.audio.io.SF_WriteSignal
+com.nerdscentral.audio.io.SF_WriteToSignalPool
 com.nerdscentral.audio.amps.SF_Gate
 com.nerdscentral.audio.amps.SF_MakeSawTooth
 com.nerdscentral.audio.amps.SF_MakeSquare
@@ -88,7 +90,6 @@ com.nerdscentral.audio.pitch.SF_CreateNLowPass
 com.nerdscentral.audio.pitch.SF_DirectRelength
 com.nerdscentral.audio.pitch.SF_DirectResample
 com.nerdscentral.audio.pitch.SF_FollowingLowPass
-com.nerdscentral.audio.pitch.SF_FrequencyDomain
 com.nerdscentral.audio.pitch.SF_FrequencyModulate
 com.nerdscentral.audio.pitch.SF_MaxDeviation
 com.nerdscentral.audio.pitch.SF_NBandPass
@@ -97,6 +98,10 @@ com.nerdscentral.audio.pitch.SF_NHighPass
 com.nerdscentral.audio.pitch.SF_NHighPassBessel
 com.nerdscentral.audio.pitch.SF_NLowPass
 com.nerdscentral.audio.pitch.SF_NLowPassBessel
+com.nerdscentral.audio.pitch.SF_OffHeapFrequencyDomain
+com.nerdscentral.audio.pitch.SF_OffHeapTimeDomain
+com.nerdscentral.audio.pitch.SF_OnHeapFrequencyDomain
+com.nerdscentral.audio.pitch.SF_OnHeapTimeDomain
 com.nerdscentral.audio.pitch.SF_Resample
 com.nerdscentral.audio.pitch.SF_ShapedBandPass
 com.nerdscentral.audio.pitch.SF_ShapedBiquadHighPass
@@ -104,7 +109,6 @@ com.nerdscentral.audio.pitch.SF_ShapedBiquadLowPass
 com.nerdscentral.audio.pitch.SF_ShapedBiquadNotch
 com.nerdscentral.audio.pitch.SF_ShapedBiquadPeak
 com.nerdscentral.audio.pitch.SF_ShapedLadder
-com.nerdscentral.audio.pitch.SF_TimeDomain
 com.nerdscentral.audio.time.SF_AnalogueChorus
 com.nerdscentral.audio.time.SF_FilteredResonateFilter
 com.nerdscentral.audio.time.SF_MultipleResonantFilter

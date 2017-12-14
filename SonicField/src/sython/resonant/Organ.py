@@ -5,9 +5,10 @@
 import os
 import copy
 import sython.utils.Midi as Midi
-from com.nerdscentral.audio.core import SFMemoryZone
+from com.nerdscentral.audio.core import SFMemoryZone, SFConstants
 from sython.resonant.ResonantPipes import *
 from com.nerdscentral.audio.core import SFData
+from sython.organ.Player import RESTART_INFO
 
 @sf_parallel
 def _doVib(env, signal):
@@ -50,11 +51,11 @@ def main():
     # Controls for rendering the piece #
     ####################################
 
-    midis=Midi.read_midi_file("temp/bwv870-a.mid")
+    midis=Midi.read_midi_file(SFConstants.STORE_DIRECTORY + "bwv871-b.mid")
 
     # Length of full piece
     #======================
-    length = 2.0
+    length = 2.5
 
     # Temperament
     #=============
@@ -177,7 +178,9 @@ def main():
                     if len(row) > rowIdx:
                         outRaw.append(row[rowIdx])
 
-            for split in xrange(0, splitTo):
+            @sf_parallel
+            def inner(split):
+                RESTART_INFO.restartIndex = (track * 10  + split) * 1000
                 rank = float(split) / float(splitTo)
                 place = -1
                 if splitPitch:
@@ -193,9 +196,8 @@ def main():
                 # This renders the music.
                 with SFMemoryZone():
                     left,right = [sf.Finalise(sig) for sig in voice(out, beat, temperament, 1.0, place)]
-                    sf.WriteSignal(left,  "temp/l0")
-                    sf.WriteSignal(right, "temp/r0")
-
+                    sf.WriteSignal(left,  SFConstants.STORE_DIRECTORY + "l0_%i" % split)
+                    sf.WriteSignal(right, SFConstants.STORE_DIRECTORY + "r0_%i" % split)
 
                 # Add highlight to bottom notes.
                 # TODO: Make this parameterisable.
@@ -217,16 +219,18 @@ def main():
 
                 with SFMemoryZone():
                     left, right = [sf.NumericVolume(sf.Finalise(sig), 0.1 * rank) for sig in voice(outH, beat, temperament, 1.0, place)]
-                    sf.WriteSignal(left, "temp/l1")
-                    sf.WriteSignal(right, "temp/r1")
+                    sf.WriteSignal(left, SFConstants.STORE_DIRECTORY + "l1_%i" % split)
+                    sf.WriteSignal(right, SFConstants.STORE_DIRECTORY + "r1_%i" % split)
+
                 with SFMemoryZone():
                     left, right = [sf.NumericVolume(sf.Finalise(sig), 0.1 * (1.0 - rank)) for sig in voice(outL, beat, temperament, 1.0, place)]
-                    sf.WriteSignal(left, "temp/l2")
-                    sf.WriteSignal(right, "temp/r2")
+                    sf.WriteSignal(left, SFConstants.STORE_DIRECTORY + "l2_%i" % split)
+                    sf.WriteSignal(right, SFConstants.STORE_DIRECTORY + "r2_%i" % split)
+
                 with SFMemoryZone():    
                     left, right = [sf.FixSize(sf.Mix(a, b, c)) for a,b,c in (
-                        (sf.ReadSignal("temp/l%i" % x) for x in xrange(3)), 
-                        (sf.ReadSignal("temp/r%i" % x) for x in xrange(3)))]
+                        (sf.ReadSignal(SFConstants.STORE_DIRECTORY + "l%i_%i" % (x, split)) for x in xrange(3)), 
+                        (sf.ReadSignal(SFConstants.STORE_DIRECTORY + "r%i_%i" % (x, split)) for x in xrange(3)))]
                     if splitPitch:
                         left = sf.NumericVolume(left, place)
                         right = sf.NumericVolume(right, 1.0 - place)
@@ -250,6 +254,12 @@ def main():
                     right = _doVib(modEnvr, right)
 
 
-                sf.WriteSignal(left, "temp/left_v{0}_{1}_acc".format(track, split))
-                sf.WriteSignal(right,"temp/right_v{0}_{1}_acc".format(track, split))
-                sf.WriteFile32((right, left),"temp/temp_v{0}_{1}_acc.wav".format(track, split))
+                sf.WriteSignal(left, SFConstants.STORE_DIRECTORY + "left_v{0}_{1}_acc".format(track, split))
+                sf.WriteSignal(right,SFConstants.STORE_DIRECTORY + "right_v{0}_{1}_acc".format(track, split))
+                sf.WriteFile32((right, left),SFConstants.STORE_DIRECTORY + "temp_v{0}_{1}_acc.wav".format(track, split))
+                return True
+            rets = [inner(split) for split in xrange(0, splitTo)]
+            #rets = [inner(split) for split in xrange(0, 1)]
+            all(ret.get() for ret in rets)
+            
+            

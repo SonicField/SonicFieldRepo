@@ -8,7 +8,7 @@ import com.nerdscentral.sython.Caster;
 import com.nerdscentral.sython.SFPL_Operator;
 import com.nerdscentral.sython.SFPL_RuntimeException;
 
-public class SF_FrequencyDomain implements SFPL_Operator
+public class SF_OffHeapFrequencyDomain implements SFPL_Operator
 {
 
     private static final long serialVersionUID = 1L;

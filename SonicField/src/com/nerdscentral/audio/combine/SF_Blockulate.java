@@ -37,7 +37,7 @@ public class SF_Blockulate implements SFPL_Operator
             int k = lenSamples * 2;
             int end = start + k;
             if (end > len) break;
-            SFSignal out = SFData.build(k);
+            SFSignal out = SFData.build(k, false);
             for (int i = start; i < end; ++i)
             {
                 int l = i - start;

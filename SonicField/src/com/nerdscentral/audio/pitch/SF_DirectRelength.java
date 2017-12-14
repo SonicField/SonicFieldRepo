@@ -22,7 +22,7 @@ public class SF_DirectRelength implements SFPL_Operator
         double rate = Caster.makeDouble(l.get(1));
         int lengthIn = sampleA.getLength();
         int len = (int) (lengthIn / rate);
-        SFSignal ret = SFData.build(len);
+        SFSignal ret = SFData.build(len, true);
         double pos = 0;
         for (int i = 0; i < len && pos < lengthIn; ++i)
         {

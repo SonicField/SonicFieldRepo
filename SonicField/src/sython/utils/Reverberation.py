@@ -4,6 +4,9 @@ from sython.utils.Parallel_Helpers import mix, realise
 from sython.concurrent import sf_parallel
 from com.nerdscentral.audio.core import SFMemoryZone
 
+TIME_DOMAIN = sf.TimeDomain
+FREQ_DOMAIN = sf.FrequencyDomain
+
 @sf_parallel
 def granular_reverberate(signal,ratio,delay,density,length=50,stretch=1,vol=1,rand=1.0,spread=1.0):
     with SFMemoryZone():
@@ -39,9 +42,9 @@ def reverberate_inner(signal,convol,grain_length):
         if mag>0:
             signal_=sf.Concatenate(signal,sf.Silence(grain_length))
             len=sf.Length(signal_)
-            signal_=sf.FrequencyDomain(signal_)
+            signal_=FREQ_DOMAIN(signal_)
             signal_=sf.CrossMultiply(convol,signal_)
-            signal_=sf.TimeDomain(signal_)
+            signal_=TIME_DOMAIN(signal_)
             newMag=sf.Magnitude(signal_)
             # HACK! TODO:
             if not newMag:
@@ -56,14 +59,14 @@ def convolve(signal,convolution):
     with SFMemoryZone():
         ls=sf.Length(signal)
         lc=sf.Length(convolution)
-        convol_=sf.FrequencyDomain(sf.Concatenate(convolution,sf.Silence(ls)))
+        convol_= FREQ_DOMAIN(sf.Concatenate(convolution,sf.Silence(ls)))
         return sf.Finalise(reverberate_inner(signal,convol_,lc)).keep()
 
 @sf_parallel
 def reverberate(signal,convol):
     c_log("Reverberate")
     grain_length = sf.Length(convol)
-    convol_=sf.FrequencyDomain(sf.Concatenate(convol,sf.Silence(grain_length)))
+    convol_=FREQ_DOMAIN(sf.Concatenate(convol,sf.Silence(grain_length)))
     signal_=sf.Concatenate(signal,sf.Silence(grain_length))
     out=[]
     for grain in sf.Granulate(signal_,grain_length):

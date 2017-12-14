@@ -32,11 +32,11 @@ public class SF_RestrictedSlide implements SFPL_Operator
         for (Object o : l)
         {
             List<Object> el = Caster.makeBunch(o);
-            if (el.size() != 2 || !(el.get(0) instanceof Number && el.get(0) instanceof Number)) throw new SFPL_RuntimeException(
-                            Messages.getString("SF_Slide.2"));  //$NON-NLS-1$
+            if (el.size() != 2 || !(el.get(0) instanceof Number && el.get(0) instanceof Number))
+                throw new SFPL_RuntimeException(Messages.getString("SF_Slide.2"));  //$NON-NLS-1$
         }
         totalTime = Caster.makeDouble(Caster.makeBunch(l.get(l.size() - 1)).get(0));
-        SFSignal data = SFData.build((int) (totalTime * SFConstants.SAMPLE_RATE / 1000.0d));
+        SFSignal data = SFData.build((int) (totalTime * SFConstants.SAMPLE_RATE / 1000.0d), true);
         int position = 0;
         double sinPos = 0;
         double scl = PI2 / SFConstants.SAMPLE_RATE;
@@ -65,7 +65,6 @@ public class SF_RestrictedSlide implements SFPL_Operator
                     {
                         scale = SFConstants.UPPER_ALIAS_LIMIT - pitch;
                         scale = scale / (SFConstants.UPPER_ALIAS_LIMIT - SFConstants.UPPER_AUDIBLE_LIMIT);
-                        // System.out.println(scale);
                     }
                 }
                 data.setSample(position, scale * SFMaths.sin(sinPos));
