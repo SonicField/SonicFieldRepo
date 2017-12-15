@@ -1,7 +1,8 @@
 from sython.concurrent import sf_parallel
-from com.nerdscentral.audio.core import SFMemoryZone
+from com.nerdscentral.audio.core import SFMemoryZone, SFConstants
 from sython.utils.Reverberation import reverberate
 from sython.utils.Splitter import writeWave
+from sython.post.Declick import declick
 from com.nerdscentral.audio.core import SFData
 from __builtin__ import None
 
@@ -22,7 +23,7 @@ def excite(sig,mix,power):
 
 def main():
     paths = range(0, 8)
-    #paths = [7]
+    paths = [0]
     for path in paths:
         _main(path)
 
@@ -45,11 +46,11 @@ def _main(path):
     # vBright without bright will not brighten the wet signal.
     vBright = False
     # A super short hand made impulse.
-    tiny = True
+    tiny = False
     # A small chamber (smaller than the default vocal chamber).
     # This also shortens off the spring a lot to remove long rumbling tails
     # if the spring is used with this.
-    small   = False
+    small   = True
     # Use a church impulse response.
     church  = False
     # Use an very long 'ambient' impulse response.
@@ -59,7 +60,7 @@ def _main(path):
     #  An impulse from Perth City Hall.
     perth = 0.0
     # Use an impulse response from an abandoned factory.
-    terrys  = 0.0
+    terrys  = 0.01
     # Bright medium Ir.
     club = 0.0
     # Enhanced rich church - very long.
@@ -78,6 +79,8 @@ def _main(path):
     matchMagnitudes = True
     # To multiply each track with dbsPerTrack * path.
     dbsPerTrack = -1.00
+    # Use the declicler.
+    doDeclick = True
 
     ####################################
     #
@@ -87,8 +90,8 @@ def _main(path):
 
     with SFMemoryZone():
         #right, left = sf.ReadFile("temp/dry.wav")
-        left  = sf.ReadSignal("temp/right_v1_{0}_acc".format(path))
-        right = sf.ReadSignal("temp/left_v1_{0}_acc".format(path))
+        right  = sf.ReadSignal(SFConstants.STORE_DIRECTORY + "right_v1_{0}_acc".format(path))
+        left = sf.ReadSignal(SFConstants.STORE_DIRECTORY + "left_v1_{0}_acc".format(path))
 
         lrBalance = None
         if matchMagnitudes:
@@ -97,9 +100,13 @@ def _main(path):
             tMag = lMag + rMag
             lrBalance = (lMag / tMag, rMag / tMag)
             print 'Will correct magnitudes to:', lrBalance
-
-        left =sf.Multiply(sf.NumericShape((0,0),(64,1),(sf.Length(+left ),1)),left )
-        right=sf.Multiply(sf.NumericShape((0,0),(64,1),(sf.Length(+right),1)),right)
+        declickThresh = [0.01, 0.015, 0.02, 0.025, 0.03, 0.03, 0.03, 0.03][path]
+        cutoff = 250 if path == 0 else 1000
+        if doDeclick:
+            left  = declick(left,  thresh = declickThresh, cutoff = cutoff)
+            right = declick(right, thresh = declickThresh, cutoff = cutoff)
+        left  = sf.Multiply(sf.NumericShape((0, 0), (64, 1),(sf.Length(+left ), 1)), left )
+        right = sf.Multiply(sf.NumericShape((0, 0), (64, 1),(sf.Length(+right), 1)), right)
 
         left =sf.Concatenate(sf.Silence(1025),left).keep()
         right=sf.Concatenate(sf.Silence(1024),right).keep()
@@ -277,17 +284,25 @@ def _main(path):
         left = wleft
         right = wright
 
-    if lrBalance:
-        print 'Correcting magnitudes to:', lrBalance
-        left  = sf.NumericVolume(left,  lrBalance[0])
-        right = sf.NumericVolume(right, lrBalance[1])
+    with SFMemoryZone():
+        if declick:
+            left  = declick(left,  thresh = declickThresh, cutoff = cutoff)
+            right = declick(right, thresh = declickThresh, cutoff = cutoff)
+    
+        if lrBalance:
+            print 'Correcting magnitudes to:', lrBalance
+            left  = sf.NumericVolume(left,  lrBalance[0])
+            right = sf.NumericVolume(right, lrBalance[1])
+    
+        if dbsPerTrack:
+            amount = dbsPerTrack * path
+            print 'Scaling magnitudes to:', lrBalance
+            left  = sf.Volume(left,  amount)
+            right = sf.Volume(right, amount)
 
-    if dbsPerTrack:
-        amount = dbsPerTrack * path
-        print 'Scaling magnitudes to:', lrBalance
-        left  = sf.Volume(left,  amount)
-        right = sf.Volume(right, amount)
+        left = left.keep()
+        right = right.keep()
 
 
-    writeWave(right, left, 'temp/reverberated_{0}'.format(path))
+    writeWave(right, left, SFConstants.STORE_DIRECTORY + 'reverberated_{0}'.format(path))
 

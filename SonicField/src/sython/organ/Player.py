@@ -316,7 +316,7 @@ def sing(
 
 # Restart is a global thing as we might have multiple passes through play.
 RESTART_INFO = threading.local()
-
+NOTE_CACHE = {}
 
 def play(
         midi,
@@ -345,10 +345,6 @@ def play(
     if not slope:
         slope = ((0, 0),  (20000, 0))
     notes=[]
-    cache = {}
-    cacheFileName = os.path.join(SFConstants.CACHE_DIRECTORY, 'playerNoteCache.pcl')
-    if os.path.isfile(cacheFileName):
-        cache = pickle.load(cacheFileName)
     d_log("Stop: ",voice)
     d_log('Total notes:',len(midi))
     cacheMisses = 0
@@ -494,9 +490,9 @@ def play(
         # may not be populated so a restart might not generate exactly the same notes
         # as a complete run would.
         signals = None
-        if args in cache and (RESTART_INFO.restartIndex < RESTART_INFO.replayIndex or random.random() < 0.9):
+        if args in NOTE_CACHE and (RESTART_INFO.restartIndex < RESTART_INFO.replayIndex or random.random() < 0.9):
             print 'Note Cache Hit! {0} -> {1}'.format(index, index - cacheMisses)
-            signals = [readSwappedCache(s) for s in cache[args]]
+            signals = [readSwappedCache(s) for s in NOTE_CACHE[args]]
         else:
             path_l, signal_l = sf.MaybeReadSignal("left_{0}".format(RESTART_INFO.restartIndex))
             path_r, signal_r = sf.MaybeReadSignal("right_{0}".format(RESTART_INFO.restartIndex))
@@ -513,7 +509,7 @@ def play(
                 print 'Restart Hit!   {0}'.format(RESTART_INFO.restartIndex)
                 signals = (signal_l, signal_r)
             # Note that the get code below will compute the value for these futures as some point.
-            cache[args] = [writeSawppedCache(s) for s in signals]
+            NOTE_CACHE[args] = [writeSawppedCache(s) for s in signals]
             cacheMisses += 1
         RESTART_INFO.restartIndex += 1
         dl=30 * rl + 1000
