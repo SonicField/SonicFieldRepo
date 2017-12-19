@@ -1,13 +1,12 @@
 import threading
 from sython.utils.Reverberation import granular_reverberate,reverberate,convolve
 from java.util.concurrent.atomic import AtomicLong
-from sython.utils.Envelopes import safe_env
+from sython.utils.Envelopes import linearEnv
 from com.nerdscentral.audio.core import SFMemoryZone, SFConstants
 from com.nerdscentral.audio.core import SFData
 from sython.utils.Memory import writeSawppedCache, readSwappedCache
 import random
 import os.path
-from sython.post.Declick import declick
 
 ################################################################################
 #  hint:     NN TN TT NT for trill and normal for the previous and next notes
@@ -91,7 +90,7 @@ def sing(
             vc=voice(length,pitch*(1.0+random.random()*0.005))
             if quick_factor:
                 vc=sf.Multiply(
-                    safe_env(
+                    linearEnv(
                         vc,
                         [
                             (0,0),
@@ -138,7 +137,7 @@ def sing(
                 else:
                     p=64
                 q*=quick_factor
-                env=safe_env(sig,[(0,0),(q,1),(192-p,0.5),(length,0)])
+                env=linearEnv(sig,[(0,0),(q,1),(192-p,0.5),(length,0)])
                 if hint=="TT":
                     velocity_correct*=0.8
                 elif hint=="NN" and pitch>660:
@@ -154,7 +153,7 @@ def sing(
                 else:
                     p=128
                 q*=quick_factor
-                env=safe_env(sig,[(0,0),(q,0.75),(length-p,1.0),(length,0)])
+                env=linearEnv(sig,[(0,0),(q,0.75),(length-p,1.0),(length,0)])
                 if hint=="TT":
                     velocity_correct*=0.8
                 if hint=="TT":
@@ -163,14 +162,14 @@ def sing(
                     shine=True
                     velocity_correct*=0.6
             elif tp==2:
-                env=safe_env(sig,[(0,0),(96*quick_factor,0.75),(length-256,1.0),(length,0)])
+                env=linearEnv(sig,[(0,0),(96*quick_factor,0.75),(length-256,1.0),(length,0)])
             elif tp==3:
                 if length<1280:
-                    env=safe_env(sig,[(0,0),(64*quick_factor,0.5),(256,1),(512,0.75),((length-512)/2.0+512,0.5),(length,0)])
+                    env=linearEnv(sig,[(0,0),(64*quick_factor,0.5),(256,1),(512,0.75),((length-512)/2.0+512,0.5),(length,0)])
                 else:
-                    env=safe_env(sig,[(0,0),(64*quick_factor,0.5),(256,1),(512,0.75),(length-512,0.75),(length,0)])
+                    env=linearEnv(sig,[(0,0),(64*quick_factor,0.5),(256,1),(512,0.75),(length-512,0.75),(length,0)])
             else:
-                env=safe_env(sig,[(0,0),(64*quick_factor,0.25),(512,1),(length/2,0.75),(length,0)])
+                env=linearEnv(sig,[(0,0),(64*quick_factor,0.25),(512,1),(length/2,0.75),(length,0)])
 
         if bend:
             mod=sf.LinearShape((0,0.995),(length,1.005))
@@ -181,8 +180,6 @@ def sing(
             # sense of what we are trying to do. KISS
             if sf.Length(+sig)==sf.Length(+mod):
                 sig=sf.FrequencyModulate(sig,mod)
-            else:
-                -mod
 
         sig=sf.FixSize(sig)
         if mellow:
@@ -230,6 +227,13 @@ def sing(
 
         if env:
             sig=sf.Multiply(sig,env)
+        # Aggressively clean up an dc offset or other issue on the tail.
+        sig = sf.RTrim(sig)
+        length = sf.Length(sig)
+        sig = sf.Multiply(
+            sf.LinearShape(((0,1), (length - 10, 1), (length, 0))),
+            sig
+            )
         sig=sf.FixSize(sig)
 
         if smooth:
@@ -244,7 +248,7 @@ def sing(
             cnv=sf.Multiply(cnv,sf.LinearShape((0,0),(32,1),(q,0)))
             sigr=convolve(+sig,cnv)
             sigr=sf.Multiply(
-                safe_env(sigr,[(0,0),(256,1),(sf.Length(+sigr),1.5)]),
+                linearEnv(sigr,[(0,0),(256,1),(sf.Length(sigr) - 20,1.5), (sf.Length(sigr), 0)]),
                 sigr
             )
             sig=sf.Mix(

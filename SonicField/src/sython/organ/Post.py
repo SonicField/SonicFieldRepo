@@ -26,21 +26,21 @@ def post_process(notes):
     return tnl,tnr
 
 @sf_parallel
-def post_process_tremolate(notes,rate=3.5,magnitude=0.25):
+def post_process_tremolate(notes, rate=3.5, magnitude=0.25):
     count=0
     tnsl=[]
     tnsr=[]
     for note in notes:
-        nlr,atl,atr=note
+        nlr,atl,atr = note
         c_log("Trem phase 1 done: ",count)
-        notel,noter=nlr
+        notel, noter = nlr
         tnsl.append([notel,atl])
         tnsr.append([noter,atr])
         count+=1
     tnl=mix(tnsl)
     tnr=mix(tnsr)
-    tnl=tremolate(tnl,rate,magnitude)
-    tnr=tremolate(tnr,rate,magnitude)
+    tnl=tremolate(tnl, rate, magnitude)
+    tnr=tremolate(tnr, rate, magnitude)
     c_log("Trem phase 3 done")
     return tnl,tnr
 

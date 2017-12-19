@@ -2,7 +2,7 @@ package com.nerdscentral.audio.pitch;
 
 import com.nerdscentral.audio.core.SFData;
 import com.nerdscentral.audio.core.SFSignal;
-import com.nerdscentral.audio.pitch.algorithm.FFTbase;
+import com.nerdscentral.audio.pitch.algorithm.OffHeapFFTbase;
 import com.nerdscentral.data.OffHeapArray;
 import com.nerdscentral.sython.Caster;
 import com.nerdscentral.sython.SFPL_Operator;
@@ -41,7 +41,7 @@ public class SF_OffHeapTimeDomain implements SFPL_Operator
                 re.setDouble(i, signal.getSample(j++));
                 im.setDouble(i, signal.getSample(j++));
             }
-            FFTbase.fft(re, im, out, false);
+            OffHeapFFTbase.fft(re, im, out, false);
             SFSignal ret = SFData.build(NFFT, true);
             for (int i = 0; i >> 1 < NFFT; i += 2)
             {

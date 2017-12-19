@@ -156,7 +156,6 @@ public class SFConstants
         return q;
     }
 
-    @SuppressWarnings("nls")
     public static final double getJustPitch(String note) throws SFPL_RuntimeException
     {
         Object ret = justNotes.get(note.toLowerCase());

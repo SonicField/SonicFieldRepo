@@ -352,9 +352,9 @@ public final class OffHeapArray extends UnsafeProvider implements AutoCloseable
                 if (!closed)
                 {
                     closed = true;
+                    allocator.free(address);
                 }
             }
-            allocator.free(address);
         }
     }
 

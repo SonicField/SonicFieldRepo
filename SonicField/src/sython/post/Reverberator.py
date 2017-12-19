@@ -285,7 +285,7 @@ def _main(path):
         right = wright
 
     with SFMemoryZone():
-        if declick:
+        if doDeclick:
             left  = declick(left,  thresh = declickThresh, cutoff = cutoff)
             right = declick(right, thresh = declickThresh, cutoff = cutoff)
     

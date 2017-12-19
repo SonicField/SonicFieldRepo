@@ -85,7 +85,7 @@ def main():
 
     # Truncate.
     # Only render this many notes; < 1 implies all.
-    truncate = 32
+    truncate = 0
 
     # Fast blip - needed for some piano music.
     fastBlip = False
@@ -194,7 +194,7 @@ def main():
                         out.append(nt)
                     count += 1
 
-                voiceA = soft_harpsichord
+                voiceA = double_pure_harpsichord
                 voiceB = distant_flute_pipe
                 # This renders the music.
                 signals = []
@@ -202,8 +202,9 @@ def main():
                 with SFMemoryZone():
                     left,right = (sf.Finalise(sig) for sig in voiceA(out, beat, temperament, 1.0, place))
                     signals.append((writeSawppedCache(left), writeSawppedCache(right)))
-                '''
+                
                 outL = []
+                outH = []
                 for event in out:
                     eventH = copy.copy(event)
                     eventL = copy.copy(event)
@@ -214,13 +215,13 @@ def main():
 
                 with SFMemoryZone():
                     left, right = (sf.LinearVolume(sf.Finalise(sig), 0.1 * rank) for sig in voiceB(outH, beat, temperament, 1.0, place))
-                    signals.append(writeSawppedCache(left), writeSawppedCache(right))
+                    signals.append((writeSawppedCache(left), writeSawppedCache(right)))
 
                 with SFMemoryZone():
                     left, right = [sf.LinearVolume(sf.Finalise(sig), 0.1 * (1.0 - rank)) for sig in voiceB(outL, beat, temperament, 1.0, place)]
-                    signals.append(writeSawppedCache(left), writeSawppedCache(right))
-                '''
-                with SFMemoryZone():    
+                    signals.append((writeSawppedCache(left), writeSawppedCache(right)))
+                
+                with SFMemoryZone():
                     left  = sf.FixSize(sf.Mix([readSwappedCache(s[0]) for s in  signals]))
                     right = sf.FixSize(sf.Mix([readSwappedCache(s[1]) for s in  signals]))
                     if splitPitch:

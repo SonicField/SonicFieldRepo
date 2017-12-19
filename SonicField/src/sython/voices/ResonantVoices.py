@@ -20,6 +20,7 @@ from sython.voices.Signal_Generators import clean_noise
 from sython.utils.Filters import byquad_filter
 from sython.utils.Reverberation import convolve
 from sython.utils.Algorithms import polish
+from sython.utils.Envelopes import linearEnv
 import math
 import random
 import functools
@@ -90,7 +91,7 @@ def _distant_wind(length, freq, qCorrect = 1.25, limit = False, seed = -60):
             st = sf.Magnitude(st)
             ed = sf.Magnitude(ed)
         rt = st/ed if ed != 0 else 0
-        ev = sf.LinearShape((0.0, 1.0), (length, rt))
+        ev = sf.LinearShape((0.0, 1.0), (length, rt)).realise()
         out = sf.Multiply(ev, out)
         return sf.FixSize(sf.Cut(250,length,out)).keep()
 
@@ -195,15 +196,16 @@ def additive_resonance(power, qCorrect, saturate, rollOff, post, limit, seed, fl
         ret = sf.Realise(sf.FixSize(sf.Clean(base)))
     else:
         ret = sf.Realise(sf.FixSize(polish(base,freq)))
-    return post(ret, length, freq) if post else ret
+    return post(ret, freq) if post else ret
 
 def make_addtive_resonance(power = 1.1 , qCorrect = 1.25 , saturate = 0.0, rollOff = 4.0,
                            post = None, limit = False, seed = -60, flat = True, harmonics = xrange(1,100)):
     return functools.partial(additive_resonance, power, qCorrect, saturate, rollOff, post, limit, seed, flat, harmonics)
 
 
-def oboe_filter(sig, length, freq):
+def oboe_filter(sig,freq):
     with SFMemoryZone():
+        length = sf.Length(sig)
         # Clip off extreme spectra leakage (which in can have big negative compenents).
         env = sf.LinearShape((0, 0), (5, 1), (length-5, 1), (length, 0))
         sig = sf.Multiply(env, sig)
@@ -220,8 +222,9 @@ def oboe_filter(sig, length, freq):
         return sf.FixSize(sf.Clean(sig)).keep()
 
 
-def harpsichord_filter(power, resonance, sig, length, freq):
+def harpsichord_filter(power, resonance, sig,freq):
     with SFMemoryZone():
+        length = sf.Length(sig)
         ring = sf.SineWave(length, 50.0 + freq / 50.0)
         ring = sf.Multiply(sf.LinearShape((0,0.05), (length,0)), ring)
         ring = sf.DirectMix(1.0, ring)
@@ -259,7 +262,7 @@ def harpsichord_filter(power, resonance, sig, length, freq):
 
 # TODO remove length from signature.
 
-def soft_harpsichord_filter(power, resonance, sig, length, freq, attack=2, triangle=True):
+def soft_harpsichord_filter(power, resonance, sig, freq, attack=2, triangle=True):
 
     length = sf.Length(sig)
 
@@ -339,9 +342,9 @@ def soft_harpsichord_filter(power, resonance, sig, length, freq, attack=2, trian
         sig, env, res = sf.MatchLengths((sig, env, res))
         out = sf.ShapedLadderLowPass(sig, env, res)
 
+        length = sf.Length(out)
         if power != 1.0:
-            outP = sf.FixSize(sf.Power(out, power))
-            outP = sf.Saturate(outP)
+            out = sf.FixSize(sf.Power(out, power))
 
         env = None
         if length > 50:
@@ -358,7 +361,7 @@ def soft_harpsichord_filter(power, resonance, sig, length, freq, attack=2, trian
         return sf.FixSize(polish(out, freq)).keep()
 
 
-def oboe_harpsichord_filter(sig, length, frequency, vibAbove=200):
+def oboe_harpsichord_filter(sig, frequency, vibAbove=200):
     powr = 1.0
     if frequency< 250:
         powr -= (250.0 - frequency) / 750.0
@@ -367,7 +370,8 @@ def oboe_harpsichord_filter(sig, length, frequency, vibAbove=200):
 
     with SFMemoryZone():
         sig = soft_harpsichord_filter(power=powr, resonance=1.0, sig=sig,
-                                   length=length, freq = frequency)
+                                   freq = frequency)
+        length = sf.Length(sig)
         if length > vibAbove:
             # TODO feels a bit crushed - more stages?
             vibStart  = length*0.5  if length>600 else vibAbove*0.75
@@ -390,17 +394,18 @@ def oboe_harpsichord_filter(sig, length, frequency, vibAbove=200):
 
 goldbergSlope = sf.ExponentialShape((0,0), (10,0), (1000,-30), (20000,-60))
 
-def goldberg_filter(sig, length, frequency):
-    return _goldberg_filter(sig, length, frequency, False)
+def goldberg_filter(sig, frequency):
+    return _goldberg_filter(sig, frequency, False)
 
 
-def goldberg_filter_bright(sig, length, frequency):
-    return _goldberg_filter(sig, length, frequency, True)
+def goldberg_filter_bright(sig, frequency):
+    return _goldberg_filter(sig, frequency, True)
 
-def _goldberg_filter(sig, length, frequency, bright):
+def _goldberg_filter(sig, frequency, bright):
     global goldbergSlope
     with SFMemoryZone():
-        sig = oboe_harpsichord_filter(sig, length, frequency, 75)
+        sig = oboe_harpsichord_filter(sig, frequency, 75)
+        length = sf.Length(sig)
         wetV = sf.ValueAt(goldbergSlope, frequency)
         dryV = 1.0 - wetV
         wet = sf.FixSize(sf.Saturate(sf.LinearVolume(sig, 2.0)))
@@ -423,8 +428,9 @@ def make_harpsichord_filter(soft=False, power=1.05, resonance=1.0):
         return functools.partial(harpsichord_filter, power, resonance)
 
 
-def tremulus_oboe_filter(sig, length, freq):
+def tremulus_oboe_filter(sig,freq):
     with SFMemoryZone():
+        length = sf.Length(sig)
         rate = 3.25
         # Clip off extreme spectra leakage (which in can have big negative compenents).
         env = sf.LinearShape((0, 0), (5, 1), (length-5, 1), (length, 0))
@@ -461,8 +467,9 @@ def tremulus_oboe_filter(sig, length, freq):
         return sf.FixSize(sig).keep()
 
 
-def tremulus_diapason_filter(sig, length, freq):
+def tremulus_diapason_filter(sig, freq):
     with SFMemoryZone():
+        length = sf.Length(sig)
         rate = 3.0
         # Clip off extreme spectra leakage (which in can have big negative compenents).
         env = sf.LinearShape((0, 0), (5, 1), (length-5, 1), (length, 0))
@@ -488,8 +495,9 @@ def tremulus_diapason_filter(sig, length, freq):
         return sf.FixSize(sig).keep()
 
 
-def tremulus_flute_filter(sig, length, freq):
+def tremulus_flute_filter(sig,freq):
     with SFMemoryZone():
+        length = sf.Length(sig)
         rate = 3.0
         # Clip off extreme spectra leakage (which in can have big negative compenents).
         env = sf.LinearShape((0, 0), (5, 1), (length-5, 1), (length, 0))
@@ -507,8 +515,9 @@ def tremulus_flute_filter(sig, length, freq):
         return sf.FixSize(sf.Mix(sig, sigf)).keep()
 
 
-def violin_filter(sig, length, freq):
+def violin_filter(sig, freq):
     with SFMemoryZone():
+        length = sf.Length(sig)
         sigs=[]
         bodies = violinIRs
         for body in bodies:
@@ -572,8 +581,9 @@ def _vox_filter(vox, freq, a, b, c):
     return sf.FixSize(vox)
 
 
-def femail_soprano_ah_filter(vox, length, freq):
+def femail_soprano_ah_filter(vox,freq):
     with SFMemoryZone():
+        length = sf.Length(vox)
         print length, freq
         vox = _vox_filter(vox, freq, 850, 1200, 2800)
         lower = sf.BesselLowPass(+vox,freq    ,2)
@@ -584,8 +594,9 @@ def femail_soprano_ah_filter(vox, length, freq):
         return sf.Realise(mix(sf.Pcnt95(lower), sf.Pcnt5(higher))).keep()
 
 
-def femail_soprano_a_filter(vox,length,freq):
+def femail_soprano_a_filter(vox, freq):
     with SFMemoryZone():
+        length = sf.Length(vox)
         vox = _vox_filter(vox, freq, 860, 2050, 2850)
         a = sf.BesselLowPass(+vox,freq    ,2)
         b = sf.Power(sf.BesselHighPass(vox,freq*4.0,2),1.35)
@@ -595,8 +606,9 @@ def femail_soprano_a_filter(vox,length,freq):
         return mix(sf.Pcnt75(a),sf.Pcnt25(b)).keep()
 
 
-def femail_soprano_ma_filter(vox, length,freq):
+def femail_soprano_ma_filter(vox,freq):
     with SFMemoryZone():
+        length = sf.Length(vox)
         vox = vox_humana_femail_soprano_a(vox,length,freq)
         if length>128:
             qsh =sf.LinearShape((0,0.1),(120,2),  (length,0.1))
@@ -656,10 +668,10 @@ def tuned_wind(length,freq):
         return sf.FixSize(polish(sig,freq)).keep()
 
 
-def synthichord_filter(sig, length, freq):
+def synthichord_filter(sig, freq):
 
     with SFMemoryZone():
-
+        length = sf.Length(sig)
         vibAbove = 250
         if length > vibAbove:
             # TODO feels a bit crushed - more stages?

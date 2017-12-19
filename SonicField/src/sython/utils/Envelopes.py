@@ -2,7 +2,7 @@
 # For Copyright and License see LICENSE.txt and COPYING.txt in the root directory 
 ################################################################################
 
-def _safe_env(sig, env):
+def _safeEnv(sig, env):
     '''
     Take an envelope description (tuple of time,numeric-volume pairs) and ensure
     that the elements are in ascenting order and not so close that an audible
@@ -12,11 +12,6 @@ def _safe_env(sig, env):
     length=sf.Length(sig)
     ne=[]
     op=0
-    if not dbs:
-        if env[-1][1] != 0:
-            raise RuntimeError('Envelope failure - last element none zero')
-        if env[0][1] !=0:
-            raise RuntimeError('Envelope failure - first element non zero')
     for p, m in env:
         if p - op < 16 and p>0:
             d_log("Warning: envelope to tight: ", env)
@@ -25,6 +20,7 @@ def _safe_env(sig, env):
         ne.append((p, m))
     if p > length:
         raise RuntimeError("Envelope failure - click removal caused overflow: ",length," -> ",p," diff:", p-length)
+    return ne
 
 def linearEnv(sig, env):
     if env[-1][1] != 0:
