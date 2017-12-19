@@ -36,10 +36,10 @@ def chorus(
                 def in_inner():
                     print "Do"
                     lfo=sf.PhasedSineWave(l,bandRand(minRate,maxRate),random.random())
-                    lfo=sf.NumericVolume(lfo,bandRand(minDepth,maxDepth))
+                    lfo=sf.LinearVolume(lfo,bandRand(minDepth,maxDepth))
                     nsg=sf.TimeShift(+signal,lfo)
                     lfo=sf.PhasedSineWave(l,bandRand(minRate,maxRate),random.random())
-                    lfo=sf.NumericVolume(lfo,bandRand(minVol,maxVol))
+                    lfo=sf.LinearVolume(lfo,bandRand(minVol,maxVol))
                     lfo=sf.DirectMix(1,lfo)
                     nsg=sf.Multiply(lfo,nsg)
                     print "Done"
@@ -63,10 +63,10 @@ def spatialise(osg):
     dhz = 0.5
     dly = 250.0
     md1 = sf.PhasedSineWave(sf.Length(+osg),0.01,0.0)
-    md1 = sf.NumericVolume(+md1,100)
+    md1 = sf.LinearVolume(+md1,100)
     os1 = sf.AnalogueChorus(+osg,dly,md1,1.25,0.7,18000.0)
     md1 = sf.PhasedSineWave(sf.Length(+osg),0.01,0.5)
-    md1 = sf.NumericVolume(+md1,100)
+    md1 = sf.LinearVolume(+md1,100)
     os2 = sf.AnalogueChorus( osg,dly,md1,1.25,0.7,18000.0)
     oso = [sf.Mix([os1[0],os2[0]]),sf.Mix([os1[1],os2[1]])]
     oso = [ sf.FixSize(sf.Mix(sf.FixSize(s),+osi)) for s in oso ]

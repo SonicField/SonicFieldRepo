@@ -42,7 +42,7 @@ def primeBell(frequency = 440 , brightness = 1.0, length = 10000, hit = 1.0, isB
             sf.RBJLowPass(
                 sf.Multiply(
                     sf.WhiteNoise(30),
-                    sf.NumericShape((0, hit/4.0), (30,0))
+                    sf.LinearShape((0, hit/4.0), (30,0))
                 ),
                 frequency * 4.0,
                 2.0
@@ -50,21 +50,21 @@ def primeBell(frequency = 440 , brightness = 1.0, length = 10000, hit = 1.0, isB
         )
 
         peak = 2000 if isBowl else 1
-        env = sf.NumericShape(
+        env = sf.LinearShape(
             (0, frequency if isBowl else 18000),
             (peak, 18000 if isBowl else frequency * 4.0),
             (length, frequency)
         )
-        res = sf.NumericShape((1, 1.0),(length,3.0 if isBowl else 1.5))
+        res = sf.LinearShape((1, 1.0),(length,3.0 if isBowl else 1.5))
         sig = sf.ShapedRBJLowPass(sig, env, res)
 
         # A mixture of linear and exponential enveloping.
         env = sf.Multiply(
-            sf.NumericShape(
+            sf.LinearShape(
                 (0, 0),
                 (peak, 1),
                 (length, 0)),
-            sf.SimpleShape((0, 0), (peak, 0), (length, -30))
+            sf.ExponentialShape((0, 0), (peak, 0), (length, -30))
         )
         out = sf.FixSize(sf.Multiply(env, sig))
         return out.keep()

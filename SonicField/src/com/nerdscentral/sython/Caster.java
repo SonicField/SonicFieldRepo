@@ -224,9 +224,4 @@ public class Caster
         }
     }
 
-    public static SFSignal incrReference(SFSignal ret)
-    {
-        return ret;
-    }
-
 }

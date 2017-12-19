@@ -13,41 +13,41 @@ def posaune_pulse(length,frequency):
     elif frequency>1000:
         sig=mix(
             sf.PhasedSineWave(length,frequency,p1),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*2.0,p1),2.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*3.0,p1),2.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*4.0,p1),1.5),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*5.0,p1),1.3),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*6.0,p1),1.1),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*7.0,p1),0.8),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*8.0,p1),0.6),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*9.0,p1),0.4),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*10.0,p1),0.2)
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*2.0,p1),2.0),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*3.0,p1),2.0),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*4.0,p1),1.5),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*5.0,p1),1.3),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*6.0,p1),1.1),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*7.0,p1),0.8),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*8.0,p1),0.6),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*9.0,p1),0.4),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*10.0,p1),0.2)
         )
     else:
         sig=mix(
             sf.PhasedSineWave(length,frequency,p1),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*2.0,p1),2.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*3.0,p2),2.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*4.0,p1),1.8),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*5.0,p2),1.6),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*6.0,p1),1.4),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*7.0,p2),1.2),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*8.0,p1),1.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*9.0,p2),0.8),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*10.0,p1),0.6),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*11.0,p2),0.5),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*12.0,p1),0.4),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*13.0,p2),0.3),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*14.0,p1),0.2),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*15.0,p2),0.1),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*16.0,p1),0.05),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*16.0,p2),0.05),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*17.0,p1),0.05),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*18.0,p2),0.05),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*19.0,p1),0.01)
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*2.0,p1),2.0),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*3.0,p2),2.0),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*4.0,p1),1.8),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*5.0,p2),1.6),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*6.0,p1),1.4),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*7.0,p2),1.2),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*8.0,p1),1.0),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*9.0,p2),0.8),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*10.0,p1),0.6),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*11.0,p2),0.5),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*12.0,p1),0.4),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*13.0,p2),0.3),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*14.0,p1),0.2),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*15.0,p2),0.1),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*16.0,p1),0.05),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*16.0,p2),0.05),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*17.0,p1),0.05),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*18.0,p2),0.05),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*19.0,p1),0.01)
         )
     sig=sf.Multiply(
-        sf.NumericShape((0,0),(32,1),(length,1)),
+        sf.LinearShape((0,0),(32,1),(length,1)),
         sig
     )
     return sf.FixSize(sig)
@@ -61,19 +61,19 @@ def bombard_pulse(length,frequency):
     else:
         sig=mix(
             sf.PhasedSineWave(length,frequency,p),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*2.0,p),2.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*3.0,p),1.5),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*4.0,p),1.3),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*5.0,p),1.2),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*6.0,p),1.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*7.0,p),0.8),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*8.0,p),0.6),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*9.0,p),0.4),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*10.0,p),0.2)
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*2.0,p),2.0),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*3.0,p),1.5),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*4.0,p),1.3),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*5.0,p),1.2),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*6.0,p),1.0),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*7.0,p),0.8),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*8.0,p),0.6),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*9.0,p),0.4),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*10.0,p),0.2)
         )
     
     sig=sf.Multiply(
-        sf.NumericShape((0,0),(32,1),(length,1)),
+        sf.LinearShape((0,0),(32,1),(length,1)),
         sig
     )
     return sf.FixSize(sig)
@@ -86,32 +86,32 @@ def ophicleide_pulse(length,frequency):
     elif frequency>1000:
         sig=mix(
             sf.PhasedSineWave(length,frequency,p),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*2.0,p),1.5),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*3.0,p),2.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*4.0,p),2.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*5.0,p),1.5),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*6.0,p),1.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*7.0,p),0.9),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*8.0,p),0.8),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*9.0,p),0.6),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*10.0,p),0.4)
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*2.0,p),1.5),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*3.0,p),2.0),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*4.0,p),2.0),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*5.0,p),1.5),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*6.0,p),1.0),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*7.0,p),0.9),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*8.0,p),0.8),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*9.0,p),0.6),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*10.0,p),0.4)
         )
     else:
         sig=mix(
             sf.PhasedSineWave(length,frequency,p),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*2.0,p),1.5),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*3.0,p),2.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*4.0,p),2.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*5.0,p),1.8),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*6.0,p),1.6),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*7.0,p),1.4),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*8.0,p),1.2),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*9.0,p),1.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*10.0,p),0.8),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*11.0,p),0.5),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*12.0,p),0.3),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*13.0,p),0.2),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*14.0,p),0.1)
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*2.0,p),1.5),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*3.0,p),2.0),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*4.0,p),2.0),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*5.0,p),1.8),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*6.0,p),1.6),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*7.0,p),1.4),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*8.0,p),1.2),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*9.0,p),1.0),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*10.0,p),0.8),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*11.0,p),0.5),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*12.0,p),0.3),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*13.0,p),0.2),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*14.0,p),0.1)
        )   
     return sf.FixSize(sig)
 
@@ -121,26 +121,26 @@ def nice_pulse(length,frequency):
     if frequency>4000:
         sig=mix(
             sf.PhasedSineWave(length,frequency,p),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*2.0,p),1.0/1.5),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*3.0,p),1.0/1.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*4.0,p),1.0/1.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*5.0,p),1.0/1.5),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*6.0,p),1.0/2.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*7.0,p),1.0/3.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*8.0,p),1.0/4.0)
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*2.0,p),1.0/1.5),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*3.0,p),1.0/1.0),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*4.0,p),1.0/1.0),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*5.0,p),1.0/1.5),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*6.0,p),1.0/2.0),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*7.0,p),1.0/3.0),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*8.0,p),1.0/4.0)
             )
     else:
         sig=mix(
             sf.PhasedSineWave(length,frequency,p),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*2.0,p),1.0/1.5),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*3.0,p),1.0/1.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*4.0,p),1.0/1.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*5.0,p),1.0/1.5),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*6.0,p),1.0/2.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*7.0,p),1.0/3.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*8.0,p),1.0/4.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*9.0,p),1.0/6.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*10.0,p),1.0/10.0)
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*2.0,p),1.0/1.5),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*3.0,p),1.0/1.0),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*4.0,p),1.0/1.0),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*5.0,p),1.0/1.5),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*6.0,p),1.0/2.0),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*7.0,p),1.0/3.0),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*8.0,p),1.0/4.0),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*9.0,p),1.0/6.0),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*10.0,p),1.0/10.0)
         )
     return sf.FixSize(sig)
 
@@ -150,26 +150,26 @@ def make_simple_base(length,frequency,z):
     if frequency>4000:
         sig=mix(
             sf.PhasedSineWave(length,frequency,p),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*2.0,p),(1.0/2.0)**z),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*3.0,p),(1.0/3.0)**z),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*4.0,p),(1.0/4.0)**z),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*5.0,p),(1.0/5.0)**z),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*6.0,p),(1.0/6.0)**z),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*7.0,p),(1.0/7.0)**z),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*8.0,p),(1.0/8.0)**z)
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*2.0,p),(1.0/2.0)**z),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*3.0,p),(1.0/3.0)**z),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*4.0,p),(1.0/4.0)**z),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*5.0,p),(1.0/5.0)**z),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*6.0,p),(1.0/6.0)**z),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*7.0,p),(1.0/7.0)**z),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*8.0,p),(1.0/8.0)**z)
             )
     else:
         sig=mix(
             sf.PhasedSineWave(length,frequency,p),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*2.0,p),(1.0/2.0)**z),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*3.0,p),(1.0/3.0)**z),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*4.0,p),(1.0/4.0)**z),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*5.0,p),(1.0/5.0)**z),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*6.0,p),(1.0/6.0)**z),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*7.0,p),(1.0/7.0)**z),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*8.0,p),(1.0/8.0)**z),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*9.0,p),(1.0/9.0)**z),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*10.0,p),(1.0/10.0)**z)
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*2.0,p),(1.0/2.0)**z),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*3.0,p),(1.0/3.0)**z),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*4.0,p),(1.0/4.0)**z),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*5.0,p),(1.0/5.0)**z),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*6.0,p),(1.0/6.0)**z),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*7.0,p),(1.0/7.0)**z),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*8.0,p),(1.0/8.0)**z),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*9.0,p),(1.0/9.0)**z),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*10.0,p),(1.0/10.0)**z)
         )
     return sf.FixSize(sig)
 
@@ -195,18 +195,18 @@ def stopped_pulse(length,frequency):
     if frequency>3000:
         sig=mix(
             sf.PhasedSineWave(length,frequency,p),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*3.0,p),1.0/1.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*5.0,p),1.0/1.5),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*7.0,p),1.0/2.0)
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*3.0,p),1.0/1.0),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*5.0,p),1.0/1.5),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*7.0,p),1.0/2.0)
             )
     else:
         sig=mix(
             sf.PhasedSineWave(length,frequency,p),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*3.0,p),1.0/1.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*5.0,p),1.0/1.5),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*7.0,p),1.0/2.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*9.0,p),1.0/4.0),
-            sf.NumericVolume(sf.PhasedSineWave(length,frequency*11.0,p),1.0/8.0)
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*3.0,p),1.0/1.0),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*5.0,p),1.0/1.5),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*7.0,p),1.0/2.0),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*9.0,p),1.0/4.0),
+            sf.LinearVolume(sf.PhasedSineWave(length,frequency*11.0,p),1.0/8.0)
         )
     return sf.FixSize(sig)
 
@@ -232,10 +232,10 @@ def sing_base(length,freq,z=1.0):
             # cut of at -60 db 
             if vol>0.25e-06:
                 vol*=y
-                voxA.append(sf.NumericVolume(sf.PhasedTableSineWave(length,hf+random.random()*10.0,random.random()),vol))
-                voxA.append(sf.NumericVolume(sf.PhasedTableSineWave(length,hf-random.random()*10.0,random.random()),vol))
-                voxA.append(sf.NumericVolume(sf.PhasedTableSineWave(length,hf+random.random()*10.0,random.random()),vol))
-                voxA.append(sf.NumericVolume(sf.PhasedTableSineWave(length,hf-random.random()*10.0,random.random()),vol))
+                voxA.append(sf.LinearVolume(sf.PhasedTableSineWave(length,hf+random.random()*10.0,random.random()),vol))
+                voxA.append(sf.LinearVolume(sf.PhasedTableSineWave(length,hf-random.random()*10.0,random.random()),vol))
+                voxA.append(sf.LinearVolume(sf.PhasedTableSineWave(length,hf+random.random()*10.0,random.random()),vol))
+                voxA.append(sf.LinearVolume(sf.PhasedTableSineWave(length,hf-random.random()*10.0,random.random()),vol))
         hc+=1
 
     vox=mix(voxA)       
@@ -250,7 +250,7 @@ def trumpet_base(length,freq,z=1.0):
     freq=float(freq)
     while hc*freq<20000:
         hf=hc*freq
-        voxA.append(sf.NumericVolume(sf.PhasedSineWave(length,hf,random.random()),(1.0/hc)**z))
+        voxA.append(sf.LinearVolume(sf.PhasedSineWave(length,hf,random.random()),(1.0/hc)**z))
         hc+=1
         
     vox=mix(voxA)
@@ -268,7 +268,7 @@ def stretched_bass(length,freq,z=1.0,s=1.0,d=0.0,at=0):
     vox=sf.Silence(length)
     while hf<20000:
         v=(1.0/hc)**z
-        env=sf.NumericShape((0,v),(at,v-(d**hc-1.0)),(length,v-(d**hc-1.0)))
+        env=sf.LinearShape((0,v),(at,v-(d**hc-1.0)),(length,v-(d**hc-1.0)))
         vox=mix(
             sf.Multiply(
                 sf.PhasedSineWave(length,hf,random.random()),

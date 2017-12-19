@@ -16,7 +16,7 @@ def echo_division(sig_):
     sigW=convolve(+sig ,convol[0])
     sig=realise(sig,sigW)
     m2=sf.Magnitude(+sig)
-    sig=realise(sf.NumericVolume(sig,m1/m2))
+    sig=realise(sf.LinearVolume(sig,m1/m2))
     return sig
   
 @sf_parallel
@@ -26,7 +26,7 @@ def tremolate(sig_,rate,mag):
     if m1==0.0:
         return sig
     length=sf.Length(+sig)
-    ev=sf.NumericVolume(sf.MakeTriangle(sf.PhasedSineWave(length+64,rate,random.random())),mag)
+    ev=sf.LinearVolume(sf.MakeTriangle(sf.PhasedSineWave(length+64,rate,random.random())),mag)
     ev=sf.Cut(0,length,ev)
     fv=sf.Pcnt2(+ev)
     ev=sf.DirectMix(1.0,ev)
@@ -36,19 +36,19 @@ def tremolate(sig_,rate,mag):
     sigW=convolve(+sig ,convol[0])
     sig=mix(sig,sigW)
     m2=sf.Magnitude(+sig)
-    sig=realise(sf.NumericVolume(sig,m1/m2))
+    sig=realise(sf.LinearVolume(sig,m1/m2))
     return sig
 
 @sf_parallel
 def pitch_move(sig):
     l=sf.Length(+sig)
     if l>1024:
-        move=sf.NumericShape(
+        move=sf.LinearShape(
             (0,0.995+random.random()*0.01),
             (l,0.995+random.random()*0.01)
         )
     elif l>512:
-        move=sf.NumericShape(
+        move=sf.LinearShape(
             (0,0.9975+random.random()*0.005),
             (l,0.9975+random.random()*0.005)
         )

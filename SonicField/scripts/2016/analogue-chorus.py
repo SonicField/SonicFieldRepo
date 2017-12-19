@@ -1,7 +1,7 @@
 from Filters import byquad_filter
 import random
 sig = sf.SineWave(10000,440)
-env = sf.NumericShape((0,0),(10,1),(1024,0.1),(10000,0))
+env = sf.LinearShape((0,0),(10,1),(1024,0.1),(10000,0))
 sig = +sf.Multiply(env,sig)
 dhz = 32
 dly = 1000.0/float(dhz)

@@ -14,10 +14,10 @@ def excite(sig_,mix_ammount,power):
     sigh=sf.Clean(sigh)
     sigh=sf.BesselHighPass(sigh,1000,2)
     nh=sf.Magnitude(+sigh)
-    sigh=sf.NumericVolume(sigh,mh/nh)
-    sig=mix(sf.NumericVolume(sigh,mix_ammount),sf.NumericVolume(sig,1.0-mix_ammount))
+    sigh=sf.LinearVolume(sigh,mh/nh)
+    sig=mix(sf.LinearVolume(sigh,mix_ammount),sf.LinearVolume(sig,1.0-mix_ammount))
     n=sf.Magnitude(+sig)
-    return realise(sf.NumericVolume(sig,m/n))
+    return realise(sf.LinearVolume(sig,m/n))
     
 def find_nearest_overtone(fMatch,freq):
     q=float(fMatch)/float(freq)
@@ -75,7 +75,7 @@ def create_vibrato(sig,length,longer_than=0.0,rate=4.5,at=None,depth=0.2,pitch_d
     if at is None:
         at=length*0.5
 
-    ev=sf.NumericVolume(
+    ev=sf.LinearVolume(
         sf.SineWave(
             length,
             rate
@@ -84,9 +84,9 @@ def create_vibrato(sig,length,longer_than=0.0,rate=4.5,at=None,depth=0.2,pitch_d
     )
     ev=sf.Multiply(
         ev,
-        sf.NumericShape((0,0),(length*0.5,1),(length,1))
+        sf.LinearShape((0,0),(length*0.5,1),(length,1))
     )
-    fv=sf.NumericVolume(+ev,pitch_depth)
+    fv=sf.LinearVolume(+ev,pitch_depth)
     ev=sf.DirectMix(1.0,ev)
     sig=sf.FrequencyModulate(sig,fv)
     return sf.Multiply(ev,sig)

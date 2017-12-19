@@ -32,7 +32,7 @@ def granular_reverberate(signal,ratio,delay,density,length=50,stretch=1,vol=1,ra
                     )
 
         out = mix(out)
-        out = sf.NumericVolume(out,vol)
+        out = sf.LinearVolume(out,vol)
     return out.keep()
 
 @sf_parallel
@@ -49,7 +49,7 @@ def reverberate_inner(signal,convol,grain_length):
             # HACK! TODO:
             if not newMag:
                 return signal
-            signal_=sf.NumericVolume(signal_,mag/newMag)
+            signal_=sf.LinearVolume(signal_,mag/newMag)
             # tail out clicks due to amplitude at end of signal
             return sf.Clean(sf.Cut(0,len,signal_)).keep()
         else:

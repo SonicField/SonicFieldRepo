@@ -16,14 +16,14 @@ def excite(sig,mix,power):
         sigh=sf.Clean(sigh)
         sigh=sf.BesselHighPass(sigh,1000,2)
         nh=sf.Magnitude(sigh)
-        sigh=sf.NumericVolume(sigh,mh/nh)
-        sig=sf.Mix(sf.NumericVolume(sigh,mix),sf.NumericVolume(sig,1.0-mix))
+        sigh=sf.LinearVolume(sigh,mh/nh)
+        sig=sf.Mix(sf.LinearVolume(sigh,mix),sf.LinearVolume(sig,1.0-mix))
         n=sf.Magnitude(sig)
-        return sf.NumericVolume(sig, m/n).keep()
+        return sf.LinearVolume(sig, m/n).keep()
 
 def main():
     paths = range(0, 8)
-    paths = [0]
+    #paths = [0]
     for path in paths:
         _main(path)
 
@@ -60,7 +60,7 @@ def _main(path):
     #  An impulse from Perth City Hall.
     perth = 0.0
     # Use an impulse response from an abandoned factory.
-    terrys  = 0.01
+    terrys  = 0.04
     # Bright medium Ir.
     club = 0.0
     # Enhanced rich church - very long.
@@ -79,8 +79,8 @@ def _main(path):
     matchMagnitudes = True
     # To multiply each track with dbsPerTrack * path.
     dbsPerTrack = -1.00
-    # Use the declicler.
-    doDeclick = True
+    # Use the declicker.
+    doDeclick = False
 
     ####################################
     #
@@ -100,13 +100,13 @@ def _main(path):
             tMag = lMag + rMag
             lrBalance = (lMag / tMag, rMag / tMag)
             print 'Will correct magnitudes to:', lrBalance
-        declickThresh = [0.01, 0.015, 0.02, 0.025, 0.03, 0.03, 0.03, 0.03][path]
-        cutoff = 250 if path == 0 else 1000
+        declickThresh = [0.013, 0.015,  0.03, 0.04, 0.05, 0.06, 0.08, 0.10][path]
+        cutoff        = [800,    1000,  1000, 2000, 2000, 3000, 3000, 4000][path]
         if doDeclick:
             left  = declick(left,  thresh = declickThresh, cutoff = cutoff)
             right = declick(right, thresh = declickThresh, cutoff = cutoff)
-        left  = sf.Multiply(sf.NumericShape((0, 0), (64, 1),(sf.Length(+left ), 1)), left )
-        right = sf.Multiply(sf.NumericShape((0, 0), (64, 1),(sf.Length(+right), 1)), right)
+        left  = sf.Multiply(sf.LinearShape((0, 0), (64, 1),(sf.Length(+left ), 1)), left )
+        right = sf.Multiply(sf.LinearShape((0, 0), (64, 1),(sf.Length(+right), 1)), right)
 
         left =sf.Concatenate(sf.Silence(1025),left).keep()
         right=sf.Concatenate(sf.Silence(1024),right).keep()
@@ -153,14 +153,14 @@ def _main(path):
         retl = sf.Finalise(
             sf.Mix(
                 convoll,
-                sf.NumericVolume(ml, vol)
+                sf.LinearVolume(ml, vol)
             )
         )
 
         retr = sf.Finalise(
             sf.Mix(
                 convorr,
-                sf.NumericVolume(mr, vol)
+                sf.LinearVolume(mr, vol)
             )
         )
         return retl, retr
@@ -206,8 +206,8 @@ def _main(path):
 
 
         with SFMemoryZone():
-            wleft  =sf.FixSize(sf.Mix(sf.NumericVolume(left,mix ),sf.NumericVolume(wleft,1.0-mix))).keep()
-            wright =sf.FixSize(sf.Mix(sf.NumericVolume(right,mix),sf.NumericVolume(wright,1.0-mix))).keep()
+            wleft  =sf.FixSize(sf.Mix(sf.LinearVolume(left,mix ),sf.LinearVolume(wleft,1.0-mix))).keep()
+            wright =sf.FixSize(sf.Mix(sf.LinearVolume(right,mix),sf.LinearVolume(wright,1.0-mix))).keep()
 
         if not dry:
             with SFMemoryZone():
@@ -248,7 +248,7 @@ def _main(path):
                 ctr=sf.RBJLowPass(ctr,8,1)
                 ctr=sf.DirectMix(
                     1,
-                    sf.NumericVolume(
+                    sf.LinearVolume(
                         sf.FixSize(sf.Invert(ctr)),
                         fact
                     )
@@ -272,7 +272,7 @@ def _main(path):
                 low=sf.FixSize(low)
                 low=sf.Saturate(low)
                 m2=sf.Magnitude(low)
-                low=sf.NumericVolume(low,m1/m2)
+                low=sf.LinearVolume(low,m1/m2)
                 sig=sf.BesselHighPass(sig,256,4)
                 sig=sf.Mix(low,sig)
                 sig=highDamp(sig,5000,0.66)
@@ -291,14 +291,14 @@ def _main(path):
     
         if lrBalance:
             print 'Correcting magnitudes to:', lrBalance
-            left  = sf.NumericVolume(left,  lrBalance[0])
-            right = sf.NumericVolume(right, lrBalance[1])
+            left  = sf.LinearVolume(left,  lrBalance[0])
+            right = sf.LinearVolume(right, lrBalance[1])
     
         if dbsPerTrack:
             amount = dbsPerTrack * path
             print 'Scaling magnitudes to:', lrBalance
-            left  = sf.Volume(left,  amount)
-            right = sf.Volume(right, amount)
+            left  = sf.ExponentialVolume(left,  amount)
+            right = sf.ExponentialVolume(right, amount)
 
         left = left.keep()
         right = right.keep()

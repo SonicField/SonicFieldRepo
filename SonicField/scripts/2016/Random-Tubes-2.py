@@ -61,7 +61,7 @@ def voice1(length,freq):
         )
     
         sig=sf.FixSize(excite(sig,1.0,2.0))
-        sig=sf.FixSize(sf.Saturate(sf.NumericVolume(sig,2.0)))
+        sig=sf.FixSize(sf.Saturate(sf.LinearVolume(sig,2.0)))
         
         sig=create_vibrato(
             sig,length,
@@ -90,7 +90,7 @@ def generate(
         v
     ):
     base=voice(r,pitch)
-    env = sf.NumericShape(
+    env = sf.LinearShape(
         (0,0),
         (a,1),
         (d,0.4*random.random()+0.1),
@@ -98,7 +98,7 @@ def generate(
         (r,0)
     )
     sig = sf.Multiply(base,env)
-    return +sf.NumericVolume(sf.FixSize(sig),v)
+    return +sf.LinearVolume(sf.FixSize(sig),v)
 
 
 def run(
@@ -209,12 +209,12 @@ def run(
     def post(notes):
         r = []
         for s,v,a in notes:
-            r += [(sf.NumericVolume(s,v),a)]
+            r += [(sf.LinearVolume(s,v),a)]
         return r
     
     return (
-        sf.Finalise(sf.NumericVolume(sf.MixAt(post(notesL)),vOver)),
-        sf.Finalise(sf.NumericVolume(sf.MixAt(post(notesR)),vOver))
+        sf.Finalise(sf.LinearVolume(sf.MixAt(post(notesL)),vOver)),
+        sf.Finalise(sf.LinearVolume(sf.MixAt(post(notesR)),vOver))
     )
 
 random.seed()

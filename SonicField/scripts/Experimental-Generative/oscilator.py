@@ -4,7 +4,7 @@ from com.nerdscentral.audio import SFData
     
 def fixSize(signal):
     mag=sf.MaxValue(signal)
-    return sf.NumericVolume(signal,1.0/mag)
+    return sf.LinearVolume(signal,1.0/mag)
 
 def nullMixer():
     while(1):
@@ -89,11 +89,11 @@ def invasion(d1,d2,seconds):
             data=sf.ButterworthHighPass(sf.Normalise(data),10,2)
             data=sf.Multiply(
                 data,
-                sf.NumericShape((0,0),(256,0),(l/2,1),(l-256,0),(l,0))
+                sf.LinearShape((0,0),(256,0),(l/2,1),(l-256,0),(l,0))
             )
             data=sf.Multiply(
                 sf.Saturate(data),
-                sf.NumericShape((0,0),(256,1),(l-256,1),(l,0))
+                sf.LinearShape((0,0),(256,1),(l-256,1),(l,0))
             )
             return sf.Realise(data)
         return sf_do(doDrone)
@@ -184,11 +184,11 @@ def reverbInner(signal,convol,grainLength):
             signal_=sf.CrossMultiply(convol,signal_)
             signal_=sf.TimeDomain(signal_)
             newMag=sf.Magnitude(signal_)
-            signal_=sf.NumericVolume(signal_,mag/newMag)        
+            signal_=sf.LinearVolume(signal_,mag/newMag)        
             # tail out clicks due to amplitude at end of signal 
             l=sf.Length(signal_)
             sf.Multiply(
-                sf.NumericShape(
+                sf.LinearShape(
                     (0,1),
                     (l-100,1),
                     (1,0)

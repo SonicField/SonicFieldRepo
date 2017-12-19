@@ -6,7 +6,7 @@ def simple_sawtooth(length,pitch):
     it=1.0
     phase=random()
     while pitch<18000:
-        signals.append(sf.NumericVolume(sf.PhasedSineWave(length,pitch,phase),1.0/it))
+        signals.append(sf.LinearVolume(sf.PhasedSineWave(length,pitch,phase),1.0/it))
         pitch+=opitch
         it+=1
     return sf.Finalise(sf.Mix(signals))
@@ -18,7 +18,7 @@ def phasing_sawtooth(length,pitch):
     it=1.0
     while pitch<18000:
         phase=random()
-        signals.append(sf.NumericVolume(sf.PhasedSineWave(length,pitch,phase),1.0/it))
+        signals.append(sf.LinearVolume(sf.PhasedSineWave(length,pitch,phase),1.0/it))
         pitch+=opitch
         it+=1
     return sf.Finalise(sf.Mix(signals))
@@ -31,7 +31,7 @@ def simple_triangle(length,pitch):
     inv=1.0
     phase=random()
     while pitch<18000:
-        signals.append(sf.NumericVolume(sf.PhasedSineWave(length,pitch,phase),1.0*inv/(it*it)))
+        signals.append(sf.LinearVolume(sf.PhasedSineWave(length,pitch,phase),1.0*inv/(it*it)))
         pitch+=opitch*0.2
         inv*=-1.0
         it+=2.0
@@ -45,7 +45,7 @@ def phasing_triangle(length,pitch):
     inv=1.0
     while pitch<18000:
         phase=random()
-        signals.append(sf.NumericVolume(sf.PhasedSineWave(length,pitch,phase),inv/(it*it)))
+        signals.append(sf.LinearVolume(sf.PhasedSineWave(length,pitch,phase),inv/(it*it)))
         pitch+=opitch*2.0
         inv*=-1.0
         it+=2.0
@@ -62,7 +62,7 @@ def limited_triangle(length,pitch,harmonics):
     it=1.0
     inv=1.0
     while pitch<limit:
-        signals.append(sf.NumericVolume(sf.PhasedTableSineWave(length,pitch,0.0),inv/(it*it)))
+        signals.append(sf.LinearVolume(sf.PhasedTableSineWave(length,pitch,0.0),inv/(it*it)))
         pitch+=opitch*2.0
         it+=2.0
         inv*=-1.0

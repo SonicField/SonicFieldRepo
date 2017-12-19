@@ -374,7 +374,7 @@ def doVib(env,signal):
     vib=+trem
     trem=sf.DirectMix(1,sf.Pcnt50(trem))
     signal=sf.Multiply(trem,signal)
-    vib=sf.DirectMix(1,sf.NumericVolume(vib,0.01))
+    vib=sf.DirectMix(1,sf.LinearVolume(vib,0.01))
     signal=sf.Resample(vib,signal)
     return sf.Finalise(signal)
 

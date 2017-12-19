@@ -56,7 +56,7 @@ def vox_humana_inner(length,freq,a,b,c,z1=1.0,z2=1.25):
     vox=mix(
         sf.Multiply(
             sf.FixSize(sf.Power(clean_noise(length,freq*0.5),1.5)),
-            sf.SimpleShape((0,-60),(64,-35),(128,-40),(length,-60))
+            sf.ExponentialShape((0,-60),(64,-35),(128,-40),(length,-60))
         ),
         vox
     )
@@ -90,9 +90,9 @@ def vox_humana_femail_soprano_a(length,freq):
 def vox_humana_femail_soprano_ma(length,freq):
     vox = vox_humana_femail_soprano_a(length,freq)
     if length>128:
-        qsh =sf.NumericShape((0,0.1),(120,2),  (length,0.1))
-        msh =sf.NumericShape((0,1.0),(120,1.0),(length,0.0))
-        mshr=sf.NumericShape((0,0.0),(120,0.0),(length,1.0))
+        qsh =sf.LinearShape((0,0.1),(120,2),  (length,0.1))
+        msh =sf.LinearShape((0,1.0),(120,1.0),(length,0.0))
+        mshr=sf.LinearShape((0,0.0),(120,0.0),(length,1.0))
         init=byquad_filter('low',+vox,freq,qsh)
         vox =sf.Multiply(vox ,mshr)
         init=sf.Multiply(init,msh)
@@ -110,7 +110,7 @@ def celest_flute(length,freq):
         sf.Pcnt50(sweet_flute_base(length,freq+1.0)),
         sf.Multiply(
             clean_noise(length,freq*0.5),
-            sf.SimpleShape((0,-60),(64,-28),(128,-40),(length,-40))
+            sf.ExponentialShape((0,-60),(64,-28),(128,-40),(length,-40))
         )
     )
     return pitch_move(sig)
@@ -121,7 +121,7 @@ def sweet_flute(length,freq):
         sweet_flute_base(length,freq),
         sf.Multiply(
             clean_noise(length,freq*0.5),
-            sf.SimpleShape((0,-60),(64,-30),(128,-40),(length,-40))
+            sf.ExponentialShape((0,-60),(64,-30),(128,-40),(length,-40))
         )
     )
     sig=sf.FixSize(polish(sig,freq))
@@ -132,10 +132,10 @@ def trost_bright_flute(length,freq):
     sig  = bright_flute_base(length,freq)
     wind = sf.Multiply(
             clean_noise(length,freq),
-            sf.SimpleShape((0,-60),(64,-16),(128,-20),(length,-20))
+            sf.ExponentialShape((0,-60),(64,-16),(128,-20),(length,-20))
     )
     sig  = sf.Multiply(
-        sf.NumericShape((0,0),(32,1),(length,1)),
+        sf.LinearShape((0,0),(32,1),(length,1)),
         sig
     )
     start=sf.Multiply(
@@ -143,7 +143,7 @@ def trost_bright_flute(length,freq):
                 sf.FixSize(sf.Power(sf.MakeSawTooth(sf.SineWave(length,freq*0.500)),2.0)),
                 sf.FixSize(sf.Power(sf.MakeSawTooth(sf.SineWave(length,freq*0.123)),2.0))
             ),
-            sf.NumericShape((0,3.0),(32,0),(length,0))            
+            sf.LinearShape((0,3.0),(32,0),(length,0))            
     )
     start=polish(start,freq*0.5)
     sig=mix(sig,start,wind)
@@ -155,10 +155,10 @@ def trost_sweet_flute(length,freq):
     sig  = sweet_flute_base(length,freq)
     wind = sf.Multiply(
             clean_noise(length,freq),
-            sf.SimpleShape((0,-60),(64,-16),(128,-20),(length,-20))
+            sf.ExponentialShape((0,-60),(64,-16),(128,-20),(length,-20))
     )
     sig  = sf.Multiply(
-        sf.NumericShape((0,0),(32,1),(length,1)),
+        sf.LinearShape((0,0),(32,1),(length,1)),
         sig
     )
     start=sf.Multiply(
@@ -166,7 +166,7 @@ def trost_sweet_flute(length,freq):
                 sf.FixSize(sf.Power(sf.MakeSawTooth(sf.SineWave(length,freq*0.500)),2.0)),
                 sf.FixSize(sf.Power(sf.MakeSawTooth(sf.SineWave(length,freq*0.123)),2.0))
             ),
-            sf.NumericShape((0,3.0),(32,0),(length,0))            
+            sf.LinearShape((0,3.0),(32,0),(length,0))            
     )
     start=polish(start,freq*0.5)
     sig=mix(sig,start,wind)
@@ -179,7 +179,7 @@ def bright_flute(length,freq):
         bright_flute_base(length,freq),
         sf.Multiply(
             clean_noise(length,freq*0.5),
-            sf.SimpleShape((0,-60),(64,-28),(128,-40),(length,-40))
+            sf.ExponentialShape((0,-60),(64,-28),(128,-40),(length,-40))
         )
     )
     sig=sf.FixSize(polish(sig,freq))
@@ -195,7 +195,7 @@ def string(length,freq):
             sf.Pcnt15(sf.PhasedSineWave(length,freq*6.0,random.random())),
             sf.Multiply(
                 clean_noise(length,freq),
-                sf.SimpleShape((0,-60),(64,-20),(128,-36),(length,-36))
+                sf.ExponentialShape((0,-60),(64,-20),(128,-36),(length,-36))
             )
         )
         sig=polish(sig,freq)
@@ -210,7 +210,7 @@ def viola(length,freq):
         viola_base(length,freq),
         sf.Multiply(
             clean_noise(length,freq*0.5),
-            sf.SimpleShape((0,-60),(64,-20),(128,-36),(length,-36))
+            sf.ExponentialShape((0,-60),(64,-20),(128,-36),(length,-36))
         )
     )
     sig=sf.FixSize(polish(sig,freq))
@@ -238,7 +238,7 @@ def plucked_glass(length,freq):
         )
     sig=sf.Multiply(
         sig,
-        sf.NumericShape((0,0.5),(16,1),(length,1))
+        sf.LinearShape((0,0.5),(16,1),(length,1))
     )
     sig=sf.BesselLowPass(sig,freq*5,1)
     sig=sf.Multiply(
@@ -253,26 +253,26 @@ def plucked_glass(length,freq):
                 sf.FixSize(sf.MakeSawTooth(sf.SineWave(length,freq*0.75))),
                 sf.FixSize(sf.MakeSawTooth(sf.SineWave(length,freq**0.5)))
             ),
-            sf.SimpleShape((0,1.0),(16,-30),(32,-60),(length,-99))            
+            sf.ExponentialShape((0,1.0),(16,-30),(32,-60),(length,-99))            
     )
     start=sf.Multiply(
         start,
-        sf.NumericShape((0,0),(16,1),(length,0),(length*0.5,0))
+        sf.LinearShape((0,0),(16,1),(length,0),(length*0.5,0))
     )            
     start=sf.Clean(start)
     conv =clean_noise(64,32)
     conv =sf.Multiply(
-        sf.SimpleShape((0,-12),(60,-60),(66,-60)),
+        sf.ExponentialShape((0,-12),(60,-60),(66,-60)),
         conv
     )
     conv=sf.Multiply(
         conv,
-        sf.NumericShape((0,0),(60,1),(66,0))
+        sf.LinearShape((0,0),(60,1),(66,0))
     ) 
     conv=reverberate(start,conv)
     conv=sf.Multiply(
         conv,
-        sf.SimpleShape((0,1.0),(16,-30),(32,-60),(length,-99))
+        sf.ExponentialShape((0,1.0),(16,-30),(32,-60),(length,-99))
     )
     sig=mix(sf.FixSize(sig),sf.Pcnt50(sf.FixSize(conv)))
     sig=sf.Cut(0,length,sig)
@@ -284,7 +284,7 @@ def bright_plucked_glass(length,freq):
         stretched_bass(length,freq,z=1.5,s=1.02,d=1.0,at=4000),
         sf.Multiply(
             clean_noise(length,freq*2.0),
-            sf.SimpleShape((0,-60),(64,-20),(128,-36),(length,-36))
+            sf.ExponentialShape((0,-60),(64,-20),(128,-36),(length,-36))
         )
     )
     sig=sf.RBJPeaking(sig,freq*5,0.5,5)
@@ -293,7 +293,7 @@ def bright_plucked_glass(length,freq):
                 sf.FixSize(sf.MakeSawTooth(sf.SineWave(length,freq*0.75))),
                 sf.FixSize(sf.MakeSawTooth(sf.SineWave(length,freq**0.5)))
             ),
-            sf.SimpleShape((0,1.0),(16,-30),(32,-60),(length,-99))            
+            sf.ExponentialShape((0,1.0),(16,-30),(32,-60),(length,-99))            
     )
     start=sf.Clean(start)
     sig=mix(sf.FixSize(sig),sf.FixSize(start))
@@ -308,15 +308,15 @@ def trost_lead_diapason(length,freq):
                 sf.Pcnt25(sf.MakeTriangle(sf.PhasedSineWave(length,freq*2.0,random.random()))),
                 sf.Pcnt15(sf.PhasedSineWave(length,freq*4.0,random.random()))
             ),
-            sf.NumericShape((0,0),(48,1),(length,1))
+            sf.LinearShape((0,0),(48,1),(length,1))
         ),       
         sf.Multiply(
             sf.MakeSquare(sf.SineWave(length,freq*0.5)),
-            sf.NumericShape((0,0.5),(48,0),(length,0))            
+            sf.LinearShape((0,0.5),(48,0),(length,0))            
         ),
         sf.Multiply(
             clean_noise(length,freq),
-            sf.SimpleShape((0,-60),(64,-20),(128,-36),(length,-36))
+            sf.ExponentialShape((0,-60),(64,-20),(128,-36),(length,-36))
         )
     )
     sig=sf.FixSize(polish(sig,freq))
@@ -330,7 +330,7 @@ def lead_diapason(length,freq):
         sf.Pcnt15(sf.PhasedSineWave(length,freq*4.0,random.random())),
         sf.Multiply(
             clean_noise(length,freq),
-            sf.SimpleShape((0,-60),(64,-20),(128,-36),(length,-36))
+            sf.ExponentialShape((0,-60),(64,-20),(128,-36),(length,-36))
         )
     )
     sig=sf.FixSize(polish(sig,freq))
@@ -345,7 +345,7 @@ def second_diapason(length,freq):
         sf.Pcnt5(sf.PhasedSineWave(length,freq*8.0,random.random())),
         sf.Multiply(
             clean_noise(length,freq),
-            sf.SimpleShape((0,-60),(64,-20),(128,-26),(length,-20))
+            sf.ExponentialShape((0,-60),(64,-20),(128,-26),(length,-20))
         )
     )
     sig=sf.FixSize(polish(sig,freq))
@@ -362,7 +362,7 @@ def grand_bass(length,freq):
         ),          
         sf.Multiply(
             clean_noise(length,freq),
-            sf.SimpleShape((0,-60),(64,-12),(128,-24),(length,-20))
+            sf.ExponentialShape((0,-60),(64,-12),(128,-24),(length,-20))
         )
     )
     sig=sf.BesselLowPass(sig,freq*3.0,1)
@@ -380,7 +380,7 @@ def double_bombard(length,freq):
         ),          
         sf.Multiply(
             clean_noise(length,freq*0.5),
-            sf.SimpleShape((0,-60),(64,-10),(128,-24),(length,-20))
+            sf.ExponentialShape((0,-60),(64,-10),(128,-24),(length,-20))
         )
     )
     return pitch_move(sig)
@@ -391,7 +391,7 @@ def trost_posaune(length,freq):
     b=mix(
         [b,12],
         [
-        sf.NumericShape(
+        sf.LinearShape(
             (0, -2.0),
             (4,  2.0),
             (12,-1.00),
@@ -408,7 +408,7 @@ def trost_posaune(length,freq):
         sf.Pcnt20(sf.Multiply(+b,sf.WhiteNoise(length))),          
         sf.Multiply(
             clean_noise(length,freq*0.5),
-            sf.SimpleShape((0,-60),(64,-14),(128,-28),(length,-24))
+            sf.ExponentialShape((0,-60),(64,-14),(128,-28),(length,-24))
         )
     )
     return pitch_move(sig)
@@ -427,7 +427,7 @@ def bombard(length,freq):
         sf.Pcnt10(sf.Multiply(+b,sf.WhiteNoise(length))),          
         sf.Multiply(
             clean_noise(length,freq*0.5),
-            sf.SimpleShape((0,-60),(64,-14),(128,-28),(length,-24))
+            sf.ExponentialShape((0,-60),(64,-14),(128,-28),(length,-24))
         )
     )
     return pitch_move(sig)
@@ -439,7 +439,7 @@ def single_bombard(length,freq):
         ,          
         sf.Multiply(
             clean_noise(length,freq*0.5),
-            sf.SimpleShape((0,-60),(64,-16),(128,-24),(length,-20))
+            sf.ExponentialShape((0,-60),(64,-16),(128,-24),(length,-20))
         )
     )
     return pitch_move(sig)
@@ -465,7 +465,7 @@ def ophicleide(length,freq):
         sf.Pcnt10(sf.FixSize(sf.Multiply(+b,clean_noise(length,freq*2.0)))),          
         sf.Multiply(
             clean_noise(length,freq*0.5),
-            sf.SimpleShape((0,-60),(64,-16),(128,-20),(length,-22))
+            sf.ExponentialShape((0,-60),(64,-16),(128,-20),(length,-22))
         )
     )
     return sig
@@ -492,15 +492,15 @@ def trost_upper_accent(length,freq):
     sig=mix(
         sf.Multiply(
             upper_accent(length,freq),
-            sf.NumericShape((0,0),(48,1),(length,1))
+            sf.LinearShape((0,0),(48,1),(length,1))
         ),       
         sf.Multiply(
             sf.MakeSquare(sf.SineWave(length,freq*0.5)),
-            sf.NumericShape((0,0.5),(48,0),(length,0))            
+            sf.LinearShape((0,0.5),(48,0),(length,0))            
         ),
         sf.Multiply(
             clean_noise(length,freq),
-            sf.SimpleShape((0,-60),(64,-20),(128,-36),(length,-36))
+            sf.ExponentialShape((0,-60),(64,-20),(128,-36),(length,-36))
         )
     )
     sig=sf.FixSize(polish(sig,freq))
@@ -521,7 +521,7 @@ def clarion(length,freq):
         sf.Pcnt10(s3),
         sf.Multiply(
             clean_noise(length,freq*2.0),
-            sf.SimpleShape((0,-60),(64,-20),(128,-36),(length,-36))
+            sf.ExponentialShape((0,-60),(64,-20),(128,-36),(length,-36))
         )
     )
 
@@ -548,7 +548,7 @@ def warm_bass(length,freq):
         ),      
         sf.Multiply(
             clean_noise(length,freq),
-            sf.SimpleShape((0,-60),(64,-12),(128,-24),(length,-24))
+            sf.ExponentialShape((0,-60),(64,-12),(128,-24),(length,-24))
         )
     )
     sh=sf.WhiteNoise(length)
@@ -594,7 +594,7 @@ def simple_oboe(length,freq):
         sf.FixSize(sig),
         sf.Multiply(
             clean_noise(length,freq*9.0),
-            sf.SimpleShape((0,-60),(64,-20),(128,-24),(length,-24))
+            sf.ExponentialShape((0,-60),(64,-20),(128,-24),(length,-24))
         )
     )
 
@@ -632,7 +632,7 @@ def mute_oboe(length,freq):
         sf.FixSize(sig),
         sf.Multiply(
             clean_noise(length,freq*9.0),
-            sf.SimpleShape((0,-60),(64,-16),(128,-20),(length,-20))
+            sf.ExponentialShape((0,-60),(64,-16),(128,-20),(length,-20))
         )
     )
 
@@ -649,7 +649,7 @@ def mute_oboe(length,freq):
 def orchestral_oboe(length,freq):
     vox=make_simple_base(length,freq,0.25)
     vox=sf.Multiply(
-        sf.NumericShape((0,0),(sf.Period(freq)/2.0,1),(length,1)),
+        sf.LinearShape((0,0),(sf.Period(freq)/2.0,1),(length,1)),
         vox
     )
     vox=polish(vox,freq)
@@ -672,7 +672,7 @@ def orchestral_oboe(length,freq):
         +vox,
         sf.Multiply(
             clean_noise(length,freq),
-            sf.SimpleShape((0,-60),(64,0),(128,-9),(length,-9))
+            sf.ExponentialShape((0,-60),(64,0),(128,-9),(length,-9))
         )
     )
     vox=mix(
@@ -689,7 +689,7 @@ def trost_orchestral_oboe(length,freq):
                 sf.FixSize(sf.Power(sf.MakeSawTooth(sf.SineWave(length,freq*0.500)),2.0)),
                 sf.FixSize(sf.Power(sf.MakeSawTooth(sf.SineWave(length,freq*0.123)),2.0))
             ),
-            sf.NumericShape((0,3.0),(32,0),(length,0))            
+            sf.LinearShape((0,3.0),(32,0),(length,0))            
     )
     start=polish(start,freq*0.5)
     sig=mix(orchestral_oboe(length,freq),sf.FixSize(start))
@@ -710,7 +710,7 @@ def rich_reed(length,freq):
         sf.Pcnt10(s3),
         sf.Multiply(
             clean_noise(length,freq*2.0),
-            sf.SimpleShape((0,-60),(64,-20),(128,-24),(length,-24))
+            sf.ExponentialShape((0,-60),(64,-20),(128,-24),(length,-24))
         )
     )
 
@@ -727,7 +727,7 @@ def reed(length,freq):
         s1,
         sf.Multiply(
             clean_noise(length,freq*2.0),
-            sf.SimpleShape((0,-60),(64,-16),(128,-20),(length,-20))
+            sf.ExponentialShape((0,-60),(64,-16),(128,-20),(length,-20))
         )
     )
 
@@ -744,7 +744,7 @@ def stopped_reed(length,freq):
         s1,
         sf.Multiply(
             clean_noise(length,freq*2.0),
-            sf.SimpleShape((0,-60),(64,-16),(128,-20),(length,-20))
+            sf.ExponentialShape((0,-60),(64,-16),(128,-20),(length,-20))
         )
     )
 
@@ -761,8 +761,8 @@ def trumpet(length,freq):
     if length>256:
         sig1=trumpe_base(length,freq,-0.25)
         sig2=trumpet_base(length,freq, 0.25)
-        env1=sf.NumericShape((0,0),(256,1),(length,1))
-        env2=sf.NumericShape((0,1),(256,0),(length,0))
+        env1=sf.LinearShape((0,0),(256,1),(length,1))
+        env2=sf.LinearShape((0,1),(256,0),(length,0))
         sig1=sf.Multiply(sig1,env1)
         sig2=sf.Multiply(sig2,env2)
         sig=mix(sig1,sig2)
@@ -776,7 +776,7 @@ def trumpet(length,freq):
         sig,
         sf.Multiply(
             clean_noise(length,freq*1.0),
-            sf.SimpleShape((0,-60),(32,-22),(64,-60),(length,-90))
+            sf.ExponentialShape((0,-60),(32,-22),(64,-60),(length,-90))
         )
     )
         
@@ -796,7 +796,7 @@ def shawm(length,freq):
         s1,
         sf.Multiply(
             clean_noise(length,s_freq),
-            sf.SimpleShape((0,-60),(64,-20),(128,-30),(length,-40))
+            sf.ExponentialShape((0,-60),(64,-20),(128,-30),(length,-40))
         )
     )
 
@@ -840,7 +840,7 @@ def folk_basson(length,freq):
         sf.ButterworthLowPass (
             sf.Multiply(
                 sf.MakeSquare(sf.SineWave(length,freq)),
-                sf.SimpleShape((0,-60),(64,-32),(96,-60),(length,-60))
+                sf.ExponentialShape((0,-60),(64,-32),(96,-60),(length,-60))
             ),
             freq*9,
             4
@@ -871,7 +871,7 @@ def folk_flute(length,freq):
                 0.5,
                 16
             ),
-            sf.SimpleShape((0,-60),(64,-28),(128,-40),(length,-40))
+            sf.ExponentialShape((0,-60),(64,-28),(128,-40),(length,-40))
         )
     )
     sig=create_vibrato(
@@ -891,7 +891,7 @@ def folk_clarinet(length,freq):
         s1,
         sf.Multiply(
             nice_saw(length,freq*0.5),
-            sf.SimpleShape((0,-32),(64,-16),(128,-99),(length,-99))
+            sf.ExponentialShape((0,-32),(64,-16),(128,-99),(length,-99))
         )
     )
     sig=polish(sig,freq)
@@ -949,7 +949,7 @@ def _nordic_string(
         )
         multi=sf.Cut(0,sf.Length(+signal),multi)
         signal=sf.Resample(
-            sf.DirectMix(1,sf.NumericVolume(multi,0.001)),
+            sf.DirectMix(1,sf.LinearVolume(multi,0.001)),
             signal
         )
         return sf.Realise(sf.FixSize(sf.Clean(signal)))
@@ -991,18 +991,18 @@ def _nordic_string(
         white=sf.ButterworthLowPass(white,freq*6.0,1)
         white=sf.FixSize(white)
         white=sf.Multiply(white,+signal)
-        white=sf.NumericVolume(white,whiteAmount)
-        signal=sf.NumericVolume(signal,1.0-whiteAmount)
+        white=sf.LinearVolume(white,whiteAmount)
+        signal=sf.LinearVolume(signal,1.0-whiteAmount)
         signal=sf.FixSize(sf.Mix(signal,white))
     
         sq=sf.Mix(
             sf.PhasedSineWave(length,freq*0.95,random.random()),
             sf.PhasedSineWave(length,freq*1.05,random.random())
         )
-        envb=sf.NumericShape((0,0.25),(a,0),(length,0))
+        envb=sf.LinearShape((0,0.25),(a,0),(length,0))
         sq=sf.Multiply(envb,sf.FixSize(sq))
     
-        enva=sf.NumericShape((0,0.75),(a,1),(length,1))
+        enva=sf.LinearShape((0,0.75),(a,1),(length,1))
         signal=sf.Multiply(enva,signal)
     
         signal=sf.Mix(sq,sf.FixSize(signal))
@@ -1037,7 +1037,7 @@ def _nordic_string(
             else:
                 signal=sf.Power(signal,1.05)
         
-        env=sf.NumericShape((0,0),(16,1),(length-16,1),(length,0))
+        env=sf.LinearShape((0,0),(16,1),(length-16,1),(length,0))
         signal=sf.Multiply(env,signal)
 
         for body in bodies:
@@ -1045,7 +1045,7 @@ def _nordic_string(
             
         signal=sf.Mix(
              sf.FixSize(sf.Mix(sigs)),
-             sf.NumericVolume(sf.FixSize(signal),0.05)
+             sf.LinearVolume(sf.FixSize(signal),0.05)
         )
         
         return sf.FixSize(sf.Clean(signal))
@@ -1056,12 +1056,12 @@ def _nordic_string(
     signal=sf.FixSize(sf.Mix(sigs))
 
     trueLen=sf.Length(+signal)
-    envA=sf.SimpleShape(
+    envA=sf.ExponentialShape(
         (0,-60),
         (e,0),
         (trueLen,0)
     )
-    envB=sf.NumericShape(
+    envB=sf.LinearShape(
         (0,0),
         (a,1),
         (trueLen,1)
@@ -1071,14 +1071,14 @@ def _nordic_string(
     signal=sf.Multiply(signal,env)
     if(vibAmount>0):
         l=trueLen
-        env=sf.NumericShape((0,0),(vibStart,0),(vibMiddle,1),(length,0.75),(l,0))
-        env=sf.NumericVolume(env,vibAmount)
+        env=sf.LinearShape((0,0),(vibStart,0),(vibMiddle,1),(length,0.75),(l,0))
+        env=sf.LinearVolume(env,vibAmount)
         trem=sf.SineWave(l,2.0+random.random())
         trem=sf.Multiply(env,trem)
         vib=+trem
         trem=sf.DirectMix(1,sf.Pcnt50(trem))
         signal=sf.Multiply(trem,signal)
-        vib=sf.DirectMix(1,sf.NumericVolume(vib,0.01))
+        vib=sf.DirectMix(1,sf.LinearVolume(vib,0.01))
         signal=sf.Resample(vib,signal)
     
     if(freq>128):
@@ -1126,7 +1126,7 @@ def simple_bell(length,pitch):
     length = length * 0.75
     sig1 = sf.SineWave(length,pitch*1.2)
     sig2 = sf.SineWave(length,pitch*1.2 + 1)
-    env  = sf.SimpleShape((0,-60),(125,0),(length,-30))
+    env  = sf.ExponentialShape((0,-60),(125,0),(length,-30))
     
     sig1 = sf.Multiply(+env,sig1)
     sig1 = sf.Pcnt90(sf.DirectMix(1,sig1))
@@ -1138,7 +1138,7 @@ def simple_bell(length,pitch):
     sig4 = sf.PhaseModulatedSineWave(pitch,sig2)
     sig4 = sf.Multiply(env,sig4)
     
-    sig5 = sf.Volume(sf.Mix(sig3,sig4),6)
+    sig5 = sf.ExponentialVolume(sf.Mix(sig3,sig4),6)
     sig=sf.Saturate(sig5)
     #sig=sf.ResonantFilter(sig,0.99,0.05,1000.0/pitch)
     return sf.Realise(sf.Finalise(sig))
@@ -1148,7 +1148,7 @@ def strange_bell(length,pitch):
     print "Ring: " + str(pitch) + "/" + str(length)
     sig1 = sf.SineWave(length,pitch*1.2)
     sig2 = sf.SineWave(length,pitch*1.2 + 1)
-    env  = sf.SimpleShape((0,0),(256,-10),(length,-99))
+    env  = sf.ExponentialShape((0,0),(256,-10),(length,-99))
     
     sig1 = sf.Multiply(+env,sig1)
     sig1 = sf.Pcnt90(sf.DirectMix(1,sig1))
@@ -1160,7 +1160,7 @@ def strange_bell(length,pitch):
     sig4 = sf.PhaseModulatedSineWave(pitch,sig2)
     sig4 = sf.Multiply(env,sig4)
     
-    sig5 = sf.Volume(sf.Mix(sig3,sig4),6)
+    sig5 = sf.ExponentialVolume(sf.Mix(sig3,sig4),6)
     sig=sf.Saturate(sig5)
     sig=sf.Concatenate(+sig,sf.Silence(sf.Length(sig)))
     sig=sf.ResonantFilter(sig,0.99,0.01,1000.0/pitch)
@@ -1183,12 +1183,12 @@ def clear_bell(length,pitch,dullness=0):
     signal=sf.Normalise(signal)
     
     wn=sf.ButterworthLowPass(sf.WhiteNoise(100),pitch,2)
-    wn=sf.Multiply(wn,sf.NumericShape((0,0),(20,1),(100,0)))
+    wn=sf.Multiply(wn,sf.LinearShape((0,0),(20,1),(100,0)))
     
     signal=sf.Mix(signal,wn)
     signal=sf.Normalise(signal)
     
-    env=sf.SimpleShape(
+    env=sf.ExponentialShape(
         (0,-99),
         (50,0),
         (length-128,-60),

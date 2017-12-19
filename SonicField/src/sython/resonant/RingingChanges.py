@@ -89,8 +89,8 @@ def makeBlocks(length = 60000 * 1): # Minutes
 
                     atLeft  = at + bellFo['haasLeft']
                     atRight = at + bellFo['haasRight']
-                    sigsLeft  += [(sf.NumericVolume(sig,bellFo['balLeft']),  atLeft)]
-                    sigsRight += [(sf.NumericVolume(sig,bellFo['balRight']), atRight)]
+                    sigsLeft  += [(sf.LinearVolume(sig,bellFo['balLeft']),  atLeft)]
+                    sigsRight += [(sf.LinearVolume(sig,bellFo['balRight']), atRight)]
                     at += step
 
             for _ in range(0, 4):

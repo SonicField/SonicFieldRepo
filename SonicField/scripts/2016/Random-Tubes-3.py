@@ -68,7 +68,7 @@ def generate(
     ):
     sig = voice(r,pitch)
 
-    env = sf.NumericShape(
+    env = sf.LinearShape(
         (0,pitch),
         (a,pitch*4),
         ((a+d)*0.5,pitch*8),
@@ -77,7 +77,7 @@ def generate(
         (r,pitch)
     )
 
-    res = sf.NumericShape(
+    res = sf.LinearShape(
         (0,0),
         (a,0.75),
         ((a+d)*0.5,1.0),
@@ -88,7 +88,7 @@ def generate(
     
     sig = sf.ShapedLadderLowPass(sig,env,res)
 
-    env = sf.NumericShape(
+    env = sf.LinearShape(
         (0,0),
         (a,0.25),
         ((a+d)*0.5,1.0),
@@ -107,7 +107,7 @@ def generate(
     sig = sf.AnalogueChorus(sig,dly,mod,0.80,1.0)
     sgs = [ sf.FixSize(s) for s in sig ]
     
-    return [ sf.NumericVolume(sf.FixSize(sig),v) for sig in sgs ]
+    return [ sf.LinearVolume(sf.FixSize(sig),v) for sig in sgs ]
 
 def run(
         voice,
@@ -217,12 +217,12 @@ def run(
     def post(notes,i):
         r = []
         for s,v,a in notes:
-            r += [(sf.NumericVolume(s.get()[i],v),a)]
+            r += [(sf.LinearVolume(s.get()[i],v),a)]
         return r
     
     return (
-        sf.Finalise(sf.NumericVolume(sf.MixAt(post(notesL,0)),vOver)),
-        sf.Finalise(sf.NumericVolume(sf.MixAt(post(notesR,1)),vOver))
+        sf.Finalise(sf.LinearVolume(sf.MixAt(post(notesL,0)),vOver)),
+        sf.Finalise(sf.LinearVolume(sf.MixAt(post(notesR,1)),vOver))
     )
 
 random.seed()
@@ -251,7 +251,7 @@ sigs = (
 def spatialise(sig):
     dly = sped
     mod = sf.MakeTriangle(sf.SineWave(sf.Length(+sig),0.9))
-    mod = sf.NumericVolume(mod,sped/10.0)
+    mod = sf.LinearVolume(mod,sped/10.0)
     sig = sf.AnalogueChorus(sig,dly,mod,0.85,0.8)
     return [ sf.FixSize(s) for s in sig ]
 
@@ -268,7 +268,7 @@ rr = sf.MixAt(
 sigs = [
     sf.Finalise(
         sf.Multiply(
-            sf.SimpleShape(
+            sf.ExponentialShape(
                 (0,-90),
                 (100,0),
                 (sf.Length(+sig),0)

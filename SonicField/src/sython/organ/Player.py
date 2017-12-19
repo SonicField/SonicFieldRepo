@@ -7,6 +7,7 @@ from com.nerdscentral.audio.core import SFData
 from sython.utils.Memory import writeSawppedCache, readSwappedCache
 import random
 import os.path
+from sython.post.Declick import declick
 
 ################################################################################
 #  hint:     NN TN TT NT for trill and normal for the previous and next notes
@@ -102,7 +103,7 @@ def sing(
                     vc
                 )
                 sig.append(
-                    sf.NumericVolume(
+                    sf.LinearVolume(
                         sf.Concatenate(
                             sf.Silence(24*random.random()),
                             vc
@@ -111,17 +112,15 @@ def sing(
                     )
                 )
             else:
-                sig.append(sf.NumericVolume(vc, random.random()+0.25))
+                sig.append(sf.LinearVolume(vc, random.random()+0.25))
 
-        sig=sf.Realise(sf.Mix(sig))
-
-        sig = sf.FixSize(sig)
+        sig = sf.FixSize(sf.Mix(sig))
         length=sf.Length(sig)
 
         if decay:
             # -60 db at 1 minute
             dbs=-60.0*float(length)/float(decay)
-            env=sf.SimpleShape((0,0),(length,dbs))
+            env=sf.ExponentialShape((0,0),(length,dbs))
             sig=sf.Multiply(sig,env)
 
         pHint = hint[0]
@@ -174,9 +173,9 @@ def sing(
                 env=safe_env(sig,[(0,0),(64*quick_factor,0.25),(512,1),(length/2,0.75),(length,0)])
 
         if bend:
-            mod=sf.NumericShape((0,0.995),(length,1.005))
+            mod=sf.LinearShape((0,0.995),(length,1.005))
             if env:
-                mod=sf.Mix(mod,sf.NumericVolume(+env,0.01))
+                mod=sf.Mix(mod,sf.LinearVolume(+env,0.01))
             # if we have envelope extension then we don't do this as
             # it get really hard to get the lengths correct and make
             # sense of what we are trying to do. KISS
@@ -242,7 +241,7 @@ def sing(
             else:
                 q=256
             cnv=sf.Cut(5000,5000+q,cnv)
-            cnv=sf.Multiply(cnv,sf.NumericShape((0,0),(32,1),(q,0)))
+            cnv=sf.Multiply(cnv,sf.LinearShape((0,0),(32,1),(q,0)))
             sigr=convolve(+sig,cnv)
             sigr=sf.Multiply(
                 safe_env(sigr,[(0,0),(256,1),(sf.Length(+sigr),1.5)]),
@@ -252,12 +251,12 @@ def sing(
                 sf.Pcnt20(sigr),
                 sf.Pcnt80(sig)
             )
-            slopeEnv = sf.SimpleShape(slope)
+            slopeEnv = sf.ExponentialShape(slope)
             velocity_correct *= sf.ValueAt(slopeEnv, pitch)
             print 'VCorrect: {0}'.format(velocity_correct)
-        note  = sf.NumericVolume(sf.FixSize(sig), v)
-        notel = sf.NumericVolume(note, vl*velocity_correct).keep()
-        noter = sf.NumericVolume(note, vr*velocity_correct).keep()
+        note  = sf.LinearVolume(sf.FixSize(sig), v)
+        notel = sf.LinearVolume(note, vl*velocity_correct).keep()
+        noter = sf.LinearVolume(note, vr*velocity_correct).keep()
         return notel, noter
 
 ################################################################################

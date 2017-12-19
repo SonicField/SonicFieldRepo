@@ -11,7 +11,7 @@ import com.nerdscentral.sython.SFMaths;
 import com.nerdscentral.sython.SFPL_Operator;
 import com.nerdscentral.sython.SFPL_RuntimeException;
 
-public class SF_NumericShape implements SFPL_Operator
+public class SF_LinearShape implements SFPL_Operator
 {
 
     private static final long serialVersionUID = 1L;
@@ -19,7 +19,7 @@ public class SF_NumericShape implements SFPL_Operator
     @Override
     public String Word()
     {
-        return Messages.getString("SF_NumericShape.0");  //$NON-NLS-1$
+        return Messages.getString("SF_LinearShape.0");  //$NON-NLS-1$
     }
 
     @Override
@@ -27,11 +27,11 @@ public class SF_NumericShape implements SFPL_Operator
     {
         List<Object> l = Caster.makeBunch(input);
         double totalTime = 0;
-        if (l.size() < 2) throw new SFPL_RuntimeException(Messages.getString("SF_NumericShape.1"));  //$NON-NLS-1$
+        if (l.size() < 2) throw new SFPL_RuntimeException(Messages.getString("SF_LinearShape.1"));  //$NON-NLS-1$
         for (Object o : l)
         {
             List<Object> el = Caster.makeBunch(o);
-            if (el.size() != 2) throw new SFPL_RuntimeException(Messages.getString("SF_NumericShape.2"));  //$NON-NLS-1$
+            if (el.size() != 2) throw new SFPL_RuntimeException(Messages.getString("SF_LinearShape.2"));  //$NON-NLS-1$
         }
         totalTime = Caster.makeDouble(Caster.makeBunch(l.get(l.size() - 1)).get(0));
         SFSignal shape = SFData.build((int) (totalTime * SFConstants.SAMPLE_RATE / 1000.0d), false);
@@ -47,9 +47,10 @@ public class SF_NumericShape implements SFPL_Operator
             double endY = Caster.makeDouble(end.get(1));
             if (startX > endX)
             {
-                throw new RuntimeException(Messages.getString("SF_NumericShape.3") + startX + Messages.getString("SF_NumericShape.4") + endX); //$NON-NLS-1$ //$NON-NLS-2$
+                throw new RuntimeException(Messages.getString("SF_LinearShape.3") + startX //$NON-NLS-1$
+                                + Messages.getString("SF_LinearShape.4") + endX);  //$NON-NLS-1$
             }
-            if (startX < 0) throw new RuntimeException(Messages.getString("SF_NumericShape.5")); //$NON-NLS-1$
+            if (startX < 0) throw new RuntimeException(Messages.getString("SF_LinearShape.5")); //$NON-NLS-1$
             double len = (endX - startX) * SFConstants.SAMPLE_RATE / 1000.0d;
             double diff = endY - startY;
             double min = SFMaths.min(len, shape.getLength());

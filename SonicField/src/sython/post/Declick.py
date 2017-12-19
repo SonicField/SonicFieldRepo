@@ -7,7 +7,9 @@ import new
 import os
 
 
-def declick(signal, thresh = 0.02, cutoff = 1000):
+def declick(signal, thresh = 0.04, cutoff = 1000):
+    print 'Declicking %10.6f, %d.' % (thresh, cutoff)
+
     with SFMemoryZone():
         events = 0
         signal = sf.FixSize(signal)

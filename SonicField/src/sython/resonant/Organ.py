@@ -9,6 +9,8 @@ from com.nerdscentral.audio.core import SFMemoryZone, SFConstants
 from sython.resonant.ResonantPipes import *
 from com.nerdscentral.audio.core import SFData
 from sython.organ.Player import RESTART_INFO
+from sython.utils.Memory import writeSawppedCache, readSwappedCache
+
 
 @sf_parallel
 def _doVib(env, signal):
@@ -41,7 +43,7 @@ def _doVib(env, signal):
         vib=+trem
         trem=sf.DirectMix(1, sf.Pcnt50(trem))
         signal=sf.Multiply(trem, signal)
-        vib=sf.DirectMix(1, sf.NumericVolume(vib, 0.01))
+        vib=sf.DirectMix(1, sf.LinearVolume(vib, 0.01))
         signal=sf.Resample(vib,signal)
     return sf.FixSize(sf.Finalise(signal)).keep()
 
@@ -51,11 +53,11 @@ def main():
     # Controls for rendering the piece #
     ####################################
 
-    midis=Midi.read_midi_file(SFConstants.STORE_DIRECTORY + "bwv871-b.mid")
+    midis=Midi.read_midi_file(SFConstants.STORE_DIRECTORY + "bwv872-a.mid")
 
     # Length of full piece
     #======================
-    length = 2.5
+    length = 2.0
 
     # Temperament
     #=============
@@ -83,7 +85,7 @@ def main():
 
     # Truncate.
     # Only render this many notes; < 1 implies all.
-    truncate = 0
+    truncate = 32
 
     # Fast blip - needed for some piano music.
     fastBlip = False
@@ -192,22 +194,15 @@ def main():
                         out.append(nt)
                     count += 1
 
-                voice = harpsiPipe
+                voiceA = soft_harpsichord
+                voiceB = distant_flute_pipe
                 # This renders the music.
+                signals = []
+                
                 with SFMemoryZone():
-                    left,right = [sf.Finalise(sig) for sig in voice(out, beat, temperament, 1.0, place)]
-                    sf.WriteSignal(left,  SFConstants.STORE_DIRECTORY + "l0_%i" % split)
-                    sf.WriteSignal(right, SFConstants.STORE_DIRECTORY + "r0_%i" % split)
-
-                # Add highlight to bottom notes.
-                # TODO: Make this parameterisable.
-                #if rank < lowerRank:
-                #        leftb, rightb = [sf.Finalise(sig) for sig in distant_string_pipe_bass(out, beat, temperament, 0.1, place)]
-                #        left, right = [sf.FixSize(sf.Mix(a, b)) for a,b in ((left, leftb), (right, rightb))]
-                #else:
-                #        leftb, rightb = [sf.Finalise(sig) for sig in distant_accent(out, beat, temperament, 0.05, place)]
-                #        left, right = [sf.FixSize(sf.Mix(a, b)) for a,b in ((left, leftb), (right, rightb))]
-                outH = []
+                    left,right = (sf.Finalise(sig) for sig in voiceA(out, beat, temperament, 1.0, place))
+                    signals.append((writeSawppedCache(left), writeSawppedCache(right)))
+                '''
                 outL = []
                 for event in out:
                     eventH = copy.copy(event)
@@ -218,23 +213,20 @@ def main():
                     outL.append(eventL)
 
                 with SFMemoryZone():
-                    left, right = [sf.NumericVolume(sf.Finalise(sig), 0.1 * rank) for sig in voice(outH, beat, temperament, 1.0, place)]
-                    sf.WriteSignal(left, SFConstants.STORE_DIRECTORY + "l1_%i" % split)
-                    sf.WriteSignal(right, SFConstants.STORE_DIRECTORY + "r1_%i" % split)
+                    left, right = (sf.LinearVolume(sf.Finalise(sig), 0.1 * rank) for sig in voiceB(outH, beat, temperament, 1.0, place))
+                    signals.append(writeSawppedCache(left), writeSawppedCache(right))
 
                 with SFMemoryZone():
-                    left, right = [sf.NumericVolume(sf.Finalise(sig), 0.1 * (1.0 - rank)) for sig in voice(outL, beat, temperament, 1.0, place)]
-                    sf.WriteSignal(left, SFConstants.STORE_DIRECTORY + "l2_%i" % split)
-                    sf.WriteSignal(right, SFConstants.STORE_DIRECTORY + "r2_%i" % split)
-
+                    left, right = [sf.LinearVolume(sf.Finalise(sig), 0.1 * (1.0 - rank)) for sig in voiceB(outL, beat, temperament, 1.0, place)]
+                    signals.append(writeSawppedCache(left), writeSawppedCache(right))
+                '''
                 with SFMemoryZone():    
-                    left, right = [sf.FixSize(sf.Mix(a, b, c)) for a,b,c in (
-                        (sf.ReadSignal(SFConstants.STORE_DIRECTORY + "l%i_%i" % (x, split)) for x in xrange(3)), 
-                        (sf.ReadSignal(SFConstants.STORE_DIRECTORY + "r%i_%i" % (x, split)) for x in xrange(3)))]
+                    left  = sf.FixSize(sf.Mix([readSwappedCache(s[0]) for s in  signals]))
+                    right = sf.FixSize(sf.Mix([readSwappedCache(s[1]) for s in  signals]))
                     if splitPitch:
-                        left = sf.NumericVolume(left, place)
-                        right = sf.NumericVolume(right, 1.0 - place)
-                    left = left.keep()
+                        left  = sf.LinearVolume(left, place)
+                        right = sf.LinearVolume(right, 1.0 - place)
+                    left  = left.keep()
                     right = right.keep()
 
                 # Creates controller envelopes based on a particular modulation source in the midi.

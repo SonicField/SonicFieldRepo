@@ -59,7 +59,7 @@ def ring(length, pitch):
     print "Ring: " + str(pitch) + "/" + str(length)
     sig1 = sf.SineWave(length,pitch*1.2)
     sig2 = sf.SineWave(length,pitch*1.2 + 1)
-    env  = sf.SimpleShape((0,-60),(125,0),(length,-30))
+    env  = sf.ExponentialShape((0,-60),(125,0),(length,-30))
     
     sig1 = sf.Multiply(+env,sig1)
     sig1 = sf.Pcnt90(sf.DirectMix(1,sig1))
@@ -71,7 +71,7 @@ def ring(length, pitch):
     sig4 = sf.PhaseModulatedSineWave(pitch,sig2)
     sig4 = sf.Multiply(env,sig4)
     
-    sig5 = sf.Volume(sf.Mix(sig3,sig4),6)
+    sig5 = sf.ExponentialVolume(sf.Mix(sig3,sig4),6)
     sig=sf.Saturate(sig5)
     sig=sf.ResonantFilter(sig,0.99,0.05,1000.0/pitch)
     return sf.Realise(sf.Normalise(sig))
@@ -89,7 +89,7 @@ def generate(
     ):
     sig = voice(r,pitch)
 
-    env = sf.NumericShape(
+    env = sf.LinearShape(
         (0,pitch*8),
         (a,pitch*4),
         ((a+d)*0.5,pitch*8),
@@ -98,7 +98,7 @@ def generate(
         (r,pitch)
     )
 
-    res = sf.NumericShape(
+    res = sf.LinearShape(
         (0,0),
         (a,0.75),
         ((a+d)*0.5,1.0),
@@ -109,7 +109,7 @@ def generate(
     
     sig = sf.ShapedLadderLowPass(sig,env,res)
 
-    env = sf.NumericShape(
+    env = sf.LinearShape(
         (0,0.1),
         (a,0.25),
         ((a+d)*0.5,1.0),
@@ -125,11 +125,11 @@ def generate(
     dhz = 2.0
     dly = 1000.0/float(dhz);
     mod = sf.SineWave(sf.Length(+sig),0.25)
-    mod = sf.NumericVolume(mod,dly/10)
+    mod = sf.LinearVolume(mod,dly/10)
     sig = sf.AnalogueChorus(sig,dly,mod,0.80,1.0)
     sgs = [ sf.FixSize(s) for s in sig ]
     
-    return [ sf.NumericVolume(sf.FixSize(sig),v) for sig in sgs ]
+    return [ sf.LinearVolume(sf.FixSize(sig),v) for sig in sgs ]
 
 def run(
         voice,
@@ -239,12 +239,12 @@ def run(
     def post(notes,i):
         r = []
         for s,v,a in notes:
-            r += [(sf.NumericVolume(s.get()[i],v),a*2.0)]
+            r += [(sf.LinearVolume(s.get()[i],v),a*2.0)]
         return r
     
     return (
-        sf.Finalise(sf.NumericVolume(sf.MixAt(post(notesL,0)),vOver)),
-        sf.Finalise(sf.NumericVolume(sf.MixAt(post(notesR,1)),vOver))
+        sf.Finalise(sf.LinearVolume(sf.MixAt(post(notesL,0)),vOver)),
+        sf.Finalise(sf.LinearVolume(sf.MixAt(post(notesR,1)),vOver))
     )
 
 random.seed()
@@ -274,7 +274,7 @@ def spatialise(sig):
     dly = sped
     mod = Signal_Generators.LimitedTriangle(sf.Length(+sig),0.111,10)
     mod = sf.Finalise(mod)
-    mod = sf.NumericVolume(mod,sped/10.0)
+    mod = sf.LinearVolume(mod,sped/10.0)
     sig = sf.AnalogueChorus(sig,dly,mod,0.65,0.8)
     return [ sf.FixSize(s) for s in sig ]
 
@@ -293,7 +293,7 @@ rr = sf.MixAt(
 sigs = [
     sf.Finalise(
         sf.Multiply(
-            sf.NumericShape(
+            sf.LinearShape(
                 (0,0),
                 (100,0),
                 (125,1),

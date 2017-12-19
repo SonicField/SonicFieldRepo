@@ -3,8 +3,6 @@ package com.nerdscentral.audio.core;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.nerdscentral.sython.Caster;
-
 public abstract class SFMultipleTranslator extends SFGenerator
 {
     @Override
@@ -41,7 +39,7 @@ public abstract class SFMultipleTranslator extends SFGenerator
         signals = new ArrayList<>();
         for (SFSignal signal : input)
         {
-            signals.add(Caster.incrReference(signal));
+            signals.add(signal);
             int l1 = signal.getLength();
             if (l1 > len) len = l1;
         }

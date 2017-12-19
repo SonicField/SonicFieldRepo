@@ -11,7 +11,7 @@ import com.nerdscentral.sython.SFMaths;
 import com.nerdscentral.sython.SFPL_Operator;
 import com.nerdscentral.sython.SFPL_RuntimeException;
 
-public class SF_SimpleShape implements SFPL_Operator
+public class SF_ExponentialShape implements SFPL_Operator
 {
 
     private static final long serialVersionUID = 1L;
@@ -19,7 +19,7 @@ public class SF_SimpleShape implements SFPL_Operator
     @Override
     public String Word()
     {
-        return Messages.getString("SF_SimpleShape.0");  //$NON-NLS-1$
+        return Messages.getString("SF_ExponentialShape.0");  //$NON-NLS-1$
     }
 
     @Override
@@ -27,12 +27,12 @@ public class SF_SimpleShape implements SFPL_Operator
     {
         List<Object> l = Caster.makeBunch(input);
         double totalTime = 0;
-        if (l.size() < 2) throw new SFPL_RuntimeException(Messages.getString("SF_SimpleShape.1"));  //$NON-NLS-1$
+        if (l.size() < 2) throw new SFPL_RuntimeException(Messages.getString("SF_ExponentialShape.1"));  //$NON-NLS-1$
         for (Object o : l)
         {
             List<Object> el = Caster.makeBunch(o);
             if (el.size() != 2 || !(el.get(0) instanceof Number && el.get(0) instanceof Number))
-                throw new SFPL_RuntimeException(Messages.getString("SF_SimpleShape.2"));  //$NON-NLS-1$
+                throw new SFPL_RuntimeException(Messages.getString("SF_ExponentialShape.2"));  //$NON-NLS-1$
         }
         totalTime = Caster.makeDouble(Caster.makeBunch(l.get(l.size() - 1)).get(0));
         SFSignal shape = SFData.build((int) (totalTime * SFConstants.SAMPLE_RATE / 1000.0d), false);
@@ -48,18 +48,18 @@ public class SF_SimpleShape implements SFPL_Operator
             double endY = Caster.makeDouble(end.get(1));
             if (startX > endX)
             {
-                throw new RuntimeException(Messages.getString("SF_SimpleShape.3") + startX //$NON-NLS-1$
-                                + Messages.getString("SF_SimpleShape.4") + endX);  //$NON-NLS-1$
+                throw new RuntimeException(Messages.getString("SF_ExponentialShape.3") + startX //$NON-NLS-1$
+                                + Messages.getString("SF_ExponentialShape.4") + endX);  //$NON-NLS-1$
             }
-            if (startX < 0) throw new RuntimeException(Messages.getString("SF_SimpleShape.5")); //$NON-NLS-1$
+            if (startX < 0) throw new RuntimeException(Messages.getString("SF_ExponentialShape.5")); //$NON-NLS-1$
             double len = SFMaths.floor((endX - startX) * SFConstants.SAMPLE_RATE / 1000.0d);
             double diff = endY - startY;
             double min = SFMaths.min(len, shape.getLength());
             for (double x = 0; x < min; ++x)
             {
-                double dbs = diff * x / len + startY;
+                double y = SFConstants.slowFromDBs(diff * x / len + startY);
                 if (position > mustEnd) break;
-                shape.setSample(position++, SFConstants.slowFromDBs(dbs) /*SFConstants.fromDBs(dbs)*/);
+                shape.setSample(position++, y);
             }
         }
         return shape;

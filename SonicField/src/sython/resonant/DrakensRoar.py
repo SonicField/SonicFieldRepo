@@ -31,7 +31,7 @@ def channel():
         sig=engineSection(x==1)
         lgth = sf.Length(sig)
         sig = sf.Multiply(
-            sf.NumericShape((0,0),(lgth*0.5,1),(lgth,0)),
+            sf.LinearShape((0,0),(lgth*0.5,1),(lgth,0)),
             sig
         )
         sigs += [(sig, at)]

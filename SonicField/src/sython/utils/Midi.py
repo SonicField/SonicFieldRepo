@@ -502,4 +502,4 @@ def controllerEnvelope(midi,controller,beat,signal):
     l=sf.Length(signal)
     if envb[-1][0]<l:
         envb+=[ [ l,env[-1][1] ] ]
-    return sf.NumericShape(envb)  
+    return sf.LinearShape(envb)  

@@ -1,7 +1,5 @@
 package com.nerdscentral.audio.core;
 
-import com.nerdscentral.sython.Caster;
-
 public abstract class SFSingleTranslator extends SFGenerator
 {
 
@@ -15,7 +13,7 @@ public abstract class SFSingleTranslator extends SFGenerator
 
     protected SFSingleTranslator(SFSignal input)
     {
-        signal = Caster.incrReference(input);
+        signal = input;
         length = input.getLength();
     }
 

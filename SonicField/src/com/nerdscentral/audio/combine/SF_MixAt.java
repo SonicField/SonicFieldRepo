@@ -14,7 +14,7 @@ import com.nerdscentral.sython.SFPL_Operator;
 import com.nerdscentral.sython.SFPL_RuntimeException;
 
 /**
- * ?s1,-3:Sf.Volume !s1_normal... forwards an SFData less 3 db ...
+ * ?s1,-3:sf.ExponentialVolume !s1_normal... forwards an SFData less 3 db ...
  * 
  * @author AlexTu
  * 

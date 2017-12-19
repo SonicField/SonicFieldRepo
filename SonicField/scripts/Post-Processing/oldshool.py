@@ -10,15 +10,15 @@ def excite(sig_,mix,power,sat,satMix):
     sigh=sf.Clean(sigh)
     sigh=sf.BesselHighPass(sigh,1000,2)
     nh=sf.Magnitude(+sigh)
-    sigh=sf.NumericVolume(sigh,mh/nh)
-    sig=sf.Mix(sf.NumericVolume(sigh,mix),sf.NumericVolume(sig,1.0-mix))
+    sigh=sf.LinearVolume(sigh,mh/nh)
+    sig=sf.Mix(sf.LinearVolume(sigh,mix),sf.LinearVolume(sig,1.0-mix))
     if sat:
         n=sf.Magnitude(+sig)
-	sig=sf.Realise(sf.NumericVolume(sig,sat*m/n))
+	sig=sf.Realise(sf.LinearVolume(sig,sat*m/n))
 	sigst=sf.Saturate(+sig)
-	sig=sf.Mix(sf.NumericVolume(sigst,satMix),sf.NumericVolume(sig,1.0-satMix))
+	sig=sf.Mix(sf.LinearVolume(sigst,satMix),sf.LinearVolume(sig,1.0-satMix))
     n=sf.Magnitude(+sig)
-    return sf.Realise(sf.NumericVolume(sig,m/n))
+    return sf.Realise(sf.LinearVolume(sig,m/n))
 
 @sf_parallel
 def highDamp(sig,freq,fact):
@@ -29,7 +29,7 @@ def highDamp(sig,freq,fact):
     ctr=sf.RBJLowPass(ctr,8,1)
     ctr=sf.DirectMix(
         1,
-        sf.NumericVolume(
+        sf.LinearVolume(
             sf.FixSize(sf.Invert(ctr)),
             fact
         )
@@ -37,7 +37,7 @@ def highDamp(sig,freq,fact):
     hfq=sf.Multiply(hfq,ctr)
     sig=sf.Mix(hfq,sf.RBJLowPass(sig,freq,1))
     mag=mag/sf.Magnitude(+sig)
-    return sf.NumericVolume(sig,mag)
+    return sf.LinearVolume(sig,mag)
 
 @sf_parallel
 def bandDamp(sig,freqLow,freqHigh,fact):
@@ -48,7 +48,7 @@ def bandDamp(sig,freqLow,freqHigh,fact):
     ctr=sf.RBJLowPass(ctr,8,1)
     ctr=sf.DirectMix(
         1,
-        sf.NumericVolume(
+        sf.LinearVolume(
             sf.FixSize(sf.Invert(ctr)),
             fact
         )
@@ -56,7 +56,7 @@ def bandDamp(sig,freqLow,freqHigh,fact):
     hfq=sf.Multiply(hfq,ctr)
     sig=sf.Mix(hfq,sf.RBJNotch(sig,freqLow,freqHigh))
     mag=mag/sf.Magnitude(+sig)
-    return sf.NumericVolume(sig,mag)
+    return sf.LinearVolume(sig,mag)
 
 @sf_parallel
 def lowBoost(sig_):
@@ -74,7 +74,7 @@ def lowBoost(sig_):
     low=sf.FixSize(low)
     low=sf.Saturate(low)
     m2=sf.Magnitude(+low)
-    low=sf.NumericVolume(low,m1/m2)
+    low=sf.LinearVolume(low,m1/m2)
     sig=sf.BesselHighPass(sig,256,4)
     sig=sf.Mix(low,sig)
     sig=highDamp(sig,5000,0.66)
