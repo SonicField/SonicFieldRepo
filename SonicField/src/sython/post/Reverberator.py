@@ -29,7 +29,6 @@ def main():
 
 def _main(path):
 
-
     ####################################
     #
     # Room Size And Nature Controls
@@ -58,9 +57,9 @@ def _main(path):
     # Use another very long impulse response.
     megaThe = 0
     #  An impulse from Perth City Hall.
-    perth = 0.0
+    perth = 0.02
     # Use an impulse response from an abandoned factory.
-    terrys  = 0.04
+    terrys  = 0.0
     # Bright medium Ir.
     club = 0.0
     # Enhanced rich church - very long.
@@ -165,7 +164,6 @@ def _main(path):
         )
         return retl, retr
 
-
     convoll, convorr = mixIR("temp/impulses/terrys.wav", terrys)
     convoll, convorr = mixIR("temp/impulses/mega-thederal.wav", megaThe)
     convoll, convorr = mixIR("temp/impulses/perth_city_hall_balcony_ir_edit.wav", perth)
@@ -203,7 +201,6 @@ def _main(path):
         if vBright:
             right  = excite(right,0.25,1.15)
             left   = excite(left ,0.25,1.15)
-
 
         with SFMemoryZone():
             wleft  =sf.FixSize(sf.Mix(sf.LinearVolume(left,mix ),sf.LinearVolume(wleft,1.0-mix))).keep()

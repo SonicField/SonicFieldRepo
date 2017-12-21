@@ -247,10 +247,13 @@ def sing(
             cnv=sf.Cut(5000,5000+q,cnv)
             cnv=sf.Multiply(cnv,sf.LinearShape((0,0),(32,1),(q,0)))
             sigr=convolve(+sig,cnv)
-            sigr=sf.Multiply(
-                linearEnv(sigr,[(0,0),(256,1),(sf.Length(sigr) - 20,1.5), (sf.Length(sigr), 0)]),
-                sigr
-            )
+            length = sf.Length(sigr)
+            env = None
+            if length > 300:
+                env = linearEnv(sigr,[(0,0),(256,1),( length - 20,1.5), (length, 0)])
+            else:
+                env = linearEnv(sigr,[(0,0),(length / 2.0, 1), (length, 0)])
+            sigr=sf.Multiply(env, sigr)
             sig=sf.Mix(
                 sf.Pcnt20(sigr),
                 sf.Pcnt80(sig)

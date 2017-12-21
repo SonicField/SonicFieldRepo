@@ -153,7 +153,7 @@ public class SFData extends SFSignal implements Serializable
     }
 
     // $NON-NLS-1$
-    static final long                                       CHUNK_SHIFT          = 16;
+    static final long                                       CHUNK_SHIFT          = 13;
     static final long                                       CHUNK_LEN            = (long) Math.pow(2, CHUNK_SHIFT);
     static final long                                       CHUNK_MASK           = CHUNK_LEN - 1;
 
@@ -386,11 +386,9 @@ public class SFData extends SFSignal implements Serializable
         SFData ret = new SFData(l);
         if (clear)
         {
-            long clearLen = CHUNK_LEN << 3l;
             for (long i = 0; i < ret.chunks.length; ++i)
             {
-                long address = unsafe.getAddress(ret.chunkIndex + (i << 3l));
-                unsafe.setMemory(address, clearLen, (byte) 0);
+                unsafe.setMemory(unsafe.getAddress(ret.chunkIndex + (i << 3l)), CHUNK_LEN << 3l, (byte) 0);
             }
         }
         return ret;

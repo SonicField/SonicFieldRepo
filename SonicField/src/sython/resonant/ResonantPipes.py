@@ -58,7 +58,7 @@ def distant_bass(midi_in,beat,temperament,velocity, pan):
     )
     return post_process(notes1)
 
-def distant_bass_accented(midi_in,beat,temperament,velocity):
+def distant_bass_accented(midi_in, beat, temperament, velocity, pan):
     l = 512
     plr = make_addtive_resonance(qCorrect=1.0, rollOff=2.0, saturate=0.5, power=1.1)
     notes1=Player.play(
@@ -72,7 +72,7 @@ def distant_bass_accented(midi_in,beat,temperament,velocity):
         flat_env=True,
         quick_factor=1.5,
         pure=False,
-        pan = 0.2
+        pan = pan
     )
     
     plr = make_addtive_resonance(qCorrect=2.0, rollOff=4.0, saturate=0.0, power=1.0)
@@ -88,7 +88,7 @@ def distant_bass_accented(midi_in,beat,temperament,velocity):
         quick_factor=1.0,
         pure=True,
         pitch_shift=4.0,
-        pan = 0.8
+        pan = pan
     )
     
     left1,right1 = post_process(notes1)
