@@ -34,9 +34,10 @@ java \
     -Dsython.heart_beat=1440 \
     -XX:+UseCompressedOops \
     -XX:+UseCompressedClassPointers \
-    -XX:MaxDirectMemorySize=2g \
+    -XX:MaxDirectMemorySize=1g \
     -XX:MaxInlineSize=128 \
     -XX:InlineSmallCode=1024 \
+    -XX:+UseConcMarkSweepGC \
     -Xms128m \
     -Xmx2G \
     -classpath bin:jars/jython-standalone-2.7.0.jar com.nerdscentral.sython.Sython \

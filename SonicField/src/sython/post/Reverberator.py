@@ -57,13 +57,13 @@ def _main(path):
     # Use another very long impulse response.
     megaThe = 0
     #  An impulse from Perth City Hall.
-    perth = 0.02
+    perth = 0.0
     # Use an impulse response from an abandoned factory.
     terrys  = 0.0
     # Bright medium Ir.
     club = 0.0
     # Enhanced rich church - very long.
-    ultraChurch = 0.0
+    ultraChurch = 0.005
     # Post process which is a multi-band compress and adds warmth (valve like waveshaping).
     post    = False
     # Use a spring reverb' impulse response.

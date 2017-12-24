@@ -242,7 +242,7 @@ public class SFData extends SFSignal implements Serializable
 
         while (countDown > 0)
         {
-            ByteBufferWrapper chunk = freeChunks.poll();
+            ByteBufferWrapper chunk = freeChunks.pollFirst();
             if (chunk == null) break;
             chunks[chunkCount] = chunk;
             freeCount.decrementAndGet();
@@ -307,7 +307,7 @@ public class SFData extends SFSignal implements Serializable
             for (ByteBufferWrapper chunk : chunks)
             {
                 chunk.release();
-                freeChunks.add(chunk);
+                freeChunks.push(chunk);
                 freeCount.incrementAndGet();
             }
             chunks = null;

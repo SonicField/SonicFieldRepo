@@ -112,7 +112,7 @@ def distant_string(midi_in,beat,temperament,velocity):
     )
     return post_process(notes1)
 
-def distant_oboe(midi_in,beat,temperament,velocity, pan):
+def distant_femail_soprano_ah(midi_in,beat,temperament,velocity, pan):
     plr = make_addtive_resonance(qCorrect=2.0, rollOff=1.5, saturate=0.1, power=1.4, post=oboe_filter)
     notes1=Player.play(
         midi_in,
@@ -121,7 +121,24 @@ def distant_oboe(midi_in,beat,temperament,velocity, pan):
         voice=plr,
         bend=False,
         mellow=False,
-        velocity_correct=velocity*1.5,
+        velocity_correct=velocity,
+        flat_env=True,
+        quick_factor=0.5,
+        pure=True,
+        pan=pan
+    )
+    return post_process_tremolate(notes1)
+
+def distant_oboe(midi_in, beat, temperament, velocity, pan):
+    plr = make_addtive_resonance(qCorrect=2.0, rollOff=1.5, saturate=0.1, power=1.4, post=oboe_filter)
+    notes1=Player.play(
+        midi_in,
+        beat,
+        temperament,
+        voice=plr,
+        bend=False,
+        mellow=False,
+        velocity_correct=velocity,
         flat_env=True,
         quick_factor=0.5,
         pure=True,
@@ -139,7 +156,7 @@ def distant_oboe2(midi_in, beat, temperament, velocity):
         voice=plr,
         bend=False,
         mellow=False,
-        velocity_correct=velocity*1.5,
+        velocity_correct=velocity,
         flat_env=True,
         quick_factor=1.0,
         pure=True,
@@ -160,7 +177,7 @@ def soft_harpsichord(midi_in, beat, temperament, velocity, pan):
         voice=plr1,
         bend=False,
         mellow=False,
-        velocity_correct=velocity*1.0,
+        velocity_correct=velocity,
         flat_env=True,
         quick_factor=0,
         pure=False,

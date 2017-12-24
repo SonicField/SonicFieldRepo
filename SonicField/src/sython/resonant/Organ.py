@@ -53,17 +53,17 @@ def main():
     # Controls for rendering the piece #
     ####################################
 
-    midis=Midi.read_midi_file(SFConstants.STORE_DIRECTORY + "bwv872-b.mid")
+    midis=Midi.read_midi_file(SFConstants.STORE_DIRECTORY + "bwv870-a.mid")
 
     # Length of full piece
     #======================
-    length = 1.75
+    length = 2.0
 
     # Temperament
     #=============
-    temperament = Midi.werckmeisterIII
+    #temperament = Midi.werckmeisterIII
     #temperament = Midi.just_intonation
-    #temperament = Midi.bach_lehman
+    temperament = Midi.bach_lehman
     #temperament = Midi.equal_temperament
 
     # Modulation
@@ -194,9 +194,15 @@ def main():
                         out.append(nt)
                     count += 1
 
+                # 873 - etherial
+                #voiceMain = harpsiPipe
+                #voiceLow  = distant_oboe
+                #voiceHigh = distant_femail_soprano_ah
+                # 870 - smooth and bell like
                 voiceMain = harpsiPipe
-                voiceLow  = distant_bass_accented
-                voiceHigh = distant_flute_pipe
+                voiceLow  = harpsiPipe
+                voiceHigh = harpsiPipe
+
                 # This renders the music.
                 signals = []
                 
