@@ -53,11 +53,11 @@ def main():
     # Controls for rendering the piece #
     ####################################
 
-    midis=Midi.read_midi_file(SFConstants.STORE_DIRECTORY + "bwv870-a.mid")
+    midis=Midi.read_midi_file(SFConstants.STORE_DIRECTORY + "bwv871-b.mid")
 
     # Length of full piece
     #======================
-    length = 2.0
+    length = 2.5
 
     # Temperament
     #=============
@@ -199,9 +199,15 @@ def main():
                 #voiceLow  = distant_oboe
                 #voiceHigh = distant_femail_soprano_ah
                 # 870 - smooth and bell like
+                #voiceMain = harpsiPipe
+                #voiceLow  = harpsiPipe
+                #voiceHigh = harpsiPipe
+                # 871 - ???
                 voiceMain = harpsiPipe
-                voiceLow  = harpsiPipe
-                voiceHigh = harpsiPipe
+                voiceLow  = distant_oboe
+                voiceHigh = distant_flute_pipe
+                highShift = 12
+                lowShift  = -12
 
                 # This renders the music.
                 signals = []
@@ -215,8 +221,8 @@ def main():
                 for event in out:
                     eventH = copy.copy(event)
                     eventL = copy.copy(event)
-                    eventH.key += 12
-                    eventL.key -= 12
+                    eventH.key += highShift
+                    eventL.key += lowShift
                     outH.append(eventH)
                     outL.append(eventL)
 

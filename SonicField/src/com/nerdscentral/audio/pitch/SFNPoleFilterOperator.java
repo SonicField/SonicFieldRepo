@@ -8,7 +8,7 @@ import com.nerdscentral.audio.pitch.algorithm.SFFilterGenerator;
 
 public class SFNPoleFilterOperator
 {
-    protected static void filterLoop(SFSignal x, SFSignal y, List<SFFilterGenerator.NPoleFilterDefListNode> fds)
+    protected static void shapedFilterLoop(SFSignal x, SFSignal y, List<SFFilterGenerator.NPoleFilterDefListNode> fds)
     {
 
         int poles = fds.get(0).getDefinition().getPoles();
@@ -35,29 +35,30 @@ public class SFNPoleFilterOperator
                 xv[i] = xv[i + 1];
                 yv[i] = yv[i + 1];
             }
-            xv[fd.getPoles()] = x.getSample(n) / gain;
+            xv[poles] = x.getSample(n) / gain;
             double q = 0;
             for (int index = 0; index < xv.length; ++index)
             {
                 q += xv[index] * fd.getXCeof(index);
-                if (index < fd.getPoles())
+                if (index < poles)
                 {
                     q += yv[index] * fd.getYCeof(index);
                 }
             }
-            yv[fd.getPoles()] = q;
+            yv[poles] = q;
             y.setSample(n, q);
         }
     }
 
     protected static void filterLoop(SFSignal x, SFSignal y, SFFilterGenerator.NPoleFilterDef fd, double gain)
     {
-        double[] xv = new double[fd.getPoles() + 1];
-        double[] yv = new double[fd.getPoles() + 1];
+        int poles = fd.getPoles();
+        double[] xv = new double[poles + 1];
+        double[] yv = new double[poles + 1];
 
         for (int n = 0; n < x.getLength(); ++n)
         {
-            for (int i = 0; i < fd.getPoles(); ++i)
+            for (int i = 0; i < poles; ++i)
             {
                 xv[i] = xv[i + 1];
                 yv[i] = yv[i + 1];
@@ -67,12 +68,12 @@ public class SFNPoleFilterOperator
             for (int index = 0; index < xv.length; ++index)
             {
                 q += xv[index] * fd.getXCeof(index);
-                if (index < fd.getPoles())
+                if (index < poles)
                 {
                     q += yv[index] * fd.getYCeof(index);
                 }
             }
-            yv[fd.getPoles()] = q;
+            yv[poles] = q;
             y.setSample(n, q);
         }
     }

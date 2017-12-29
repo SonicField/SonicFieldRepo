@@ -19,6 +19,7 @@ import java.nio.channels.FileChannel.MapMode;
 import java.util.Stack;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongFunction;
@@ -178,6 +179,7 @@ public class SFData extends SFSignal implements Serializable
     private final AtomicBoolean                             kept                 = new AtomicBoolean(false);
     private final AtomicBoolean                             dead                 = new AtomicBoolean(false);
     private final AtomicBoolean                             pinned               = new AtomicBoolean(false);
+    private final static LinkedBlockingDeque<Runnable>      heartBeatTasks       = new LinkedBlockingDeque<>();
 
     // TODO: The file channels are thread local but the chunks are not. Thus over time chunks will disperse
     // across threads and the locality will be broken. If we can make some mechanism to allow this were needed
@@ -211,6 +213,65 @@ public class SFData extends SFSignal implements Serializable
         }
     }
 
+    private static void startHeartBeat()
+    {
+        Thread hbRunner = new Thread(new Runnable()
+        {
+
+            @Override
+            public void run()
+            {
+                while (true)
+                {
+                    try
+                    {
+                        Runnable task = heartBeatTasks.takeLast();
+                        System.out.println("Performing heart beat task: " + task);
+                        task.run();
+                    }
+                    catch (InterruptedException e)
+                    {
+                        e.printStackTrace();
+                    }
+                }
+
+            }
+        });
+        hbRunner.setDaemon(true);
+        hbRunner.setName("HeartBeat");
+        hbRunner.start();
+    }
+
+    private static void enqueueHeartBeatTask(Runnable task)
+    {
+        if (!heartBeatTasks.offerFirst(task))
+        {
+            throw new RuntimeException("Heartbeat task queue overflow (which should be impossible.");
+        }
+    }
+
+    static
+    {
+        startHeartBeat();
+    }
+
+    private static Runnable doGcTask = new Runnable()
+    {
+
+        @Override
+        public void run()
+        {
+            System.gc();
+        }
+
+        @Override
+        public String toString()
+        {
+            return "System garbage collection task";
+        }
+
+    };
+
     private static void dataHeartBeat(int count)
     {
         /* Periodically perform actions based on when a particular amount of data has been allocated to SFData objects
@@ -222,7 +283,7 @@ public class SFData extends SFSignal implements Serializable
             final LongFunction<Long> toGigs = chunks -> chunks * CHUNK_LEN * 8 / SFConstants.ONE_MEG;
             System.out.println(Messages.getString("SFData.20") + toGigs.apply(totalCount.get()) //$NON-NLS-1$
                             + Messages.getString("SFData.21") + toGigs.apply((freeCount.get())));  //$NON-NLS-1$
-            System.gc();
+            enqueueHeartBeatTask(doGcTask);
         }
     }
 

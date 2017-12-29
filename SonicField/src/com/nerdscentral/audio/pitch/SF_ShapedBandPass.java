@@ -67,7 +67,7 @@ public class SF_ShapedBandPass extends SFNPoleFilterOperator implements SFPL_Ope
                 filters.add(node);
             }
         }
-        filterLoop(x, y, filters);
+        shapedFilterLoop(x, y, filters);
         return y;
     }
 }

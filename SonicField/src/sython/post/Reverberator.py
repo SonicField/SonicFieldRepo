@@ -43,13 +43,13 @@ def _main(path):
     bright  = True
     # Extra brightening of the dry signal.
     # vBright without bright will not brighten the wet signal.
-    vBright = False
+    vBright = True
     # A super short hand made impulse.
-    tiny = False
+    tiny = True
     # A small chamber (smaller than the default vocal chamber).
     # This also shortens off the spring a lot to remove long rumbling tails
     # if the spring is used with this.
-    small   = True
+    small   = False
     # Use a church impulse response.
     church  = False
     # Use an very long 'ambient' impulse response.
@@ -59,11 +59,11 @@ def _main(path):
     #  An impulse from Perth City Hall.
     perth = 0.0
     # Use an impulse response from an abandoned factory.
-    terrys  = 0.0
+    terrys  = 0.01
     # Bright medium Ir.
     club = 0.0
     # Enhanced rich church - very long.
-    ultraChurch = 0.005
+    ultraChurch = 0.0
     # Post process which is a multi-band compress and adds warmth (valve like waveshaping).
     post    = False
     # Use a spring reverb' impulse response.
